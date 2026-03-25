@@ -1,0 +1,79 @@
+/* ─── Animations ──────────────────────────────────────────────────────────── */
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.fade-slide-up {
+  animation: fadeSlideUp 0.4s ease-out forwards;
+  opacity: 0;
+}
+
+.fade-slide-up-1 { animation-delay: 0.05s; }
+.fade-slide-up-2 { animation-delay: 0.1s; }
+.fade-slide-up-3 { animation-delay: 0.15s; }
+.fade-slide-up-4 { animation-delay: 0.2s; }
+.fade-slide-up-5 { animation-delay: 0.25s; }
+.fade-slide-up-6 { animation-delay: 0.3s; }
+.fade-slide-up-7 { animation-delay: 0.35s; }
+.fade-slide-up-8 { animation-delay: 0.4s; }
+.fade-slide-up-9 { animation-delay: 0.45s; }
+
+.loading-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* ─── Signal card expand/collapse ─────────────────────────────────────────── */
+
+.signal-evidence {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease-out;
+}
+
+.signal-evidence.expanded {
+  grid-template-rows: 1fr;
+}
+
+.signal-evidence > div {
+  overflow: hidden;
+}
+
+/* ─── Score counter animation ─────────────────────────────────────────────── */
+
+@keyframes countUp {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.score-animate {
+  animation: countUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
