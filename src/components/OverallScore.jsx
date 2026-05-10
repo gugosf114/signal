@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getScoreLabel, GAME_LABELS, SIGNAL_TYPES } from '../config/signals';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { useWatchedCards } from './WatchedCards';
 import CardImage from './CardImage';
 import CardLightbox from './CardLightbox';
 
@@ -13,6 +14,8 @@ export default function OverallScore({ score, cardName, game, summary, truncated
   const [percentileInfo, setPercentileInfo] = useState(null);
   const [cardImageUrl, setCardImageUrl] = useState(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const { toggle: toggleWatch, isWatched } = useWatchedCards();
+  const watched = isWatched(cardName, game);
 
   useEffect(() => {
     if (score === null || score === undefined || !cardName) return;
@@ -151,6 +154,34 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               }}>
                 /100
               </span>
+              {/* Watch / unwatch button */}
+              <button
+                onClick={() => toggleWatch({ name: cardName, game, score, enPrice, jpPrice })}
+                title={watched ? 'Unwatch this card' : 'Watch this card'}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '2px 4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  opacity: watched ? 1 : 0.35,
+                  transition: 'opacity 0.15s',
+                  marginLeft: 2,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = watched ? '1' : '0.35'; }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24"
+                  fill={watched ? color : 'none'}
+                  stroke={color}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                </svg>
+              </button>
             </div>
 
             {percentileInfo && (

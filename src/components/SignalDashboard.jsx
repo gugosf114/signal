@@ -8,6 +8,8 @@ import SignalSection from './SignalSection';
 import SignalNav from './SignalNav';
 import LoadingTheater from './LoadingTheater';
 import EmptyState from './EmptyState';
+import CardBrowser from './CardBrowser';
+import WatchedCards from './WatchedCards';
 import { SIGNAL_SECTIONS, calculateOverallScore } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -242,7 +244,13 @@ export default function SignalDashboard() {
         </>
       )}
 
-      {!result && !loading && !error && <EmptyState />}
+      {!result && !loading && !error && (
+        <>
+          <WatchedCards onSelect={handleSearch} />
+          <EmptyState />
+          <CardBrowser onCardSelect={handleSearch} />
+        </>
+      )}
     </div>
   );
 }
