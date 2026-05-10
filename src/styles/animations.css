@@ -225,7 +225,7 @@
   margin-top: 8px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
-  color: #4A4840;
+  color: #6B6860;
   letter-spacing: 0.14em;
   text-align: left;
 }
@@ -409,15 +409,17 @@
 .lt-solari {
   font-family: 'Syne', sans-serif;
   font-weight: 800;
-  font-size: clamp(18px, 2.4vw, 26px);
-  letter-spacing: 0.12em;
+  font-size: clamp(14px, 2vw, 24px);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   margin: 0;
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   gap: 1px;
   line-height: 1.05;
+  overflow: hidden;
+  max-width: 100%;
 }
 .lt-solari--jp {
   font-family: 'Instrument Serif', serif;
@@ -483,7 +485,7 @@
   color: #3A3830;
 }
 .lt-detail-text {
-  color: #6B6860;
+  color: #8A8678;
   text-align: left;
 }
 .lt-detail-cursor {
@@ -553,12 +555,12 @@
   opacity: 0;
 }
 .lt-log-ts {
-  color: #2A2820;
+  color: #4A4840;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
 .lt-log-text {
-  color: #5A5850;
+  color: #8A8678;
   word-break: break-all;
 }
 
@@ -679,11 +681,11 @@
 }
 .lt-ticker-inner--en {
   animation: ltTickerLeft 38s linear infinite;
-  color: #3A3830;
+  color: #6B6860;
 }
 .lt-ticker-inner--jp {
   animation: ltTickerRight 52s linear infinite;
-  color: rgba(196, 64, 64, 0.32);
+  color: rgba(196, 64, 64, 0.72);
   font-family: 'Noto Sans JP', monospace, 'JetBrains Mono';
   letter-spacing: 0.18em;
 }
@@ -819,6 +821,55 @@
   .lt-canvas {
     padding: 16px 14px 14px;
   }
+}
+
+/* ─── Signal list (replaces 3×3 abbreviated grid) ───────────────────── */
+
+.lt-signal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  justify-content: center;
+}
+.lt-signal-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 6px;
+  border-radius: 2px;
+  transition: background 0.25s;
+  min-width: 0;
+}
+.lt-signal-item--active {
+  background: color-mix(in oklab, var(--cell-color) 12%, transparent);
+}
+.lt-signal-item-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cell-color);
+  opacity: 0.45;
+  flex-shrink: 0;
+  transition: opacity 0.25s;
+}
+.lt-signal-item--active .lt-signal-item-dot {
+  opacity: 1;
+  box-shadow: 0 0 6px var(--cell-color);
+}
+.lt-signal-item-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #4A4840;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.25s;
+}
+.lt-signal-item--active .lt-signal-item-label {
+  color: var(--cell-color);
 }
 
 /* Override cascade: base .lt-log has display:flex defined later in file, so

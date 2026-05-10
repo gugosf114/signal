@@ -133,6 +133,20 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
 
         <HeatBar level={signal.level} color={meta.color} />
 
+        {/* Source count badge — shows when collapsed and sources exist */}
+        {!expanded && sources.length > 0 && (
+          <span style={{
+            fontSize: 8,
+            fontFamily: "'JetBrains Mono', monospace",
+            color: meta.color,
+            opacity: 0.55,
+            letterSpacing: '0.04em',
+            flexShrink: 0,
+          }}>
+            {sources.length}
+          </span>
+        )}
+
         <span style={{
           fontSize: 11,
           color: '#5A5850',
@@ -147,7 +161,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
       {!expanded && (
         <div style={{
           fontSize: 11,
-          color: '#3A3830',
+          color: '#5A5850',
           marginTop: 4,
           marginLeft: 26,
           lineHeight: 1.5,

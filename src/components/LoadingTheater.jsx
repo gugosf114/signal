@@ -559,20 +559,21 @@ function SignalGrid({ activePhaseId, accent }) {
   return (
     <aside className="lt-grid">
       <div className="lt-grid-header">
-        <span className="lt-grid-title">9 / SIGNALS</span>
+        <span className="lt-grid-title">9 SIGNALS</span>
       </div>
-      <div className="lt-grid-cells">
+      <div className="lt-signal-list">
         {SIGNAL_LATTICE.map((s) => {
           const active = s.phaseId === activePhaseId;
+          const fullLabel = SIGNAL_TYPES[s.key]?.label || s.label;
           return (
             <div
               key={s.key}
-              className={`lt-grid-cell ${active ? 'lt-grid-cell--active' : ''}`}
-              style={{ '--cell-color': active ? accent : '#2A2D34' }}
-              title={SIGNAL_TYPES[s.key]?.label || s.key}
+              className={`lt-signal-item ${active ? 'lt-signal-item--active' : ''}`}
+              style={{ '--cell-color': active ? accent : '#3A3830' }}
+              title={fullLabel}
             >
-              <span className="lt-grid-dot" />
-              <span className="lt-grid-label">{s.label}</span>
+              <span className="lt-signal-item-dot" />
+              <span className="lt-signal-item-label">{fullLabel}</span>
             </div>
           );
         })}
