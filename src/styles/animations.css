@@ -823,6 +823,23 @@
   }
 }
 
+/* ─── News strip auto-scroll ─────────────────────────────────────────── */
+
+@keyframes newsScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.news-strip-track {
+  display: flex;
+  gap: 12px;
+  width: max-content;
+  animation: newsScroll 55s linear infinite;
+  padding-bottom: 8px;
+}
+.news-strip-track:hover {
+  animation-play-state: paused;
+}
+
 /* ─── Signal list (replaces 3×3 abbreviated grid) ───────────────────── */
 
 .lt-signal-list {

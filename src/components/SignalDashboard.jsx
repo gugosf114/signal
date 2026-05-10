@@ -10,6 +10,7 @@ import LoadingTheater from './LoadingTheater';
 import EmptyState from './EmptyState';
 import CardBrowser from './CardBrowser';
 import WatchedCards from './WatchedCards';
+import NewsStrip from './NewsStrip';
 import { SIGNAL_SECTIONS, calculateOverallScore } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -247,6 +248,7 @@ export default function SignalDashboard() {
       {!result && !loading && !error && (
         <>
           <WatchedCards onSelect={handleSearch} />
+          <NewsStrip />
           <EmptyState />
           <CardBrowser onCardSelect={handleSearch} />
         </>

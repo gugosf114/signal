@@ -7,6 +7,7 @@
 
 import { creatorListForPrompt } from '../config/creators';
 import { fetchCardData, buildCardDataBlock } from './fetchCardData';
+import { fetchEnhancedPrice } from './fetchTCGPrice';
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-20250514';
@@ -102,11 +103,22 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     );
   }
 
-  // Pre-fetch structured card data from free TCG APIs (no cost, ~200ms).
-  // When successful, the LLM skips searching for EN prices and uses its
-  // search budget purely on soft signals: JP prices, creators, tournaments.
-  const cardData = await fetchCardData(cardName, game).catch(() => null);
-  const dataBlock = buildCardDataBlock(cardData);
+  // Pre-fetch structured card data — free APIs first, paid API overlay if keys exist.
+  // Runs in parallel; paid API enriches with 30d history, JP pricing, multi-marketplace.
+  const [cardData, enhancedData] = await Promise.all([
+    fetchCardData(cardName, game).catch(() => null),
+    fetchEnhancedPrice(cardName, game).catch(() => null),
+  ]);
+  // Merge enhanced price data into the card data block when available
+  const mergedData = cardData
+    ? { ...cardData, ...(enhancedData ? {
+        priceLines: enhancedData.priceLines || cardData.priceLines,
+        jpPriceLine: enhancedData.jpPriceLine || null,
+        trend30d: enhancedData.trend30d || null,
+        priceSource: enhancedData.source,
+      } : {}) }
+    : null;
+  const dataBlock = buildCardDataBlock(mergedData);
   const hasPreFetch = !!dataBlock;
 
   const baseMessage = game

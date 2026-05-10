@@ -172,10 +172,13 @@ export function buildCardDataBlock(cardData) {
   if (cardData.recentSets?.length) lines.push(`Recent printings: ${cardData.recentSets.join(', ')}`);
 
   if (cardData.priceLines?.length) {
-    lines.push('', 'EN PRICES (live):');
+    const src = cardData.priceSource ? ` (${cardData.priceSource})` : ' (live)';
+    lines.push('', `EN PRICES${src}:`);
     cardData.priceLines.forEach(p => lines.push(`  • ${p}`));
   }
   if (cardData.euTrend) lines.push(`  • ${cardData.euTrend}`);
+  if (cardData.jpPriceLine) lines.push('', `JP PRICE: ${cardData.jpPriceLine}`);
+  if (cardData.trend30d) lines.push(`30-day trend: ${cardData.trend30d}`);
 
   if (cardData.legalFormats?.length) {
     lines.push(`Legal in: ${cardData.legalFormats.join(', ')}`);
