@@ -70,13 +70,13 @@ RULES:
 - Every "level" is an integer 1-5 (1=minimal, 5=extreme).
 - Every "url" MUST be a URL you actually visited via web_search. NEVER invent URLs.
 - If a signal has no real sources, set "sources": [] and score the level based on what you DID find. Empty is better than fake.
-- Aim for 4-7 sources per signal where evidence exists. Don't pad with weak sources.
+- Aim for 2-3 sources per signal where evidence exists. Quality over quantity — never pad with weak sources.
 - Keep "detail" to ONE sentence. Keep "summary" fields to 1-2 sentences. Be terse — the JSON has a hard size limit.
 
 CREATOR COVERAGE — CRITICAL:
 ${creatorBlocks}
 
-For "creator" signal: you MUST attempt to find recent (≤90 day) coverage from EACH of the curated EN creators above. Hits go in sources[]. Explicit silences (creator checked, no recent coverage) ALSO matter — surface those in the "detail" field as "no recent coverage from [Creator A], [Creator B]". Aim for 5-8 creator citations. For every YouTube source include: subscriber count in audience field (e.g. "1.6M subs"), and video view count when visible (e.g. "284k views"). These stats are what users need to gauge signal strength.
+For "creator" signal: cover the top 3-4 EN creators from the directory (prioritize T1, then T2). Hits go in sources[]; note explicit silences in the "detail" field. For every YouTube source include subscriber count in audience (e.g. "1.6M subs") and view count when visible (e.g. "284k views").
 
 For "jp_hype" signal: cover the JP creators list when game has one.
 
@@ -115,15 +115,24 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 32768,
-      system: buildSystemPrompt(game),
+      max_tokens: 16000,
+      // Cache the system prompt — saves ~$0.06/scan on the 1,500-token prompt
+      // that would otherwise be re-billed on every cascading tool step.
+      system: [
+        {
+          type: 'text',
+          text: buildSystemPrompt(game),
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
       tools: [
         {
           type: 'web_search_20250305',
           name: 'web_search',
-          // Leave headroom for final JSON synthesis after searches.
-          // Too high = model exhausts budget on tool calls and never emits text.
-          max_uses: 16,
+          // 8 searches: ~$0.70-0.90/scan total. Was 10 (orig) then 16 (broke cost).
+          // Cascade math: each search adds ~3k tokens re-sent on every step.
+          // 8 searches → ~200k cumulative input tokens vs 400k at 16.
+          max_uses: 8,
         },
       ],
       messages: [{ role: 'user', content: userMessage }],
