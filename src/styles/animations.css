@@ -747,3 +747,83 @@
 .yt-embed button:hover > div[style*="linear-gradient"] {
   background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.55) 100%) !important;
 }
+
+/* ─── YouTube 2-up grid (M2) ─────────────────────────────────────────── */
+
+.yt-sources-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 767px) {
+  .yt-sources-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Signal card accessibility (M3) ────────────────────────────────── */
+
+.signal-card-row:hover .signal-card-label {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.signal-card-row:focus-visible {
+  outline: 1px solid var(--signal-color, #6B6860);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ─── Empty state tiles (H1) ─────────────────────────────────────────── */
+
+.empty-state-tiles {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+@media (max-width: 639px) {
+  .empty-state-tiles {
+    flex-direction: column;
+  }
+}
+
+/* ─── Loading Theater responsive (C1) ───────────────────────────────── */
+
+@media (max-width: 639px) {
+  .lt-pips {
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+  }
+  .lt-pip-label {
+    display: none;
+  }
+  .lt-pip-meta {
+    display: none;
+  }
+  .lt-markets {
+    display: none;
+  }
+  .lt-cardslate-name {
+    max-width: 160px;
+    font-size: 14px;
+  }
+  .lt-top-row {
+    gap: 8px;
+  }
+  .lt-solari {
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    max-width: 100%;
+  }
+  .lt-canvas {
+    padding: 16px 14px 14px;
+  }
+}
+
+/* Override cascade: base .lt-log has display:flex defined later in file, so
+   the @media at line ~390 lost to it. Re-declare here, after the definitions. */
+@media (max-width: 760px) {
+  .lt-log, .lt-grid { display: none; }
+  .lt-stage { grid-template-columns: 1fr; }
+}

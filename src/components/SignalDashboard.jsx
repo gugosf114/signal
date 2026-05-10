@@ -1,27 +1,31 @@
 import React, { useState } from 'react';
 import SearchBar from './SearchBar';
 import QuickPicks from './QuickPicks';
+import RecentScans from './RecentScans';
 import PriceComparison from './PriceComparison';
 import OverallScore from './OverallScore';
 import SignalSection from './SignalSection';
 import LoadingTheater from './LoadingTheater';
+import EmptyState from './EmptyState';
 import { SIGNAL_SECTIONS, calculateOverallScore } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function SignalDashboard() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pendingCard, setPendingCard] = useState(null);
+  const [lastSearched, setLastSearched] = useState(null);
+  const isMobile = useIsMobile();
 
   const handleSearch = async (query, game = null) => {
     setLoading(true);
     setError(null);
     setResult(null);
     setPendingCard({ name: query, game });
+    setLastSearched({ name: query, game });
 
-    // 90-second client-side failsafe so a hung fetch doesn't loop the
-    // theater forever.
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90000);
 
@@ -49,28 +53,28 @@ export default function SignalDashboard() {
     <div style={{
       maxWidth: 800,
       margin: '0 auto',
-      padding: '48px 24px 80px',
+      padding: isMobile ? '24px 16px 60px' : '32px 24px 60px',
     }}>
-      {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: 40 }}>
+      {/* Header — L4: single row, left-aligned */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: 8,
-          padding: '9px 22px 9px 16px',
+          padding: '7px 16px 7px 12px',
           borderRadius: 3,
           background: '#C44040',
-          marginBottom: 6,
+          flexShrink: 0,
         }}>
           <span style={{
-            fontSize: 26,
+            fontSize: 24,
             fontWeight: 900,
             color: '#fff',
             lineHeight: 1,
             fontFamily: "'Noto Sans JP', sans-serif",
           }}>株</span>
           <span style={{
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: 800,
             color: '#fff',
             fontFamily: "'Syne', sans-serif",
@@ -95,24 +99,77 @@ export default function SignalDashboard() {
         flexDirection: 'column',
         alignItems: 'center',
         gap: 14,
-        marginBottom: 48,
+        marginBottom: 40,
       }}>
         <SearchBar onSearch={handleSearch} loading={loading} />
         <QuickPicks onSelect={handleSearch} loading={loading} />
+        <RecentScans onSelect={handleSearch} loading={loading} />
       </div>
 
-      {/* Error */}
+      {/* Error — M5 enhanced */}
       {error && (
         <div style={{
-          borderLeft: '2px solid #C44040',
-          padding: '10px 16px',
-          color: '#C44040',
-          fontSize: 12,
-          marginBottom: 24,
-          fontFamily: "'JetBrains Mono', monospace",
+          borderLeft: '3px solid #C44040',
           background: 'rgba(196, 64, 64, 0.04)',
+          padding: '16px 20px',
+          marginBottom: 24,
+          borderRadius: '0 2px 2px 0',
         }}>
-          {error}
+          <div style={{
+            fontSize: 11,
+            fontFamily: "'Syne', sans-serif",
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            color: '#C44040',
+            textTransform: 'uppercase',
+            marginBottom: 6,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}>
+            Scan failed
+            {lastSearched?.name && (
+              <span style={{ fontWeight: 400, color: '#5A5850', textTransform: 'none', letterSpacing: 0 }}>
+                — {lastSearched.name}
+              </span>
+            )}
+          </div>
+          <div style={{
+            fontSize: 12,
+            color: '#5A5850',
+            fontFamily: "'JetBrains Mono', monospace",
+            marginBottom: 12,
+            lineHeight: 1.55,
+          }}>
+            {error}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => lastSearched && handleSearch(lastSearched.name, lastSearched.game)}
+              style={{
+                background: 'none',
+                border: '1px solid rgba(196, 64, 64, 0.4)',
+                borderRadius: 2,
+                padding: '4px 14px',
+                color: '#C44040',
+                fontSize: 11,
+                fontFamily: "'Syne', sans-serif",
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                cursor: 'pointer',
+              }}
+            >
+              Retry scan
+            </button>
+            <span style={{
+              fontSize: 10,
+              color: '#3A3830',
+              fontFamily: "'JetBrains Mono', monospace",
+              letterSpacing: '0.04em',
+            }}>
+              Check spelling · TCG card names are exact
+            </span>
+          </div>
         </div>
       )}
 
@@ -140,6 +197,8 @@ export default function SignalDashboard() {
               game={result.game}
               summary={result.summary}
               truncated={result._truncated}
+              signalCount={(result.signals || []).length}
+              onRetry={() => handleSearch(result.card_name, result.game)}
             />
           )}
 
@@ -154,12 +213,13 @@ export default function SignalDashboard() {
             />
           ))}
 
+          {/* Disclaimer — L3 */}
           <div className="fade-slide-up fade-slide-up-9" style={{
             marginTop: 40,
             paddingTop: 16,
             borderTop: '1px solid #14161A',
-            fontSize: 9,
-            color: '#2A2820',
+            fontSize: 10,
+            color: '#3A3830',
             textAlign: 'center',
             fontFamily: "'JetBrains Mono', monospace",
             letterSpacing: '0.06em',
@@ -169,19 +229,8 @@ export default function SignalDashboard() {
         </>
       )}
 
-      {/* Empty */}
-      {!result && !loading && !error && (
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{
-            fontFamily: "'Instrument Serif', serif",
-            fontSize: 16,
-            fontStyle: 'italic',
-            color: '#2A2820',
-          }}>
-            Search a card to scan for signals
-          </div>
-        </div>
-      )}
+      {/* Empty state — H1 */}
+      {!result && !loading && !error && <EmptyState />}
     </div>
   );
 }

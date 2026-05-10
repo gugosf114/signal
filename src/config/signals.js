@@ -3,6 +3,12 @@
 
 export const SIGNAL_SECTIONS = [
   {
+    id: 'japan',
+    label: '⛩ Japan Market Intelligence',
+    subtitle: 'Leading indicators from the JP market',
+    signals: ['jp_price', 'jp_hype', 'jp_release'],
+  },
+  {
     id: 'short-term',
     label: 'SHORT-TERM SIGNALS',
     subtitle: '1–30 days',
@@ -13,12 +19,6 @@ export const SIGNAL_SECTIONS = [
     label: 'STRUCTURAL SIGNALS',
     subtitle: '3–12 months',
     signals: ['competitive', 'scarcity'],
-  },
-  {
-    id: 'japan',
-    label: '⛩ Japan Market Intelligence',
-    subtitle: 'Leading indicators from the JP market',
-    signals: ['jp_price', 'jp_hype', 'jp_release'],
   },
 ];
 
@@ -112,7 +112,11 @@ export const WEIGHTS = {
 // ─── Sample Cards (Quick Picks) ──────────────────────────────────────────────
 
 export const SAMPLE_CARDS = [
-  // Pokémon
+  // Present-tense reseller targets — confirmed real sets
+  { name: 'Umbreon ex', set: 'Stellar Crown', game: 'pokemon' },
+  { name: 'Dragapult ex', set: 'Twilight Masquerade', game: 'pokemon' },
+  { name: 'Charizard ex', set: 'SV 151', game: 'pokemon' },
+  // TODO_VERIFY: set names below are unconfirmed release names
   { name: 'Mega Dragonite ex', set: 'Ascended Heroes', game: 'pokemon', year: "'26" },
   { name: 'Mega Zygarde ex', set: 'Perfect Order', game: 'pokemon', year: "'26" },
   { name: 'Mega Charizard X ex', set: 'Phantasmal Flames', game: 'pokemon', year: "'25" },
@@ -138,10 +142,10 @@ export const GAME_LABELS = {
 // ─── Score Thresholds ────────────────────────────────────────────────────────
 
 export function getScoreLabel(score) {
-  if (score >= 75) return { label: 'HOT', color: '#C44040' };
-  if (score >= 50) return { label: 'WARMING', color: '#A09060' };
-  if (score >= 30) return { label: 'LUKEWARM', color: '#608870' };
-  return { label: 'COLD', color: '#4A4840' };
+  if (score >= 75) return { label: 'SURGING', color: '#C44040' };
+  if (score >= 50) return { label: 'HEATING', color: '#A09060' };
+  if (score >= 30) return { label: 'STEADY', color: '#608870' };
+  return { label: 'DORMANT', color: '#4A4840' };
 }
 
 // ─── Weighted Score Calculator ───────────────────────────────────────────────

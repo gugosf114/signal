@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { fetchCardImage } from '../services/fetchCardImage';
 import { BrandIcon } from '../config/brandIcons';
 
@@ -204,18 +204,12 @@ export default function LoadingTheater({ cardName, game }) {
 
   return (
     <div className="lt-canvas" data-jp={phase.jp || undefined}>
-      {/* Canvas background — grid + grain + JP kanji takeover */}
       <div className="lt-bg-grid" aria-hidden />
       <div className="lt-bg-vignette" aria-hidden />
       <KanjiBackdrop visible={phase.jp} />
 
-      {/* Top chrome: pips · card · clock · markets badge */}
       <div className="lt-top">
-        {/* Pips advance monotonically — once past the linear sequence, freeze
-            at the last phase so the strip never visually rewinds when the
-            center-stage loop returns to earlier phases. */}
         <PhasePips activeIdx={rawIdx < PHASES.length ? rawIdx : PHASES.length - 1} />
-
         <div className="lt-top-row">
           <CardSlate cardName={cardName} game={game} />
           <div className="lt-top-right">
@@ -225,10 +219,8 @@ export default function LoadingTheater({ cardName, game }) {
         </div>
       </div>
 
-      {/* Three-column main stage */}
       <div className="lt-stage">
         <ScanLog phase={phase} phaseStartedAt={start + rawIdx * PHASE_MS} />
-
         <div className="lt-center">
           {phase.brands && phase.brands.length > 0 && (
             <BrandLogoStrip brands={phase.brands} />
@@ -237,11 +229,9 @@ export default function LoadingTheater({ cardName, game }) {
           <DataTrace phase={phase} elapsed={inPhase} />
           <PhaseDetail phase={phase} detailIdx={detailIdx} />
         </div>
-
         <SignalGrid activePhaseId={phase.id} accent={phase.color} />
       </div>
 
-      {/* Twin ticker rows */}
       <div className="lt-tickers">
         <div className="lt-ticker lt-ticker--en">
           <span className="lt-ticker-inner lt-ticker-inner--en">
@@ -275,7 +265,7 @@ function PhasePips({ activeIdx }) {
         );
       })}
       <div className="lt-pip-meta">
-        PHASE {String(idx + 1).padStart(2, '0')} / {String(PHASES.length).padStart(2, '0')} · <span style={{ color: active.color, opacity: 0.85 }}>{active.title}</span>
+        PHASE {String(idx + 1).padStart(2, '0')} / {String(PHASES.length).padStart(2, '0')} &middot; <span style={{ color: active.color, opacity: 0.85 }}>{active.title}</span>
       </div>
     </div>
   );
@@ -316,8 +306,6 @@ function LiveClock() {
     return () => clearInterval(id);
   }, []);
   const en = now.toLocaleTimeString('en-US', { hour12: false });
-  // Real Tokyo time — handles DST in the user's local zone correctly via the
-  // intl runtime, not a hand-rolled +16h offset.
   const jp = now.toLocaleTimeString('ja-JP', { hour12: false, timeZone: 'Asia/Tokyo' });
   return (
     <div className="lt-clock">
@@ -345,9 +333,14 @@ function MarketsBadge() {
 // ─── Center stage ────────────────────────────────────────────────────────────
 
 function SolariTitle({ text, accentColor, jp }) {
-  // Letters cycle through random glyphs before locking onto target.
-  // Stagger: each letter starts +60ms after previous, ends +60ms after that.
   const targets = useMemo(() => Array.from(text), [text]);
+  // prevTargetsRef holds the chars from the PREVIOUS text value. Because
+  // useEffect runs after render, on the first render with new targets this ref
+  // still contains the old set — so pre-cycle positions show the prior
+  // character at low opacity instead of a bare placeholder dot.
+  const prevTargetsRef = useRef([]);
+  useEffect(() => { prevTargetsRef.current = targets; }, [targets]);
+
   const [, force] = useState(0);
   useEffect(() => {
     let raf;
@@ -355,10 +348,11 @@ function SolariTitle({ text, accentColor, jp }) {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, []);
+
   const t0 = useMemo(() => Date.now(), [text]);
   const dt = Date.now() - t0;
   const FLIP_PER_LETTER = 720;
-  const STAGGER = 65;
+  const STAGGER = 38;
 
   return (
     <h2 className={`lt-solari ${jp ? 'lt-solari--jp' : ''}`} style={{ color: accentColor }}>
@@ -366,14 +360,16 @@ function SolariTitle({ text, accentColor, jp }) {
         const startAt = i * STAGGER;
         const endAt = startAt + FLIP_PER_LETTER;
         let glyph = ch;
+        let preCycle = false;
         if (dt < endAt) {
           if (dt < startAt) {
-            glyph = '·';
+            preCycle = true;
+            const prev = prevTargetsRef.current[i];
+            glyph = (prev !== undefined && prev !== ' ') ? prev : (ch !== ' ' ? ch : ' ');
           } else {
             const cycleSpeed = 50;
             const idx = Math.floor((dt - startAt) / cycleSpeed);
             glyph = ch === ' ' ? ' '
-              : ch === '/' || ch === '·' || ch === '—' ? ch
               : SOLARI_GLYPHS[(i * 7 + idx) % SOLARI_GLYPHS.length];
           }
         }
@@ -382,6 +378,7 @@ function SolariTitle({ text, accentColor, jp }) {
             key={i}
             className={`lt-solari-cell ${dt >= endAt ? 'lt-solari-cell--locked' : 'lt-solari-cell--flipping'}`}
             data-space={ch === ' ' || undefined}
+            style={preCycle ? { opacity: 0.28 } : undefined}
           >
             {glyph === ' ' ? ' ' : glyph}
           </span>
@@ -392,7 +389,6 @@ function SolariTitle({ text, accentColor, jp }) {
 }
 
 function DataTrace({ phase, elapsed }) {
-  // Different geometry per phase. Animated draw using stroke-dashoffset.
   const c = phase.color;
   const drawProgress = Math.min(1, elapsed / 2200);
   const dashLen = 1000;
@@ -408,13 +404,10 @@ function DataTrace({ phase, elapsed }) {
             <stop offset="100%" stopColor={c} stopOpacity="0" />
           </linearGradient>
         </defs>
-        {/* baseline */}
         <line x1="0" y1="40" x2="360" y2="40" stroke={c} strokeOpacity="0.12" strokeWidth="1" />
-        {/* tick marks */}
         {Array.from({ length: 12 }).map((_, i) => (
           <line key={i} x1={i * 30 + 15} y1="38" x2={i * 30 + 15} y2="42" stroke={c} strokeOpacity="0.18" strokeWidth="1" />
         ))}
-        {/* phase-specific path */}
         <path
           d={tracePath(phase.trace)}
           fill="none"
@@ -425,7 +418,6 @@ function DataTrace({ phase, elapsed }) {
           strokeDasharray={dashLen}
           strokeDashoffset={dashOffset}
         />
-        {/* leading dot */}
         <circle cx={drawProgress * 360} cy={40 + traceY(phase.trace, drawProgress)} r="3" fill={c} opacity="0.9" />
       </svg>
     </div>
@@ -435,21 +427,18 @@ function DataTrace({ phase, elapsed }) {
 function tracePath(kind) {
   switch (kind) {
     case 'sawtooth':
-      // jagged candlestick-like
       return 'M 0 60 L 30 25 L 50 55 L 80 18 L 110 48 L 140 28 L 170 58 L 200 22 L 230 50 L 260 30 L 290 55 L 320 20 L 360 40';
     case 'wave':
       return 'M 0 40 C 30 10, 60 70, 90 40 C 120 10, 150 70, 180 40 C 210 10, 240 70, 270 40 C 300 10, 330 70, 360 40';
     case 'bracket':
       return 'M 0 30 L 60 30 L 60 50 L 120 50 L 120 30 L 180 30 L 180 60 L 240 60 L 240 25 L 300 25 L 300 50 L 360 50';
     case 'kanji':
-      // strokes evoking 株 — top-left to center, vertical, horizontal, sweep
       return 'M 30 20 L 80 20 M 50 12 L 50 70 M 20 40 L 90 40 M 110 25 C 140 25, 170 25, 200 25 L 200 65 M 220 18 L 280 18 L 280 65 L 340 65';
     case 'yen':
       return 'M 20 25 L 50 50 L 80 25 M 50 50 L 50 70 M 20 55 L 80 55 M 20 65 L 80 65 M 110 40 L 360 40';
     case 'columns':
       return 'M 0 65 L 30 65 L 30 18 L 60 18 L 60 65 L 100 65 L 100 30 L 130 30 L 130 65 L 170 65 L 170 22 L 200 22 L 200 65 L 240 65 L 240 35 L 270 35 L 270 65 L 310 65 L 310 25 L 340 25 L 340 65 L 360 65';
     case 'matrix':
-      // converging lines
       return 'M 0 70 Q 90 70, 180 40 T 360 40 M 0 10 Q 90 10, 180 40 T 360 40';
     default:
       return 'M 0 40 L 360 40';
@@ -457,7 +446,6 @@ function tracePath(kind) {
 }
 
 function traceY(kind, t) {
-  // approx vertical offset of leading dot (delta from baseline 40)
   switch (kind) {
     case 'sawtooth': return Math.sin(t * 18) * 18;
     case 'wave': return Math.sin(t * 8 * Math.PI) * 22;
@@ -475,7 +463,7 @@ function PhaseDetail({ phase, detailIdx }) {
       key={phase.id + ':' + detailIdx}
       className={`lt-detail ${phase.jp ? 'lt-detail--jp' : ''}`}
     >
-      <span className="lt-detail-marker">{phase.jp ? '〉' : '>'}</span>
+      <span className="lt-detail-marker">{phase.jp ? '》' : '>'}</span>
       <span className="lt-detail-text">{detail}</span>
       <span className="lt-detail-cursor">_</span>
     </div>
@@ -491,7 +479,6 @@ function ScanLog({ phase, phaseStartedAt }) {
     return () => clearInterval(id);
   }, []);
 
-  // Reveal log lines progressively over the phase
   const elapsed = tickNow - phaseStartedAt;
   const visibleCount = Math.min(phase.log.length, Math.floor(elapsed / 1000) + 1);
   const visible = phase.log.slice(0, visibleCount);
@@ -559,7 +546,6 @@ function SignalGrid({ activePhaseId, accent }) {
 }
 
 // ─── Brand logo strip ────────────────────────────────────────────────────────
-// Row of platform/brand logos shown above the Solari title — "we're scanning these"
 
 function BrandLogoStrip({ brands }) {
   return (

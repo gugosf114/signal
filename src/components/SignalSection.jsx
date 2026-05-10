@@ -1,8 +1,15 @@
 import React from 'react';
 import SignalCard from './SignalCard';
 
+const SECTION_ACCENTS = {
+  japan: '#C44040',
+  'short-term': '#A09060',
+  structural: '#7E7894',
+};
+
 export default function SignalSection({ section, signals, baseDelay = 0 }) {
   const isJapan = section.id === 'japan';
+  const accentColor = SECTION_ACCENTS[section.id] || '#6B6860';
   const sectionSignals = section.signals
     .map((key) => signals.find((s) => s.key === key))
     .filter(Boolean);
@@ -21,36 +28,57 @@ export default function SignalSection({ section, signals, baseDelay = 0 }) {
         borderBottom: '1px solid rgba(196, 64, 64, 0.08)',
       } : {}),
     }}>
-      {/* Section header — editorial, serif for JP */}
+      {/* Section header */}
       <div style={{
         display: 'flex',
-        alignItems: 'baseline',
-        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: 10,
         paddingTop: isJapan ? 20 : 0,
         marginBottom: 16,
       }}>
-        <h2 style={{
-          fontFamily: isJapan ? "'Instrument Serif', serif" : "'Syne', sans-serif",
-          fontSize: isJapan ? 18 : 10,
-          fontWeight: isJapan ? 400 : 700,
-          fontStyle: isJapan ? 'italic' : 'normal',
-          letterSpacing: isJapan ? '0.01em' : '0.16em',
-          textTransform: isJapan ? 'none' : 'uppercase',
-          color: isJapan ? '#C44040' : '#3A3830',
-          lineHeight: 1,
+        {/* 2px colored lead-in bar */}
+        <div style={{
+          width: 2,
+          height: 24,
+          borderRadius: 1,
+          flexShrink: 0,
+          marginTop: isJapan ? 2 : 1,
+          background: accentColor,
+        }} />
+
+        {/* Label + subtitle */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 4,
         }}>
-          {section.label}
-        </h2>
-        <span style={{
-          fontSize: 9,
-          color: '#2A2820',
-          fontFamily: "'JetBrains Mono', monospace",
-        }}>
-          {section.subtitle}
-        </span>
+          <h2 style={{
+            fontFamily: isJapan ? "'Instrument Serif', serif" : "'Syne', sans-serif",
+            fontSize: isJapan ? 18 : 12,
+            fontWeight: isJapan ? 400 : 700,
+            fontStyle: isJapan ? 'italic' : 'normal',
+            letterSpacing: isJapan ? '0.01em' : '0.16em',
+            textTransform: isJapan ? 'none' : 'uppercase',
+            color: isJapan ? '#C44040' : '#8A8678',
+            opacity: isJapan ? 1 : 0.85,
+            lineHeight: 1,
+          }}>
+            {section.label}
+          </h2>
+          <span style={{
+            fontSize: 9,
+            color: '#2A2820',
+            fontFamily: "'JetBrains Mono', monospace",
+          }}>
+            {section.id === 'short-term' ? '⏱ ' : ''}{section.subtitle}
+          </span>
+        </div>
       </div>
 
-      {/* Signal grid — 2 columns for density, single for JP */}
+      {/* Signal grid */}
       <div style={{
         display: 'grid',
         gridTemplateColumns:

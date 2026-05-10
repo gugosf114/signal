@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import HeatBar from './HeatBar';
 import SourceCitation from './SourceCitation';
 import { SIGNAL_TYPES } from '../config/signals';
+import { extractYouTubeId } from '../config/brandIcons';
 
-// Minimal SVG marks — geometric, not emoji, not clipart
 const MARKS = {
   creator: (c) => (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -72,59 +72,66 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
     ? signal.detail.substring(0, 72) + (signal.detail.length > 72 ? '…' : '')
     : meta.description;
 
+  const toggle = () => setExpanded(e => !e);
+
+  // Separate YouTube from other sources for M2 2-up grid
+  const sources = Array.isArray(signal.sources) ? signal.sources : [];
+  const ytSources = sources.filter(s => extractYouTubeId(s.url));
+  const otherSources = sources.filter(s => !extractYouTubeId(s.url));
+
   return (
     <div
-      className={`fade-slide-up fade-slide-up-${animDelay}`}
+      className={`fade-slide-up fade-slide-up-${animDelay} signal-card-row`}
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
       style={{
         padding: '14px 0',
         borderBottom: `1px solid ${isJapan ? 'rgba(196,64,64,0.06)' : '#14161A'}`,
         cursor: 'pointer',
         transition: 'background 0.12s',
+        '--signal-color': meta.color,
       }}
-      onClick={() => setExpanded(!expanded)}
+      onClick={toggle}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } }}
       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.012)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
     >
-      {/* Row: mark + label + level + chevron */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-      }}>
-        {/* SVG mark */}
+      {/* Row: mark + label + heatbar + chevron */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flexShrink: 0, width: 16, display: 'flex', alignItems: 'center' }}>
           {markFn ? markFn(meta.color) : null}
         </div>
 
-        {/* Label — Syne, uppercase for EN signals, serif-italic for JP */}
-        <span style={{
-          fontFamily: isJapan ? "'Instrument Serif', serif" : "'Syne', sans-serif",
-          fontSize: isJapan ? 14 : 12,
-          fontWeight: isJapan ? 400 : (isHot ? 700 : 500),
-          fontStyle: isJapan ? 'italic' : 'normal',
-          letterSpacing: isJapan ? '0.01em' : '0.04em',
-          color: isHot ? meta.color : '#6B6860',
-          flex: 1,
-          minWidth: 0,
-        }}>
+        <span
+          className="signal-card-label"
+          style={{
+            fontFamily: isJapan ? "'Instrument Serif', serif" : "'Syne', sans-serif",
+            fontSize: isJapan ? 14 : 12,
+            fontWeight: isJapan ? 400 : (isHot ? 700 : 500),
+            fontStyle: isJapan ? 'italic' : 'normal',
+            letterSpacing: isJapan ? '0.01em' : '0.04em',
+            color: isHot ? meta.color : '#6B6860',
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
           {meta.label}
         </span>
 
-        {/* Level */}
         <HeatBar level={signal.level} color={meta.color} />
 
-        {/* Chevron */}
         <span style={{
-          fontSize: 8,
-          color: '#2A2820',
+          fontSize: 11,
+          color: '#5A5850',
           transform: expanded ? 'rotate(90deg)' : 'none',
           transition: 'transform 0.15s',
           fontFamily: "'JetBrains Mono'",
           flexShrink: 0,
-        }}>▸</span>
+        }}>&#9658;</span>
       </div>
 
-      {/* Preview text */}
+      {/* Preview */}
       {!expanded && (
         <div style={{
           fontSize: 11,
@@ -149,20 +156,18 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
               paddingLeft: 14,
               borderLeft: `1px solid ${isJapan ? 'rgba(196,64,64,0.12)' : '#1A1D24'}`,
             }}>
-              {/* Synthesis line */}
               <div style={{
                 fontSize: 13,
                 color: '#5A5850',
                 lineHeight: 1.7,
                 fontFamily: "'Syne', sans-serif",
                 fontWeight: 400,
-                marginBottom: signal.sources?.length ? 14 : 0,
+                marginBottom: sources.length ? 14 : 0,
               }}>
                 {signal.detail || meta.description}
               </div>
 
-              {/* Sources block */}
-              {Array.isArray(signal.sources) && signal.sources.length > 0 && (
+              {sources.length > 0 && (
                 <div style={{
                   marginTop: 6,
                   paddingTop: 12,
@@ -177,16 +182,30 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
                     color: '#3A3830',
                     marginBottom: 6,
                   }}>
-                    Sources · {signal.sources.length}
+                    Sources · {sources.length}
                   </div>
-                  {signal.sources.map((src, idx) => (
-                    <SourceCitation key={idx} source={src} />
+
+                  {/* YouTube citations — 2-up grid on desktop when ≥2 */}
+                  {ytSources.length >= 2 ? (
+                    <div className="yt-sources-grid">
+                      {ytSources.map((src, idx) => (
+                        <SourceCitation key={idx} source={src} />
+                      ))}
+                    </div>
+                  ) : (
+                    ytSources.map((src, idx) => (
+                      <SourceCitation key={idx} source={src} />
+                    ))
+                  )}
+
+                  {/* Non-YouTube citations — always single column */}
+                  {otherSources.map((src, idx) => (
+                    <SourceCitation key={'o' + idx} source={src} />
                   ))}
                 </div>
               )}
 
-              {/* Empty state — sources missing or all hallucinated */}
-              {Array.isArray(signal.sources) && signal.sources.length === 0 && (
+              {sources.length === 0 && (
                 <div style={{
                   marginTop: 8,
                   paddingTop: 10,

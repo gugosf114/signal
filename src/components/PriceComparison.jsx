@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrandIcon } from '../config/brandIcons';
-
-// Dense horizontal data feed — think stock ticker, not card grid.
+import { useIsMobile } from '../hooks/useIsMobile';
 
 function trendMeta(trend) {
   if (!trend) return { sym: '—', color: '#3A3830' };
@@ -21,7 +20,7 @@ function alignMeta(val) {
   return { color: '#A09060', sym: '~' };
 }
 
-const label = {
+const labelStyle = {
   fontSize: 8,
   fontWeight: 700,
   letterSpacing: '0.16em',
@@ -30,30 +29,45 @@ const label = {
   marginBottom: 4,
 };
 
-const val = {
+const valStyle = {
   fontFamily: "'JetBrains Mono', monospace",
   fontWeight: 600,
   lineHeight: 1.2,
 };
 
 export default function PriceComparison({ data }) {
+  const isMobile = useIsMobile();
   if (!data) return null;
 
   const trend = trendMeta(data.trend_30d);
   const align = alignMeta(data.signal_vs_market);
 
+  // Mobile: 6-column grid. Row 1: EN (cols 1-3) + JP (cols 4-6).
+  // Row 2: ARBITRAGE (1-3) + 30-DAY TREND (3-5) + ALIGNMENT (5-7).
+  const outerStyle = isMobile ? {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(6, 1fr)',
+    borderTop: '1px solid #1A1D24',
+    borderBottom: '1px solid #1A1D24',
+    marginBottom: 40,
+    background: '#0B0D10',
+  } : {
+    display: 'flex',
+    borderTop: '1px solid #1A1D24',
+    borderBottom: '1px solid #1A1D24',
+    marginBottom: 40,
+    background: '#0B0D10',
+  };
+
   return (
-    <div className="fade-slide-up" style={{
-      display: 'flex',
-      borderTop: '1px solid #1A1D24',
-      borderBottom: '1px solid #1A1D24',
-      marginBottom: 40,
-      background: '#0B0D10',
-    }}>
+    <div className="fade-slide-up" style={outerStyle}>
       {/* EN */}
-      <div style={{ flex: '1.2', padding: '14px 16px' }}>
-        <div style={{ ...label, color: '#4A4840' }}>EN Price</div>
-        <div style={{ ...val, fontSize: 16, color: '#E8E4DC' }}>
+      <div style={{
+        ...(isMobile ? { gridColumn: '1 / 4', borderRight: '1px solid #1A1D24' } : { flex: '1.2' }),
+        padding: isMobile ? '12px 14px' : '14px 16px',
+      }}>
+        <div style={{ ...labelStyle, color: '#4A4840' }}>EN Price</div>
+        <div style={{ ...valStyle, fontSize: 16, color: '#E8E4DC' }}>
           {data.en_price || '—'}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
@@ -65,15 +79,19 @@ export default function PriceComparison({ data }) {
         </div>
       </div>
 
-      <div style={{ width: 1, background: '#1A1D24' }} />
+      {!isMobile && <div style={{ width: 1, background: '#1A1D24' }} />}
 
       {/* JP */}
-      <div style={{ flex: '1.2', padding: '14px 16px', background: 'rgba(196, 64, 64, 0.03)' }}>
-        <div style={{ ...label, color: '#8A4040', display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div style={{
+        ...(isMobile ? { gridColumn: '4 / 7' } : { flex: '1.2' }),
+        padding: isMobile ? '12px 14px' : '14px 16px',
+        background: 'rgba(196, 64, 64, 0.03)',
+      }}>
+        <div style={{ ...labelStyle, color: '#8A4040', display: 'flex', alignItems: 'center', gap: 4 }}>
           <span style={{ fontFamily: "'JetBrains Mono'", fontSize: 10, opacity: 0.6 }}>¥</span>
           JP Price
         </div>
-        <div style={{ ...val, fontSize: 16, color: '#C44040' }}>
+        <div style={{ ...valStyle, fontSize: 16, color: '#C44040' }}>
           {data.jp_price || '—'}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
@@ -85,14 +103,17 @@ export default function PriceComparison({ data }) {
         </div>
       </div>
 
-      <div style={{ width: 1, background: '#1A1D24' }} />
+      {!isMobile && <div style={{ width: 1, background: '#1A1D24' }} />}
 
-      {/* Gap */}
-      <div style={{ flex: '1.5', padding: '14px 16px' }}>
-        <div style={{ ...label, color: '#4A4840' }}>JP↔EN Gap</div>
+      {/* ARBITRAGE (was JP↔EN Gap) */}
+      <div style={{
+        ...(isMobile ? { gridColumn: '1 / 3', borderTop: '1px solid #1A1D24', borderRight: '1px solid #1A1D24' } : { flex: '1.5' }),
+        padding: isMobile ? '10px 10px' : '14px 16px',
+      }}>
+        <div style={{ ...labelStyle, color: '#4A4840' }}>Arbitrage</div>
         <div style={{
-          ...val,
-          fontSize: 12,
+          ...valStyle,
+          fontSize: isMobile ? 11 : 12,
           color: '#6B6860',
           lineHeight: 1.5,
         }}>
@@ -100,15 +121,18 @@ export default function PriceComparison({ data }) {
         </div>
       </div>
 
-      <div style={{ width: 1, background: '#1A1D24' }} />
+      {!isMobile && <div style={{ width: 1, background: '#1A1D24' }} />}
 
-      {/* 30D */}
-      <div style={{ flex: '0.8', padding: '14px 16px' }}>
-        <div style={{ ...label, color: '#4A4840' }}>30D</div>
+      {/* 30-DAY TREND (was 30D) */}
+      <div style={{
+        ...(isMobile ? { gridColumn: '3 / 5', borderTop: '1px solid #1A1D24', borderRight: '1px solid #1A1D24' } : { flex: '0.8' }),
+        padding: isMobile ? '10px 10px' : '14px 16px',
+      }}>
+        <div style={{ ...labelStyle, color: '#4A4840' }}>30-Day Trend</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span
             className={trend.sym === '▲' ? 'trend-bounce-up' : trend.sym === '▼' ? 'trend-bounce-down' : ''}
-            style={{ ...val, fontSize: 14, color: trend.color }}
+            style={{ ...valStyle, fontSize: 14, color: trend.color }}
           >
             {trend.sym}
           </span>
@@ -118,12 +142,15 @@ export default function PriceComparison({ data }) {
         </div>
       </div>
 
-      <div style={{ width: 1, background: '#1A1D24' }} />
+      {!isMobile && <div style={{ width: 1, background: '#1A1D24' }} />}
 
-      {/* Sig vs Mkt */}
-      <div style={{ flex: '0.8', padding: '14px 16px' }}>
-        <div style={{ ...label, color: '#4A4840' }}>Sig·Mkt</div>
-        <span style={{ ...val, fontSize: 14, color: align.color }}>{align.sym}</span>
+      {/* ALIGNMENT (was Sig·Mkt) */}
+      <div style={{
+        ...(isMobile ? { gridColumn: '5 / 7', borderTop: '1px solid #1A1D24' } : { flex: '0.8' }),
+        padding: isMobile ? '10px 10px' : '14px 16px',
+      }}>
+        <div style={{ ...labelStyle, color: '#4A4840' }}>Alignment</div>
+        <span style={{ ...valStyle, fontSize: 14, color: align.color }}>{align.sym}</span>
         <div style={{ fontSize: 9, color: align.color, marginTop: 2, fontFamily: "'JetBrains Mono', monospace", opacity: 0.7 }}>
           {data.signal_vs_market || '—'}
         </div>
