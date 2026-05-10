@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import HeatBar from './HeatBar';
 import SourceCitation from './SourceCitation';
 import { SIGNAL_TYPES } from '../config/signals';
@@ -62,6 +62,8 @@ const MARKS = {
 
 export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
   const [expanded, setExpanded] = useState(false);
+  const [activeSourceIdx, setActiveSourceIdx] = useState(0);
+  const sourceRefs = useRef([]);
   const meta = SIGNAL_TYPES[signal.key];
   if (!meta) return null;
 
@@ -74,10 +76,19 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
 
   const toggle = () => setExpanded(e => !e);
 
-  // Separate YouTube from other sources for M2 2-up grid
+  useEffect(() => {
+    if (!expanded) setActiveSourceIdx(0);
+  }, [expanded]);
+
   const sources = Array.isArray(signal.sources) ? signal.sources : [];
   const ytSources = sources.filter(s => extractYouTubeId(s.url));
   const otherSources = sources.filter(s => !extractYouTubeId(s.url));
+
+  const navigateToSource = (idx) => {
+    setActiveSourceIdx(idx);
+    const el = sourceRefs.current[idx];
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
 
   return (
     <div
@@ -174,35 +185,105 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
                   paddingTop: 12,
                   borderTop: '1px solid rgba(26, 29, 36, 0.6)',
                 }}>
+                  {/* Source navigation dots — one per source, click to jump */}
                   <div style={{
-                    fontSize: 8,
-                    fontWeight: 700,
-                    letterSpacing: '0.18em',
-                    fontFamily: "'Syne', sans-serif",
-                    textTransform: 'uppercase',
-                    color: '#3A3830',
-                    marginBottom: 6,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    marginBottom: 10,
                   }}>
-                    Sources · {sources.length}
+                    <span style={{
+                      fontSize: 8,
+                      fontFamily: "'Syne', sans-serif",
+                      fontWeight: 700,
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      color: '#3A3830',
+                    }}>
+                      Sources
+                    </span>
+                    <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                      {sources.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={(e) => { e.stopPropagation(); navigateToSource(idx); }}
+                          title={`Source ${idx + 1} of ${sources.length}`}
+                          style={{
+                            width: 9,
+                            height: 9,
+                            borderRadius: '50%',
+                            background: idx === activeSourceIdx ? meta.color : 'transparent',
+                            border: `1.5px solid ${idx === activeSourceIdx ? meta.color : '#3A3830'}`,
+                            cursor: 'pointer',
+                            padding: 0,
+                            flexShrink: 0,
+                            transition: 'background 0.15s, border-color 0.15s',
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <span style={{
+                      fontSize: 9,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      color: '#3A3830',
+                    }}>
+                      {activeSourceIdx + 1}/{sources.length}
+                    </span>
                   </div>
 
                   {/* YouTube citations — 2-up grid on desktop when ≥2 */}
                   {ytSources.length >= 2 ? (
                     <div className="yt-sources-grid">
-                      {ytSources.map((src, idx) => (
-                        <SourceCitation key={idx} source={src} />
-                      ))}
+                      {ytSources.map((src, idx) => {
+                        const globalIdx = idx;
+                        return (
+                          <div
+                            key={idx}
+                            ref={el => { sourceRefs.current[globalIdx] = el; }}
+                            style={{
+                              borderLeft: `2px solid ${globalIdx === activeSourceIdx ? meta.color : 'transparent'}`,
+                              paddingLeft: globalIdx === activeSourceIdx ? 6 : 0,
+                              transition: 'border-color 0.2s, padding-left 0.2s',
+                            }}
+                          >
+                            <SourceCitation source={src} />
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     ytSources.map((src, idx) => (
-                      <SourceCitation key={idx} source={src} />
+                      <div
+                        key={idx}
+                        ref={el => { sourceRefs.current[idx] = el; }}
+                        style={{
+                          borderLeft: `2px solid ${idx === activeSourceIdx ? meta.color : 'transparent'}`,
+                          paddingLeft: idx === activeSourceIdx ? 6 : 0,
+                          transition: 'border-color 0.2s, padding-left 0.2s',
+                        }}
+                      >
+                        <SourceCitation source={src} />
+                      </div>
                     ))
                   )}
 
-                  {/* Non-YouTube citations — always single column */}
-                  {otherSources.map((src, idx) => (
-                    <SourceCitation key={'o' + idx} source={src} />
-                  ))}
+                  {/* Non-YouTube citations */}
+                  {otherSources.map((src, idx) => {
+                    const globalIdx = ytSources.length + idx;
+                    return (
+                      <div
+                        key={'o' + idx}
+                        ref={el => { sourceRefs.current[globalIdx] = el; }}
+                        style={{
+                          borderLeft: `2px solid ${globalIdx === activeSourceIdx ? meta.color : 'transparent'}`,
+                          paddingLeft: globalIdx === activeSourceIdx ? 6 : 0,
+                          transition: 'border-color 0.2s, padding-left 0.2s',
+                        }}
+                      >
+                        <SourceCitation source={src} />
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

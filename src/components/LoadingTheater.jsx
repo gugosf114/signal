@@ -184,6 +184,7 @@ const TICKER_JP = '¥ メルカリ ⛩ ヤフオク 株 ポケビーチ ¥ 価�
 export default function LoadingTheater({ cardName, game }) {
   const [start] = useState(() => Date.now());
   const [now, setNow] = useState(Date.now());
+  const [cardImageUrl, setCardImageUrl] = useState(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), TICK_MS);
@@ -212,7 +213,7 @@ export default function LoadingTheater({ cardName, game }) {
       <div className="lt-top">
         <PhasePips activeIdx={rawIdx < PHASES.length ? rawIdx : PHASES.length - 1} />
         <div className="lt-top-row">
-          <CardSlate cardName={cardName} game={game} />
+          <CardSlate cardName={cardName} game={game} onImageLoad={setCardImageUrl} />
           <div className="lt-top-right">
             <LiveClock />
             <MarketsBadge />
@@ -223,6 +224,36 @@ export default function LoadingTheater({ cardName, game }) {
       <div className="lt-stage">
         <ScanLog phase={phase} phaseStartedAt={start + rawIdx * PHASE_MS} />
         <div className="lt-center">
+          {/* Card art — large, dominant. Shows once image loads. */}
+          {cardImageUrl && (
+            <div style={{
+              position: 'relative',
+              height: 160,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 4,
+            }}>
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                background: `radial-gradient(ellipse at center, ${phase.color}18 0%, transparent 70%)`,
+                pointerEvents: 'none',
+              }} />
+              <img
+                src={cardImageUrl}
+                alt=""
+                style={{
+                  height: 160,
+                  width: 'auto',
+                  borderRadius: 6,
+                  boxShadow: `0 8px 32px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.04)`,
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+              />
+            </div>
+          )}
           {phase.brands && phase.brands.length > 0 && (
             <BrandLogoStrip brands={phase.brands} />
           )}
@@ -272,13 +303,16 @@ function PhasePips({ activeIdx }) {
   );
 }
 
-function CardSlate({ cardName, game }) {
+function CardSlate({ cardName, game, onImageLoad }) {
   const [imgUrl, setImgUrl] = useState(null);
   useEffect(() => {
     let cancelled = false;
     if (!cardName) return;
     fetchCardImage(cardName, game).then((url) => {
-      if (!cancelled && url) setImgUrl(url);
+      if (!cancelled && url) {
+        setImgUrl(url);
+        onImageLoad?.(url);
+      }
     });
     return () => { cancelled = true; };
   }, [cardName, game]);
