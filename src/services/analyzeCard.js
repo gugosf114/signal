@@ -6,6 +6,7 @@
 // the actual web_search tool results — Claude cannot hallucinate sources.
 
 import { creatorListForPrompt } from '../config/creators';
+import { fetchCardData, buildCardDataBlock } from './fetchCardData';
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-20250514';
@@ -20,8 +21,9 @@ function buildSystemPrompt(game) {
   return `You are a trading card market analyst. Given a card name and game (pokemon/yugioh/mtg), search BOTH English AND Japanese sources to gather intelligence signals.
 
 Search strategy:
-- EN: TCGPlayer, eBay sold listings, Reddit (r/PokemonTCG, r/yugioh, r/mtgfinance), YouTube channels, tournaments (Limitless), editorials (PokeBeach, TCGFish, MTGGoldfish)
-- JP: Mercari JP, Yahoo Auctions JP, Rakuten, Japanese Twitter/X, Japanese YouTube, JP set release calendars
+- If the user message contains a PRE-FETCHED MARKET DATA block, treat those EN prices as accurate and authoritative — do NOT re-search for EN prices. Use your search budget on JP prices, creators, tournaments, and community signals only.
+- EN (only if no pre-fetched data): TCGPlayer, eBay sold listings, Reddit, YouTube, tournaments (Limitless), editorials (PokeBeach, TCGFish, MTGGoldfish)
+- JP (always search): Mercari JP, Yahoo Auctions JP, Rakuten, Japanese Twitter/X, Japanese YouTube, JP set release calendars
 - Use the card's Japanese name for JP queries when possible
 
 Output strict JSON only — no markdown, no code fences, no prose before or after.
@@ -100,9 +102,37 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     );
   }
 
-  const userMessage = game
+  // Pre-fetch structured card data from free TCG APIs (no cost, ~200ms).
+  // When successful, the LLM skips searching for EN prices and uses its
+  // search budget purely on soft signals: JP prices, creators, tournaments.
+  const cardData = await fetchCardData(cardName, game).catch(() => null);
+  const dataBlock = buildCardDataBlock(cardData);
+  const hasPreFetch = !!dataBlock;
+
+  const baseMessage = game
     ? `Analyze the ${game} card: "${cardName}". Search both English and Japanese markets.`
     : `Analyze the trading card: "${cardName}". Determine which game it's from (Pokemon, Yu-Gi-Oh, or MTG), then search both English and Japanese markets.`;
+
+  const userMessage = hasPreFetch
+    ? [
+        baseMessage,
+        '',
+        dataBlock,
+        '',
+        'Your web searches should focus ONLY on what is NOT in the pre-fetched data above:',
+        '1. JP prices — Mercari JP and Yahoo Auctions current prices in ¥',
+        '2. Creator coverage — YouTube channels from the curated directory (check 3-4 channels)',
+        '3. Tournament data — Limitless usage rates, ban list status',
+        '4. Community sentiment — Reddit and Twitter/X recent activity',
+        '5. JP community hype — Japanese Twitter/X, JP YouTube',
+        '',
+        'Use the pre-fetched EN price data to score price-related signals without re-searching.',
+      ].join('\n')
+    : baseMessage;
+
+  // With pre-fetched data: 5 searches cover the remaining soft signals (~$0.30-0.45/scan).
+  // Without (fallback): 8 searches for full coverage (~$0.70-0.90/scan).
+  const maxSearches = hasPreFetch ? 5 : 8;
 
   const response = await fetch(API_URL, {
     method: 'POST',
@@ -116,8 +146,6 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 16000,
-      // Cache the system prompt — saves ~$0.06/scan on the 1,500-token prompt
-      // that would otherwise be re-billed on every cascading tool step.
       system: [
         {
           type: 'text',
@@ -129,10 +157,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
         {
           type: 'web_search_20250305',
           name: 'web_search',
-          // 8 searches: ~$0.70-0.90/scan total. Was 10 (orig) then 16 (broke cost).
-          // Cascade math: each search adds ~3k tokens re-sent on every step.
-          // 8 searches → ~200k cumulative input tokens vs 400k at 16.
-          max_uses: 8,
+          max_uses: maxSearches,
         },
       ],
       messages: [{ role: 'user', content: userMessage }],
