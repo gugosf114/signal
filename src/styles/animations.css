@@ -247,9 +247,9 @@
   min-width: 0;
 }
 .lt-cardslate-thumb {
-  width: 38px;
-  height: 52px;
-  border-radius: 2px;
+  width: 58px;
+  height: 80px;
+  border-radius: 3px;
   background: #0A0C10;
   border: 1px solid #1A1D24;
   overflow: hidden;

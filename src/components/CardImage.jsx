@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCardImage } from '../services/fetchCardImage';
 
-export default function CardImage({ cardName, game, size = 200, glowColor = '#C44040' }) {
+export default function CardImage({ cardName, game, size = 200, glowColor = '#C44040', onLoad, onClick }) {
   const [imageUrl, setImageUrl] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -14,7 +14,7 @@ export default function CardImage({ cardName, game, size = 200, glowColor = '#C4
     setImageUrl(null);
     fetchCardImage(cardName, game).then((url) => {
       if (cancelled) return;
-      if (url) setImageUrl(url);
+      if (url) { setImageUrl(url); onLoad?.(url); }
       else setError(true);
     });
     return () => { cancelled = true; };
@@ -49,7 +49,12 @@ export default function CardImage({ cardName, game, size = 200, glowColor = '#C4
   }
 
   return (
-    <div className="card-image-reveal" style={{ position: 'relative', flexShrink: 0 }}>
+    <div
+      className="card-image-reveal"
+      style={{ position: 'relative', flexShrink: 0, cursor: onClick ? 'zoom-in' : 'default' }}
+      onClick={onClick}
+      title={onClick ? 'Click to expand' : undefined}
+    >
       <div style={{
         position: 'absolute',
         inset: -2,

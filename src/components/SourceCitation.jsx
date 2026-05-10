@@ -257,11 +257,15 @@ export default function SourceCitation({ source }) {
           )}
           {source.audience && (
             <span style={{
-              fontSize: 10,
-              color: '#5A5850',
+              fontSize: 11,
+              color: '#8A8678',
               fontFamily: "'JetBrains Mono', monospace",
-              fontWeight: 600,
+              fontWeight: 700,
               letterSpacing: '0.02em',
+              background: 'rgba(138,134,120,0.08)',
+              border: '1px solid rgba(138,134,120,0.2)',
+              borderRadius: 2,
+              padding: '1px 6px',
             }}>
               {source.audience}
             </span>

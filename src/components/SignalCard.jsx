@@ -81,6 +81,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
 
   return (
     <div
+      id={`signal-${signal.key}`}
       className={`fade-slide-up fade-slide-up-${animDelay} signal-card-row`}
       role="button"
       tabIndex={0}

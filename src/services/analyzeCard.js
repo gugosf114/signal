@@ -70,13 +70,13 @@ RULES:
 - Every "level" is an integer 1-5 (1=minimal, 5=extreme).
 - Every "url" MUST be a URL you actually visited via web_search. NEVER invent URLs.
 - If a signal has no real sources, set "sources": [] and score the level based on what you DID find. Empty is better than fake.
-- Aim for 2-4 sources per signal where possible. Don't pad with weak sources.
+- Aim for 4-7 sources per signal where evidence exists. Don't pad with weak sources.
 - Keep "detail" to ONE sentence. Keep "summary" fields to 1-2 sentences. Be terse — the JSON has a hard size limit.
 
 CREATOR COVERAGE — CRITICAL:
 ${creatorBlocks}
 
-For "creator" signal: you MUST attempt to find recent (≤90 day) coverage from EACH of the curated EN creators above. Hits go in sources[]. Explicit silences (creator checked, no recent coverage) ALSO matter — surface those in the "detail" field as "no recent coverage from [Creator A], [Creator B]". Aim for 5+ creator citations across the "creator" signal.
+For "creator" signal: you MUST attempt to find recent (≤90 day) coverage from EACH of the curated EN creators above. Hits go in sources[]. Explicit silences (creator checked, no recent coverage) ALSO matter — surface those in the "detail" field as "no recent coverage from [Creator A], [Creator B]". Aim for 5-8 creator citations. For every YouTube source include: subscriber count in audience field (e.g. "1.6M subs"), and video view count when visible (e.g. "284k views"). These stats are what users need to gauge signal strength.
 
 For "jp_hype" signal: cover the JP creators list when game has one.
 
@@ -123,7 +123,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
           name: 'web_search',
           // Leave headroom for final JSON synthesis after searches.
           // Too high = model exhausts budget on tool calls and never emits text.
-          max_uses: 10,
+          max_uses: 16,
         },
       ],
       messages: [{ role: 'user', content: userMessage }],

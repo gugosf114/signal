@@ -5,6 +5,7 @@ import RecentScans from './RecentScans';
 import PriceComparison from './PriceComparison';
 import OverallScore from './OverallScore';
 import SignalSection from './SignalSection';
+import SignalNav from './SignalNav';
 import LoadingTheater from './LoadingTheater';
 import EmptyState from './EmptyState';
 import { SIGNAL_SECTIONS, calculateOverallScore } from '../config/signals';
@@ -55,26 +56,26 @@ export default function SignalDashboard() {
       margin: '0 auto',
       padding: isMobile ? '24px 16px 60px' : '32px 24px 60px',
     }}>
-      {/* Header — L4: single row, left-aligned */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
+      {/* Header — stacked center */}
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: 8,
-          padding: '7px 16px 7px 12px',
+          padding: '9px 22px 9px 16px',
           borderRadius: 3,
           background: '#C44040',
-          flexShrink: 0,
+          marginBottom: 6,
         }}>
           <span style={{
-            fontSize: 24,
+            fontSize: 26,
             fontWeight: 900,
             color: '#fff',
             lineHeight: 1,
             fontFamily: "'Noto Sans JP', sans-serif",
           }}>株</span>
           <span style={{
-            fontSize: 20,
+            fontSize: 22,
             fontWeight: 800,
             color: '#fff',
             fontFamily: "'Syne', sans-serif",
@@ -106,7 +107,7 @@ export default function SignalDashboard() {
         <RecentScans onSelect={handleSearch} loading={loading} />
       </div>
 
-      {/* Error — M5 enhanced */}
+      {/* Error */}
       {error && (
         <div style={{
           borderLeft: '3px solid #C44040',
@@ -199,10 +200,23 @@ export default function SignalDashboard() {
               truncated={result._truncated}
               signalCount={(result.signals || []).length}
               onRetry={() => handleSearch(result.card_name, result.game)}
+              signals={result.signals || []}
+              enPrice={result.prices?.en_price}
+              jpPrice={result.prices?.jp_price}
+              trend={result.prices?.trend_30d}
             />
           )}
 
-          <PriceComparison data={result.prices} />
+          <PriceComparison
+            data={{
+              ...result.prices,
+              trend_30d: result.prices?.trend_30d,
+              signal_vs_market: result.prices?.signal_vs_market,
+            }}
+          />
+
+          {/* Signal navigation — jump to any section */}
+          <SignalNav signals={result.signals || []} />
 
           {SIGNAL_SECTIONS.map((section, sIdx) => (
             <SignalSection
@@ -213,7 +227,6 @@ export default function SignalDashboard() {
             />
           ))}
 
-          {/* Disclaimer — L3 */}
           <div className="fade-slide-up fade-slide-up-9" style={{
             marginTop: 40,
             paddingTop: 16,
@@ -229,7 +242,6 @@ export default function SignalDashboard() {
         </>
       )}
 
-      {/* Empty state — H1 */}
       {!result && !loading && !error && <EmptyState />}
     </div>
   );

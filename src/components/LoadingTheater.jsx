@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { fetchCardImage } from '../services/fetchCardImage';
 import { BrandIcon } from '../config/brandIcons';
+import { SIGNAL_TYPES } from '../config/signals';
 
 // ─── Loading Theater ─────────────────────────────────────────────────────────
 // Tokyo desk at 3am. Solari flip-board × Bloomberg INFO panel × CRT terminal.
@@ -534,6 +535,7 @@ function SignalGrid({ activePhaseId, accent }) {
               key={s.key}
               className={`lt-grid-cell ${active ? 'lt-grid-cell--active' : ''}`}
               style={{ '--cell-color': active ? accent : '#2A2D34' }}
+              title={SIGNAL_TYPES[s.key]?.label || s.key}
             >
               <span className="lt-grid-dot" />
               <span className="lt-grid-label">{s.label}</span>
