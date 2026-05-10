@@ -1,6 +1,5 @@
 // ─── Signal Type Definitions ─────────────────────────────────────────────────
-// Each signal has a unique key, display metadata, and per-game weight.
-// Weights within each game sum to 1.0.
+// Colors: muted, sophisticated. No neon. No forest green.
 
 export const SIGNAL_SECTIONS = [
   {
@@ -17,7 +16,7 @@ export const SIGNAL_SECTIONS = [
   },
   {
     id: 'japan',
-    label: '⛩ JAPAN MARKET INTELLIGENCE',
+    label: '⛩ Japan Market Intelligence',
     subtitle: 'Leading indicators from the JP market',
     signals: ['jp_price', 'jp_hype', 'jp_release'],
   },
@@ -25,66 +24,48 @@ export const SIGNAL_SECTIONS = [
 
 export const SIGNAL_TYPES = {
   creator: {
-    key: 'creator',
     label: 'Creator Attention',
-    icon: '📹',
-    color: '#FF6B6B',
+    color: '#B08060',
     description: 'YouTube/TikTok videos mentioning this card in last 7 days',
   },
   community: {
-    key: 'community',
     label: 'Community Volume',
-    icon: '💬',
-    color: '#4ECDC4',
+    color: '#608870',
     description: 'Reddit posts, TikTok mentions, X/Twitter activity',
   },
   ip_momentum: {
-    key: 'ip_momentum',
     label: 'IP Momentum',
-    icon: '🎬',
-    color: '#FFE66D',
+    color: '#A09060',
     description: 'Anime episodes, game releases, movie tie-ins',
   },
   editorial: {
-    key: 'editorial',
     label: 'Editorial Attention',
-    icon: '📰',
-    color: '#A8E6CF',
+    color: '#708880',
     description: 'TCG news articles, set reviews, "top cards" lists',
   },
   competitive: {
-    key: 'competitive',
     label: 'Competitive Demand',
-    icon: '🏆',
-    color: '#6C5CE7',
+    color: '#7080A0',
     description: 'Tournament top 8 appearances, ban list status',
   },
   scarcity: {
-    key: 'scarcity',
     label: 'Print Scarcity',
-    icon: '💎',
-    color: '#FDA7DF',
+    color: '#907888',
     description: 'Print run size, PSA population, out of print status',
   },
   jp_price: {
-    key: 'jp_price',
     label: 'JP Price Signal',
-    icon: '💴',
-    color: '#FF1744',
+    color: '#C44040',
     description: 'Japanese market price vs English, arbitrage gap',
   },
   jp_hype: {
-    key: 'jp_hype',
     label: 'JP Community Buzz',
-    icon: '🗾',
-    color: '#F50057',
+    color: '#B04848',
     description: 'Japanese Twitter/X, YouTube, Mercari JP trending',
   },
   jp_release: {
-    key: 'jp_release',
     label: 'JP Release Timeline',
-    icon: '📅',
-    color: '#FF4081',
+    color: '#A05050',
     description: 'JP set released before EN, time advantage window',
   },
 };
@@ -149,18 +130,18 @@ export const SAMPLE_CARDS = [
 // ─── Game Display Labels ─────────────────────────────────────────────────────
 
 export const GAME_LABELS = {
-  pokemon: { label: 'Pokémon', color: '#FFD700' },
-  yugioh: { label: 'Yu-Gi-Oh!', color: '#B388FF' },
-  mtg: { label: 'Magic: The Gathering', color: '#FF8A65' },
+  pokemon: { label: 'Pokémon', color: '#A09060' },
+  yugioh: { label: 'Yu-Gi-Oh!', color: '#7080A0' },
+  mtg: { label: 'Magic: The Gathering', color: '#B08060' },
 };
 
 // ─── Score Thresholds ────────────────────────────────────────────────────────
 
 export function getScoreLabel(score) {
-  if (score >= 75) return { label: 'HOT', color: '#FF1744' };
-  if (score >= 50) return { label: 'WARMING', color: '#FF9100' };
-  if (score >= 30) return { label: 'LUKEWARM', color: '#FFD600' };
-  return { label: 'COLD', color: '#546E7A' };
+  if (score >= 75) return { label: 'HOT', color: '#C44040' };
+  if (score >= 50) return { label: 'WARMING', color: '#A09060' };
+  if (score >= 30) return { label: 'LUKEWARM', color: '#608870' };
+  return { label: 'COLD', color: '#4A4840' };
 }
 
 // ─── Weighted Score Calculator ───────────────────────────────────────────────

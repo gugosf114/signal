@@ -1,86 +1,169 @@
 import React from 'react';
-import { getScoreLabel } from '../config/signals';
+import { getScoreLabel, GAME_LABELS } from '../config/signals';
+import CardImage from './CardImage';
 
-const styles = {
-  wrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 20,
-    padding: '20px 24px',
-    background: '#111115',
-    border: '1px solid #1E1E24',
-    borderRadius: 12,
-    marginBottom: 24,
-  },
-  scoreCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    position: 'relative',
-  },
-  scoreNumber: {
-    fontSize: 28,
-    fontWeight: 700,
-    fontFamily: "'JetBrains Mono', monospace",
-  },
-  right: {
-    flex: 1,
-  },
-  badge: {
-    display: 'inline-block',
-    padding: '3px 10px',
-    borderRadius: 6,
-    fontSize: 12,
-    fontWeight: 700,
-    fontFamily: "'JetBrains Mono', monospace",
-    letterSpacing: '0.05em',
-    marginBottom: 6,
-  },
-  summary: {
-    fontSize: 14,
-    color: '#999',
-    lineHeight: 1.5,
-  },
-  cardName: {
-    fontSize: 16,
-    fontWeight: 600,
-    color: '#E0E0E0',
-    marginBottom: 4,
-  },
-};
-
-export default function OverallScore({ score, cardName, game, summary }) {
+export default function OverallScore({ score, cardName, game, summary, truncated = false }) {
   const { label, color } = getScoreLabel(score);
+  const gameMeta = GAME_LABELS[game];
+  const glowColor = gameMeta?.color || '#C44040';
 
   return (
-    <div className="fade-slide-up" style={styles.wrapper}>
-      <div
-        className="score-animate"
-        style={{
-          ...styles.scoreCircle,
-          border: `3px solid ${color}`,
-          boxShadow: `0 0 20px ${color}22`,
-        }}
-      >
-        <span style={{ ...styles.scoreNumber, color }}>{score}</span>
+    <div className="fade-slide-up" style={{
+      display: 'grid',
+      gridTemplateColumns: '200px 1fr',
+      gap: 0,
+      background: '#0E1014',
+      borderRadius: 3,
+      marginBottom: 32,
+      overflow: 'hidden',
+      position: 'relative',
+      border: '1px solid #1A1D24',
+    }}>
+      {/* Card Art — large, dominant */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px 12px 24px 20px',
+        background: '#0A0C10',
+        borderRight: '1px solid #1A1D24',
+      }}>
+        <CardImage cardName={cardName} game={game} size={220} glowColor={glowColor} />
       </div>
-      <div style={styles.right}>
-        <div style={styles.cardName}>{cardName}</div>
-        <span
-          style={{
-            ...styles.badge,
+
+      {/* Data Side */}
+      <div style={{
+        padding: '28px 32px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        gap: 16,
+      }}>
+        {/* Card name in serif — editorial */}
+        <div>
+          <h1 style={{
+            fontFamily: "'Instrument Serif', serif",
+            fontSize: 32,
+            fontWeight: 400,
+            fontStyle: 'italic',
+            color: '#E8E4DC',
+            lineHeight: 1.1,
+            marginBottom: 8,
+            letterSpacing: '-0.01em',
+          }}>
+            {cardName}
+          </h1>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {gameMeta && (
+              <span style={{
+                fontSize: 9,
+                fontWeight: 700,
+                fontFamily: "'Syne', sans-serif",
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: gameMeta.color,
+                opacity: 0.7,
+              }}>
+                {gameMeta.label}
+              </span>
+            )}
+            <span style={{
+              width: 3,
+              height: 3,
+              borderRadius: '50%',
+              background: '#2A2D34',
+            }} />
+            <span style={{
+              fontSize: 9,
+              fontWeight: 700,
+              fontFamily: "'Syne', sans-serif",
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color,
+            }}>
+              {label}
+            </span>
+            {truncated && (
+              <>
+                <span style={{
+                  width: 3,
+                  height: 3,
+                  borderRadius: '50%',
+                  background: '#2A2D34',
+                }} />
+                <span
+                  title="The model's response was truncated; some signals may be incomplete. Retry for full data."
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '0.14em',
+                    color: '#A09060',
+                    border: '1px solid rgba(160, 144, 96, 0.4)',
+                    padding: '1px 6px',
+                    borderRadius: 2,
+                    background: 'rgba(160, 144, 96, 0.06)',
+                    cursor: 'help',
+                  }}
+                >
+                  PARTIAL
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Score — big, unmissable */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <span className="score-animate" style={{
+            fontSize: 64,
+            fontWeight: 700,
+            fontFamily: "'JetBrains Mono', monospace",
             color,
-            background: color + '18',
-          }}
-        >
-          {label}
-        </span>
-        {summary && <div style={styles.summary}>{summary}</div>}
+            lineHeight: 1,
+            letterSpacing: '-0.04em',
+          }}>
+            {score}
+          </span>
+          <span style={{
+            fontSize: 18,
+            fontFamily: "'JetBrains Mono', monospace",
+            color: '#2A2D34',
+            fontWeight: 400,
+          }}>
+            /100
+          </span>
+        </div>
+
+        {/* Summary — the editorial voice */}
+        {summary && (
+          <p style={{
+            fontSize: 14,
+            color: '#6B6860',
+            lineHeight: 1.65,
+            fontFamily: "'Syne', sans-serif",
+            fontWeight: 400,
+            maxWidth: 440,
+          }}>
+            {summary}
+          </p>
+        )}
       </div>
+
+      {/* Kanji watermark — barely there */}
+      <span style={{
+        position: 'absolute',
+        right: 24,
+        bottom: 16,
+        fontSize: 72,
+        fontWeight: 900,
+        color: '#FFFFFF',
+        opacity: 0.015,
+        pointerEvents: 'none',
+        userSelect: 'none',
+        fontFamily: "'Noto Sans JP', sans-serif",
+        lineHeight: 1,
+      }}>株</span>
     </div>
   );
 }

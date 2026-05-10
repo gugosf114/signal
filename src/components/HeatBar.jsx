@@ -1,37 +1,23 @@
 import React from 'react';
 
-const SEGMENT_COUNT = 5;
+function getStyle(level, color) {
+  if (level >= 4) return { color, fontWeight: 700 };
+  if (level >= 3) return { color: '#6B6860', fontWeight: 600 };
+  if (level >= 2) return { color: '#3A3830', fontWeight: 500 };
+  return { color: '#2A2820', fontWeight: 400 };
+}
 
 export default function HeatBar({ level, color }) {
+  const s = getStyle(level, color);
+
   return (
-    <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-      {Array.from({ length: SEGMENT_COUNT }, (_, i) => {
-        const active = i < level;
-        return (
-          <div
-            key={i}
-            style={{
-              width: 24,
-              height: 6,
-              borderRadius: 2,
-              background: active ? color : '#1E1E24',
-              opacity: active ? 0.7 + (i / SEGMENT_COUNT) * 0.3 : 1,
-              transition: 'background 0.3s ease',
-            }}
-          />
-        );
-      })}
-      <span
-        style={{
-          marginLeft: 6,
-          fontSize: 12,
-          fontFamily: "'JetBrains Mono', monospace",
-          color: level >= 4 ? color : '#666',
-          fontWeight: level >= 4 ? 600 : 400,
-        }}
-      >
-        {level}/5
-      </span>
-    </div>
+    <span style={{
+      fontSize: 12,
+      fontFamily: "'JetBrains Mono', monospace",
+      letterSpacing: '-0.02em',
+      ...s,
+    }}>
+      {level}<span style={{ opacity: 0.3, fontWeight: 400 }}>/5</span>
+    </span>
   );
 }
