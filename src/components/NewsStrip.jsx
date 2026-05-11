@@ -18,7 +18,7 @@ function ArticleCard({ article, onCardClick }) {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        width: 220,
+        width: 240,
         flexShrink: 0,
         background: '#0E1014',
         border: '1px solid #1A1D24',
@@ -39,8 +39,8 @@ function ArticleCard({ article, onCardClick }) {
     >
       {/* Image */}
       <div style={{
-        height: 100,
-        background: '#0A0C10',
+        height: 130,
+        background: `linear-gradient(135deg, ${article.source.color}22 0%, #0A0C10 100%)`,
         overflow: 'hidden',
         position: 'relative',
         flexShrink: 0,
@@ -54,22 +54,33 @@ function ArticleCard({ article, onCardClick }) {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              opacity: 0.88,
+              objectPosition: 'center top',
+              opacity: 0.9,
             }}
-            onError={e => { e.target.style.display = 'none'; }}
+            onError={e => {
+              e.target.style.display = 'none';
+            }}
           />
         ) : (
+          // Styled fallback — colored gradient with source initial
           <div style={{
             width: '100%',
             height: '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 28,
-            color: '#1A1D24',
-            fontFamily: "'JetBrains Mono'",
           }}>
-            {article.source.game === 'pokemon' ? '株' : article.source.game === 'mtg' ? '◆' : '◇'}
+            <span style={{
+              fontSize: 40,
+              fontFamily: "'Syne', sans-serif",
+              fontWeight: 800,
+              color: article.source.color,
+              opacity: 0.12,
+              letterSpacing: '-0.04em',
+              userSelect: 'none',
+            }}>
+              {article.source.label.slice(0, 3).toUpperCase()}
+            </span>
           </div>
         )}
         {/* Source badge overlay */}

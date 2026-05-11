@@ -53,13 +53,26 @@ async function fetchSource(source) {
         .trim()
         .slice(0, 120);
 
+      // Image priority: rss2json thumbnail → enclosure → first <img> in content body
+      let imageUrl = item.thumbnail || item.enclosure?.link || null;
+      if (!imageUrl) {
+        const html = item.content || item.description || '';
+        const match = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+        if (match) {
+          const src = match[1];
+          // Skip tracking pixels, avatars, icons (< 100px usually in URL hints)
+          if (!src.includes('gravatar') && !src.includes('avatar') && !src.includes('1x1') && !src.includes('pixel')) {
+            imageUrl = src;
+          }
+        }
+      }
+
       return {
         id: item.guid || item.link,
         title: (item.title || '').trim(),
         link: item.link || '',
         description: rawDesc,
-        // rss2json extracts the best image for us
-        imageUrl: item.thumbnail || item.enclosure?.link || null,
+        imageUrl,
         pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
         source,
       };
