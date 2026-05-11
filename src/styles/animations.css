@@ -823,21 +823,231 @@
   }
 }
 
-/* ─── News strip auto-scroll ─────────────────────────────────────────── */
+/* ─── News strip — shirt pocket card effect ──────────────────────────── */
 
 @keyframes newsScroll {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
+
+.news-strip-track-outer {
+  overflow: hidden;
+  position: relative;
+}
+.news-strip-fade-l {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 48px;
+  background: linear-gradient(90deg, #08090A, transparent);
+  z-index: 3; pointer-events: none;
+}
+.news-strip-fade-r {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 48px;
+  background: linear-gradient(270deg, #08090A, transparent);
+  z-index: 3; pointer-events: none;
+}
 .news-strip-track {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   width: max-content;
-  animation: newsScroll 55s linear infinite;
-  padding-bottom: 8px;
+  animation: newsScroll 90s linear infinite;
+  padding-bottom: 4px;
 }
 .news-strip-track:hover {
   animation-play-state: paused;
+}
+
+/* Pocket card wrapper */
+.news-pocket-wrapper {
+  display: block;
+  width: 178px;
+  height: 210px;       /* visible height — the "pocket" opening */
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  text-decoration: none;
+  border-radius: 8px;
+  border: 1px solid #1A1D24;
+  cursor: pointer;
+}
+
+/* Full card — taller than wrapper; image at top is visible, article text hidden below */
+.news-pocket-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 360px;       /* image (210px) + article text (150px) */
+  transform: translateY(0);
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s ease;
+}
+/* On hover: pull card UP, hiding image and revealing article text from below */
+.news-pocket-wrapper:hover .news-pocket-card {
+  transform: translateY(-150px);
+}
+
+/* Image section */
+.news-pocket-img {
+  position: relative;
+  height: 210px;
+  background: #0A0C10;
+  overflow: hidden;
+}
+
+/* Pocket edge — the shadow "fold" that sells the illusion */
+.news-pocket-edge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Source badge */
+.news-pocket-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(8, 9, 10, 0.85);
+  border: 1px solid color-mix(in oklab, var(--badge-color) 40%, transparent);
+  border-radius: 2px;
+  padding: 3px 8px;
+  z-index: 3;
+}
+.news-pocket-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--badge-color);
+  flex-shrink: 0;
+}
+.news-pocket-source {
+  font-family: 'Syne', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--badge-color);
+}
+.news-pocket-age {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: #4A4840;
+  letter-spacing: 0.04em;
+}
+
+/* Article text section — lives below the pocket edge, pulled up on hover */
+.news-pocket-text {
+  height: 150px;
+  background: #0E1014;
+  border-top: 1px solid color-mix(in oklab, var(--accent) 18%, #1A1D24);
+  padding: 12px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.news-pocket-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 13px;
+  font-style: italic;
+  color: #E8E4DC;
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.news-pocket-desc {
+  font-family: 'Syne', sans-serif;
+  font-size: 10px;
+  color: #4A4840;
+  line-height: 1.5;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  flex: 1;
+}
+.news-pocket-read {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  opacity: 0.7;
+}
+
+/* Header + filter dots */
+.news-strip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.news-strip-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #3A3830;
+  text-transform: uppercase;
+}
+.news-strip-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.news-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  background: transparent;
+  border: 1px solid #14161A;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.news-dot--all {
+  border-color: #3A3830;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #5A5850;
+}
+.news-dot-pip {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--dot-color);
+  opacity: 0.5;
+  transition: opacity 0.12s;
+}
+.news-dot-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #3A3830;
+  text-transform: uppercase;
+  transition: color 0.12s;
+}
+.news-dot:hover .news-dot-pip,
+.news-dot--active .news-dot-pip {
+  opacity: 1;
+}
+.news-dot:hover .news-dot-label,
+.news-dot--active .news-dot-label {
+  color: var(--dot-color);
+}
+.news-dot--active {
+  border-color: color-mix(in oklab, var(--dot-color) 40%, transparent);
+  background: color-mix(in oklab, var(--dot-color) 8%, transparent);
 }
 
 /* ─── Signal list (replaces 3×3 abbreviated grid) ───────────────────── */

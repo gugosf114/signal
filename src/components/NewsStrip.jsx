@@ -1,161 +1,115 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchTCGNews } from '../services/fetchTCGNews';
 
-function timeAgo(date) {
-  const diff = (Date.now() - date.getTime()) / 1000;
-  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+// One fallback card image per game, fetched once on mount
+async function fetchGameFallback(game) {
+  try {
+    if (game === 'pokemon') {
+      const r = await fetch('https://api.pokemontcg.io/v2/cards?q=set.id:sv7&pageSize=6&orderBy=-set.releaseDate');
+      const d = await r.json();
+      const cards = d.data || [];
+      const pick = cards[Math.floor(Math.random() * cards.length)];
+      return pick?.images?.large || null;
+    }
+    if (game === 'mtg') {
+      const r = await fetch('https://api.scryfall.com/cards/search?q=s:dsk+(rarity:r+or+rarity:m)&order=released&dir=desc');
+      const d = await r.json();
+      const cards = d.data || [];
+      const pick = cards[Math.floor(Math.random() * Math.min(cards.length, 6))];
+      return pick?.image_uris?.large || pick?.card_faces?.[0]?.image_uris?.large || null;
+    }
+    if (game === 'yugioh') {
+      const r = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php?sort=new&num=6&offset=0');
+      const d = await r.json();
+      const cards = d.data || [];
+      const pick = cards[Math.floor(Math.random() * cards.length)];
+      return pick?.card_images?.[0]?.image_url || null;
+    }
+  } catch {}
+  return null;
 }
 
-function ArticleCard({ article, onCardClick }) {
+function timeAgo(date) {
+  const s = (Date.now() - date.getTime()) / 1000;
+  if (s < 3600)  return `${Math.floor(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  return `${Math.floor(s / 86400)}d`;
+}
+
+function ArticleCard({ article, fallbackImg }) {
+  const imgSrc = article.imageUrl || fallbackImg;
+  const isGameCard = !article.imageUrl && !!fallbackImg;
+
   return (
     <a
       href={article.link}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={(e) => e.stopPropagation()}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        width: 240,
-        flexShrink: 0,
-        background: '#0E1014',
-        border: '1px solid #1A1D24',
-        borderRadius: 4,
-        overflow: 'hidden',
-        textDecoration: 'none',
-        transition: 'border-color 0.15s, transform 0.15s',
-        cursor: 'pointer',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = article.source.color + '60';
-        e.currentTarget.style.transform = 'translateY(-2px)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = '#1A1D24';
-        e.currentTarget.style.transform = 'translateY(0)';
-      }}
+      onClick={e => e.stopPropagation()}
+      className="news-pocket-wrapper"
     >
-      {/* Image */}
-      <div style={{
-        height: 130,
-        background: `linear-gradient(135deg, ${article.source.color}22 0%, #0A0C10 100%)`,
-        overflow: 'hidden',
-        position: 'relative',
-        flexShrink: 0,
-      }}>
-        {article.imageUrl ? (
-          <img
-            src={article.imageUrl}
-            alt=""
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            crossOrigin="anonymous"
-            style={{
+      {/* Full card — image on top, article text below the pocket edge */}
+      <div className="news-pocket-card">
+
+        {/* IMAGE SECTION — visible by default (the "head" sticking out of pocket) */}
+        <div className="news-pocket-img">
+          {imgSrc ? (
+            <img
+              src={imgSrc}
+              alt=""
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: isGameCard ? 'contain' : 'cover',
+                objectPosition: 'center top',
+                background: '#0A0C10',
+              }}
+              onError={e => { e.currentTarget.style.display = 'none'; }}
+            />
+          ) : (
+            // No image at all — colored gradient with source initials
+            <div style={{
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center top',
-              opacity: 0.88,
-              position: 'relative',
-              zIndex: 1,
-            }}
-            onError={e => { e.currentTarget.style.display = 'none'; }}
-          />
-        ) : null}
-
-        {/* Always render fallback behind the image — visible when image fails or is absent */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 0,
-        }}>
-          <span style={{
-            fontSize: 48,
-            fontFamily: "'Syne', sans-serif",
-            fontWeight: 800,
-            color: article.source.color,
-            opacity: 0.22,
-            letterSpacing: '-0.04em',
-            userSelect: 'none',
-          }}>
-            {article.source.label.replace('r/', '').slice(0, 4).toUpperCase()}
-          </span>
-        </div>
-        {/* Source badge overlay */}
-        <div style={{
-          position: 'absolute',
-          bottom: 6,
-          left: 6,
-          background: 'rgba(8,9,10,0.85)',
-          border: `1px solid ${article.source.color}50`,
-          borderRadius: 2,
-          padding: '2px 7px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 5,
-        }}>
-          <div style={{
-            width: 5,
-            height: 5,
-            borderRadius: '50%',
-            background: article.source.color,
-            flexShrink: 0,
-          }} />
-          <span style={{
-            fontSize: 8,
-            fontFamily: "'Syne', sans-serif",
-            fontWeight: 700,
-            letterSpacing: '0.14em',
-            color: article.source.color,
-            textTransform: 'uppercase',
-          }}>
-            {article.source.label}
-          </span>
-        </div>
-      </div>
-
-      {/* Text */}
-      <div style={{ padding: '10px 12px 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
-        <div style={{
-          fontSize: 9,
-          fontFamily: "'JetBrains Mono', monospace",
-          color: '#3A3830',
-          letterSpacing: '0.06em',
-        }}>
-          {timeAgo(article.pubDate)}
-        </div>
-        <div style={{
-          fontFamily: "'Instrument Serif', serif",
-          fontSize: 13,
-          fontStyle: 'italic',
-          color: '#E8E4DC',
-          lineHeight: 1.35,
-          overflow: 'hidden',
-          display: '-webkit-box',
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: 'vertical',
-        }}>
-          {article.title}
-        </div>
-        {article.description && (
-          <div style={{
-            fontSize: 10,
-            fontFamily: "'Syne', sans-serif",
-            color: '#4A4840',
-            lineHeight: 1.5,
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-          }}>
-            {article.description}
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: `linear-gradient(160deg, ${article.source.color}28 0%, #08090A 100%)`,
+            }}>
+              <span style={{
+                fontSize: 52,
+                fontFamily: "'Syne', sans-serif",
+                fontWeight: 800,
+                color: article.source.color,
+                opacity: 0.22,
+                letterSpacing: '-0.04em',
+                userSelect: 'none',
+              }}>
+                {article.source.label.replace('r/', '').slice(0, 4).toUpperCase()}
+              </span>
+            </div>
+          )}
+          {/* Pocket edge shadow — the visual "fold" */}
+          <div className="news-pocket-edge" />
+          {/* Source badge */}
+          <div className="news-pocket-badge" style={{ '--badge-color': article.source.color }}>
+            <span className="news-pocket-dot" />
+            <span className="news-pocket-source">{article.source.label}</span>
+            <span className="news-pocket-age">{timeAgo(article.pubDate)}</span>
           </div>
-        )}
+        </div>
+
+        {/* ARTICLE SECTION — hidden below the pocket, revealed on hover */}
+        <div className="news-pocket-text" style={{ '--accent': article.source.color }}>
+          <div className="news-pocket-title">{article.title}</div>
+          {article.description && (
+            <div className="news-pocket-desc">{article.description}</div>
+          )}
+          <div className="news-pocket-read">Read →</div>
+        </div>
+
       </div>
     </a>
   );
@@ -164,22 +118,44 @@ function ArticleCard({ article, onCardClick }) {
 export default function NewsStrip() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeSource, setActiveSource] = useState(null);
+  const [fallbacks, setFallbacks] = useState({});
 
   useEffect(() => {
     fetchTCGNews()
-      .then(setArticles)
+      .then(all => {
+        // Limit to 8 best articles
+        setArticles(all.slice(0, 8));
+        // Pre-fetch one game-art fallback per unique game
+        const games = [...new Set(all.map(a => a.source.game).filter(Boolean))];
+        games.forEach(async game => {
+          const url = await fetchGameFallback(game);
+          if (url) setFallbacks(f => ({ ...f, [game]: url }));
+        });
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  const sources = articles.length
+    ? [...new Map(articles.map(a => [a.source.id, a.source])).values()]
+    : [];
+
+  const filtered = activeSource
+    ? articles.filter(a => a.source.id === activeSource)
+    : articles;
+
+  // Double for seamless loop
+  const doubled = [...filtered, ...filtered];
 
   if (loading) {
     return (
       <div style={{ marginTop: 40, marginBottom: 8 }}>
-        <div style={{ fontSize: 9, fontFamily: "'Syne'", fontWeight: 700, letterSpacing: '0.22em', color: '#3A3830', textTransform: 'uppercase', marginBottom: 14 }}>
-          TCG Intelligence
+        <div className="news-strip-header">
+          <span className="news-strip-label">TCG Intelligence</span>
         </div>
-        <div style={{ display: 'flex', gap: 12, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', gap: 12, overflow: 'hidden', height: 200 }}>
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="loading-shimmer" style={{ width: 220, height: 200, borderRadius: 4, flexShrink: 0 }} />
+            <div key={i} className="loading-shimmer" style={{ width: 180, height: 200, borderRadius: 8, flexShrink: 0 }} />
           ))}
         </div>
       </div>
@@ -188,64 +164,45 @@ export default function NewsStrip() {
 
   if (articles.length === 0) return null;
 
-  // Duplicate for seamless loop
-  const doubled = [...articles, ...articles];
-
   return (
     <div style={{ marginTop: 40 }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 14,
-      }}>
-        <span style={{
-          fontSize: 9,
-          fontFamily: "'Syne', sans-serif",
-          fontWeight: 700,
-          letterSpacing: '0.22em',
-          color: '#3A3830',
-          textTransform: 'uppercase',
-        }}>
-          TCG Intelligence
-        </span>
-        <span style={{
-          fontSize: 8,
-          fontFamily: "'JetBrains Mono', monospace",
-          color: '#2A2820',
-          letterSpacing: '0.08em',
-        }}>
-          PkmnCards · SixPrizes · MTGGoldfish · YGOrganization
-        </span>
+      {/* Header row with source filter dots */}
+      <div className="news-strip-header">
+        <span className="news-strip-label">TCG Intelligence</span>
+        <div className="news-strip-dots">
+          <button
+            className={`news-dot ${!activeSource ? 'news-dot--all' : ''}`}
+            onClick={() => setActiveSource(null)}
+            title="All sources"
+          >
+            All
+          </button>
+          {sources.map(src => (
+            <button
+              key={src.id}
+              className={`news-dot ${activeSource === src.id ? 'news-dot--active' : ''}`}
+              style={{ '--dot-color': src.color }}
+              onClick={() => setActiveSource(activeSource === src.id ? null : src.id)}
+              title={src.label}
+            >
+              <span className="news-dot-pip" />
+              <span className="news-dot-label">{src.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Scrolling strip */}
-      <div style={{ overflow: 'hidden', position: 'relative' }}>
-        {/* Fade edges */}
-        <div style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 40,
-          background: 'linear-gradient(90deg, #08090A, transparent)',
-          zIndex: 2,
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute',
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: 40,
-          background: 'linear-gradient(270deg, #08090A, transparent)',
-          zIndex: 2,
-          pointerEvents: 'none',
-        }} />
-
+      <div className="news-strip-track-outer">
+        <div className="news-strip-fade-l" />
+        <div className="news-strip-fade-r" />
         <div className="news-strip-track">
           {doubled.map((article, i) => (
-            <ArticleCard key={article.id + '-' + i} article={article} />
+            <ArticleCard
+              key={article.id + '-' + i}
+              article={article}
+              fallbackImg={fallbacks[article.source.game] || null}
+            />
           ))}
         </div>
       </div>
