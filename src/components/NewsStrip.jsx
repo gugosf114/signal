@@ -50,39 +50,42 @@ function ArticleCard({ article, onCardClick }) {
             src={article.imageUrl}
             alt=""
             loading="lazy"
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
             style={{
               width: '100%',
               height: '100%',
               objectFit: 'cover',
               objectPosition: 'center top',
-              opacity: 0.9,
+              opacity: 0.88,
+              position: 'relative',
+              zIndex: 1,
             }}
-            onError={e => {
-              e.target.style.display = 'none';
-            }}
+            onError={e => { e.currentTarget.style.display = 'none'; }}
           />
-        ) : (
-          // Styled fallback — colored gradient with source initial
-          <div style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+        ) : null}
+
+        {/* Always render fallback behind the image — visible when image fails or is absent */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 0,
+        }}>
+          <span style={{
+            fontSize: 48,
+            fontFamily: "'Syne', sans-serif",
+            fontWeight: 800,
+            color: article.source.color,
+            opacity: 0.22,
+            letterSpacing: '-0.04em',
+            userSelect: 'none',
           }}>
-            <span style={{
-              fontSize: 40,
-              fontFamily: "'Syne', sans-serif",
-              fontWeight: 800,
-              color: article.source.color,
-              opacity: 0.12,
-              letterSpacing: '-0.04em',
-              userSelect: 'none',
-            }}>
-              {article.source.label.slice(0, 3).toUpperCase()}
-            </span>
-          </div>
-        )}
+            {article.source.label.replace('r/', '').slice(0, 4).toUpperCase()}
+          </span>
+        </div>
         {/* Source badge overlay */}
         <div style={{
           position: 'absolute',
@@ -212,7 +215,7 @@ export default function NewsStrip() {
           color: '#2A2820',
           letterSpacing: '0.08em',
         }}>
-          PkmnCards · MTGGoldfish · YGOrganization
+          PkmnCards · SixPrizes · MTGGoldfish · YGOrganization
         </span>
       </div>
 

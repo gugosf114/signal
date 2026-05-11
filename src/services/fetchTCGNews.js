@@ -3,7 +3,9 @@
 // Uses allorigins.win as a CORS proxy — no API key, no rate limit.
 // Returns a unified article array sorted by publish date desc.
 
-// Verified working with rss2json.com anonymous tier (no count param)
+// Sources verified working with rss2json anonymous tier
+// pkmncards + sixprizes include article thumbnails
+// mtggoldfish + ygorganization are editorial articles (no feed images — colored fallback shows)
 const SOURCES = [
   {
     id: 'pkmncards',
@@ -11,6 +13,13 @@ const SOURCES = [
     color: '#FFCB05',
     game: 'pokemon',
     rss: 'https://pkmncards.com/feed/',
+  },
+  {
+    id: 'sixprizes',
+    label: 'SixPrizes',
+    color: '#608870',
+    game: 'pokemon',
+    rss: 'https://sixprizes.com/feed/',
   },
   {
     id: 'mtggoldfish',
