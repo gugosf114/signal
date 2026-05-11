@@ -204,8 +204,8 @@ export default function NewsStrip() {
       >
         <div className="ns-fade-l" />
         <div className="ns-fade-r" />
-        {/* 40px headroom + 180px visible image = 220px total. overflow:hidden clips the rest. */}
-        <div style={{ paddingTop: 40, height: 220, overflow: 'hidden' }}>
+        {/* 40px headroom + 110px visible image = 150px total. Cards are 360px — clearly cropped. */}
+        <div style={{ paddingTop: 40, height: 150, overflow: 'hidden' }}>
           <div ref={trackRef} className="ns-track">
             {tripled.map((article, i) => (
               <ArticleCard
