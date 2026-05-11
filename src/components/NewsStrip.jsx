@@ -1,58 +1,58 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchTCGNews } from '../services/fetchTCGNews';
 
-// One fallback card image per game, fetched once on mount
+const CARD_W = 178;
+const GAP = 14;
+const STEP = CARD_W + GAP;
+const SPEED = 0.35; // px per animation frame — slow crawl
+
 async function fetchGameFallback(game) {
   try {
     if (game === 'pokemon') {
       const r = await fetch('https://api.pokemontcg.io/v2/cards?q=set.id:sv7&pageSize=6&orderBy=-set.releaseDate');
-      const d = await r.json();
-      const cards = d.data || [];
-      const pick = cards[Math.floor(Math.random() * cards.length)];
-      return pick?.images?.large || null;
+      const cards = (await r.json()).data || [];
+      return cards[Math.floor(Math.random() * cards.length)]?.images?.large || null;
     }
     if (game === 'mtg') {
       const r = await fetch('https://api.scryfall.com/cards/search?q=s:dsk+(rarity:r+or+rarity:m)&order=released&dir=desc');
-      const d = await r.json();
-      const cards = d.data || [];
-      const pick = cards[Math.floor(Math.random() * Math.min(cards.length, 6))];
-      return pick?.image_uris?.large || pick?.card_faces?.[0]?.image_uris?.large || null;
+      const cards = (await r.json()).data || [];
+      const c = cards[Math.floor(Math.random() * Math.min(6, cards.length))];
+      return c?.image_uris?.large || c?.card_faces?.[0]?.image_uris?.large || null;
     }
     if (game === 'yugioh') {
       const r = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php?sort=new&num=6&offset=0');
-      const d = await r.json();
-      const cards = d.data || [];
-      const pick = cards[Math.floor(Math.random() * cards.length)];
-      return pick?.card_images?.[0]?.image_url || null;
+      const cards = (await r.json()).data || [];
+      return cards[Math.floor(Math.random() * cards.length)]?.card_images?.[0]?.image_url || null;
     }
   } catch {}
   return null;
 }
 
-function timeAgo(date) {
-  const s = (Date.now() - date.getTime()) / 1000;
+function timeAgo(d) {
+  const s = (Date.now() - d.getTime()) / 1000;
   if (s < 3600)  return `${Math.floor(s / 60)}m`;
   if (s < 86400) return `${Math.floor(s / 3600)}h`;
   return `${Math.floor(s / 86400)}d`;
 }
 
-function ArticleCard({ article, fallbackImg }) {
+function ArticleCard({ article, fallbackImg, onHover, onLeave }) {
   const imgSrc = article.imageUrl || fallbackImg;
   const isGameCard = !article.imageUrl && !!fallbackImg;
-
   return (
     <a
       href={article.link}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={e => e.stopPropagation()}
-      className="news-pocket-wrapper"
+      className="npc-outer"
+      onMouseEnter={onHover}
+      onMouseLeave={onLeave}
     >
-      {/* Full card — image on top, article text below the pocket edge */}
-      <div className="news-pocket-card">
+      {/* The full card — image on top, article text below.
+          Outer clips at image height. 40px headroom above lets card rise. */}
+      <div className="npc-card">
 
-        {/* IMAGE SECTION — visible by default (the "head" sticking out of pocket) */}
-        <div className="news-pocket-img">
+        {/* IMAGE — top half, always visible in pocket opening */}
+        <div className="npc-img">
           {imgSrc ? (
             <img
               src={imgSrc}
@@ -64,50 +64,40 @@ function ArticleCard({ article, fallbackImg }) {
                 height: '100%',
                 objectFit: isGameCard ? 'contain' : 'cover',
                 objectPosition: 'center top',
-                background: '#0A0C10',
+                background: '#08090A',
               }}
               onError={e => { e.currentTarget.style.display = 'none'; }}
             />
           ) : (
-            // No image at all — colored gradient with source initials
             <div style={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: `linear-gradient(160deg, ${article.source.color}28 0%, #08090A 100%)`,
+              width: '100%', height: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: `linear-gradient(160deg, ${article.source.color}25 0%, #08090A 100%)`,
             }}>
               <span style={{
-                fontSize: 52,
-                fontFamily: "'Syne', sans-serif",
-                fontWeight: 800,
-                color: article.source.color,
-                opacity: 0.22,
-                letterSpacing: '-0.04em',
+                fontSize: 44, fontFamily: "'Syne',sans-serif", fontWeight: 800,
+                color: article.source.color, opacity: 0.2, letterSpacing: '-0.04em',
                 userSelect: 'none',
               }}>
-                {article.source.label.replace('r/', '').slice(0, 4).toUpperCase()}
+                {article.source.label.replace('r/','').slice(0,4).toUpperCase()}
               </span>
             </div>
           )}
-          {/* Pocket edge shadow — the visual "fold" */}
-          <div className="news-pocket-edge" />
-          {/* Source badge */}
-          <div className="news-pocket-badge" style={{ '--badge-color': article.source.color }}>
-            <span className="news-pocket-dot" />
-            <span className="news-pocket-source">{article.source.label}</span>
-            <span className="news-pocket-age">{timeAgo(article.pubDate)}</span>
+          {/* Pocket edge gradient */}
+          <div className="npc-edge" />
+          {/* Source badge on image */}
+          <div className="npc-badge" style={{ '--c': article.source.color }}>
+            <span className="npc-dot" />
+            <span className="npc-src">{article.source.label}</span>
+            <span className="npc-age">{timeAgo(article.pubDate)}</span>
           </div>
         </div>
 
-        {/* ARTICLE SECTION — hidden below the pocket, revealed on hover */}
-        <div className="news-pocket-text" style={{ '--accent': article.source.color }}>
-          <div className="news-pocket-title">{article.title}</div>
-          {article.description && (
-            <div className="news-pocket-desc">{article.description}</div>
-          )}
-          <div className="news-pocket-read">Read →</div>
+        {/* ARTICLE TEXT — bottom half, hidden inside pocket */}
+        <div className="npc-text" style={{ '--ac': article.source.color }}>
+          <div className="npc-title">{article.title}</div>
+          {article.description && <div className="npc-desc">{article.description}</div>}
+          <div className="npc-read">Read →</div>
         </div>
 
       </div>
@@ -117,16 +107,22 @@ function ArticleCard({ article, fallbackImg }) {
 
 export default function NewsStrip() {
   const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeSource, setActiveSource] = useState(null);
+  const [loading, setLoading]   = useState(true);
   const [fallbacks, setFallbacks] = useState({});
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [paused, setPaused]       = useState(false);
+
+  const trackRef = useRef(null);
+  const posRef   = useRef(0);
+  const rafRef   = useRef(null);
+  const pausedRef = useRef(false);
+
+  useEffect(() => { pausedRef.current = paused; }, [paused]);
 
   useEffect(() => {
     fetchTCGNews()
       .then(all => {
-        // Limit to 8 best articles
-        setArticles(all.slice(0, 8));
-        // Pre-fetch one game-art fallback per unique game
+        setArticles(all);
         const games = [...new Set(all.map(a => a.source.game).filter(Boolean))];
         games.forEach(async game => {
           const url = await fetchGameFallback(game);
@@ -136,26 +132,42 @@ export default function NewsStrip() {
       .finally(() => setLoading(false));
   }, []);
 
-  const sources = articles.length
-    ? [...new Map(articles.map(a => [a.source.id, a.source])).values()]
-    : [];
+  // JS-driven scroll — gives dots real control over position
+  useEffect(() => {
+    if (!articles.length) return;
+    const total = articles.length * STEP;
 
-  const filtered = activeSource
-    ? articles.filter(a => a.source.id === activeSource)
-    : articles;
+    const tick = () => {
+      if (!pausedRef.current) {
+        posRef.current = (posRef.current + SPEED) % total;
+        if (trackRef.current) {
+          trackRef.current.style.transform = `translateX(-${posRef.current}px)`;
+          setActiveIdx(Math.floor(posRef.current / STEP) % articles.length);
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [articles.length]);
 
-  // Double for seamless loop
-  const doubled = [...filtered, ...filtered];
+  const jumpTo = (idx) => {
+    posRef.current = idx * STEP;
+    if (trackRef.current) {
+      trackRef.current.style.transform = `translateX(-${posRef.current}px)`;
+      setActiveIdx(idx);
+    }
+  };
 
   if (loading) {
     return (
-      <div style={{ marginTop: 40, marginBottom: 8 }}>
-        <div className="news-strip-header">
-          <span className="news-strip-label">TCG Intelligence</span>
+      <div style={{ marginTop: 40 }}>
+        <div className="ns-header">
+          <span className="ns-label">TCG Intelligence</span>
         </div>
-        <div style={{ display: 'flex', gap: 12, overflow: 'hidden', height: 200 }}>
+        <div style={{ display: 'flex', gap: GAP, paddingTop: 40, height: 180 + 40, overflow: 'hidden' }}>
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="loading-shimmer" style={{ width: 180, height: 200, borderRadius: 8, flexShrink: 0 }} />
+            <div key={i} className="loading-shimmer" style={{ width: CARD_W, height: 180, borderRadius: 8, flexShrink: 0 }} />
           ))}
         </div>
       </div>
@@ -164,46 +176,47 @@ export default function NewsStrip() {
 
   if (articles.length === 0) return null;
 
+  // Triple the articles for a seamless infinite loop with no jumps
+  const tripled = [...articles, ...articles, ...articles];
+
   return (
     <div style={{ marginTop: 40 }}>
-      {/* Header row with source filter dots */}
-      <div className="news-strip-header">
-        <span className="news-strip-label">TCG Intelligence</span>
-        <div className="news-strip-dots">
-          <button
-            className={`news-dot ${!activeSource ? 'news-dot--all' : ''}`}
-            onClick={() => setActiveSource(null)}
-            title="All sources"
-          >
-            All
-          </button>
-          {sources.map(src => (
+      {/* Header + navigation dots */}
+      <div className="ns-header">
+        <span className="ns-label">TCG Intelligence</span>
+        <div className="ns-dots">
+          {articles.map((a, i) => (
             <button
-              key={src.id}
-              className={`news-dot ${activeSource === src.id ? 'news-dot--active' : ''}`}
-              style={{ '--dot-color': src.color }}
-              onClick={() => setActiveSource(activeSource === src.id ? null : src.id)}
-              title={src.label}
-            >
-              <span className="news-dot-pip" />
-              <span className="news-dot-label">{src.label}</span>
-            </button>
+              key={i}
+              className={`ns-dot ${i === activeIdx ? 'ns-dot--on' : ''}`}
+              style={{ '--dc': a.source.color }}
+              onClick={() => jumpTo(i)}
+              title={a.title?.slice(0, 60)}
+            />
           ))}
         </div>
       </div>
 
-      {/* Scrolling strip */}
-      <div className="news-strip-track-outer">
-        <div className="news-strip-fade-l" />
-        <div className="news-strip-fade-r" />
-        <div className="news-strip-track">
-          {doubled.map((article, i) => (
-            <ArticleCard
-              key={article.id + '-' + i}
-              article={article}
-              fallbackImg={fallbacks[article.source.game] || null}
-            />
-          ))}
+      {/* Strip — 40px headroom above cards + fade edges */}
+      <div className="ns-track-outer"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        <div className="ns-fade-l" />
+        <div className="ns-fade-r" />
+        {/* 40px headroom + 180px visible image = 220px total. overflow:hidden clips the rest. */}
+        <div style={{ paddingTop: 40, height: 220, overflow: 'hidden' }}>
+          <div ref={trackRef} className="ns-track">
+            {tripled.map((article, i) => (
+              <ArticleCard
+                key={i}
+                article={article}
+                fallbackImg={fallbacks[article.source.game] || null}
+                onHover={() => setPaused(true)}
+                onLeave={() => setPaused(false)}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -823,233 +823,110 @@
   }
 }
 
-/* ─── News strip — shirt pocket card effect ──────────────────────────── */
+/* ─── News strip — shirt pocket card effect ──────────────────── */
 
-@keyframes newsScroll {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-
-.news-strip-track-outer {
-  overflow: hidden;
+/* Outer container */
+.ns-track-outer {
   position: relative;
 }
-.news-strip-fade-l {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 48px;
+.ns-fade-l {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 40px;
   background: linear-gradient(90deg, #08090A, transparent);
-  z-index: 3; pointer-events: none;
+  z-index: 4; pointer-events: none;
 }
-.news-strip-fade-r {
-  position: absolute; right: 0; top: 0; bottom: 0; width: 48px;
+.ns-fade-r {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 40px;
   background: linear-gradient(270deg, #08090A, transparent);
-  z-index: 3; pointer-events: none;
+  z-index: 4; pointer-events: none;
 }
-.news-strip-track {
+.ns-track {
   display: flex;
   gap: 14px;
   width: max-content;
-  animation: newsScroll 90s linear infinite;
-  padding-bottom: 4px;
+  will-change: transform;
 }
-.news-strip-track:hover {
-  animation-play-state: paused;
+.ns-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; gap: 8px;
 }
+.ns-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.22em;
+  color: #3A3830; text-transform: uppercase;
+}
+.ns-dots { display: flex; align-items: center; gap: 7px; }
+.ns-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  border: 1.5px solid #2A2D34; background: transparent;
+  cursor: pointer; padding: 0;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.ns-dot--on {
+  background: var(--dc); border-color: var(--dc);
+  transform: scale(1.3);
+}
+.ns-dot:hover:not(.ns-dot--on) { border-color: var(--dc); }
 
-/* Pocket card wrapper — exactly half the card height so card sits 50/50 */
-.news-pocket-wrapper {
-  display: block;
-  width: 178px;
-  height: 180px;       /* exactly half of 360px — like a card half-out of a pocket */
-  overflow: hidden;
-  position: relative;
-  flex-shrink: 0;
-  text-decoration: none;
-  border-radius: 8px;
-  border: 1px solid #1A1D24;
-  cursor: pointer;
-  transition: box-shadow 0.4s ease;
+/* Pocket card outer — no overflow:hidden here, so the 40px headroom above is open */
+.npc-outer {
+  display: block; width: 178px; flex-shrink: 0;
+  text-decoration: none; cursor: pointer;
 }
-.news-pocket-wrapper:hover {
-  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
-}
-
-/* Full card — image (180px) + article text (180px). Only top half visible. */
-.news-pocket-card {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+/* Full card: image (180px) + text (180px) = 360px.
+   At rest sits at y=0. On hover rises -36px into the 40px headroom. */
+.npc-card {
   height: 360px;
   transform: translateY(0);
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 8px; overflow: hidden;
+  border: 1px solid #1A1D24;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
-/* On hover: pull up JUST A BIT — teasing peek at what's inside */
-.news-pocket-wrapper:hover .news-pocket-card {
-  transform: translateY(-44px);
+.npc-outer:hover .npc-card {
+  transform: translateY(-36px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.7);
 }
-
-/* Image section — exactly half the total card height */
-.news-pocket-img {
-  position: relative;
-  height: 180px;
-  background: #0A0C10;
-  overflow: hidden;
+.npc-img {
+  position: relative; height: 180px; background: #0A0C10; overflow: hidden;
 }
-
-/* Pocket edge — the shadow "fold" that sells the illusion */
-.news-pocket-edge {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 32px;
-  background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, transparent 100%);
-  pointer-events: none;
-  z-index: 2;
+.npc-edge {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 36px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.75) 0%, transparent 100%);
+  pointer-events: none; z-index: 2;
 }
-
-/* Source badge */
-.news-pocket-badge {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(8, 9, 10, 0.85);
-  border: 1px solid color-mix(in oklab, var(--badge-color) 40%, transparent);
-  border-radius: 2px;
-  padding: 3px 8px;
-  z-index: 3;
+.npc-badge {
+  position: absolute; bottom: 8px; left: 8px;
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(8,9,10,0.88);
+  border: 1px solid color-mix(in oklab, var(--c) 35%, transparent);
+  border-radius: 2px; padding: 3px 8px; z-index: 3;
 }
-.news-pocket-dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: var(--badge-color);
-  flex-shrink: 0;
+.npc-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--c); flex-shrink: 0; }
+.npc-src {
+  font-family: 'Syne', sans-serif; font-size: 8px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--c);
 }
-.news-pocket-source {
-  font-family: 'Syne', sans-serif;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--badge-color);
-}
-.news-pocket-age {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 8px;
-  color: #4A4840;
-  letter-spacing: 0.04em;
-}
-
-/* Article text section — the other half of the card, hidden inside the pocket */
-.news-pocket-text {
-  height: 180px;
-  background: #0E1014;
-  border-top: 1px solid color-mix(in oklab, var(--accent) 18%, #1A1D24);
+.npc-age { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #4A4840; }
+.npc-text {
+  height: 180px; background: #0E1014;
+  border-top: 1px solid color-mix(in oklab, var(--ac) 20%, #1A1D24);
   padding: 12px 14px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: flex; flex-direction: column; gap: 6px;
 }
-.news-pocket-title {
-  font-family: 'Instrument Serif', serif;
-  font-size: 13px;
-  font-style: italic;
-  color: #E8E4DC;
-  line-height: 1.35;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
+.npc-title {
+  font-family: 'Instrument Serif', serif; font-size: 13px; font-style: italic;
+  color: #E8E4DC; line-height: 1.35;
+  overflow: hidden; display: -webkit-box;
+  -webkit-line-clamp: 3; -webkit-box-orient: vertical;
 }
-.news-pocket-desc {
-  font-family: 'Syne', sans-serif;
-  font-size: 10px;
-  color: #4A4840;
-  line-height: 1.5;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  flex: 1;
+.npc-desc {
+  font-family: 'Syne', sans-serif; font-size: 10px; color: #4A4840; line-height: 1.5;
+  overflow: hidden; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; flex: 1;
 }
-.news-pocket-read {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-  opacity: 0.7;
-}
-
-/* Header + filter dots */
-.news-strip-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.news-strip-label {
-  font-family: 'Syne', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  color: #3A3830;
-  text-transform: uppercase;
-}
-.news-strip-dots {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.news-dot {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  background: transparent;
-  border: 1px solid #14161A;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: all 0.12s;
-}
-.news-dot--all {
-  border-color: #3A3830;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: #5A5850;
-}
-.news-dot-pip {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--dot-color);
-  opacity: 0.5;
-  transition: opacity 0.12s;
-}
-.news-dot-label {
-  font-family: 'Syne', sans-serif;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #3A3830;
-  text-transform: uppercase;
-  transition: color 0.12s;
-}
-.news-dot:hover .news-dot-pip,
-.news-dot--active .news-dot-pip {
-  opacity: 1;
-}
-.news-dot:hover .news-dot-label,
-.news-dot--active .news-dot-label {
-  color: var(--dot-color);
-}
-.news-dot--active {
-  border-color: color-mix(in oklab, var(--dot-color) 40%, transparent);
-  background: color-mix(in oklab, var(--dot-color) 8%, transparent);
+.npc-read {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.1em; color: var(--ac); opacity: 0.7;
 }
 
 /* ─── Signal list (replaces 3×3 abbreviated grid) ───────────────────── */

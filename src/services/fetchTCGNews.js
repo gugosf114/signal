@@ -55,7 +55,7 @@ async function fetchSource(source) {
     const data = await res.json();
     if (data.status !== 'ok' || !Array.isArray(data.items)) return [];
 
-    return data.items.map((item) => {
+    return data.items.slice(0, 2).map((item) => {
       const rawDesc = (item.description || item.content || '')
         .replace(/<[^>]*>/g, '')
         .replace(/\s+/g, ' ')
