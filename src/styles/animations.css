@@ -855,11 +855,11 @@
   animation-play-state: paused;
 }
 
-/* Pocket card wrapper */
+/* Pocket card wrapper — exactly half the card height so card sits 50/50 */
 .news-pocket-wrapper {
   display: block;
   width: 178px;
-  height: 210px;       /* visible height — the "pocket" opening */
+  height: 180px;       /* exactly half of 360px — like a card half-out of a pocket */
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
@@ -867,29 +867,31 @@
   border-radius: 8px;
   border: 1px solid #1A1D24;
   cursor: pointer;
+  transition: box-shadow 0.4s ease;
+}
+.news-pocket-wrapper:hover {
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
 }
 
-/* Full card — taller than wrapper; image at top is visible, article text hidden below */
+/* Full card — image (180px) + article text (180px). Only top half visible. */
 .news-pocket-card {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 360px;       /* image (210px) + article text (150px) */
+  height: 360px;
   transform: translateY(0);
-  transition:
-    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.45s ease;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
-/* On hover: pull card UP, hiding image and revealing article text from below */
+/* On hover: pull up JUST A BIT — teasing peek at what's inside */
 .news-pocket-wrapper:hover .news-pocket-card {
-  transform: translateY(-150px);
+  transform: translateY(-44px);
 }
 
-/* Image section */
+/* Image section — exactly half the total card height */
 .news-pocket-img {
   position: relative;
-  height: 210px;
+  height: 180px;
   background: #0A0C10;
   overflow: hidden;
 }
@@ -940,9 +942,9 @@
   letter-spacing: 0.04em;
 }
 
-/* Article text section — lives below the pocket edge, pulled up on hover */
+/* Article text section — the other half of the card, hidden inside the pocket */
 .news-pocket-text {
-  height: 150px;
+  height: 180px;
   background: #0E1014;
   border-top: 1px solid color-mix(in oklab, var(--accent) 18%, #1A1D24);
   padding: 12px 14px 10px;
