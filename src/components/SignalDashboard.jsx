@@ -11,7 +11,6 @@ import EmptyState from './EmptyState';
 import CardBrowser from './CardBrowser';
 import WatchedCards from './WatchedCards';
 import NewsStrip from './NewsStrip';
-import UserAuth from './UserAuth';
 import { SIGNAL_SECTIONS, calculateOverallScore } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -61,8 +60,6 @@ export default function SignalDashboard() {
       padding: isMobile ? '24px 16px 60px' : '32px 24px 60px',
       position: 'relative',
     }}>
-      <UserAuth onUserLoad={() => {}} />
-      
       {/* Header — stacked center */}
       <div style={{ textAlign: 'center', marginBottom: 24, marginTop: isMobile ? 32 : 0 }}>
         <div style={{

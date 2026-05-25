@@ -9,13 +9,17 @@ export default function UserProfileModal({ user, scansLeft, onClose, onLogout })
       style={{
         position: 'fixed',
         top: 0, left: 0, right: 0, bottom: 0,
+        width: '100%',
+        height: '100%',
         backgroundColor: 'rgba(0,0,0,0.4)',
         zIndex: 1000,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: 24,
-        fontFamily: "'Syne', sans-serif"
+        fontFamily: "'Syne', sans-serif",
+        cursor: 'pointer',
+        touchAction: 'none'
       }}
     >
       <div 
@@ -28,7 +32,9 @@ export default function UserProfileModal({ user, scansLeft, onClose, onLogout })
           maxWidth: 400,
           padding: 32,
           position: 'relative',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+          cursor: 'default',
+          pointerEvents: 'auto'
         }}
       >
         {/* Close Button */}

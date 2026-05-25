@@ -121,7 +121,8 @@ export default function UserAuth({ onUserLoad }) {
               onClick={() => setShowProfile(true)}
               style={{
                 background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-                borderRadius: '50%', outline: 'none'
+                borderRadius: '50%', outline: 'none',
+                width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}
             >
               <img src={user.user_metadata?.avatar_url} alt="Avatar" style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid #2A2D34' }} />
