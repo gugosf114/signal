@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { SocialLogin } from '@capgo/capacitor-social-login';
 import UserProfileModal from './UserProfileModal';
 
 // Setup Supabase Client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://mock.supabase.co';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'mock-key';
 export const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Initialize Native Social Login
+SocialLogin.initialize({
+  google: {
+    webClientId: import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID || 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+  }
+}).catch(console.error);
 
 export default function UserAuth({ onUserLoad }) {
   const [user, setUser] = useState(null);
@@ -69,13 +77,35 @@ export default function UserAuth({ onUserLoad }) {
       return;
     }
 
-    // Google OAuth login
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin
+    try {
+      // 1. Trigger Native Google Login
+      const result = await SocialLogin.login({
+        provider: 'google',
+        options: {
+          clientId: import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID || 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+        },
+      });
+
+      if (result.result.token) {
+        // 2. Pass Google ID token to Supabase
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: result.result.token,
+        });
+
+        if (error) throw error;
+        console.log('Successfully logged in natively!', data.user);
       }
-    });
+    } catch (err) {
+      console.error('Native login failed, falling back to Web OAuth', err);
+      // Fallback to web OAuth if native plugin isn't available (e.g., in a browser)
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+    }
   };
 
   const handleLogout = async () => {
