@@ -131,6 +131,20 @@ Recover it with grep if needed.
 
 ---
 
+## Session log — 2026-05-23 (Gemini 2.5 Pro)
+
+**Goal:** Implement Google Auth via `@capgo/capacitor-social-login` inside an Android Capacitor Wrapper and fix Adaptive Icon clipping on Samsung devices (Android 16).
+
+**Actions Taken:**
+1.  **Auth Button Re-positioning:** Removed the original full-width "Sign in with Google" text button blocking the main logo and relocated it to an absolute top-right container displaying "10 SCANS LEFT" and a circular Google 'G' icon.
+2.  **Android 16 WebView Bounds Bug Fix:** Initially, touches on the React Auth Modal and its dimmed background were "falling through" to the dashboard because Android 16 WebView reported a `0x0` physical hit box for the SVG inside the `<button>` despite the CSS layout. Fixed this by explicitly declaring `width: '100%', height: '100%'` on the modal overlay and explicit 32x32 pixel bounds on the Avatar icon.
+3.  **Migrated to Native Auth:** Ripped out `supabase.auth.signInWithOAuth` (which was triggering broken WebView browser redirects inside Android) and replaced it with native OS-level Google Sign-In using the `@capgo/capacitor-social-login` Capacitor plugin connected to `supabase.auth.signInWithIdToken`. 
+4.  **Adaptive Icon Fix:** Discovered the 1024x1024 '株' icon was heavily cropped by Samsung's squircle mask because it lacked padding. Used a Python Pillow script to recreate the master asset with the font size shrunk to `300pt` to safely fit inside the Android `66%` safe zone. Generated 59 mipmap variants via `@capacitor/assets`.
+
+**Current Status:** The code is completely committed to the `main` branch. The Android wrapper compiles via Gradle successfully with the new icons and the native auth flow code. Testing the UI flow using physical screen taps directly on Android 16 requires real-device manual validation due to Capacitor/WebView bounding intricacies, but the codebase has been permanently synchronized to these fixes.
+
+---
+
 ## Architecture quick reference
 
 ```
