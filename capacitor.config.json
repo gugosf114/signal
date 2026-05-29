@@ -1,0 +1,8 @@
+{
+  "appId": "org.signal.app",
+  "appName": "Signal",
+  "webDir": "dist",
+  "plugins": {
+    "SocialLogin": {}
+  }
+}

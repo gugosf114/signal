@@ -154,17 +154,22 @@ export function calculateOverallScore(signals, game) {
   const weights = WEIGHTS[game];
   if (!weights) return 0;
 
-  let totalWeight = 0;
+  let fullWeight = 0;     // sum of every configured signal weight
+  let presentWeight = 0;  // weights of signals actually returned
   let weightedSum = 0;
 
   for (const [key, weight] of Object.entries(weights)) {
+    fullWeight += weight;
     const signal = signals.find(s => s.key === key);
     if (signal && typeof signal.level === 'number') {
       weightedSum += (signal.level / 5) * weight;
-      totalWeight += weight;
+      presentWeight += weight;
     }
   }
 
-  if (totalWeight === 0) return 0;
-  return Math.round((weightedSum / totalWeight) * 100);
+  // Divide by the FULL weight, not just present weights: missing signals
+  // (e.g. truncated/partial scans) contribute 0 rather than collapsing the
+  // denominator, which would inflate partial results and pollute score history.
+  if (presentWeight === 0 || fullWeight === 0) return 0;
+  return Math.round((weightedSum / fullWeight) * 100);
 }
