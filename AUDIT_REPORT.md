@@ -151,4 +151,65 @@ Anthropic + paid-TCG keys behind it (resolves B1, H1, and de-risks M3/M5), then 
 Anthropic key**. That, plus H3 (score inflation) and H2 (URL scheme validation), is the
 must-do list before letting real users — or a real-device build — loose.
 
-_Build/runtime-health layer: pending (agent still running); findings will be appended._
+---
+
+## Layer 5 — Build / Runtime health (static; no build run, node_modules not installed)
+
+### R1 (HIGH) · Android/Capacitor wrapper is NOT buildable as committed
+No `capacitor.config.json`/`.ts` anywhere; `android/` contains only `app/` (no root
+`build.gradle`/`settings.gradle`/gradle wrapper). `npx cap sync` would fail. Does **not**
+affect `vite build`/`dev`, but **the native app the README describes cannot be built from
+this repo as-is** — directly blocks the real-device test.
+**Fix:** commit `capacitor.config.*` and the full `android/` gradle project (or document
+that they're generated/ignored and how to regenerate).
+
+### R2 (HIGH) · UserAuth re-subscribes the Supabase auth listener every render
+`src/App.jsx:9` passes a fresh inline `onUserLoad={() => {}}`; `UserAuth.jsx:46` lists
+`[onUserLoad]` as effect deps, so every parent render tears down + recreates
+`onAuthStateChange` and re-runs `getSession()`. Masked in mock mode; churns subscriptions
+with real keys.
+**Fix:** `useCallback` the callback (or stable module-level no-op / store in a ref).
+
+### R3 (HIGH) · Watch state desyncs across two `useWatchedCards()` instances
+`OverallScore.jsx:17` and `WatchedCards.jsx:4` each hold independent local state. Starring
+in OverallScore updates only its copy; the WatchedCards list won't reflect it until remount.
+The hook's `reload` (`WatchedCards.jsx:32`) is never wired up.
+**Fix:** lift to shared context/provider, or sync via a storage/custom event.
+
+### R4 (MEDIUM) · No top-level error boundary
+`src/main.jsx`/`App.jsx` have none. Any render-phase throw blanks the whole app (async
+rejections are caught in `handleSearch`, but render errors aren't).
+**Fix:** wrap `<App/>` in an `ErrorBoundary` class component.
+
+### R5 (MEDIUM) · RecentScans strip never refreshes after a scan
+`RecentScans.jsx:7-12` reads localStorage once on mount; `OverallScore.jsx:30-34` writes
+`signal_recent_scans` per scan, but the strip stays mounted so new scans don't appear until
+reload. (Same stale-read family as R3.)
+**Fix:** re-read on result change via shared event or refresh key.
+
+### R6 (MEDIUM) · Capacitor `SocialLogin.initialize()` runs as an import-time side effect
+`UserAuth.jsx:12-16` initializes at module evaluation, before mount, regardless of platform;
+only swallowed by `.catch(console.error)`.
+**Fix:** move into a mount-time `useEffect` guarded by a platform check.
+
+### R7 (MEDIUM) · Bleeding-edge toolchain (informational)
+Vite 6.4.1, plugin-react 4.7.0, Capacitor 8.3.4 + capgo social-login 8.3.22, supabase-js
+2.106.2. Peer deps resolve statically; just a tight-coupling watch item on upgrade. Vite 6
+needs Node ^18 || ^20 || >=22.
+
+### Lower-severity (LOW)
+- **R8** · `console.log('Successfully logged in natively!', data.user)` at `UserAuth.jsx:97`
+  logs the user object — remove for production.
+- **R9** · Duplicated YouTube-ID regex (`analyzeCard.js:269-284` vs `brandIcons.jsx:307`) —
+  intentional but can drift; extract to a shared `.js` helper.
+- **R10** · `reload` from `useWatchedCards` is a dead export (see R3).
+- **R11** · `useMemo(() => Date.now(), [text])` (`LoadingTheater.jsx:387`) is a side-effecting
+  memo (lint smell; same root as M7) — reset via ref-in-effect instead.
+- **R12** · `CardBrowser` debounce timeout cleared on change but not on unmount (negligible).
+- (Confirms earlier: enhanced-price `gradedLines` unused = L-b; `TODO_VERIFY` sample cards = M6 quick-picks.)
+
+### Confirmed clean (layer 5)
+No orphaned/dead components (all 20 components reachable from `App → SignalDashboard`); no
+broken/case-mismatched/circular imports; `simple-icons` v16 `siX` usage correct; all `.map()`
+keys present; effect cleanups present in CardImage/LoadingTheater/CardLightbox/useIsMobile/
+NewsStrip; `[signal]`/`[CardImage]` logs are intentional per README.
