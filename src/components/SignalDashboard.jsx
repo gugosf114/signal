@@ -3,6 +3,7 @@ import SearchBar from './SearchBar';
 import QuickPicks from './QuickPicks';
 import RecentScans from './RecentScans';
 import PriceComparison from './PriceComparison';
+import EbayListings from './EbayListings';
 import OverallScore from './OverallScore';
 import SignalSection from './SignalSection';
 import SignalNav from './SignalNav';
@@ -218,6 +219,8 @@ export default function SignalDashboard() {
               signal_vs_market: result.prices?.signal_vs_market,
             }}
           />
+
+          <EbayListings data={result.ebay_listings} />
 
           {/* Signal navigation — jump to any section */}
           <SignalNav signals={result.signals || []} />

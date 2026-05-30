@@ -64,6 +64,30 @@ FULL OUTPUT SHAPE:
     "trend_30d": "...",
     "signal_vs_market": "..."
   },
+  "ebay_listings": {
+    "buy_it_now": [
+      {
+        "title": "...",
+        "price_usd": 1450,
+        "condition": "Near Mint | Mint | Lightly Played | Moderately Played | Played | Graded — PSA 10 | Graded — BGS 9.5 | unknown",
+        "shipping": "Free | $X.XX | unknown",
+        "seller": "seller_username (99.5% / 12k feedback)",
+        "url": "https://www.ebay.com/itm/..."
+      }
+      /* exactly 2 BIN entries */
+    ],
+    "auction": [
+      {
+        "title": "...",
+        "current_bid_usd": 980,
+        "condition": "...",
+        "bid_count": 18,
+        "time_remaining": "2d 14h",
+        "url": "https://www.ebay.com/itm/..."
+      }
+      /* exactly 1 auction entry */
+    ]
+  },
   "signals": [ /* exactly 9 entries, one per signal key */ ],
   "summary": "..."
 }
@@ -71,10 +95,11 @@ FULL OUTPUT SHAPE:
 RULES:
 - Every signal key must appear exactly once in the signals[] array.
 - Every "level" is an integer 1-5 (1=minimal, 5=extreme).
-- Every "url" MUST be a URL you actually visited via web_search. NEVER invent URLs.
+- Every "url" MUST be a URL you actually visited via web_search. NEVER invent URLs. Applies to eBay listing URLs too — use the exact /itm/NUMBER URLs from search results.
 - If a signal has no real sources, set "sources": [] and score the level based on what you DID find. Empty is better than fake.
 - Aim for 2-3 sources per signal where evidence exists. Quality over quantity — never pad with weak sources.
 - Keep "detail" to ONE sentence. Keep "summary" fields to 1-2 sentences. Be terse — the JSON has a hard size limit.
+- eBay listings: search active listings, pull exactly 2 Buy It Now + 1 Auction. Match the actual card name, set, and rarity from the user's query. If no auction is currently live, omit that field (empty array). If listings can't be found, set both arrays to empty rather than fabricate. Prefer raw NM/M condition over heavily graded slabs unless the user specified graded — graded prices are a different market.
 
 CREATOR COVERAGE — CRITICAL:
 ${creatorBlocks}
@@ -137,14 +162,15 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
         '3. Tournament data — Limitless usage rates, ban list status',
         '4. Community sentiment — Reddit and Twitter/X recent activity',
         '5. JP community hype — Japanese Twitter/X, JP YouTube',
+        '6. eBay active listings — search eBay for the card and pull 2 Buy It Now + 1 Auction from the results. Use the real /itm/NUMBER URLs.',
         '',
         'Use the pre-fetched EN price data to score price-related signals without re-searching.',
       ].join('\n')
     : baseMessage;
 
-  // With pre-fetched data: 5 searches cover the remaining soft signals (~$0.30-0.45/scan).
-  // Without (fallback): 8 searches for full coverage (~$0.70-0.90/scan).
-  const maxSearches = hasPreFetch ? 5 : 8;
+  // With pre-fetched data: 10 searches cover soft signals + eBay listings (~$0.55-0.75/scan).
+  // Without (fallback): 13 searches for full coverage (~$1.10-1.40/scan).
+  const maxSearches = hasPreFetch ? 10 : 13;
 
   const response = await fetch(API_URL, {
     method: 'POST',
