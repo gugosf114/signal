@@ -141,11 +141,16 @@ export const GAME_LABELS = {
 
 // ─── Score Thresholds ────────────────────────────────────────────────────────
 
+// Label + collector-language blurb per tier. Descriptive, not directive —
+// kept out of "buy / sell / hold" territory so the score reads as a status
+// not a recommendation. Pairs with the "Not financial advice" footer.
 export function getScoreLabel(score) {
-  if (score >= 75) return { label: 'SURGING', color: '#C44040' };
-  if (score >= 50) return { label: 'HEATING', color: '#A09060' };
-  if (score >= 30) return { label: 'STEADY', color: '#608870' };
-  return { label: 'DORMANT', color: '#4A4840' };
+  if (score >= 85) return { label: 'BLAZING', color: '#C44040', blurb: 'At its peak — chase-card energy right now' };
+  if (score >= 70) return { label: 'SURGING', color: '#C44040', blurb: 'Real upward pressure — momentum is stacking' };
+  if (score >= 50) return { label: 'HEATING', color: '#A09060', blurb: 'Interest is building — the card keeps coming up' };
+  if (score >= 30) return { label: 'STEADY',  color: '#608870', blurb: 'Fair market — settled, fundamentals intact' };
+  if (score >= 15) return { label: 'COOLING', color: '#807060', blurb: 'Losing momentum — moving slower than peers' };
+  return                  { label: 'DORMANT', color: '#4A4840', blurb: 'Quiet right now — sleeping in the binder' };
 }
 
 // ─── Weighted Score Calculator ───────────────────────────────────────────────

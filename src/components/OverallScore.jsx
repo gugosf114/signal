@@ -6,7 +6,7 @@ import CardImage from './CardImage';
 import CardLightbox from './CardLightbox';
 
 export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, onRetry, signals = [], enPrice, jpPrice, trend }) {
-  const { label, color } = getScoreLabel(score);
+  const { label, color, blurb } = getScoreLabel(score);
   const gameMeta = GAME_LABELS[game];
   const glowColor = gameMeta?.color || '#C44040';
   const isMobile = useIsMobile();
@@ -182,6 +182,18 @@ export default function OverallScore({ score, cardName, game, summary, truncated
                   <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
                 </svg>
               </button>
+            </div>
+
+            {/* Tier blurb — descriptive, not directive. Footer disclaimer still applies. */}
+            <div style={{
+              marginTop: 6,
+              fontSize: 13,
+              fontFamily: "'Instrument Serif', serif",
+              fontStyle: 'italic',
+              color: '#8A8680',
+              lineHeight: 1.4,
+            }}>
+              {blurb}
             </div>
 
             {percentileInfo && (

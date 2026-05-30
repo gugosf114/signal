@@ -61,41 +61,51 @@ export default function SignalDashboard() {
       padding: isMobile ? '24px 16px 60px' : '32px 24px 60px',
       position: 'relative',
     }}>
-      {/* Header — stacked center */}
-      <div style={{ textAlign: 'center', marginBottom: 24, marginTop: isMobile ? 32 : 0 }}>
+      {/* Header — wordmark inside a hairline red border. */}
+      {/* Kanji slightly smaller than "Signal"; Signal in Syne, no italic. */}
+      <div style={{ textAlign: 'center', marginBottom: 32, marginTop: isMobile ? 28 : 0 }}>
         <div style={{
           display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '9px 22px 9px 16px',
-          borderRadius: 3,
-          background: '#C44040',
-          marginBottom: 6,
+          alignItems: 'baseline',
+          gap: isMobile ? 10 : 14,
+          padding: isMobile ? '10px 20px 12px' : '12px 26px 14px',
+          border: '1px solid #C44040',
+          borderRadius: 8,
+          marginBottom: 10,
         }}>
           <span style={{
-            fontSize: 26,
+            fontSize: isMobile ? 26 : 32,
             fontWeight: 900,
-            color: '#fff',
-            lineHeight: 1,
+            color: '#C44040',
+            lineHeight: 0.95,
             fontFamily: "'Noto Sans JP', sans-serif",
+            letterSpacing: '-0.02em',
+            background: 'linear-gradient(180deg, #E96565 0%, #C44040 55%, #9C3030 100%)',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
           }}>株</span>
           <span style={{
-            fontSize: 22,
-            fontWeight: 800,
-            color: '#fff',
+            fontSize: isMobile ? 36 : 44,
+            color: '#E8E4DC',
             fontFamily: "'Syne', sans-serif",
+            fontWeight: 700,
+            lineHeight: 0.95,
             letterSpacing: '-0.02em',
+            background: 'linear-gradient(180deg, #F5F1E8 0%, #D8D4CC 60%, #B0ACA4 100%)',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
           }}>Signal</span>
         </div>
         <div style={{
-          fontSize: 11,
-          color: '#3A3830',
-          fontFamily: "'Syne', sans-serif",
-          fontWeight: 500,
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
+          fontSize: 13,
+          color: '#5A5850',
+          fontFamily: "'Instrument Serif', serif",
+          fontStyle: 'italic',
+          letterSpacing: 0,
         }}>
-          trading card intelligence
+          Trading card intelligence
         </div>
       </div>
 

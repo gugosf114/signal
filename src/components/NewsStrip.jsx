@@ -150,10 +150,14 @@ export default function NewsStrip() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [paused, setPaused]       = useState(false);
 
-  const trackRef  = useRef(null);
-  const posRef    = useRef(0);
-  const rafRef    = useRef(null);
-  const pausedRef = useRef(false);
+  const trackRef       = useRef(null);
+  const posRef         = useRef(0);
+  const rafRef         = useRef(null);
+  const pausedRef      = useRef(false);
+  const dragStartRef   = useRef(null);
+  const isDraggingRef  = useRef(false);
+  const draggedRef     = useRef(false);
+  const resumeTimerRef = useRef(null);
 
   useEffect(() => { pausedRef.current = paused; }, [paused]);
 
@@ -193,13 +197,57 @@ export default function NewsStrip() {
     }
   };
 
+  // ── Manual swipe / drag — pointer events unify touch + mouse ──────────
+  // touch-action: pan-y in the style below lets vertical page scroll work
+  // while horizontal touches fire JS so we can drive the strip ourselves.
+  const onPointerDown = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (!articles.length) return;
+    dragStartRef.current = { x: e.clientX, pos: posRef.current };
+    isDraggingRef.current = true;
+    draggedRef.current = false;
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    setPaused(true);
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
+  };
+
+  const onPointerMove = (e) => {
+    if (!isDraggingRef.current || !dragStartRef.current || !trackRef.current) return;
+    const delta = dragStartRef.current.x - e.clientX;
+    if (Math.abs(delta) > 5) draggedRef.current = true;
+    const total = articles.length * STEP;
+    if (total <= 0) return;
+    let next = (dragStartRef.current.pos + delta) % total;
+    if (next < 0) next += total;
+    posRef.current = next;
+    trackRef.current.style.transform = `translateX(-${next}px)`;
+    setActiveIdx(Math.floor(next / STEP) % articles.length);
+  };
+
+  const onPointerEnd = (e) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    dragStartRef.current = null;
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch {}
+    // Brief pause so the user can see where they landed before auto-scroll resumes.
+    resumeTimerRef.current = setTimeout(() => setPaused(false), 1200);
+  };
+
+  const onClickCapture = (e) => {
+    if (draggedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      draggedRef.current = false;
+    }
+  };
+
   if (loading) return null;
   if (!articles.length) return null;
 
   const tripled = [...articles, ...articles, ...articles];
 
   return (
-    <div style={{ marginTop: 40 }}>
+    <div style={{ marginTop: 40, overflow: 'hidden' }}>
       <div className="ns-header">
         <span className="ns-label">TCG Intelligence</span>
         <div className="ns-dots">
@@ -218,9 +266,20 @@ export default function NewsStrip() {
       {/* Outer container — 32px headroom above cards + card height below */}
       <div
         className="ns-track-outer"
-        style={{ paddingTop: 32, overflow: 'visible' }}
+        style={{
+          paddingTop: 32,
+          overflow: 'visible',
+          touchAction: 'pan-y',
+          cursor: isDraggingRef.current ? 'grabbing' : 'grab',
+          userSelect: 'none',
+        }}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
+        onClickCapture={onClickCapture}
       >
         <div className="ns-fade-l" />
         <div className="ns-fade-r" />
