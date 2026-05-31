@@ -35,6 +35,8 @@ export default function SignalDashboard() {
     // cards must return instantly with zero loading-theater flash.
     if (!force && game) {
       const fastCached = getCachedScan(query, game);
+      // eslint-disable-next-line no-console
+      console.warn('[signal:cache] fast-path lookup', { query, game, hit: !!fastCached });
       if (fastCached) {
         setResult(fastCached);
         setLastSearched({ name: query, game });
@@ -62,6 +64,8 @@ export default function SignalDashboard() {
     // Second cache check now that the set-code resolved (if it did).
     if (!force) {
       const cached = getCachedScan(resolvedName, resolvedGame);
+      // eslint-disable-next-line no-console
+      console.warn('[signal:cache] slow-path lookup', { resolvedName, resolvedGame, hit: !!cached });
       if (cached) {
         setResult(cached);
         return;
@@ -85,6 +89,8 @@ export default function SignalDashboard() {
       if (data?.game && data.game !== resolvedGame) {
         setCachedScan(resolvedName, data.game, data);
       }
+      // eslint-disable-next-line no-console
+      console.warn('[signal:cache] WRITE', { name: resolvedName, game: resolvedGame, detectedGame: data?.game });
     } catch (err) {
       if (err.name === 'AbortError') {
         setError('Scan exceeded 90 seconds. Network or model congestion — retry.');
