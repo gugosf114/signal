@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import HeatBar from './HeatBar';
 import SourceCitation from './SourceCitation';
 import { SIGNAL_TYPES } from '../config/signals';
-import { extractYouTubeId } from '../config/brandIcons';
+import { extractYouTubeId, BrandIcon, brandFromUrl } from '../config/brandIcons';
 
 const MARKS = {
   creator: (c) => (
@@ -133,19 +133,34 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
 
         <HeatBar level={signal.level} color={meta.color} />
 
-        {/* Source count badge — shows when collapsed and sources exist */}
-        {!expanded && sources.length > 0 && (
-          <span style={{
-            fontSize: 8,
-            fontFamily: "'JetBrains Mono', monospace",
-            color: meta.color,
-            opacity: 0.55,
-            letterSpacing: '0.04em',
-            flexShrink: 0,
-          }}>
-            {sources.length}
-          </span>
-        )}
+        {/* Source preview: dominant brand logos + count, surfaces what's behind
+            the score before the row is even expanded. */}
+        {!expanded && sources.length > 0 && (() => {
+          const brands = [];
+          const seen = new Set();
+          for (const s of sources) {
+            const b = brandFromUrl(s.url) || (s.type === 'youtube' ? 'youtube' : null);
+            if (b && !seen.has(b)) { seen.add(b); brands.push(b); }
+            if (brands.length === 3) break;
+          }
+          return (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+              {brands.map((b) => (
+                <BrandIcon key={b} brand={b} size={11} style={{ opacity: 0.65 }} />
+              ))}
+              <span style={{
+                fontSize: 8,
+                fontFamily: "'JetBrains Mono', monospace",
+                color: meta.color,
+                opacity: 0.55,
+                letterSpacing: '0.04em',
+                marginLeft: brands.length ? 2 : 0,
+              }}>
+                {sources.length}
+              </span>
+            </span>
+          );
+        })()}
 
         <span style={{
           fontSize: 11,

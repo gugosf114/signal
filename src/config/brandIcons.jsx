@@ -210,20 +210,23 @@ function CustomBrandSvg({ kind, color, size, label, className, style }) {
       );
 
     case 'yugioh':
-      // Pyramidal star — evokes Millennium Puzzle
+      // Millennium Puzzle triangle with Eye of Wadjet
       return (
         <svg {...props}>
-          <polygon points="12,2 22,12 12,22 2,12" stroke={color} strokeWidth="1.5" fill="none" />
-          <polygon points="12,7 17,12 12,17 7,12" fill={color} />
+          <polygon points="12,3 22,21 2,21" stroke={color} strokeWidth="1.6" fill="none" strokeLinejoin="round" />
+          <ellipse cx="12" cy="15.5" rx="5.2" ry="3" stroke={color} strokeWidth="1.3" fill="none" />
+          <circle cx="12" cy="15.5" r="1.6" fill={color} />
         </svg>
       );
 
     case 'mtg':
-      // Five-mana planeswalker pentagon
+      // Planeswalker spark — four-point burst
       return (
         <svg {...props}>
-          <polygon points="12,2 22,9 18,21 6,21 2,9" stroke={color} strokeWidth="1.5" fill="none" />
-          <circle cx="12" cy="13" r="2.5" fill={color} />
+          <path
+            d="M 12 1.5 L 13.6 9.4 L 22.5 12 L 13.6 14.6 L 12 22.5 L 10.4 14.6 L 1.5 12 L 10.4 9.4 Z"
+            fill={color}
+          />
         </svg>
       );
 

@@ -24,7 +24,7 @@ async function browseCards(game, query) {
         ? `name:${encodeURIComponent(query)}*`
         : DEFAULT_QUERY.pokemon.q;
       const res = await fetch(
-        `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&pageSize=20&orderBy=${DEFAULT_QUERY.pokemon.sort}`
+        `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&pageSize=21&orderBy=${DEFAULT_QUERY.pokemon.sort}`
       );
       if (!res.ok) return [];
       const data = await res.json();
@@ -44,7 +44,7 @@ async function browseCards(game, query) {
       );
       if (!res.ok) return [];
       const data = await res.json();
-      return (data.data || []).slice(0, 20).map(c => ({
+      return (data.data || []).slice(0, 21).map(c => ({
         id: c.id,
         name: c.name,
         game: 'mtg',
@@ -58,11 +58,11 @@ async function browseCards(game, query) {
         ? `fname=${encodeURIComponent(query)}`
         : `sort=${DEFAULT_QUERY.yugioh.sort}`;
       const res = await fetch(
-        `https://db.ygoprodeck.com/api/v7/cardinfo.php?${params}&num=20&offset=0`
+        `https://db.ygoprodeck.com/api/v7/cardinfo.php?${params}&num=21&offset=0`
       );
       if (!res.ok) return [];
       const data = await res.json();
-      return (data.data || []).slice(0, 20).map(c => ({
+      return (data.data || []).slice(0, 21).map(c => ({
         id: String(c.id),
         name: c.name,
         game: 'yugioh',
@@ -202,7 +202,8 @@ export default function CardBrowser({ onCardSelect }) {
           gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
           gap: 8,
         }}>
-          {cards.map(card => (
+          {/* Trim to whole rows of 3 so the last row isn't a partial 1-or-2-card sliver. */}
+          {cards.slice(0, Math.max(3, Math.floor(cards.length / 3) * 3)).map(card => (
             <button
               key={card.id}
               onClick={() => onCardSelect(card.name, card.game)}

@@ -51,22 +51,41 @@ function ArticleCard({ article, fallbackImg }) {
       className="npc-outer"
     >
       {/* ── CARD IMAGE — the part sticking out of the pocket ──────── */}
-      <div className="npc-above">
+      {/* All images render inside a centered portrait sub-frame so YGO cards
+          and article banners share the same visual footprint regardless of
+          source aspect ratio. */}
+      <div className="npc-above" style={{ background: '#08090A' }}>
         {imgSrc ? (
-          <img
-            src={imgSrc}
-            alt=""
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            style={{
-              width: '100%', height: '100%',
-              objectFit: isGameCard ? 'contain' : 'cover',
-              objectPosition: 'center top',
-              background: '#08090A',
-              display: 'block',
-            }}
-            onError={e => { e.currentTarget.style.display = 'none'; }}
-          />
+          <div style={{
+            position: 'absolute',
+            left: '50%',
+            top: 0,
+            transform: 'translateX(-50%)',
+            height: '100%',
+            aspectRatio: '0.716',
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 6,
+            boxSizing: 'border-box',
+          }}>
+            <img
+              src={imgSrc}
+              alt=""
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                objectFit: 'contain',
+                objectPosition: 'center',
+                background: 'transparent',
+                display: 'block',
+              }}
+              onError={e => { e.currentTarget.style.display = 'none'; }}
+            />
+          </div>
         ) : (
           <div style={{
             width: '100%', height: '100%',

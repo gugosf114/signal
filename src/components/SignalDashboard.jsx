@@ -14,6 +14,9 @@ import WatchedCards from './WatchedCards';
 import NewsStrip from './NewsStrip';
 import { SIGNAL_SECTIONS, calculateOverallScore } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
+import { exportReportToPdf, shareReportAsPdf } from '../services/exportReport';
+import { lookupBySetCode, looksLikeSetCode } from '../services/lookupBySetCode';
+import { getCachedScan, setCachedScan, clearCachedScan } from '../services/scanCache';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function SignalDashboard() {
@@ -24,19 +27,53 @@ export default function SignalDashboard() {
   const [lastSearched, setLastSearched] = useState(null);
   const isMobile = useIsMobile();
 
-  const handleSearch = async (query, game = null) => {
+  const handleSearch = async (query, game = null, opts = {}) => {
+    const { force = false } = opts;
     setLoading(true);
     setError(null);
     setResult(null);
-    setPendingCard({ name: query, game });
-    setLastSearched({ name: query, game });
+
+    // Resolve set-code inputs (e.g. "LOB-EN001", "SV7-198", "MOM-001") to a
+    // canonical card name via the official APIs before kicking off the LLM
+    // pipeline. Closes the gap where users typed a code Collectr/TCG knew
+    // but our name-only search couldn't match.
+    let resolvedName = query;
+    let resolvedGame = game;
+    if (!game && looksLikeSetCode(query)) {
+      try {
+        const hit = await lookupBySetCode(query);
+        if (hit && hit.name) {
+          resolvedName = hit.name;
+          resolvedGame = hit.game;
+        }
+      } catch {
+        // fall through with the raw input — analyzeCard still has web_search
+      }
+    }
+
+    setLastSearched({ name: resolvedName, game: resolvedGame });
+
+    // Cache hit short-circuit — already-scanned cards return instantly.
+    // Re-scan button on the result page forces a fresh fetch.
+    if (!force) {
+      const cached = getCachedScan(resolvedName, resolvedGame);
+      if (cached) {
+        setResult(cached);
+        setLoading(false);
+        setPendingCard(null);
+        return;
+      }
+    }
+
+    setPendingCard({ name: resolvedName, game: resolvedGame });
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90000);
 
     try {
-      const data = await analyzeCard(query, game, { signal: controller.signal });
+      const data = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal });
       setResult(data);
+      setCachedScan(resolvedName, resolvedGame, data);
     } catch (err) {
       if (err.name === 'AbortError') {
         setError('Scan exceeded 90 seconds. Network or model congestion — retry.');
@@ -206,6 +243,188 @@ export default function SignalDashboard() {
       {/* Results */}
       {result && !loading && (
         <>
+          {/* Result-page actions: back to dashboard + save as PDF.
+              Save PDF captures the #signal-report-capture wrapper below. */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => { setResult(null); setLastSearched(null); }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px 4px 6px',
+                background: 'transparent',
+                border: '1px solid #1A1D24',
+                borderRadius: 4,
+                color: '#6B6860',
+                fontSize: 11,
+                fontFamily: "'Syne', sans-serif",
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#C44040';
+                e.currentTarget.style.color = '#C8C4BC';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#1A1D24';
+                e.currentTarget.style.color = '#6B6860';
+              }}
+              aria-label="Back to dashboard"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              Back
+            </button>
+
+            <button
+              onClick={async () => {
+                try {
+                  await exportReportToPdf({
+                    filename: `signal-${(result.card_name || 'card').toLowerCase().replace(/\s+/g, '-')}.pdf`,
+                  });
+                } catch (err) {
+                  // eslint-disable-next-line no-console
+                  console.error('[signal] PDF export failed', err);
+                }
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px 4px 6px',
+                background: 'transparent',
+                border: '1px solid #1A1D24',
+                borderRadius: 4,
+                color: '#6B6860',
+                fontSize: 11,
+                fontFamily: "'Syne', sans-serif",
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#A09060';
+                e.currentTarget.style.color = '#C8C4BC';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#1A1D24';
+                e.currentTarget.style.color = '#6B6860';
+              }}
+              aria-label="Download report as PDF"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Save PDF
+            </button>
+
+            {/* Share — opens system share sheet (email, Messages, etc.) with the
+                generated PDF as an attachment. Falls back to download. */}
+            <button
+              onClick={async () => {
+                try {
+                  await shareReportAsPdf({
+                    filename: `signal-${(result.card_name || 'card').toLowerCase().replace(/\s+/g, '-')}.pdf`,
+                    title: `Signal: ${result.card_name || 'card'}`,
+                    text: `${result.card_name || 'Card'} · ${result.summary?.slice(0, 140) || ''}`,
+                  });
+                } catch (err) {
+                  // eslint-disable-next-line no-console
+                  console.error('[signal] share failed', err);
+                }
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px 4px 6px',
+                background: 'transparent',
+                border: '1px solid #1A1D24',
+                borderRadius: 4,
+                color: '#6B6860',
+                fontSize: 11,
+                fontFamily: "'Syne', sans-serif",
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#A09060';
+                e.currentTarget.style.color = '#C8C4BC';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#1A1D24';
+                e.currentTarget.style.color = '#6B6860';
+              }}
+              aria-label="Share / email report"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+              Share
+            </button>
+
+            {/* Re-scan — bypasses the local cache and burns a fresh Anthropic
+                run when the cached data is stale. */}
+            <button
+              onClick={() => {
+                if (!result?.card_name) return;
+                clearCachedScan(result.card_name, result.game);
+                handleSearch(result.card_name, result.game, { force: true });
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px 4px 6px',
+                background: 'transparent',
+                border: '1px solid #1A1D24',
+                borderRadius: 4,
+                color: '#6B6860',
+                fontSize: 11,
+                fontFamily: "'Syne', sans-serif",
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#C44040';
+                e.currentTarget.style.color = '#C8C4BC';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#1A1D24';
+                e.currentTarget.style.color = '#6B6860';
+              }}
+              aria-label="Re-scan with fresh data"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
+              Re-scan
+            </button>
+          </div>
+
+          <div id="signal-report-capture">
+
           {score !== null && (
             <OverallScore
               score={score}
@@ -256,6 +475,7 @@ export default function SignalDashboard() {
           }}>
             Signal data is for informational purposes only. Not financial advice.
           </div>
+          </div>{/* /#signal-report-capture */}
         </>
       )}
 

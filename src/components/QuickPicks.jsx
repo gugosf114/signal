@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SAMPLE_CARDS, GAME_LABELS } from '../config/signals';
 import { BrandIcon } from '../config/brandIcons';
+import { getLatestChaseCards } from '../services/latestChase';
 
 const GAME_BRAND = {
   pokemon: 'pokemon',
@@ -9,6 +10,25 @@ const GAME_BRAND = {
 };
 
 export default function QuickPicks({ onSelect, loading }) {
+  const [dynamicPicks, setDynamicPicks] = useState([]);
+
+  useEffect(() => {
+    // Fetch newest chase cards from each game's official API on mount.
+    // Falls through silently if a fetch fails — the curated SAMPLE_CARDS
+    // still cover the always-popular set.
+    getLatestChaseCards().then((cards) => {
+      if (Array.isArray(cards) && cards.length) {
+        // Dedupe against the static list by name so we don't double up
+        const existing = new Set(SAMPLE_CARDS.map(c => c.name.toLowerCase()));
+        const filtered = cards.filter(c => !existing.has(c.name.toLowerCase()));
+        setDynamicPicks(filtered);
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Latest-set chase cards lead the strip; curated classics follow.
+  const picks = [...dynamicPicks, ...SAMPLE_CARDS];
+
   return (
     <div style={{
       display: 'flex',
@@ -16,7 +36,7 @@ export default function QuickPicks({ onSelect, loading }) {
       gap: 6,
       justifyContent: 'center',
     }}>
-      {SAMPLE_CARDS.map((card) => {
+      {picks.map((card) => {
         const game = GAME_LABELS[card.game] || { color: '#3A3830', label: card.game || '?' };
         return (
           <button
