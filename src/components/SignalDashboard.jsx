@@ -29,14 +29,22 @@ export default function SignalDashboard() {
 
   const handleSearch = async (query, game = null, opts = {}) => {
     const { force = false } = opts;
-    setLoading(true);
     setError(null);
-    setResult(null);
 
-    // Resolve set-code inputs (e.g. "LOB-EN001", "SV7-198", "MOM-001") to a
-    // canonical card name via the official APIs before kicking off the LLM
-    // pipeline. Closes the gap where users typed a code Collectr/TCG knew
-    // but our name-only search couldn't match.
+    // Fast-path cache check BEFORE flipping loading state — already-scanned
+    // cards must return instantly with zero loading-theater flash.
+    if (!force && game) {
+      const fastCached = getCachedScan(query, game);
+      if (fastCached) {
+        setResult(fastCached);
+        setLastSearched({ name: query, game });
+        return;
+      }
+    }
+
+    // Set-code path is async (needs to resolve a name), so we have to flip
+    // loading first here. Plain card-name clicks skip this branch entirely
+    // and hit the early-return above.
     let resolvedName = query;
     let resolvedGame = game;
     if (!game && looksLikeSetCode(query)) {
@@ -46,25 +54,23 @@ export default function SignalDashboard() {
           resolvedName = hit.name;
           resolvedGame = hit.game;
         }
-      } catch {
-        // fall through with the raw input — analyzeCard still has web_search
-      }
+      } catch {}
     }
 
     setLastSearched({ name: resolvedName, game: resolvedGame });
 
-    // Cache hit short-circuit — already-scanned cards return instantly.
-    // Re-scan button on the result page forces a fresh fetch.
+    // Second cache check now that the set-code resolved (if it did).
     if (!force) {
       const cached = getCachedScan(resolvedName, resolvedGame);
       if (cached) {
         setResult(cached);
-        setLoading(false);
-        setPendingCard(null);
         return;
       }
     }
 
+    // Cache miss — now we actually need to scan.
+    setLoading(true);
+    setResult(null);
     setPendingCard({ name: resolvedName, game: resolvedGame });
 
     const controller = new AbortController();
@@ -73,7 +79,12 @@ export default function SignalDashboard() {
     try {
       const data = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal });
       setResult(data);
+      // Cache under BOTH the input game and the LLM-detected game so future
+      // clicks from any surface hit the cache.
       setCachedScan(resolvedName, resolvedGame, data);
+      if (data?.game && data.game !== resolvedGame) {
+        setCachedScan(resolvedName, data.game, data);
+      }
     } catch (err) {
       if (err.name === 'AbortError') {
         setError('Scan exceeded 90 seconds. Network or model congestion — retry.');
