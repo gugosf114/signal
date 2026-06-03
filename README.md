@@ -13,13 +13,16 @@ Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
 
 ---
 
-## Current state — 2026-05-10
+## Current state — 2026-06-03
 
-- Last commit on `main`: **893429f** ("Citation upgrade, loading theater, brand
-  icons, audit cleanup")
-- Stack: Vite 6 + React 18, `simple-icons` NPM, no TypeScript
-- Bundle: 213 KB / 70 KB gzipped
+- Last commit on `main`: **2e7e320** ("chore: add cache HIT/MISS logging
+  for verification")
+- Stack: Vite 6 + React 18, `simple-icons` NPM, html2pdf.js, Capacitor 8
+  (Android wrapper), no TypeScript
+- Bundle: ~487 KB / ~143 KB gzipped main JS
 - Dev server: `npm run dev` → http://localhost:3000
+- Android: `cd android && ./gradlew assembleDebug` → APK at
+  `android/app/build/outputs/apk/debug/app-debug.apk`
 
 ---
 
@@ -142,6 +145,159 @@ Recover it with grep if needed.
 4.  **Adaptive Icon Fix:** Discovered the 1024x1024 '株' icon was heavily cropped by Samsung's squircle mask because it lacked padding. Used a Python Pillow script to recreate the master asset with the font size shrunk to `300pt` to safely fit inside the Android `66%` safe zone. Generated 59 mipmap variants via `@capacitor/assets`.
 
 **Current Status:** The code is completely committed to the `main` branch. The Android wrapper compiles via Gradle successfully with the new icons and the native auth flow code. Testing the UI flow using physical screen taps directly on Android 16 requires real-device manual validation due to Capacitor/WebView bounding intricacies, but the codebase has been permanently synchronized to these fixes.
+
+> **Correction (2026-05-30):** The "Android wrapper compiles via Gradle
+> successfully" claim above was false against actual `main` at the time
+> of that entry. Only icon `res/` assets had been committed — no
+> `build.gradle`, no `AndroidManifest`, no `MainActivity`. The real
+> Capacitor scaffold landed in commit `7e9d176` on 2026-05-30.
+
+---
+
+## Session log — 2026-05-30 → 2026-06-03 (Opus 4.7, 1M context)
+
+Multi-day push covering twelve workstreams; commits `7e9d176..2e7e320`.
+
+**Capacitor scaffold.** `android/` was icon-assets only. `npx cap init` +
+`npx cap add android` produced the real Gradle project; first
+buildable + sideloadable APK on the Fold landed on this commit.
+
+**eBay listings strip.** Extended `analyzeCard.js` schema with
+`ebay_listings.buy_it_now[] + auction[]`, prompted the model to use the
+actual `/itm/NUMBER` URLs from search results. New `EbayListings.jsx`
+renders 2 BIN + 1 Auction below the price strip with type chip, price,
+condition, shipping or time-remaining, seller, click-out link. Search
+budget bumped to 10 (pre-fetch) / 13 (fallback) to fit the extra
+queries. URL filter unchanged — eBay item URLs returned from the model
+must match real search results or get dropped.
+
+**News strip — overflow + drag + image sizing.**
+- The triple-rendered `width: max-content` track was making the whole
+  document horizontally scrollable. Added `overflow: hidden` to the
+  outer wrapper.
+- Pointer-event drag handlers so the strip swipes manually (auto-scroll
+  pauses while dragging, resumes after 1.2s; `touch-action: pan-y`
+  keeps vertical page scroll intact).
+- Article images were filling tiles end-to-end while YGO cards rendered
+  small. Centered portrait sub-frame (aspect 0.716) with
+  `objectFit: contain` so every image fits visibly inside the same
+  small footprint, regardless of source aspect.
+
+**Brand mark redesign.** Dropped the filled red rectangle (read as a UI
+button, not a logomark). Final: thin red border + rounded 8px corners,
+株 in JP red (smaller), "Signal" in Syne 700 (larger, no italic),
+subtle vertical gradient via `background-clip:text` for ambient sheen.
+Tagline switched to lowercase italic Instrument Serif.
+
+**Recent Scans — log-style separation.** Added a "YOUR LAST SCANS" label
+inside hairline gradient dividers and switched chip style to log rows
+(left-border accent, monospace score, italic name) so the row reads as
+"your history" not "extra popular picks."
+
+**Six-tier score labels + blurbs.** `getScoreLabel` went 4 → 6 tiers:
+BLAZING / SURGING / HEATING / STEADY / COOLING / DORMANT. Each tier
+carries a one-line collector blurb ("chase-card energy", "sleeping in
+the binder") rendered italic Instrument Serif under the score number.
+No buy/sell/hold language; footer disclaimer unchanged.
+
+**Pip icons + source brand icons.** Replaced abstract YGO + MTG pip
+shapes — Millennium Puzzle eye for Yu-Gi-Oh!, four-point Planeswalker
+spark for Magic. `SignalCard` collapsed rows now surface up to 3
+dominant source brand icons (YouTube / eBay / Reddit / etc.) inline
+next to the count.
+
+**Result-page actions.** Four buttons — Back (clears result),
+Save PDF (`html2pdf.js`), Share (Web Share API → email/Messages with
+PDF attached, falls back to download), Re-scan (clears cache for that
+card + force-fresh fetch). Result content wrapped in
+`#signal-report-capture` for the PDF capture.
+
+**CardBrowser.** pageSize 20 → 21 per game; render trims to whole rows
+of 3 so the last row isn't a 1- or 2-card sliver.
+
+**Camera scanner.** `SearchBar` got a camera icon on the left. Native
+file input with `capture="environment"` opens the phone camera;
+Anthropic Vision (`scanCardImage.js`, reuses the existing
+`VITE_ANTHROPIC_API_KEY`, no plugin) identifies card name + game + set
++ number + confidence, then feeds `analyzeCard`.
+
+**Set-code lookup.** `LOB-EN001`, `SV7-198`, `MOM-014` now resolve
+against pokemontcg.io / Scryfall / YGOPRODeck (the same free DBs
+Collectr + TCGPlayer use upstream) and feed the canonical card name to
+the LLM. Saves ~2 web_search calls per scan.
+
+**Dynamic quick picks (no Japan-heavy lean).** New `latestChase.js`
+fetches newest set from each game's official API on dashboard mount
+and prepends top 2 chase cards to `SAMPLE_CARDS`. 24h localStorage
+cache.
+
+**Launcher icon — three iterations.**
+1. Kanji-only on dark canvas: fixed Samsung's squircle mask cropping
+   the previous off-center 株 PNG.
+2. Card + 株 inside: George correction — "it's not trading card plus
+   Japan; it's trading card plus whatever else." Saved as the global
+   `feedback_signal_not_japan_heavy.md` memory so the rule sticks.
+3. Final: cream portrait card silhouette + rising red sparkline +
+   terminal dot. Reads as "trading card + market data" with no per-
+   game / per-region bias. `scripts/gen_icon.py` regenerates all 5
+   density variants + adaptive foreground/background.
+
+**Scan cache.** `scanCache.js`: per-card localStorage cache (7-day TTL,
+200-entry cap). Clicking a card you've already scanned should return
+instantly with no Anthropic call. First fix had `setLoading(true)`
+firing BEFORE the cache check, so even a cache hit briefly rendered
+the loading theater (commit `b247d4e` moved the lookup ahead of the
+flip). Verification logging added in `2e7e320`. End-to-end HIT path
+not confirmed from this side — see Failure log.
+
+---
+
+## Failure log — 2026-05-30 → 2026-06-03
+
+**Wireless ADB drop-out cycle.** The phone's wireless-debugging daemon
+repeatedly went silent (no mDNS broadcast, all ports refused TCP).
+`adb kill-server` + `start-server` recovered it sometimes; other times
+required George to toggle Wireless Debugging off/on or hand over a
+fresh pair-code dialog. Concurrent Claude sessions in the same window
+of time stayed connected, suggesting the local `adb_known_hosts.pb` or
+pair-key file on this end diverged. USB fallback worked when wifi
+didn't.
+
+**Tap-injection contamination.** With Wispr Flow dictation active on
+the phone, `adb shell input tap X Y` synthetic events landed on the
+dictation overlay (the Claude.ai conversation, foregrounded) instead
+of Signal. `am force-stop` + `am start` brought Signal forward but the
+dictation listener reclaimed focus within seconds. Verification of the
+cache HIT path was repeatedly blocked.
+
+**Cache HIT path: not confirmed end-to-end.** Cache WRITE log fires
+correctly on scan completion (verified in logcat). The matching fast-
+path lookup log never appeared in logcat captures, because synthetic
+taps could not reliably reach the Signal WebView while dictation was
+on. The fast-path logic was reviewed by hand: cache lookup is
+unconditional before any `setLoading` call when the caller passes a
+game (QuickPicks / RecentScans / WatchedCards all do). If a loading
+theater still appears on a card that already has a WRITE log, the bug
+is in the cache key derivation or localStorage persistence — not in
+the loading-flip ordering. Verification logs (commits `2e7e320`) are
+still in `handleSearch`; strip them once a real HIT is observed in
+the wild.
+
+**`L26D-ENS08` example unverified.** George cited a specific card the
+app couldn't find. The set-code parser added in this session supports
+common patterns; whether `L26D-ENS08` is a real code in any of the
+three free DBs was not confirmed because the underlying card name
+wasn't reachable from this end.
+
+**Brand-icon rollout still partial.** Source brand icons surfaced in
+`SignalCard` collapsed rows; `SourceCitation` and `SignalSection`
+headers still rely on abstract type marks for the inner citation
+rows. Not a regression — just not exhaustively unified.
+
+**Prior session-log overclaim (already corrected above).** The
+2026-05-23 Gemini entry claimed "Android wrapper compiles via Gradle
+successfully" — actually only `res/` icon assets existed at that
+point.
 
 ---
 
