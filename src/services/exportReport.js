@@ -1,12 +1,21 @@
 // PDF export of a scan result. Captures a DOM element by id, renders it to
-// canvas via html2canvas (under the hood of html2pdf.js), and triggers a
-// browser-level download.
+// canvas via html2canvas (under the hood of html2pdf.js), and either:
+//   - Native (Capacitor / Android WebView): writes the PDF blob to the
+//     Documents directory via @capacitor/filesystem. A direct <a download>
+//     does nothing in WebView, so the old path silently failed.
+//   - Web (regular browser): triggers a normal browser download.
 //
-// Future: paywall + emailed PDF (server-rendered) would go here too. For
-// now this is a client-side capture so it works fully offline once the
-// scan result is on screen.
+// shareReportAsPdf still routes through navigator.share — that path works in
+// the WebView fine because it hands the PDF off to the system share sheet.
 
 import html2pdf from 'html2pdf.js';
+
+function isCapacitor() {
+  return typeof window !== 'undefined'
+    && !!window.Capacitor
+    && typeof window.Capacitor.isNativePlatform === 'function'
+    && window.Capacitor.isNativePlatform();
+}
 
 function baseOpts(el, filename) {
   return {
@@ -29,19 +38,55 @@ function safe(filename) {
   return (filename || `signal-report-${Date.now()}.pdf`).replace(/[^a-zA-Z0-9._-]+/g, '_');
 }
 
+async function generatePdfBlob(el, filename) {
+  return html2pdf().set(baseOpts(el, filename)).from(el).outputPdf('blob');
+}
+
+async function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result || '';
+      const idx = result.indexOf(',');
+      resolve(idx >= 0 ? result.slice(idx + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 export async function exportReportToPdf({
   elementId = 'signal-report-capture',
   filename,
 } = {}) {
   const el = document.getElementById(elementId);
   if (!el) throw new Error(`Report capture element #${elementId} not found.`);
-  await html2pdf().set(baseOpts(el, safe(filename))).from(el).save();
+  const filenameSafe = safe(filename);
+
+  if (isCapacitor()) {
+    // Write to the native filesystem so the user can actually find the PDF.
+    // Documents directory maps to /storage/emulated/0/Documents on most
+    // Android devices, visible from the Files app under "Documents".
+    const blob = await generatePdfBlob(el, filenameSafe);
+    const data = await blobToBase64(blob);
+    const { Filesystem, Directory } = await import('@capacitor/filesystem');
+    const res = await Filesystem.writeFile({
+      path: filenameSafe,
+      data,
+      directory: Directory.Documents,
+      recursive: true,
+    });
+    return { method: 'native', path: res.uri, filename: filenameSafe };
+  }
+
+  // Web fallback: regular browser download via <a download>.
+  await html2pdf().set(baseOpts(el, filenameSafe)).from(el).save();
+  return { method: 'web', filename: filenameSafe };
 }
 
-// Share-as-PDF: generates a PDF Blob and hands it to the native share sheet
-// (Web Share API on Android/Chromium WebView). The user picks Gmail, Outlook,
-// Messages, etc., and the PDF lands as an attachment / sendable file.
-// Falls back to download if sharing files isn't supported.
+// Share-as-PDF: hands the PDF off to the native share sheet (Web Share API
+// on Android WebView). User picks Gmail / Messages / Save to Files / etc.
+// Falls back to download if sharing files isn't supported (desktop Firefox).
 export async function shareReportAsPdf({
   elementId = 'signal-report-capture',
   filename,
@@ -50,16 +95,10 @@ export async function shareReportAsPdf({
 } = {}) {
   const el = document.getElementById(elementId);
   if (!el) throw new Error(`Report capture element #${elementId} not found.`);
-
   const filenameSafe = safe(filename);
-  const pdfBlob = await html2pdf()
-    .set(baseOpts(el, filenameSafe))
-    .from(el)
-    .outputPdf('blob');
-
+  const pdfBlob = await generatePdfBlob(el, filenameSafe);
   const file = new File([pdfBlob], filenameSafe, { type: 'application/pdf' });
 
-  // navigator.canShare may not exist on older Chromium — guard everywhere.
   if (
     typeof navigator !== 'undefined' &&
     typeof navigator.share === 'function' &&
@@ -70,7 +109,7 @@ export async function shareReportAsPdf({
     return { method: 'share' };
   }
 
-  // Fallback: trigger a download — same end result, user can attach manually.
+  // Last-ditch: trigger download. User attaches manually.
   const url = URL.createObjectURL(pdfBlob);
   const a = document.createElement('a');
   a.href = url;

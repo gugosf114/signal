@@ -6,26 +6,28 @@ const GAP = 14;
 const STEP = CARD_W + GAP;
 const SPEED = 0.35;
 
+// Returns an array of card image URLs (full pool), not a single random pick,
+// so the render layer can assign a distinct card to each article from the
+// same game and we don't end up with 4 identical Pokemon tiles.
 async function fetchGameFallback(game) {
   try {
     if (game === 'pokemon') {
       const r = await fetch('https://api.pokemontcg.io/v2/cards?q=set.id:sv7&pageSize=6&orderBy=-set.releaseDate');
       const cards = (await r.json()).data || [];
-      return cards[Math.floor(Math.random() * cards.length)]?.images?.large || null;
+      return cards.map(c => c?.images?.large).filter(Boolean);
     }
     if (game === 'mtg') {
       const r = await fetch('https://api.scryfall.com/cards/search?q=s:dsk+(rarity:r+or+rarity:m)&order=released&dir=desc');
       const cards = (await r.json()).data || [];
-      const c = cards[Math.floor(Math.random() * Math.min(6, cards.length))];
-      return c?.image_uris?.large || c?.card_faces?.[0]?.image_uris?.large || null;
+      return cards.slice(0, 6).map(c => c?.image_uris?.large || c?.card_faces?.[0]?.image_uris?.large).filter(Boolean);
     }
     if (game === 'yugioh') {
       const r = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php?sort=new&num=6&offset=0');
       const cards = (await r.json()).data || [];
-      return cards[Math.floor(Math.random() * cards.length)]?.card_images?.[0]?.image_url || null;
+      return cards.map(c => c?.card_images?.[0]?.image_url).filter(Boolean);
     }
   } catch {}
-  return null;
+  return [];
 }
 
 function timeAgo(d) {
@@ -39,8 +41,11 @@ function timeAgo(d) {
 // On hover: image section rises 28px into the headroom above the strip.
 // The pocket never moves. The gap that appears IS the pocket interior / dark fabric.
 function ArticleCard({ article, fallbackImg }) {
-  const imgSrc = article.imageUrl || fallbackImg;
-  const isGameCard = !article.imageUrl && !!fallbackImg;
+  // Always prefer the per-game fallback card scan (uniform card-shaped tiles).
+  // Article thumbnails are inconsistent — PkmnCards ships full card scans, SixPrizes
+  // ships wide banner crops that letterbox half-empty inside the portrait sub-frame.
+  // Falling through to the game's own API card means every tile reads as a real card.
+  const imgSrc = fallbackImg || article.imageUrl;
   const c = article.source.color;
 
   return (
@@ -185,8 +190,8 @@ export default function NewsStrip() {
       setArticles(all);
       const games = [...new Set(all.map(a => a.source.game).filter(Boolean))];
       games.forEach(async game => {
-        const url = await fetchGameFallback(game);
-        if (url) setFallbacks(f => ({ ...f, [game]: url }));
+        const urls = await fetchGameFallback(game);
+        if (urls.length) setFallbacks(f => ({ ...f, [game]: urls }));
       });
     }).finally(() => setLoading(false));
   }, []);
@@ -303,13 +308,32 @@ export default function NewsStrip() {
         <div className="ns-fade-l" />
         <div className="ns-fade-r" />
         <div ref={trackRef} className="ns-track">
-          {tripled.map((article, i) => (
-            <ArticleCard
-              key={i}
-              article={article}
-              fallbackImg={fallbacks[article.source.game] || null}
-            />
-          ))}
+          {(() => {
+            // Assign each unique article a distinct card from its game's fallback
+            // pool (round-robin within game). The tripled copies all reuse the
+            // assignment via origIdx so the same article always renders the
+            // same card, no matter which copy is visible.
+            const articleImg = {};
+            const counters = {};
+            articles.forEach((a, idx) => {
+              const g = a.source.game;
+              const pool = fallbacks[g] || [];
+              if (!pool.length) { articleImg[idx] = null; return; }
+              const k = counters[g] || 0;
+              articleImg[idx] = pool[k % pool.length];
+              counters[g] = k + 1;
+            });
+            return tripled.map((article, i) => {
+              const origIdx = i % articles.length;
+              return (
+                <ArticleCard
+                  key={i}
+                  article={article}
+                  fallbackImg={articleImg[origIdx]}
+                />
+              );
+            });
+          })()}
         </div>
       </div>
     </div>

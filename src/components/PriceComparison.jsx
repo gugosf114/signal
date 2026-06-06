@@ -105,12 +105,12 @@ export default function PriceComparison({ data }) {
 
       {!isMobile && <div style={{ width: 1, background: '#1A1D24' }} />}
 
-      {/* ARBITRAGE (was JP↔EN Gap) */}
+      {/* JP COMP (was Arbitrage, was JP↔EN Gap) — sentiment proxy, not a tradeable spread */}
       <div style={{
         ...(isMobile ? { gridColumn: '1 / 3', borderTop: '1px solid #1A1D24', borderRight: '1px solid #1A1D24' } : { flex: '1.5' }),
         padding: isMobile ? '10px 10px' : '14px 16px',
       }}>
-        <div style={{ ...labelStyle, color: '#4A4840' }}>Arbitrage</div>
+        <div style={{ ...labelStyle, color: '#4A4840' }}>JP Comp</div>
         <div style={{
           ...valStyle,
           fontSize: isMobile ? 11 : 12,

@@ -56,7 +56,7 @@ export const SIGNAL_TYPES = {
   jp_price: {
     label: 'JP Price Signal',
     color: '#C44040',
-    description: 'Japanese market price vs English, arbitrage gap',
+    description: 'Japanese market price vs English, JP–EN gap',
   },
   jp_hype: {
     label: 'JP Community Buzz',
@@ -122,13 +122,6 @@ export const SAMPLE_CARDS = [
   { name: 'Mega Charizard X ex', set: 'Phantasmal Flames', game: 'pokemon', year: "'25" },
   // Yu-Gi-Oh!
   { name: 'Fiendsmith Lurgia', set: 'Legacy of Destruction', game: 'yugioh' },
-  { name: 'Snake-Eye Ash', set: 'Age of Overlord', game: 'yugioh' },
-  // MTG
-  { name: 'Atraxa, Grand Unifier', set: 'Phyrexia: All Will Be One', game: 'mtg' },
-  { name: 'The One Ring', set: 'LOTR: Tales of Middle-earth', game: 'mtg' },
-  // Classics
-  { name: 'Blue-Eyes White Dragon', set: 'LOB-001', game: 'yugioh', classic: true },
-  { name: 'Black Lotus', set: 'Alpha', game: 'mtg', classic: true },
 ];
 
 // ─── Game Display Labels ─────────────────────────────────────────────────────

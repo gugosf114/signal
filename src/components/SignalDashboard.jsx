@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import SearchBar from './SearchBar';
 import QuickPicks from './QuickPicks';
 import RecentScans from './RecentScans';
@@ -25,7 +25,32 @@ export default function SignalDashboard() {
   const [error, setError] = useState(null);
   const [pendingCard, setPendingCard] = useState(null);
   const [lastSearched, setLastSearched] = useState(null);
+  const [saveMsg, setSaveMsg] = useState(null);
   const isMobile = useIsMobile();
+
+  const flashSaveMsg = (msg) => {
+    setSaveMsg(msg);
+    setTimeout(() => setSaveMsg((m) => (m === msg ? null : m)), 3500);
+  };
+
+  // Held across renders so the brand-mark "go home" handler can abort an
+  // in-flight scan and so a stale scan-result can't punch its way onto the
+  // home page if the user navigates away mid-scan.
+  const abortRef = useRef(null);
+  const navTokenRef = useRef(0);
+
+  const goHome = () => {
+    navTokenRef.current += 1;
+    if (abortRef.current) {
+      try { abortRef.current.abort(); } catch {}
+      abortRef.current = null;
+    }
+    setResult(null);
+    setError(null);
+    setLoading(false);
+    setLastSearched(null);
+    setPendingCard(null);
+  };
 
   const handleSearch = async (query, game = null, opts = {}) => {
     const { force = false } = opts;
@@ -78,10 +103,15 @@ export default function SignalDashboard() {
     setPendingCard({ name: resolvedName, game: resolvedGame });
 
     const controller = new AbortController();
+    abortRef.current = controller;
+    const myToken = ++navTokenRef.current;
     const timeout = setTimeout(() => controller.abort(), 90000);
 
     try {
       const data = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal });
+      // If goHome() bumped the nav token while we were scanning, the user has
+      // already left the result page — do NOT yank them back by setting result.
+      if (myToken !== navTokenRef.current) return;
       setResult(data);
       // Cache under BOTH the input game and the LLM-detected game so future
       // clicks from any surface hit the cache.
@@ -92,6 +122,7 @@ export default function SignalDashboard() {
       // eslint-disable-next-line no-console
       console.warn('[signal:cache] WRITE', { name: resolvedName, game: resolvedGame, detectedGame: data?.game });
     } catch (err) {
+      if (myToken !== navTokenRef.current) return;
       if (err.name === 'AbortError') {
         setError('Scan exceeded 90 seconds. Network or model congestion — retry.');
       } else {
@@ -99,8 +130,11 @@ export default function SignalDashboard() {
       }
     } finally {
       clearTimeout(timeout);
-      setLoading(false);
-      setPendingCard(null);
+      if (abortRef.current === controller) abortRef.current = null;
+      if (myToken === navTokenRef.current) {
+        setLoading(false);
+        setPendingCard(null);
+      }
     }
   };
 
@@ -117,16 +151,27 @@ export default function SignalDashboard() {
     }}>
       {/* Header — wordmark inside a hairline red border. */}
       {/* Kanji slightly smaller than "Signal"; Signal in Syne, no italic. */}
+      {/* Click anywhere on the wordmark to go home — aborts an in-flight scan
+          if one is running, drops result/error state otherwise. */}
       <div style={{ textAlign: 'center', marginBottom: 32, marginTop: isMobile ? 28 : 0 }}>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'baseline',
-          gap: isMobile ? 10 : 14,
-          padding: isMobile ? '10px 20px 12px' : '12px 26px 14px',
-          border: '1px solid #C44040',
-          borderRadius: 8,
-          marginBottom: 10,
-        }}>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Go to home"
+          onClick={goHome}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goHome(); } }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'baseline',
+            gap: isMobile ? 10 : 14,
+            padding: isMobile ? '10px 20px 12px' : '12px 26px 14px',
+            border: '1px solid #C44040',
+            borderRadius: 8,
+            marginBottom: 10,
+            cursor: 'pointer',
+            userSelect: 'none',
+            background: 'transparent',
+          }}>
           <span style={{
             fontSize: isMobile ? 26 : 32,
             fontWeight: 900,
@@ -302,12 +347,18 @@ export default function SignalDashboard() {
             <button
               onClick={async () => {
                 try {
-                  await exportReportToPdf({
+                  const res = await exportReportToPdf({
                     filename: `signal-${(result.card_name || 'card').toLowerCase().replace(/\s+/g, '-')}.pdf`,
                   });
+                  if (res?.method === 'native') {
+                    flashSaveMsg(`Saved to Documents · ${res.filename}`);
+                  } else {
+                    flashSaveMsg(`Downloaded · ${res?.filename || 'report.pdf'}`);
+                  }
                 } catch (err) {
                   // eslint-disable-next-line no-console
                   console.error('[signal] PDF export failed', err);
+                  flashSaveMsg(`Save failed: ${err?.message?.slice(0, 60) || 'unknown error'}`);
                 }
               }}
               style={{
@@ -503,6 +554,33 @@ export default function SignalDashboard() {
           <EmptyState />
           <CardBrowser onCardSelect={handleSearch} />
         </>
+      )}
+
+      {saveMsg && (
+        <div style={{
+          position: 'fixed',
+          bottom: 24,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#0E1014',
+          border: `1px solid ${saveMsg.startsWith('Save failed') ? '#C44040' : '#608870'}`,
+          borderRadius: 4,
+          padding: '11px 18px',
+          color: saveMsg.startsWith('Save failed') ? '#C44040' : '#608870',
+          fontFamily: "'Syne', sans-serif",
+          fontSize: 11,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          fontWeight: 700,
+          zIndex: 1000,
+          boxShadow: '0 6px 24px rgba(0,0,0,0.6)',
+          maxWidth: 'calc(100vw - 32px)',
+          textAlign: 'center',
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+        }}>
+          {saveMsg}
+        </div>
       )}
     </div>
   );

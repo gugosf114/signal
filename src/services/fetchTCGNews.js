@@ -1,31 +1,32 @@
 // ─── TCG News Feed ────────────────────────────────────────────────────────────
-// Fetches articles from major TCG news sources via their public RSS feeds.
-// Uses allorigins.win as a CORS proxy — no API key, no rate limit.
-// Returns a unified article array sorted by publish date desc.
+// Aggregates current TCG articles from a mix of sources:
+//   - TCGplayer Infinite (JSON API, used for Pokemon)
+//   - RSS feeds (used for MTG + YGO)
+//
+// Pokemon RSS sources (PkmnCards, SixPrizes) were retired here because their
+// feeds went dormant — PkmnCards stopped publishing in 2012, SixPrizes paused
+// in November 2020. TCGplayer Infinite ships current Pokemon articles daily.
+//
+// CORS: infinite-api.tcgplayer.com reflects the request Origin via
+// Access-Control-Allow-Origin, so direct browser fetches work without a proxy.
+// rss2json.com still handles RSS sources that don't expose CORS themselves.
 
-// Sources verified working with rss2json anonymous tier
-// pkmncards + sixprizes include article thumbnails
-// mtggoldfish + ygorganization are editorial articles (no feed images — colored fallback shows)
 const SOURCES = [
   {
-    id: 'pkmncards',
-    label: 'PkmnCards',
-    color: '#FFCB05',
+    id: 'tcgp-pokemon',
+    label: 'TCGplayer',
+    color: '#C9692E',
     game: 'pokemon',
-    rss: 'https://pkmncards.com/feed/',
-  },
-  {
-    id: 'sixprizes',
-    label: 'SixPrizes',
-    color: '#608870',
-    game: 'pokemon',
-    rss: 'https://sixprizes.com/feed/',
+    type: 'tcgp',
+    vertical: 'pokemon',
+    rows: 4,
   },
   {
     id: 'mtggoldfish',
     label: 'MTGGoldfish',
     color: '#FFB74D',
     game: 'mtg',
+    type: 'rss',
     rss: 'https://www.mtggoldfish.com/feed',
   },
   {
@@ -33,16 +34,15 @@ const SOURCES = [
     label: 'YGOrganization',
     color: '#B58F18',
     game: 'yugioh',
+    type: 'rss',
     rss: 'https://ygorganization.com/feed/',
   },
 ];
 
-// rss2json.com converts RSS to clean JSON with thumbnail extraction.
-// Free anonymous tier: works, no key required (may rate-limit at high volume).
-// Add VITE_RSS2JSON_KEY to .env.local for 10k req/day: https://rss2json.com
 const RSS2JSON = 'https://api.rss2json.com/v1/api.json';
+const TCGP_API = 'https://infinite-api.tcgplayer.com/c/articles/';
 
-async function fetchSource(source) {
+async function fetchRss(source) {
   try {
     const key = typeof import.meta !== 'undefined'
       ? import.meta.env?.VITE_RSS2JSON_KEY
@@ -69,7 +69,6 @@ async function fetchSource(source) {
         const match = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
         if (match) {
           const src = match[1];
-          // Skip tracking pixels, avatars, icons (< 100px usually in URL hints)
           if (!src.includes('gravatar') && !src.includes('avatar') && !src.includes('1x1') && !src.includes('pixel')) {
             imageUrl = src;
           }
@@ -91,13 +90,41 @@ async function fetchSource(source) {
   }
 }
 
+async function fetchTcgp(source) {
+  try {
+    const rows = source.rows || 4;
+    const url = `${TCGP_API}?source=infinite-content&contentType=Article&verticals=${encodeURIComponent(source.vertical)}&rows=${rows}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(7000) });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items = Array.isArray(data?.result) ? data.result : [];
+    return items.slice(0, rows).map((item) => ({
+      id: item.uuid || item.canonicalURL,
+      title: (item.title || '').trim(),
+      link: item.canonicalURL ? `https://infinite.tcgplayer.com${item.canonicalURL}` : '',
+      description: (item.teaser || '').trim().slice(0, 120),
+      // imageUrl intentionally left null — the news strip overrides with a
+      // per-game card-shaped fallback anyway, and TCGplayer's OpenGraph
+      // images are wide banners that would letterboxed in the portrait tile.
+      imageUrl: null,
+      pubDate: item.dateTime ? new Date(item.dateTime) : new Date(),
+      source,
+    })).filter(a => a.title && a.link);
+  } catch {
+    return [];
+  }
+}
+
+function dispatchFetch(source) {
+  return source.type === 'tcgp' ? fetchTcgp(source) : fetchRss(source);
+}
+
 export async function fetchTCGNews() {
-  const results = await Promise.allSettled(SOURCES.map(fetchSource));
+  const results = await Promise.allSettled(SOURCES.map(dispatchFetch));
   const articles = results
     .filter(r => r.status === 'fulfilled')
     .flatMap(r => r.value);
 
-  // Sort newest first, dedupe by title
   const seen = new Set();
   return articles
     .sort((a, b) => b.pubDate - a.pubDate)

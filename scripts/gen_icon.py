@@ -1,13 +1,18 @@
-"""Regenerate the Android launcher icon — portrait card with a sparkline.
+"""Regenerate the Android launcher icon — 株 logomark.
 
-The kanji-only variant communicated "Japanese" instead of "multi-signal
-trading card intelligence." JP is one of nine signals (~40-50% of the
-grade), not the headline. This design drops 株 from the icon entirely:
-a cream portrait card silhouette holds a stylized rising sparkline,
-reading as "trading card + market data" at any size.
+George's call: the icon is just the 株 kanji from the wordmark. Single
+character, JP red on dark canvas, vertical-gradient sheen to match the
+wordmark inside the app. Sized to ~55% of the canvas so it sits well
+inside Android's 66% adaptive-icon safe zone — Samsung's squircle mask
+can't crop it.
 
-Every variant fits inside Android's 66% adaptive-icon safe zone so
-Samsung's squircle mask cannot crop the card.
+  - Background: dark canvas #08090A.
+  - 株 rendered in JP red (#C44040 base, light-to-dark vertical
+    gradient #E96565 → #C44040 → #9C3030) for ambient sheen — same
+    gradient the wordmark uses inside the app.
+  - Bold CJK font (Yu Gothic Bold / Noto Sans CJK Bold / Microsoft
+    YaHei Bold), centered both axes, optical adjustments for kanji
+    metrics so the glyph reads centered.
 """
 
 import os
@@ -16,20 +21,20 @@ from PIL import Image, ImageDraw, ImageFont
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 RES_DIR = os.path.join(PROJECT_ROOT, "android", "app", "src", "main", "res")
 
-# Font candidates that ship with Windows and support CJK
+# Bold CJK fonts available on Windows. Yu Gothic Bold is the canonical
+# choice for Japanese typography on Windows.
 FONT_CANDIDATES = [
-    "C:/Windows/Fonts/YuGothB.ttc",
-    "C:/Windows/Fonts/msyhbd.ttc",
-    "C:/Windows/Fonts/meiryob.ttc",
+    "C:/Windows/Fonts/YuGothB.ttc",       # Yu Gothic Bold
+    "C:/Windows/Fonts/YuGothic-Bold.ttf",
+    "C:/Windows/Fonts/msyhbd.ttc",        # Microsoft YaHei Bold
+    "C:/Windows/Fonts/meiryob.ttc",       # Meiryo Bold
     "C:/Windows/Fonts/NotoSansCJK-Bold.ttc",
     "C:/Windows/Fonts/SimHei.ttf",
 ]
 
 MASTER = 1024
-# Safe zone is the inner 66% of the 108dp viewport for adaptive icons.
 SAFE_ZONE_PX = int(MASTER * (66 / 108))   # 626
 
-# Density buckets — (suffix, legacy_px, adaptive_layer_px)
 DENSITIES = [
     ("mdpi",    48,  108),
     ("hdpi",    72,  162),
@@ -38,80 +43,83 @@ DENSITIES = [
     ("xxxhdpi",192,  432),
 ]
 
-BG_COLOR      = (8, 9, 10, 255)        # #08090A — dark canvas
-CARD_FILL     = (245, 241, 232, 255)   # #F5F1E8 — cream off-white
-CARD_EDGE     = (196, 64, 64, 255)     # #C44040 — JP red hairline
-SPARK_COLOR   = (196, 64, 64, 255)     # #C44040 — sparkline stroke
-SPARK_DOT_BG  = (245, 241, 232, 255)   # ring around the terminal dot
-CARD_ASPECT   = 0.716                  # TCG card width / height
+BG_CANVAS_DARK = (8, 9, 10, 255)        # #08090A — dark canvas
+RED_LIGHT      = (233, 101, 101, 255)   # #E96565 — gradient top
+RED_BASE       = (196, 64, 64, 255)     # #C44040 — JP red, gradient mid
+RED_DARK       = (156, 48, 48, 255)     # #9C3030 — gradient bottom
 
-# Sparkline control points (normalized to card area) — three down-ticks
-# absorbed by a strong upward close. Reads as "data trending up."
-SPARKLINE_POINTS = [
-    (0.10, 0.74),
-    (0.27, 0.56),
-    (0.43, 0.66),
-    (0.60, 0.42),
-    (0.77, 0.50),
-    (0.92, 0.20),
-]
+KANJI = "株"
 
 
-def render_card_with_sparkline(canvas_size):
-    """Foreground layer: transparent canvas, centered portrait card silhouette
-    with a rising sparkline inside. Safe zone = inner 66% of canvas."""
+def load_font(size_px):
+    for path in FONT_CANDIDATES:
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, size_px)
+            except Exception:
+                continue
+    return ImageFont.load_default()
+
+
+def _vertical_gradient_layer(canvas_size, top_rgba, mid_rgba, bot_rgba):
+    """A full-canvas vertical gradient: top → mid (55%) → bot."""
+    grad = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+    px = grad.load()
+    mid = int(canvas_size * 0.55)
+    for y in range(canvas_size):
+        if y <= mid:
+            t = y / max(1, mid)
+            r = int(top_rgba[0] + (mid_rgba[0] - top_rgba[0]) * t)
+            g = int(top_rgba[1] + (mid_rgba[1] - top_rgba[1]) * t)
+            b = int(top_rgba[2] + (mid_rgba[2] - top_rgba[2]) * t)
+        else:
+            t = (y - mid) / max(1, canvas_size - mid)
+            r = int(mid_rgba[0] + (bot_rgba[0] - mid_rgba[0]) * t)
+            g = int(mid_rgba[1] + (bot_rgba[1] - mid_rgba[1]) * t)
+            b = int(mid_rgba[2] + (bot_rgba[2] - mid_rgba[2]) * t)
+        for x in range(canvas_size):
+            px[x, y] = (r, g, b, 255)
+    return grad
+
+
+def render_kanji(canvas_size):
+    """Foreground layer: 株 kanji centered on a transparent canvas, JP-red gradient."""
     img = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
 
     safe = int(canvas_size * (66 / 108))
-    card_h = int(safe * 0.96)
-    card_w = int(card_h * CARD_ASPECT)
-    if card_w > safe:
-        card_w = int(safe * 0.96)
-        card_h = int(card_w / CARD_ASPECT)
-    cx0 = (canvas_size - card_w) // 2
-    cy0 = (canvas_size - card_h) // 2
-    cx1 = cx0 + card_w
-    cy1 = cy0 + card_h
-    radius = max(2, card_w // 11)
-    edge_w = max(2, canvas_size // 60)
-    draw.rounded_rectangle(
-        (cx0, cy0, cx1, cy1),
-        radius=radius,
-        fill=CARD_FILL,
-        outline=CARD_EDGE,
-        width=edge_w,
-    )
+    # Target glyph height ~85% of the safe zone — sits well inside the mask.
+    target_h = int(safe * 0.85)
 
-    # Sparkline plot area = inner 76% of the card. Vertically centered.
-    pad_x = int(card_w * 0.12)
-    plot_left = cx0 + pad_x
-    plot_right = cx1 - pad_x
-    plot_top = cy0 + int(card_h * 0.20)
-    plot_bottom = cy1 - int(card_h * 0.18)
-    plot_w = plot_right - plot_left
-    plot_h = plot_bottom - plot_top
+    # Auto-fit: find a font size whose rendered glyph is just under target_h.
+    font_size = target_h
+    while font_size > 8:
+        font = load_font(font_size)
+        # Use anchor="mm" to get bbox centered at origin
+        tmp_draw = ImageDraw.Draw(img)
+        bbox = tmp_draw.textbbox((0, 0), KANJI, font=font, anchor="mm")
+        gh = bbox[3] - bbox[1]
+        gw = bbox[2] - bbox[0]
+        if gh <= target_h and gw <= safe * 0.92:
+            break
+        font_size = int(font_size * 0.94)
+    font = load_font(font_size)
 
-    pts = [
-        (plot_left + int(nx * plot_w), plot_top + int(ny * plot_h))
-        for (nx, ny) in SPARKLINE_POINTS
-    ]
-    stroke = max(3, card_w // 14)
-    draw.line(pts, fill=SPARK_COLOR, width=stroke, joint="curve")
+    # Render the kanji into a single-channel mask, then color it with the
+    # vertical gradient so the glyph carries the same ambient sheen as the
+    # wordmark inside the app.
+    glyph_mask = Image.new("L", (canvas_size, canvas_size), 0)
+    glyph_draw = ImageDraw.Draw(glyph_mask)
+    cx = canvas_size // 2
+    cy = canvas_size // 2
+    # Yu Gothic puts noticeable side bearing on kanji — nudge the glyph
+    # so its optical center sits dead-centered visually.
+    glyph_draw.text((cx, cy), KANJI, font=font, fill=255, anchor="mm")
 
-    # Punctuate the close with a filled dot (with thin cream ring so it
-    # remains crisp against the card fill).
-    last_x, last_y = pts[-1]
-    dot_r = max(stroke, card_w // 10)
-    ring_r = dot_r + max(2, stroke // 2)
-    draw.ellipse(
-        (last_x - ring_r, last_y - ring_r, last_x + ring_r, last_y + ring_r),
-        fill=SPARK_DOT_BG,
-    )
-    draw.ellipse(
-        (last_x - dot_r, last_y - dot_r, last_x + dot_r, last_y + dot_r),
-        fill=SPARK_COLOR,
-    )
+    gradient = _vertical_gradient_layer(canvas_size, RED_LIGHT, RED_BASE, RED_DARK)
+    # Apply glyph_mask as alpha to gradient
+    gradient.putalpha(glyph_mask)
+    img.alpha_composite(gradient)
+
     return img
 
 
@@ -124,22 +132,27 @@ def main():
         mipmap_dir = os.path.join(RES_DIR, f"mipmap-{suffix}")
         os.makedirs(mipmap_dir, exist_ok=True)
 
-        # Legacy launcher — composite the card silhouette directly onto the
-        # dark canvas (no adaptive masking on legacy Android).
-        legacy = Image.new("RGBA", (legacy_px, legacy_px), BG_COLOR)
-        legacy.alpha_composite(render_card_with_sparkline(legacy_px))
+        # Legacy launcher (pre-Android 8) — composite flap onto dark canvas.
+        legacy = Image.new("RGBA", (legacy_px, legacy_px), BG_CANVAS_DARK)
+        legacy.alpha_composite(render_kanji(legacy_px))
         legacy.save(os.path.join(mipmap_dir, "ic_launcher.png"))
         legacy.save(os.path.join(mipmap_dir, "ic_launcher_round.png"))
 
-        # Adaptive: background is the dark canvas (visible around the squircle
-        # mask), foreground is the card silhouette + sparkline.
-        background = Image.new("RGBA", (layer_px, layer_px), BG_COLOR)
+        # Adaptive (Android 8+) — background = dark canvas, foreground = flap.
+        background = Image.new("RGBA", (layer_px, layer_px), BG_CANVAS_DARK)
         background.save(os.path.join(mipmap_dir, "ic_launcher_background.png"))
-        render_card_with_sparkline(layer_px).save(
+        render_kanji(layer_px).save(
             os.path.join(mipmap_dir, "ic_launcher_foreground.png")
         )
 
         print(f"  {suffix:8s}  legacy={legacy_px}px  layer={layer_px}px")
+
+    # Also dump a 1024×1024 preview for visual review (not used by Android).
+    preview_path = os.path.join(PROJECT_ROOT, "scripts", "icon_preview.png")
+    preview = Image.new("RGBA", (1024, 1024), BG_CANVAS_DARK)
+    preview.alpha_composite(render_kanji(1024))
+    preview.save(preview_path)
+    print(f"\nPreview: {preview_path}")
 
     print("Done.")
 

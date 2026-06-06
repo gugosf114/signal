@@ -13,16 +13,17 @@ Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
 
 ---
 
-## Current state — 2026-06-03
+## Current state — 2026-06-06
 
-- Last commit on `main`: **2e7e320** ("chore: add cache HIT/MISS logging
-  for verification")
-- Stack: Vite 6 + React 18, `simple-icons` NPM, html2pdf.js, Capacitor 8
-  (Android wrapper), no TypeScript
-- Bundle: ~487 KB / ~143 KB gzipped main JS
+- Stack: Vite 6 + React 18, `simple-icons` NPM, html2pdf.js,
+  `@capacitor/filesystem` (new), Capacitor 8 (Android wrapper), no TypeScript
+- Bundle: ~488 KB / ~143 KB gzipped main JS
 - Dev server: `npm run dev` → http://localhost:3000
 - Android: `cd android && ./gradlew assembleDebug` → APK at
   `android/app/build/outputs/apk/debug/app-debug.apk`
+- Android JDK: bundled JBR at `C:/Program Files/Android/Android Studio/jbr`
+  (set `JAVA_HOME` before invoking gradle from this shell — Windows PATH
+  doesn't ship a `java`)
 
 ---
 
@@ -298,6 +299,158 @@ rows. Not a regression — just not exhaustively unified.
 2026-05-23 Gemini entry claimed "Android wrapper compiles via Gradle
 successfully" — actually only `res/` icon assets existed at that
 point.
+
+---
+
+## Session log — 2026-06-06 (Opus 4.7, 1M context)
+
+Single-day push covering thirteen workstreams; built and sideloaded onto
+the Fold throughout. Working tree against `e3c9f18`.
+
+**ARBITRAGE → JP COMP rename.** The price strip's "ARBITRAGE -75%" cell
+was misleading copy — there is no executable JP/EN arbitrage; the JP
+"comp" is a different printing entirely (EN Umbreon ex from Prismatic
+Evolutions ≠ JP Umbreon from Terastal Festival). Relabeled to **JP Comp**
+in `PriceComparison.jsx`, `EmptyState.jsx`, and the `jp_price` signal
+description in `signals.js`. The `LoadingTheater` scan-log "arbitrage
+delta" flavor line was left as transient editorial text.
+
+**News strip — single source per game.** PkmnCards' RSS feed went silent
+in August 2012; SixPrizes signed off in November 2020 ("SixPrizes Goes on
+Pause"). Both feeds had been quietly serving 5–14-year-old "latest" posts
+under the TCG Intelligence header. Replaced both with **TCGplayer
+Infinite** (`infinite-api.tcgplayer.com/c/articles/?verticals=pokemon&rows=4`)
+— discovered the endpoint by attaching a Playwright network listener
+over CDP to the user's already-open article tabs. CORS reflects the
+request `Origin` so no proxy needed. MTGGoldfish + YGOrganization RSS
+sources unchanged (both current). 4 Pokemon + 2 MTG + 2 YGO = 8 tiles,
+all dated within the last week.
+
+**News strip — uniform card-shaped tiles.** PkmnCards published full card
+scans (portrait, filled the slot), SixPrizes published wide banner
+thumbnails (got letterboxed in the portrait sub-frame, read as "half a
+card"). MTG and YGO articles ship no images and were already falling
+through to a real card from each game's API — that path produced
+visually-uniform tiles. Extended to all sources: every article tile now
+uses a card from the game's pool, and `fetchGameFallback` now returns
+the full array of card URLs (was: one random pick) so a per-game
+round-robin counter assigns a distinct card to each article. No more
+four-identical-Terapagos rows.
+
+**Dynamic EmptyState.** The bottom-of-home preview tile was hardcoded
+Charizard ex / 82 / SURGING — confusing because (a) it looked like a
+real result, and (b) it never changed even after the user had scanned
+cards. Now reads the most recent entry from `signal_recent_scans`
+localStorage and reconstructs the tile triple (score · prices · top
+creator citation) from the cached scan data via `getCachedScan`. For
+brand-new users with no scans, the hardcoded Charizard sample shows
+with a small **SAMPLE** chip in the corner of the score tile so it
+can't be mistaken for a real result. Card art (via `CardImage`) now
+sits to the right of the score, filling what was empty space. Lazy
+`useState` init prevents the flicker between sample and real.
+
+**Clickable brand mark = go home.** The `株 Signal` wordmark in the
+header is now a button — tap to abort any in-flight scan and drop
+result state. Implementation: `abortRef` keeps a handle to the active
+`AbortController`, `navTokenRef` bumps on every navigation so a stale
+scan that lands after the user has already left can't yank them back
+onto the result page. Keyboard accessible (Enter / Space).
+
+**SearchBar — kill the SCAN button.** The standalone "SCAN" submit
+button on the right duplicated the camera icon on the left (both led to
+scanning, but one took typed text and one took an image — the shared
+label muddied the distinction). Removed entirely; Enter on the keyboard
+submits typed cards, camera icon still opens the file picker (with
+`capture="environment"` on the Fold). Added `enterKeyHint="search"`.
+
+**QuickPicks trimmed.** Removed 5 stale chips from `SAMPLE_CARDS` per
+explicit pull-down: Snake-Eye Ash, Atraxa/Grand Unifier, The One Ring,
+Blue-Eyes White Dragon, Black Lotus. Surviving list focuses on present-
+tense reseller targets (Umbreon ex, Dragapult ex, Charizard ex, the
+three Mega ex, Fiendsmith Lurgia). `latestChase.js`-fetched dynamic
+chips still prepend.
+
+**Result-page card art 2×.** `OverallScore.jsx` bumped `CardImage` size
+from `isMobile ? 100 : 220` to `isMobile ? 200 : 360`. The mobile
+container height bumped 120 → 240 to fit.
+
+**Save PDF — native filesystem path.** The old `html2pdf().save()` path
+used `<a download>` which Capacitor WebView silently blocks — tapping
+Save did nothing visible. Added `@capacitor/filesystem` as a dep,
+`exportReportToPdf` now detects `window.Capacitor.isNativePlatform()`
+and writes the base64 PDF to `Directory.Documents` (visible in the Files
+app under Documents). A small fixed-position toast at the bottom of the
+dashboard confirms save (green border + cream text) or surfaces the
+error (red). Share-as-PDF unchanged — already routed through
+`navigator.share` which works in the WebView.
+
+**Launcher icon — fourth iteration.** Two attempts in one session:
+1. **Solari split-flap displaying "82".** Score-as-icon, Bloomberg /
+   flap-board idiom, JP red hairline seam bisecting a cream Arial Black
+   numeral. Editorially distinct. Rejected: "what does 82 mean?"
+2. **Bold 株 logomark.** Single character, JP red on dark canvas, same
+   vertical gradient sheen the wordmark inside the app uses
+   (#E96565 → #C44040 → #9C3030 via `Image.putalpha` on a `textbbox`-
+   sized mask). Sized to ~85% of the 66% adaptive-icon safe zone so
+   Samsung's squircle can't crop it. `gen_icon.py` regenerates all 5
+   density variants + adaptive foreground/background + a 1024×1024
+   preview at `scripts/icon_preview.png`.
+
+**eBay listings — prominent brand mark on every tile.** Section header
+icon bumped 12 → 28. Each `BinCard` and `AuctionCard` now carries an
+absolute-positioned **eBay wordmark at 40px in the top-right corner** so
+every tile reads as eBay-sourced at a glance. `BrandIcon` already
+supported the size prop; no SVG changes needed.
+
+---
+
+## Failure log — 2026-06-06
+
+**Cache HIT path: still not confirmed end-to-end.** The verification
+`console.warn` lines from `2e7e320` (`[signal:cache] fast-path lookup`,
+`slow-path lookup`, `WRITE`) are still in `handleSearch`. Logcat capture
+not attempted this session — was busy with feature work. Strip these
+once a real HIT is observed (instructions for the human: tap a card from
+QuickPicks/RecentScans, watch logcat for the warn pair, then delete the
+three `console.warn` statements in `SignalDashboard.jsx`).
+
+**Icon iteration history is now four entries deep — pick a winner.**
+The current `株` icon is the fourth attempt (kanji-only → card+kanji →
+card+sparkline → 82-on-Solari-flap → 株 again). Some of these rejections
+were valid (Samsung mask cropping, Japan-heavy positioning concern); the
+current `株` revisits iteration #1 with a smaller glyph and safe-zone-
+aware sizing. If Samsung still crops it on launch, the next move is to
+add a circular plate behind the kanji rather than shrinking further.
+
+**EmptyState SAMPLE chip — not visually verified on a new install.**
+The featured-scan vs sample branching is correct on inspection but was
+not tested by clearing `signal_recent_scans` and re-launching. To
+verify: `adb shell pm clear com.gugosf114.signal` then open Signal —
+should see the static Charizard ex with the corner SAMPLE chip.
+
+**Active-listings eBay logo sizes were eyeballed.** 40px per tile may
+read as too dominant on a 375px-wide phone; 28–32px might be the right
+ceiling. Walk it back if it crowds the price/title.
+
+**TCGplayer article images intentionally discarded.** TCGplayer
+Infinite's `imageURL` field returns wide OpenGraph banners (≥1200×630)
+that would letterbox the same way SixPrizes' did. `fetchTcgp` sets
+`imageUrl: null` so the strip's per-game fallback card-art always wins.
+If we ever want TCGplayer's actual article art (e.g. on a dedicated
+article reader page), it's already available in the API response.
+
+**Pokemon-vertical fallback pool is one set deep.** `fetchGameFallback`
+pulls 6 cards from `set.id:sv7` — so all four TCGplayer Pokemon tiles
+draw from the same six SV7 cards. With 4 articles in rotation, two
+tiles will rarely share a card, but the pool will repeat as SV7 ages
+out. Refresh `set.id` periodically or switch to "latest set" lookup.
+
+**JAVA_HOME is shell-local on Windows.** The bash gradle build silently
+"completed" with exit 0 the first time despite `gradlew.bat` printing
+"JAVA_HOME is not set" — the wrapper exits 0 on that path. Setting
+`JAVA_HOME="C:/Program Files/Android/Android Studio/jbr"` inline on the
+gradle invocation works. Worth wiring into a `.envrc` or a `signal.bat`
+launcher for next session so this isn't a foot-gun.
 
 ---
 

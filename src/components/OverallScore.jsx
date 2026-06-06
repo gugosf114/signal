@@ -72,12 +72,12 @@ export default function OverallScore({ score, cardName, game, summary, truncated
           background: '#0A0C10',
           borderRight: isMobile ? 'none' : '1px solid #1A1D24',
           borderBottom: isMobile ? '1px solid #1A1D24' : 'none',
-          height: isMobile ? 120 : 'auto',
+          height: isMobile ? 240 : 'auto',
         }}>
           <CardImage
             cardName={cardName}
             game={game}
-            size={isMobile ? 100 : 220}
+            size={isMobile ? 200 : 360}
             glowColor={glowColor}
             onLoad={setCardImageUrl}
             onClick={() => setLightboxOpen(true)}

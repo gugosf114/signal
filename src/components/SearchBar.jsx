@@ -96,6 +96,10 @@ export default function SearchBar({ onSearch, loading }) {
           )}
         </button>
 
+        {/* No explicit submit button — camera icon on the left handles image scans,
+            Enter key on the keyboard submits a typed card name. The previous
+            "SCAN" submit button duplicated the camera affordance and made the
+            two distinct entry paths read as one. */}
         <input
           type="text"
           value={query}
@@ -104,9 +108,10 @@ export default function SearchBar({ onSearch, loading }) {
           onBlur={() => setFocused(false)}
           placeholder={identifying ? 'Identifying card…' : 'Card name or set number — e.g. LOB-001'}
           disabled={busy}
+          enterKeyHint="search"
           style={{
             width: '100%',
-            padding: '16px 78px 16px 50px',
+            padding: '16px 18px 16px 50px',
             background: '#0E1014',
             border: `1px solid ${focused ? '#2A2D34' : '#1A1D24'}`,
             borderRadius: 3,
@@ -120,30 +125,6 @@ export default function SearchBar({ onSearch, loading }) {
             boxSizing: 'border-box',
           }}
         />
-        <button
-          type="submit"
-          disabled={!query.trim() || busy}
-          style={{
-            position: 'absolute',
-            right: 6,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: !query.trim() || busy ? '#14161A' : '#C44040',
-            border: 'none',
-            borderRadius: 2,
-            color: !query.trim() || busy ? '#2A2820' : '#fff',
-            padding: '10px 18px',
-            fontSize: 12,
-            fontWeight: 700,
-            cursor: !query.trim() || busy ? 'not-allowed' : 'pointer',
-            fontFamily: "'Syne', sans-serif",
-            transition: 'background 0.15s',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-          }}
-        >
-          {loading ? '···' : 'Scan'}
-        </button>
       </div>
 
       {scanError && (

@@ -80,12 +80,23 @@ function BinCard({ listing }) {
       borderRadius: 2,
       display: 'flex',
       flexDirection: 'column',
+      position: 'relative',
     }}>
+      <div style={{
+        position: 'absolute',
+        top: 12,
+        right: 14,
+        display: 'flex',
+        alignItems: 'center',
+      }}>
+        <BrandIcon brand="ebay" size={40} />
+      </div>
       <div style={{
         ...typeChipStyle,
         color: '#608870',
         background: 'rgba(96, 136, 112, 0.08)',
         border: '1px solid rgba(96, 136, 112, 0.3)',
+        alignSelf: 'flex-start',
       }}>
         Buy It Now
       </div>
@@ -121,12 +132,23 @@ function AuctionCard({ listing }) {
       borderLeft: '2px solid #C44040',
       display: 'flex',
       flexDirection: 'column',
+      position: 'relative',
     }}>
+      <div style={{
+        position: 'absolute',
+        top: 12,
+        right: 14,
+        display: 'flex',
+        alignItems: 'center',
+      }}>
+        <BrandIcon brand="ebay" size={40} />
+      </div>
       <div style={{
         ...typeChipStyle,
         color: '#C44040',
         background: 'rgba(196, 64, 64, 0.08)',
         border: '1px solid rgba(196, 64, 64, 0.3)',
+        alignSelf: 'flex-start',
       }}>
         Auction
       </div>
@@ -185,15 +207,15 @@ export default function EbayListings({ data }) {
           height: 1,
           background: 'linear-gradient(90deg, #1A1D24, transparent)',
         }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <BrandIcon brand="ebay" size={12} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <BrandIcon brand="ebay" size={28} />
           <span style={{
-            fontSize: 9,
+            fontSize: 10,
             fontFamily: "'JetBrains Mono', monospace",
             color: '#5A5850',
             letterSpacing: '0.04em',
           }}>
-            eBay · live
+            · live
           </span>
         </div>
       </div>
