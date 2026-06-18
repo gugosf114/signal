@@ -17,7 +17,14 @@ export default function RecentScans({ onSelect, loading }) {
   if (scans.length === 0) return null;
 
   return (
-    <div style={{ width: '100%', marginTop: 18 }}>
+    <div style={{
+      width: '100%',
+      marginTop: 18,
+      border: '1px solid #2A2D34',
+      borderRadius: 4,
+      padding: '14px 16px 12px',
+      background: 'rgba(20, 22, 26, 0.35)',
+    }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
         <div style={{
           flex: 1,
@@ -30,7 +37,7 @@ export default function RecentScans({ onSelect, loading }) {
           fontWeight: 700,
           letterSpacing: '0.24em',
           textTransform: 'uppercase',
-          color: '#4A4840',
+          color: '#7A7368',
           whiteSpace: 'nowrap',
         }}>
           Your last scans
@@ -45,7 +52,7 @@ export default function RecentScans({ onSelect, loading }) {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center' }}>
         {scans.map((s, i) => {
           const gameMeta = GAME_LABELS[s.game];
-          const color = gameMeta?.color || '#6B6860';
+          const color = gameMeta?.color || '#A8A498';
           return (
             <button
               key={i}
@@ -59,7 +66,7 @@ export default function RecentScans({ onSelect, loading }) {
                 background: 'transparent',
                 border: 'none',
                 borderLeft: `2px solid ${color}40`,
-                color: '#6B6860',
+                color: '#A8A498',
                 cursor: loading ? 'not-allowed' : 'pointer',
                 opacity: loading ? 0.3 : 1,
                 transition: 'all 0.15s',
@@ -73,12 +80,12 @@ export default function RecentScans({ onSelect, loading }) {
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderLeftColor = color + '40';
-                e.currentTarget.style.color = '#6B6860';
+                e.currentTarget.style.color = '#A8A498';
               }}
             >
               <span style={{
                 fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: 700,
                 color: color,
                 minWidth: 18,
@@ -90,7 +97,7 @@ export default function RecentScans({ onSelect, loading }) {
               <span style={{
                 fontFamily: "'Instrument Serif', serif",
                 fontStyle: 'italic',
-                fontSize: 14,
+                fontSize: 15,
                 lineHeight: 1,
               }}>
                 {s.name}

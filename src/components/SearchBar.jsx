@@ -76,12 +76,12 @@ export default function SearchBar({ onSearch, loading }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: identifying ? '#C44040' : '#6B6860',
+            color: identifying ? '#C44040' : '#A8A498',
             cursor: busy ? 'not-allowed' : 'pointer',
             transition: 'color 0.15s',
           }}
           onMouseEnter={(e) => { if (!busy) e.currentTarget.style.color = '#C44040'; }}
-          onMouseLeave={(e) => { if (!busy) e.currentTarget.style.color = '#6B6860'; }}
+          onMouseLeave={(e) => { if (!busy) e.currentTarget.style.color = '#A8A498'; }}
         >
           {identifying ? (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="cam-spin">

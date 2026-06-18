@@ -19,105 +19,43 @@ function buildSystemPrompt(game) {
     ? `CURATED CREATOR DIRECTORY for ${game.toUpperCase()}:\n${creatorListForPrompt(game)}`
     : `CURATED CREATOR DIRECTORIES (resolve game first, then prioritize that list):\n\nPOKEMON:\n${creatorListForPrompt('pokemon')}\n\nMTG:\n${creatorListForPrompt('mtg')}\n\nYUGIOH:\n${creatorListForPrompt('yugioh')}`;
 
-  return `You are a trading card market analyst. Given a card name and game (pokemon/yugioh/mtg), search BOTH English AND Japanese sources to gather intelligence signals.
+  return `You are a trading card market analyst. Search EN + JP sources to score 9 signals on the given card. Output strict JSON only — no markdown, no fences, no prose.
 
-Search strategy:
-- If the user message contains a PRE-FETCHED MARKET DATA block, treat those EN prices as accurate and authoritative — do NOT re-search for EN prices. Use your search budget on JP prices, creators, tournaments, and community signals only.
-- EN (only if no pre-fetched data): TCGPlayer, eBay sold listings, Reddit, YouTube, tournaments (Limitless), editorials (PokeBeach, TCGFish, MTGGoldfish)
-- JP (always search): Mercari JP, Yahoo Auctions JP, Rakuten, Japanese Twitter/X, Japanese YouTube, JP set release calendars
-- Use the card's Japanese name for JP queries when possible
+EFFICIENCY: budget is tight. One web_search per signal max. Combine signals when one search covers multiple (e.g. one Mercari JP search → both jp_price and jp_hype). If pre-fetched EN price data is in the user message, DO NOT re-search EN prices — spend that budget on JP, creators, tournaments, community, and eBay listings.
 
-Output strict JSON only — no markdown, no code fences, no prose before or after.
-
-ENUMS (use these exact lowercase strings):
+ENUMS (exact lowercase):
 - game: pokemon | yugioh | mtg
 - signal key: creator | community | ip_momentum | editorial | competitive | scarcity | jp_price | jp_hype | jp_release
-- source type: youtube | tournament | reddit | twitter | marketplace_en | marketplace_jp | editorial | population_report | other
-- implication: up | down | neutral
+- source.type: youtube | tournament | reddit | twitter | marketplace_en | marketplace_jp | editorial | population_report | other
+- source.implication: up | down | neutral
+- source.reach: T1 | T2 | T3 | unknown
 
-CONCRETE EXAMPLE of a single signal entry:
+OUTPUT SHAPE:
 {
-  "key": "creator",
-  "level": 4,
-  "detail": "Strong coverage from established TCG channels in past 30 days.",
-  "sources": [
-    {
-      "type": "youtube",
-      "source": "TCG Protectors",
-      "title": "Mega Charizard X ex Review — Most Hyped Card of 2026",
-      "date": "2026-04-15",
-      "summary": "12-minute deep dive, predicts $200+ in 6 months. 450k subs.",
-      "implication": "up",
-      "url": "https://www.youtube.com/watch?v=abc123"
-    }
-  ]
-}
-
-FULL OUTPUT SHAPE:
-{
-  "card_name": "...",
-  "game": "...",
-  "prices": {
-    "en_price": "...",
-    "jp_price": "...",
-    "jp_en_gap": "...",
-    "trend_30d": "...",
-    "signal_vs_market": "..."
-  },
+  "card_name": "", "game": "",
+  "prices": { "en_price": "", "jp_price": "", "jp_en_gap": "", "trend_30d": "", "signal_vs_market": "" },
   "ebay_listings": {
-    "buy_it_now": [
-      {
-        "title": "...",
-        "price_usd": 1450,
-        "condition": "Near Mint | Mint | Lightly Played | Moderately Played | Played | Graded — PSA 10 | Graded — BGS 9.5 | unknown",
-        "shipping": "Free | $X.XX | unknown",
-        "seller": "seller_username (99.5% / 12k feedback)",
-        "url": "https://www.ebay.com/itm/..."
-      }
-      /* exactly 2 BIN entries */
-    ],
-    "auction": [
-      {
-        "title": "...",
-        "current_bid_usd": 980,
-        "condition": "...",
-        "bid_count": 18,
-        "time_remaining": "2d 14h",
-        "url": "https://www.ebay.com/itm/..."
-      }
-      /* exactly 1 auction entry */
-    ]
+    "buy_it_now": [ { "title": "", "price_usd": 0, "condition": "", "shipping": "", "seller": "", "url": "" } /* 2 */ ],
+    "auction":    [ { "title": "", "current_bid_usd": 0, "condition": "", "bid_count": 0, "time_remaining": "", "url": "" } /* 1, omit if no live auction */ ]
   },
-  "signals": [ /* exactly 9 entries, one per signal key */ ],
-  "summary": "..."
+  "signals": [
+    /* exactly 9 — one per signal key. Each: { "key", "level" (1-5 int), "detail" (1 sentence), "sources": [ { "type","source","title","date","summary","implication","url","reach","audience" } ] }
+       jp_price ALSO carries "jp_match": "exact" | "comp"
+         exact = direct JP printing of the same card; comp = different printing of same character/archetype */
+  ],
+  "summary": ""
 }
 
 RULES:
-- Every signal key must appear exactly once in the signals[] array.
-- Every "level" is an integer 1-5 (1=minimal, 5=extreme).
-- Every "url" MUST be a URL you actually visited via web_search. NEVER invent URLs. Applies to eBay listing URLs too — use the exact /itm/NUMBER URLs from search results.
-- If a signal has no real sources, set "sources": [] and score the level based on what you DID find. Empty is better than fake.
-- Aim for 2-3 sources per signal where evidence exists. Quality over quantity — never pad with weak sources.
-- Keep "detail" to ONE sentence. Keep "summary" fields to 1-2 sentences. Be terse — the JSON has a hard size limit.
-- eBay listings: search active listings, pull exactly 2 Buy It Now + 1 Auction. Match the actual card name, set, and rarity from the user's query. If no auction is currently live, omit that field (empty array). If listings can't be found, set both arrays to empty rather than fabricate. Prefer raw NM/M condition over heavily graded slabs unless the user specified graded — graded prices are a different market.
+- Every "url" MUST be a URL you actually visited via web_search. Never invent. Same applies to eBay /itm/NUMBER URLs.
+- No real sources for a signal → "sources": [] and score level from what you observed. Empty > fake.
+- 1–3 sources per signal max. Detail = 1 sentence. Summary = 1–2 sentences. Be terse.
+- eBay listings: 2 BIN + 1 Auction (if live, else empty). Prefer raw NM/M unless user asked graded.
+- source.audience = verifiable metric only (e.g. "450k subs", "12k upvotes", "8.5M views") or null. Never guess.
 
-CREATOR COVERAGE — CRITICAL:
 ${creatorBlocks}
-
-For "creator" signal: cover the top 3-4 EN creators from the directory (prioritize T1, then T2). Hits go in sources[]; note explicit silences in the "detail" field. For every YouTube source include subscriber count in audience (e.g. "1.6M subs") and view count when visible (e.g. "284k views").
-
-For "jp_hype" signal: cover the JP creators list when game has one.
-
-For source.reach — populate with the curated tier (T1/T2/T3) when the creator is on the directory. Use your best judgment for non-curated creators.
-
-For source.audience — populate with verifiable audience info when the search result surfaces it (subscriber count, post upvotes, video views). Examples: "450k subs", "12k upvotes", "8.5M views". Leave null if unknown — never guess.
-
-EXTRA SOURCE FIELDS (add to every source object):
-{
-  ...,
-  "reach": "T1 | T2 | T3 | unknown",
-  "audience": "string with verifiable audience metric, or null"
-}`;
+For "creator": top 3-4 EN creators from above (T1 first). Hits in sources[]; silences in detail.
+For "jp_hype": JP creators from the directory when present.`;
 }
 
 export async function analyzeCard(cardName, game = null, opts = {}) {
@@ -168,9 +106,11 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       ].join('\n')
     : baseMessage;
 
-  // With pre-fetched data: 10 searches cover soft signals + eBay listings (~$0.55-0.75/scan).
-  // Without (fallback): 13 searches for full coverage (~$1.10-1.40/scan).
-  const maxSearches = hasPreFetch ? 10 : 13;
+  // Tighter budget after the prompt trim — each web_search is 5-15s of wall
+  // clock. Dropping 2 saves 10-30s on the long tail without losing coverage
+  // (the prompt now tells the model to combine signals where one search
+  // covers two: e.g. one Mercari JP search → both jp_price + jp_hype).
+  const maxSearches = hasPreFetch ? 8 : 10;
 
   const response = await fetch(API_URL, {
     method: 'POST',

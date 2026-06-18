@@ -12,6 +12,7 @@ import EmptyState from './EmptyState';
 import CardBrowser from './CardBrowser';
 import WatchedCards from './WatchedCards';
 import NewsStrip from './NewsStrip';
+import PdfReport from './PdfReport';
 import { SIGNAL_SECTIONS, calculateOverallScore } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { exportReportToPdf, shareReportAsPdf } from '../services/exportReport';
@@ -26,6 +27,8 @@ export default function SignalDashboard() {
   const [pendingCard, setPendingCard] = useState(null);
   const [lastSearched, setLastSearched] = useState(null);
   const [saveMsg, setSaveMsg] = useState(null);
+  const [cardImageUrl, setCardImageUrl] = useState(null);
+  const [pdfRendering, setPdfRendering] = useState(false);
   const isMobile = useIsMobile();
 
   const flashSaveMsg = (msg) => {
@@ -89,8 +92,6 @@ export default function SignalDashboard() {
     // Second cache check now that the set-code resolved (if it did).
     if (!force) {
       const cached = getCachedScan(resolvedName, resolvedGame);
-      // eslint-disable-next-line no-console
-      console.warn('[signal:cache] slow-path lookup', { resolvedName, resolvedGame, hit: !!cached });
       if (cached) {
         setResult(cached);
         return;
@@ -105,7 +106,11 @@ export default function SignalDashboard() {
     const controller = new AbortController();
     abortRef.current = controller;
     const myToken = ++navTokenRef.current;
-    const timeout = setTimeout(() => controller.abort(), 90000);
+    // 150s hard ceiling. Most scans land in 30-60s; the long tail (full
+    // 10-13 web_search budget on a slow card / congested model) used to skirt
+    // the old 90s wall. 150s covers the 99th percentile without sacrificing
+    // search coverage or model quality.
+    const timeout = setTimeout(() => controller.abort(), 150000);
 
     try {
       const data = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal });
@@ -119,12 +124,10 @@ export default function SignalDashboard() {
       if (data?.game && data.game !== resolvedGame) {
         setCachedScan(resolvedName, data.game, data);
       }
-      // eslint-disable-next-line no-console
-      console.warn('[signal:cache] WRITE', { name: resolvedName, game: resolvedGame, detectedGame: data?.game });
     } catch (err) {
       if (myToken !== navTokenRef.current) return;
       if (err.name === 'AbortError') {
-        setError('Scan exceeded 90 seconds. Network or model congestion — retry.');
+        setError('Scan exceeded 150 seconds. Network or model congestion — retry.');
       } else {
         setError(err.message);
       }
@@ -199,7 +202,7 @@ export default function SignalDashboard() {
         </div>
         <div style={{
           fontSize: 13,
-          color: '#5A5850',
+          color: '#92897C',
           fontFamily: "'Instrument Serif', serif",
           fontStyle: 'italic',
           letterSpacing: 0,
@@ -244,14 +247,14 @@ export default function SignalDashboard() {
           }}>
             Scan failed
             {lastSearched?.name && (
-              <span style={{ fontWeight: 400, color: '#5A5850', textTransform: 'none', letterSpacing: 0 }}>
+              <span style={{ fontWeight: 400, color: '#92897C', textTransform: 'none', letterSpacing: 0 }}>
                 — {lastSearched.name}
               </span>
             )}
           </div>
           <div style={{
             fontSize: 12,
-            color: '#5A5850',
+            color: '#92897C',
             fontFamily: "'JetBrains Mono', monospace",
             marginBottom: 12,
             lineHeight: 1.55,
@@ -278,7 +281,7 @@ export default function SignalDashboard() {
             </button>
             <span style={{
               fontSize: 10,
-              color: '#3A3830',
+              color: '#605C54',
               fontFamily: "'JetBrains Mono', monospace",
               letterSpacing: '0.04em',
             }}>
@@ -318,7 +321,7 @@ export default function SignalDashboard() {
                 background: 'transparent',
                 border: '1px solid #1A1D24',
                 borderRadius: 4,
-                color: '#6B6860',
+                color: '#A8A498',
                 fontSize: 11,
                 fontFamily: "'Syne', sans-serif",
                 fontWeight: 600,
@@ -333,7 +336,7 @@ export default function SignalDashboard() {
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#1A1D24';
-                e.currentTarget.style.color = '#6B6860';
+                e.currentTarget.style.color = '#A8A498';
               }}
               aria-label="Back to dashboard"
             >
@@ -347,7 +350,13 @@ export default function SignalDashboard() {
             <button
               onClick={async () => {
                 try {
+                  setPdfRendering(true);
+                  // One animation frame to mount PdfReport, then a short pause
+                  // so the off-screen card image + fonts settle before capture.
+                  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+                  await new Promise((r) => setTimeout(r, 900));
                   const res = await exportReportToPdf({
+                    elementId: 'pdf-report-capture',
                     filename: `signal-${(result.card_name || 'card').toLowerCase().replace(/\s+/g, '-')}.pdf`,
                   });
                   if (res?.method === 'native') {
@@ -359,6 +368,8 @@ export default function SignalDashboard() {
                   // eslint-disable-next-line no-console
                   console.error('[signal] PDF export failed', err);
                   flashSaveMsg(`Save failed: ${err?.message?.slice(0, 60) || 'unknown error'}`);
+                } finally {
+                  setPdfRendering(false);
                 }
               }}
               style={{
@@ -369,7 +380,7 @@ export default function SignalDashboard() {
                 background: 'transparent',
                 border: '1px solid #1A1D24',
                 borderRadius: 4,
-                color: '#6B6860',
+                color: '#A8A498',
                 fontSize: 11,
                 fontFamily: "'Syne', sans-serif",
                 fontWeight: 600,
@@ -384,7 +395,7 @@ export default function SignalDashboard() {
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#1A1D24';
-                e.currentTarget.style.color = '#6B6860';
+                e.currentTarget.style.color = '#A8A498';
               }}
               aria-label="Download report as PDF"
             >
@@ -419,7 +430,7 @@ export default function SignalDashboard() {
                 background: 'transparent',
                 border: '1px solid #1A1D24',
                 borderRadius: 4,
-                color: '#6B6860',
+                color: '#A8A498',
                 fontSize: 11,
                 fontFamily: "'Syne', sans-serif",
                 fontWeight: 600,
@@ -434,7 +445,7 @@ export default function SignalDashboard() {
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#1A1D24';
-                e.currentTarget.style.color = '#6B6860';
+                e.currentTarget.style.color = '#A8A498';
               }}
               aria-label="Share / email report"
             >
@@ -464,7 +475,7 @@ export default function SignalDashboard() {
                 background: 'transparent',
                 border: '1px solid #1A1D24',
                 borderRadius: 4,
-                color: '#6B6860',
+                color: '#A8A498',
                 fontSize: 11,
                 fontFamily: "'Syne', sans-serif",
                 fontWeight: 600,
@@ -479,7 +490,7 @@ export default function SignalDashboard() {
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#1A1D24';
-                e.currentTarget.style.color = '#6B6860';
+                e.currentTarget.style.color = '#A8A498';
               }}
               aria-label="Re-scan with fresh data"
             >
@@ -506,6 +517,7 @@ export default function SignalDashboard() {
               enPrice={result.prices?.en_price}
               jpPrice={result.prices?.jp_price}
               trend={result.prices?.trend_30d}
+              onCardImageLoaded={setCardImageUrl}
             />
           )}
 
@@ -515,6 +527,7 @@ export default function SignalDashboard() {
               trend_30d: result.prices?.trend_30d,
               signal_vs_market: result.prices?.signal_vs_market,
             }}
+            jpMatch={(result.signals || []).find(s => s.key === 'jp_price')?.jp_match}
           />
 
           <EbayListings data={result.ebay_listings} />
@@ -536,7 +549,7 @@ export default function SignalDashboard() {
             paddingTop: 16,
             borderTop: '1px solid #14161A',
             fontSize: 10,
-            color: '#3A3830',
+            color: '#605C54',
             textAlign: 'center',
             fontFamily: "'JetBrains Mono', monospace",
             letterSpacing: '0.06em',
@@ -554,6 +567,25 @@ export default function SignalDashboard() {
           <EmptyState />
           <CardBrowser onCardSelect={handleSearch} />
         </>
+      )}
+
+      {/* Off-screen premium PDF report — mounted only during Save PDF flow so
+          html2pdf captures THIS clean editorial layout instead of the dark
+          live dashboard. Positioned off-canvas, never visible to the user. */}
+      {pdfRendering && result && (
+        <div style={{
+          position: 'fixed',
+          left: -10000,
+          top: 0,
+          width: 720,
+          background: '#FAF7F0',
+          zIndex: -1,
+          pointerEvents: 'none',
+        }}>
+          <div id="pdf-report-capture">
+            <PdfReport result={result} score={score} cardImageUrl={cardImageUrl} />
+          </div>
+        </div>
       )}
 
       {saveMsg && (

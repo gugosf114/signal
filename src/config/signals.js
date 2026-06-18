@@ -143,10 +143,15 @@ export function getScoreLabel(score) {
   if (score >= 50) return { label: 'HEATING', color: '#A09060', blurb: 'Interest is building — the card keeps coming up' };
   if (score >= 30) return { label: 'STEADY',  color: '#608870', blurb: 'Fair market — settled, fundamentals intact' };
   if (score >= 15) return { label: 'COOLING', color: '#807060', blurb: 'Losing momentum — moving slower than peers' };
-  return                  { label: 'DORMANT', color: '#4A4840', blurb: 'Quiet right now — sleeping in the binder' };
+  return                  { label: 'DORMANT', color: '#7A7368', blurb: 'Quiet right now — sleeping in the binder' };
 }
 
 // ─── Weighted Score Calculator ───────────────────────────────────────────────
+
+// JP-match downweight: when jp_price is comparing a DIFFERENT printing of the
+// same character (not the same card), the comp is loose and shouldn't carry
+// its full nominal weight. Apply 60% of the normal weight in that case.
+const JP_COMP_WEIGHT_MULTIPLIER = 0.6;
 
 export function calculateOverallScore(signals, game) {
   const weights = WEIGHTS[game];
@@ -155,9 +160,16 @@ export function calculateOverallScore(signals, game) {
   let totalWeight = 0;
   let weightedSum = 0;
 
-  for (const [key, weight] of Object.entries(weights)) {
+  for (const [key, baseWeight] of Object.entries(weights)) {
     const signal = signals.find(s => s.key === key);
     if (signal && typeof signal.level === 'number') {
+      let weight = baseWeight;
+      // jp_price loses 40% of its weight when the comp is a different
+      // printing — fuzzy comps shouldn't get full say. Absent flag = treat
+      // as exact (safer default for legacy cached scans).
+      if (key === 'jp_price' && signal.jp_match === 'comp') {
+        weight = baseWeight * JP_COMP_WEIGHT_MULTIPLIER;
+      }
       weightedSum += (signal.level / 5) * weight;
       totalWeight += weight;
     }

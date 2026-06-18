@@ -43,7 +43,7 @@ export default function WatchedCards({ onSelect }) {
         fontFamily: "'Syne', sans-serif",
         fontWeight: 700,
         letterSpacing: '0.22em',
-        color: '#3A3830',
+        color: '#605C54',
         textTransform: 'uppercase',
         marginBottom: 6,
       }}>
@@ -76,22 +76,22 @@ export default function WatchedCards({ onSelect }) {
                   border: 'none',
                   padding: 0,
                   cursor: 'pointer',
-                  color: '#5A5850',
-                  fontSize: 10,
+                  color: '#92897C',
+                  fontSize: 13,
                   fontFamily: "'Syne', sans-serif",
                   fontWeight: 500,
                   letterSpacing: '0.02em',
                 }}
               >
                 <span style={{
-                  fontSize: 10,
+                  fontSize: 13,
                   fontFamily: "'JetBrains Mono', monospace",
                   fontWeight: 700,
                   color,
                 }}>
                   {card.score || '—'}
                 </span>
-                <span style={{ color: '#5A5850' }}>{card.name}</span>
+                <span style={{ color: '#92897C' }}>{card.name}</span>
               </button>
               <button
                 onClick={() => toggle(card)}
@@ -101,8 +101,8 @@ export default function WatchedCards({ onSelect }) {
                   border: 'none',
                   padding: 0,
                   cursor: 'pointer',
-                  color: '#2A2820',
-                  fontSize: 10,
+                  color: '#494640',
+                  fontSize: 13,
                   lineHeight: 1,
                   display: 'flex',
                   alignItems: 'center',

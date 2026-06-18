@@ -26,7 +26,7 @@ export default function SignalNav({ signals }) {
         fontFamily: "'Syne', sans-serif",
         fontWeight: 700,
         letterSpacing: '0.18em',
-        color: '#3A3830',
+        color: '#605C54',
         textTransform: 'uppercase',
         alignSelf: 'center',
         marginRight: 4,
@@ -49,7 +49,7 @@ export default function SignalNav({ signals }) {
               background: 'transparent',
               border: `1px solid ${meta.color}28`,
               borderRadius: 2,
-              color: '#5A5850',
+              color: '#92897C',
               fontSize: 10,
               cursor: 'pointer',
               fontFamily: "'Syne', sans-serif",
@@ -64,7 +64,7 @@ export default function SignalNav({ signals }) {
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = meta.color + '28';
-              e.currentTarget.style.color = '#5A5850';
+              e.currentTarget.style.color = '#92897C';
             }}
           >
             {meta.label}

@@ -44,7 +44,7 @@ export default function UserProfileModal({ user, scansLeft, onClose, onLogout })
             position: 'absolute',
             top: 16, right: 16,
             background: 'none', border: 'none',
-            color: '#6B6860', fontSize: 24,
+            color: '#A8A498', fontSize: 24,
             cursor: 'pointer', lineHeight: 1
           }}
         >
@@ -60,7 +60,7 @@ export default function UserProfileModal({ user, scansLeft, onClose, onLogout })
           <h2 style={{ color: '#E8E4DC', margin: '0 0 4px 0', fontSize: 20, fontWeight: 700 }}>
             {user.user_metadata?.full_name || 'Anonymous User'}
           </h2>
-          <div style={{ color: '#6B6860', fontSize: 13, fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ color: '#A8A498', fontSize: 13, fontFamily: "'JetBrains Mono', monospace" }}>
             {user.email || 'No email provided'}
           </div>
         </div>
@@ -73,11 +73,11 @@ export default function UserProfileModal({ user, scansLeft, onClose, onLogout })
           marginBottom: 24
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-            <span style={{ color: '#6B6860', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Plan</span>
+            <span style={{ color: '#A8A498', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Plan</span>
             <span style={{ color: '#C44040', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Free Beta</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: '#6B6860', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Scans Remaining</span>
+            <span style={{ color: '#A8A498', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Scans Remaining</span>
             <span style={{ color: '#E8E4DC', fontSize: 12, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>
               {scansLeft} / 10
             </span>

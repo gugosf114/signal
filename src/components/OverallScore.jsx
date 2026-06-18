@@ -5,7 +5,7 @@ import { useWatchedCards } from './WatchedCards';
 import CardImage from './CardImage';
 import CardLightbox from './CardLightbox';
 
-export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, onRetry, signals = [], enPrice, jpPrice, trend }) {
+export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, onRetry, signals = [], enPrice, jpPrice, trend, onCardImageLoaded }) {
   const { label, color, blurb } = getScoreLabel(score);
   const gameMeta = GAME_LABELS[game];
   const glowColor = gameMeta?.color || '#C44040';
@@ -79,7 +79,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
             game={game}
             size={isMobile ? 200 : 360}
             glowColor={glowColor}
-            onLoad={setCardImageUrl}
+            onLoad={(url) => { setCardImageUrl(url); onCardImageLoaded?.(url); }}
             onClick={() => setLightboxOpen(true)}
           />
         </div>
@@ -109,7 +109,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               {gameMeta && (
                 <span style={{
-                  fontSize: 9,
+                  fontSize: 12,
                   fontWeight: 700,
                   fontFamily: "'Syne', sans-serif",
                   letterSpacing: '0.14em',
@@ -122,7 +122,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               )}
               <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#2A2D34', flexShrink: 0 }} />
               <span style={{
-                fontSize: 9,
+                fontSize: 12,
                 fontWeight: 700,
                 fontFamily: "'Syne', sans-serif",
                 letterSpacing: '0.14em',
@@ -187,7 +187,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
             {/* Tier blurb — descriptive, not directive. Footer disclaimer still applies. */}
             <div style={{
               marginTop: 6,
-              fontSize: 13,
+              fontSize: 14,
               fontFamily: "'Instrument Serif', serif",
               fontStyle: 'italic',
               color: '#8A8680',
@@ -199,9 +199,9 @@ export default function OverallScore({ score, cardName, game, summary, truncated
             {percentileInfo && (
               <div style={{
                 marginTop: 4,
-                fontSize: 10,
+                fontSize: 13,
                 fontFamily: "'JetBrains Mono', monospace",
-                color: '#4A4840',
+                color: '#7A7368',
                 letterSpacing: '0.06em',
               }}>
                 Top {percentileInfo.topPct}% of your last {percentileInfo.total} scans
@@ -216,7 +216,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
                 gap: 6,
                 flexWrap: 'wrap',
               }}>
-                <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: '#A09060', letterSpacing: '0.06em' }}>
+                <span style={{ fontSize: 14, fontFamily: "'JetBrains Mono', monospace", color: '#A09060', letterSpacing: '0.06em' }}>
                   PARTIAL · {signalCount} of 9 signals
                 </span>
                 {onRetry && (
@@ -228,7 +228,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
                       borderRadius: 2,
                       padding: '1px 8px',
                       color: '#A09060',
-                      fontSize: 10,
+                      fontSize: 13,
                       fontFamily: "'JetBrains Mono', monospace",
                       cursor: 'pointer',
                       letterSpacing: '0.06em',
@@ -238,7 +238,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
                     Retry
                   </button>
                 )}
-                <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: '#A09060', letterSpacing: '0.06em' }}>
+                <span style={{ fontSize: 14, fontFamily: "'JetBrains Mono', monospace", color: '#A09060', letterSpacing: '0.06em' }}>
                   for full data
                 </span>
               </div>
@@ -247,8 +247,8 @@ export default function OverallScore({ score, cardName, game, summary, truncated
 
           {summary && (
             <p style={{
-              fontSize: 14,
-              color: '#6B6860',
+              fontSize: 15,
+              color: '#A8A498',
               lineHeight: 1.65,
               fontFamily: "'Syne', sans-serif",
               fontWeight: 400,

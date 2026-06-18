@@ -71,7 +71,7 @@ function loadFeaturedScan() {
 }
 
 function trendSym(trend) {
-  if (!trend) return { sym: '—', color: '#3A3830' };
+  if (!trend) return { sym: '—', color: '#605C54' };
   const t = String(trend).toLowerCase();
   if (t.includes('up') || t.includes('rising') || t.includes('increas') || t.includes('lead')) {
     return { sym: '▲', color: '#608870' };
@@ -123,8 +123,8 @@ function ScoreTile({ data, isSample }) {
           fontWeight: 700,
           letterSpacing: '0.22em',
           textTransform: 'uppercase',
-          color: '#5A5850',
-          border: '1px solid #2A2820',
+          color: '#92897C',
+          border: '1px solid #494640',
           background: 'rgba(196,64,64,0.04)',
           padding: '3px 8px 2px',
           borderRadius: 2,
@@ -213,7 +213,7 @@ function PriceTile({ prices }) {
     }}>
       <div style={{ display: 'flex', borderBottom: '1px solid #1A1D24' }}>
         <div style={{ flex: 1, padding: '12px 14px', borderRight: '1px solid #1A1D24' }}>
-          <div style={{ ...label, color: '#4A4840' }}>EN Price</div>
+          <div style={{ ...label, color: '#7A7368' }}>EN Price</div>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 600, color: '#E8E4DC' }}>
             {prices.en_price || '—'}
           </div>
@@ -227,13 +227,13 @@ function PriceTile({ prices }) {
       </div>
       <div style={{ display: 'flex' }}>
         <div style={{ flex: 1, padding: '10px 14px', borderRight: '1px solid #1A1D24' }}>
-          <div style={{ ...label, color: '#4A4840' }}>JP Comp</div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#6B6860', lineHeight: 1.5 }}>
+          <div style={{ ...label, color: '#7A7368' }}>JP Comp</div>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#A8A498', lineHeight: 1.5 }}>
             {prices.jp_en_gap || '—'}
           </div>
         </div>
         <div style={{ flex: 1, padding: '10px 14px' }}>
-          <div style={{ ...label, color: '#4A4840' }}>30-Day Trend</div>
+          <div style={{ ...label, color: '#7A7368' }}>30-Day Trend</div>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 16, color: trend.color, fontWeight: 700 }}>
             {trend.sym}
           </div>
@@ -284,7 +284,7 @@ function SignalTile({ creator }) {
         <div style={{
           fontSize: 11,
           fontFamily: "'Syne', sans-serif",
-          color: '#5A5850',
+          color: '#92897C',
           lineHeight: 1.5,
         }}>
           {creator?.detail || ''}
@@ -332,7 +332,7 @@ export default function EmptyState() {
           textAlign: 'center',
           fontFamily: "'Syne', sans-serif",
           fontSize: 12,
-          color: '#3A3830',
+          color: '#605C54',
           lineHeight: 1.7,
           maxWidth: 520,
           marginLeft: 'auto',

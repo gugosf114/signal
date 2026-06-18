@@ -9,7 +9,7 @@ const SECTION_ACCENTS = {
 
 export default function SignalSection({ section, signals, baseDelay = 0 }) {
   const isJapan = section.id === 'japan';
-  const accentColor = SECTION_ACCENTS[section.id] || '#6B6860';
+  const accentColor = SECTION_ACCENTS[section.id] || '#A8A498';
   const sectionSignals = section.signals
     .map((key) => signals.find((s) => s.key === key))
     .filter(Boolean);
@@ -69,8 +69,8 @@ export default function SignalSection({ section, signals, baseDelay = 0 }) {
             {section.label}
           </h2>
           <span style={{
-            fontSize: 9,
-            color: '#2A2820',
+            fontSize: 12,
+            color: '#494640',
             fontFamily: "'JetBrains Mono', monospace",
           }}>
             {section.id === 'short-term' ? '⏱ ' : ''}{section.subtitle}

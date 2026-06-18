@@ -25,8 +25,8 @@ const TYPE_COLOR = {
   marketplace_en: '#907888',
   marketplace_jp: '#C44040',
   editorial: '#708880',
-  population_report: '#6B6860',
-  other: '#4A4840',
+  population_report: '#A8A498',
+  other: '#7A7368',
 };
 
 const TYPE_MARK = {
@@ -183,7 +183,7 @@ function YouTubeEmbed({ videoId, title }) {
           }}>
             <BrandIcon brand="youtube" size={12} />
             <span style={{
-              fontSize: 9,
+              fontSize: 12,
               fontFamily: "'Syne', sans-serif",
               fontWeight: 700,
               color: '#fff',
@@ -234,7 +234,7 @@ export default function SourceCitation({ source }) {
           marginBottom: 3,
         }}>
           <span style={{
-            fontSize: 9,
+            fontSize: 12,
             fontWeight: 700,
             fontFamily: "'Syne', sans-serif",
             letterSpacing: '0.14em',
@@ -245,8 +245,8 @@ export default function SourceCitation({ source }) {
             {TYPE_LABEL[type] || 'Source'}
           </span>
           <span style={{
-            fontSize: 11,
-            color: '#6B6860',
+            fontSize: 14,
+            color: '#A8A498',
             fontFamily: "'Syne', sans-serif",
             fontWeight: 500,
           }}>
@@ -257,7 +257,7 @@ export default function SourceCitation({ source }) {
           )}
           {source.audience && (
             <span style={{
-              fontSize: 11,
+              fontSize: 14,
               color: '#8A8678',
               fontFamily: "'JetBrains Mono', monospace",
               fontWeight: 700,
@@ -276,8 +276,8 @@ export default function SourceCitation({ source }) {
                 width: 2, height: 2, borderRadius: '50%', background: '#2A2D34',
               }} />
               <span style={{
-                fontSize: 10,
-                color: '#3A3830',
+                fontSize: 13,
+                color: '#605C54',
                 fontFamily: "'JetBrains Mono', monospace",
               }}>
                 {source.date}
@@ -331,8 +331,8 @@ export default function SourceCitation({ source }) {
         {/* Summary */}
         {source.summary && (
           <div style={{
-            fontSize: 12,
-            color: '#5A5850',
+            fontSize: 15,
+            color: '#92897C',
             fontFamily: "'Syne', sans-serif",
             fontWeight: 400,
             lineHeight: 1.55,
@@ -354,7 +354,7 @@ export default function SourceCitation({ source }) {
         paddingTop: 4,
       }}>
         <span style={{
-          fontSize: 14,
+          fontSize: 15,
           fontFamily: "'JetBrains Mono', monospace",
           fontWeight: 700,
           color: impl.color,

@@ -123,7 +123,7 @@ function ArticleCard({ article, fallbackImg }) {
           <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: c }}>
             {article.source.label}
           </span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color: '#4A4840' }}>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color: '#7A7368' }}>
             {timeAgo(article.pubDate)}
           </span>
         </div>
@@ -133,7 +133,7 @@ function ArticleCard({ article, fallbackImg }) {
       <div className="npc-pocket" style={{ '--c': c }}>
         <div style={{
           fontFamily: "'Instrument Serif',serif",
-          fontSize: 12, fontStyle: 'italic',
+          fontSize: 15, fontStyle: 'italic',
           color: '#C8C4BC', lineHeight: 1.35,
           overflow: 'hidden',
           display: '-webkit-box',
@@ -145,7 +145,7 @@ function ArticleCard({ article, fallbackImg }) {
         </div>
         {article.description && (
           <div style={{
-            fontFamily: "'Syne',sans-serif", fontSize: 9, color: '#4A4840', lineHeight: 1.5,
+            fontFamily: "'Syne',sans-serif", fontSize: 12, color: '#7A7368', lineHeight: 1.5,
             overflow: 'hidden',
             display: '-webkit-box',
             WebkitLineClamp: 2,

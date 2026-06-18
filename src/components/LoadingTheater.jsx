@@ -175,6 +175,10 @@ const PHASES = [
 const PHASE_MS = 4400;
 const DETAIL_MS = 1450;
 const TICK_MS = 120;
+// Nominal scan duration. Progress bar fills linearly to 90% across this
+// window, then eases asymptotically toward 99% if the scan keeps running
+// (rare — usually the result lands inside the nominal window).
+const NOMINAL_SCAN_MS = 35200; // 8 phases * 4400ms
 
 const SOLARI_GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789▲▼◆▸▤▦株渡日¥';
 
@@ -185,10 +189,21 @@ export default function LoadingTheater({ cardName, game }) {
   const [start] = useState(() => Date.now());
   const [now, setNow] = useState(Date.now());
   const [cardImageUrl, setCardImageUrl] = useState(null);
+  const rootRef = useRef(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), TICK_MS);
     return () => clearInterval(id);
+  }, []);
+
+  // On mount, slide the theater into the middle of the viewport so the
+  // whole thing is visible immediately instead of half-cut-off below the
+  // fold. The user can still scroll away to browse — this only fires once.
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   const elapsed = now - start;
@@ -204,14 +219,21 @@ export default function LoadingTheater({ cardName, game }) {
   const inPhase = elapsed - rawIdx * PHASE_MS;
   const detailIdx = Math.min(phase.details.length - 1, Math.floor(inPhase / DETAIL_MS));
 
+  // Linear to 90% across the nominal window; asymptote toward 99% if the
+  // scan runs long. Never reaches 100% — the parent unmounts on completion.
+  const progress = elapsed < NOMINAL_SCAN_MS
+    ? Math.min(0.9, (elapsed / NOMINAL_SCAN_MS) * 0.9)
+    : 0.9 + 0.09 * (1 - Math.exp(-(elapsed - NOMINAL_SCAN_MS) / 18000));
+
   return (
-    <div className="lt-canvas" data-jp={phase.jp || undefined}>
+    <div ref={rootRef} className="lt-canvas" data-jp={phase.jp || undefined}>
       <div className="lt-bg-grid" aria-hidden />
       <div className="lt-bg-vignette" aria-hidden />
       <KanjiBackdrop visible={phase.jp} />
 
       <div className="lt-top">
         <PhasePips activeIdx={rawIdx < PHASES.length ? rawIdx : PHASES.length - 1} />
+        <ScanProgressBar percent={progress * 100} accent={phase.color} />
         <div className="lt-top-row">
           <CardSlate cardName={cardName} game={game} onImageLoad={setCardImageUrl} />
           <div className="lt-top-right">
@@ -281,6 +303,74 @@ export default function LoadingTheater({ cardName, game }) {
 }
 
 // ─── Top chrome ──────────────────────────────────────────────────────────────
+
+function ScanProgressBar({ percent, accent }) {
+  const pct = Math.max(0, Math.min(100, percent));
+  return (
+    <div style={{
+      width: '100%',
+      marginTop: 10,
+      marginBottom: 4,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+    }}>
+      <span style={{
+        fontFamily: "'Syne', sans-serif",
+        fontSize: 8,
+        fontWeight: 700,
+        letterSpacing: '0.22em',
+        textTransform: 'uppercase',
+        color: '#7A7368',
+      }}>Scan</span>
+      <div style={{
+        flex: 1,
+        height: 3,
+        background: '#14161A',
+        borderRadius: 1,
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: 'inset 0 0 0 1px #1A1D24',
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          bottom: 0,
+          width: `${pct}%`,
+          background: `linear-gradient(90deg, ${accent}77 0%, ${accent} 100%)`,
+          boxShadow: `0 0 10px ${accent}88, 0 0 2px ${accent}`,
+          transition: 'width 0.18s ease-out',
+          borderRadius: 1,
+        }} />
+        {/* Leading edge — a hair brighter than the fill, suggests motion */}
+        {pct > 1 && pct < 99 && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: `${pct}%`,
+            transform: 'translateX(-2px)',
+            width: 2,
+            background: '#F5F1E8',
+            opacity: 0.7,
+            boxShadow: '0 0 6px #F5F1E8',
+          }} />
+        )}
+      </div>
+      <span style={{
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 10,
+        fontWeight: 700,
+        color: '#C8C4BC',
+        fontVariantNumeric: 'tabular-nums',
+        minWidth: 34,
+        textAlign: 'right',
+        letterSpacing: '0.04em',
+      }}>{Math.round(pct)}%</span>
+    </div>
+  );
+}
 
 function PhasePips({ activeIdx }) {
   const idx = Math.max(0, Math.min(activeIdx, PHASES.length - 1));
@@ -569,7 +659,7 @@ function SignalGrid({ activePhaseId, accent }) {
             <div
               key={s.key}
               className={`lt-signal-item ${active ? 'lt-signal-item--active' : ''}`}
-              style={{ '--cell-color': active ? accent : '#3A3830' }}
+              style={{ '--cell-color': active ? accent : '#605C54' }}
               title={fullLabel}
             >
               <span className="lt-signal-item-dot" />

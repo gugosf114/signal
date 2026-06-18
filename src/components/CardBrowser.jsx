@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GAME_LABELS } from '../config/signals';
 import { BrandIcon } from '../config/brandIcons';
+import { getExpansions, fetchCardsBySet, fetchLatestCardsForGame } from '../services/fetchExpansions';
 
 const GAME_BRAND = { pokemon: 'pokemon', mtg: 'mtg', yugioh: 'yugioh' };
 
@@ -10,99 +11,64 @@ const TABS = [
   { id: 'yugioh',  label: 'Yu-Gi-Oh!', color: '#7080A0' },
 ];
 
-// Default query strings per game — no special chars so URL encoding is safe
-const DEFAULT_QUERY = {
-  pokemon: { q: 'set.id:sv7',       sort: '-set.releaseDate' },  // Stellar Crown
-  mtg:     { q: 's:dsk game:paper', sort: 'released'         },  // Duskmourne
-  yugioh:  { sort: 'new'                                      },
-};
-
-async function browseCards(game, query) {
-  try {
-    if (game === 'pokemon') {
-      const q = query
-        ? `name:${encodeURIComponent(query)}*`
-        : DEFAULT_QUERY.pokemon.q;
-      const res = await fetch(
-        `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&pageSize=21&orderBy=${DEFAULT_QUERY.pokemon.sort}`
-      );
-      if (!res.ok) return [];
-      const data = await res.json();
-      return (data.data || []).map(c => ({
-        id: c.id,
-        name: c.name,
-        game: 'pokemon',
-        setName: c.set?.name || '',
-        imageUrl: c.images?.small || null,
-      }));
-    }
-
-    if (game === 'mtg') {
-      const qRaw = query ? `${query} game:paper` : DEFAULT_QUERY.mtg.q;
-      const res = await fetch(
-        `https://api.scryfall.com/cards/search?q=${encodeURIComponent(qRaw)}&order=${DEFAULT_QUERY.mtg.sort}&dir=desc&unique=cards`
-      );
-      if (!res.ok) return [];
-      const data = await res.json();
-      return (data.data || []).slice(0, 21).map(c => ({
-        id: c.id,
-        name: c.name,
-        game: 'mtg',
-        setName: c.set_name || '',
-        imageUrl: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || null,
-      }));
-    }
-
-    if (game === 'yugioh') {
-      const params = query
-        ? `fname=${encodeURIComponent(query)}`
-        : `sort=${DEFAULT_QUERY.yugioh.sort}`;
-      const res = await fetch(
-        `https://db.ygoprodeck.com/api/v7/cardinfo.php?${params}&num=21&offset=0`
-      );
-      if (!res.ok) return [];
-      const data = await res.json();
-      return (data.data || []).slice(0, 21).map(c => ({
-        id: String(c.id),
-        name: c.name,
-        game: 'yugioh',
-        setName: c.type || '',
-        imageUrl: c.card_images?.[0]?.image_url_small || null,
-      }));
-    }
-  } catch {
-    // network failure — return empty, don't crash
-  }
-  return [];
-}
-
 export default function CardBrowser({ onCardSelect }) {
   const [activeGame, setActiveGame] = useState('pokemon');
-  const [query, setQuery] = useState('');
+  const [expansions, setExpansions] = useState({ pokemon: [], mtg: [], yugioh: [] });
+  const [activeSet, setActiveSet] = useState(null);
+  const [priceSort, setPriceSort] = useState(null); // null | 'asc' | 'desc'
   const [cards, setCards] = useState([]);
   const [browsing, setBrowsing] = useState(false);
-  const debounceRef = useRef(null);
 
-  const load = async (game, q) => {
-    setBrowsing(true);
-    const results = await browseCards(game, q);
-    setCards(results);
-    setBrowsing(false);
-  };
-
+  // One-shot expansion fetch on mount; cached 7d.
   useEffect(() => {
-    setQuery('');
-    load(activeGame, '');
-  }, [activeGame]);
+    let cancelled = false;
+    getExpansions().then((data) => {
+      if (cancelled) return;
+      setExpansions(data);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
-  const handleQueryChange = (e) => {
-    const q = e.target.value;
-    setQuery(q);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => load(activeGame, q), 420);
-  };
+  // When the user switches games OR expansions land, default to the newest set
+  // for the active game and load its cards.
+  useEffect(() => {
+    const sets = expansions[activeGame] || [];
+    if (!sets.length) {
+      setActiveSet(null);
+      setCards([]);
+      return;
+    }
+    setActiveSet((prev) => {
+      if (prev && prev.game === activeGame && sets.find(s => s.id === prev.id)) {
+        return prev;
+      }
+      return sets[0];
+    });
+  }, [activeGame, expansions]);
+
+  // Card fetch: prefer the picked expansion, but fall back to a generic
+  // "latest cards" fetch for the active game if the expansion list hasn't
+  // returned yet (or returned empty). Guarantees the grid never sits empty
+  // while the user waits on a slow set-list lookup.
+  useEffect(() => {
+    let cancelled = false;
+    setBrowsing(true);
+    const fetcher = activeSet
+      ? fetchCardsBySet(activeSet.game, activeSet, priceSort)
+      : fetchLatestCardsForGame(activeGame, priceSort);
+    fetcher.then((results) => {
+      if (cancelled) return;
+      setCards(results);
+      setBrowsing(false);
+    }).catch(() => {
+      if (cancelled) return;
+      setBrowsing(false);
+    });
+    return () => { cancelled = true; };
+  }, [activeSet, activeGame, priceSort]);
 
   const activeTab = TABS.find(t => t.id === activeGame);
+  const activeExpansions = expansions[activeGame] || [];
 
   return (
     <div style={{ marginTop: 40 }}>
@@ -120,7 +86,7 @@ export default function CardBrowser({ onCardSelect }) {
           fontFamily: "'Syne', sans-serif",
           fontWeight: 700,
           letterSpacing: '0.22em',
-          color: '#3A3830',
+          color: '#605C54',
           textTransform: 'uppercase',
         }}>
           Browse cards
@@ -140,7 +106,7 @@ export default function CardBrowser({ onCardSelect }) {
                 background: activeGame === tab.id ? `${tab.color}18` : 'transparent',
                 border: `1px solid ${activeGame === tab.id ? tab.color + '50' : '#14161A'}`,
                 borderRadius: 2,
-                color: activeGame === tab.id ? tab.color : '#3A3830',
+                color: activeGame === tab.id ? tab.color : '#605C54',
                 fontSize: 10,
                 cursor: 'pointer',
                 fontFamily: "'Syne', sans-serif",
@@ -156,30 +122,120 @@ export default function CardBrowser({ onCardSelect }) {
         </div>
       </div>
 
-      {/* Search within browser */}
-      <input
-        type="text"
-        value={query}
-        onChange={handleQueryChange}
-        placeholder={`Search ${activeTab?.label} cards...`}
-        style={{
-          width: '100%',
-          background: '#0A0C10',
-          border: '1px solid #14161A',
-          borderRadius: 2,
-          padding: '8px 14px',
-          color: '#E8E4DC',
-          fontSize: 12,
+      {/* Price-sort toggles — none / low→high / high→low */}
+      <div style={{
+        display: 'flex',
+        gap: 6,
+        alignItems: 'center',
+        marginBottom: 10,
+      }}>
+        <span style={{
           fontFamily: "'Syne', sans-serif",
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: '0.22em',
+          textTransform: 'uppercase',
+          color: '#605C54',
+          marginRight: 4,
+        }}>Sort</span>
+        {[
+          { key: null,   label: 'Default', glyph: '—' },
+          { key: 'asc',  label: 'Low → High', glyph: '$↑' },
+          { key: 'desc', label: 'High → Low', glyph: '$↓' },
+        ].map((opt) => {
+          const selected = priceSort === opt.key;
+          return (
+            <button
+              key={opt.label}
+              onClick={() => setPriceSort(opt.key)}
+              title={opt.label}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '4px 10px',
+                background: selected ? `${activeTab.color}18` : 'transparent',
+                border: `1px solid ${selected ? activeTab.color + '60' : '#14161A'}`,
+                borderRadius: 2,
+                color: selected ? '#E8E4DC' : '#7A7368',
+                fontSize: 11,
+                fontFamily: "'JetBrains Mono', monospace",
+                fontWeight: selected ? 700 : 500,
+                letterSpacing: '0.04em',
+                cursor: 'pointer',
+                transition: 'all 0.12s',
+              }}
+            >
+              {opt.glyph}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Expansion picker — last 6 expansions per game, horizontal scroll */}
+      {activeExpansions.length > 0 && (
+        <div style={{
+          display: 'flex',
+          gap: 6,
+          overflowX: 'auto',
+          paddingBottom: 4,
           marginBottom: 14,
-          outline: 'none',
-          boxSizing: 'border-box',
-          caretColor: activeTab?.color || '#C44040',
-          transition: 'border-color 0.15s',
-        }}
-        onFocus={e => { e.target.style.borderColor = (activeTab?.color || '#C44040') + '50'; }}
-        onBlur={e => { e.target.style.borderColor = '#14161A'; }}
-      />
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}>
+          {activeExpansions.map((set) => {
+            const selected = activeSet?.id === set.id;
+            return (
+              <button
+                key={`${set.game}-${set.id}`}
+                onClick={() => setActiveSet(set)}
+                title={set.name + (set.releaseDate ? ` · ${set.releaseDate}` : '')}
+                style={{
+                  flex: '0 0 auto',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '5px 12px',
+                  background: selected ? `${activeTab.color}18` : 'transparent',
+                  border: `1px solid ${selected ? activeTab.color + '60' : '#14161A'}`,
+                  borderRadius: 2,
+                  color: selected ? '#E8E4DC' : '#7A7368',
+                  fontSize: 12,
+                  fontFamily: "'Syne', sans-serif",
+                  fontWeight: selected ? 600 : 500,
+                  letterSpacing: '0.02em',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.12s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!selected) {
+                    e.currentTarget.style.borderColor = activeTab.color + '40';
+                    e.currentTarget.style.color = '#C8C4BC';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!selected) {
+                    e.currentTarget.style.borderColor = '#14161A';
+                    e.currentTarget.style.color = '#7A7368';
+                  }
+                }}
+              >
+                {set.name}
+                {set.releaseDate && (
+                  <span style={{
+                    color: selected ? activeTab.color : '#494640',
+                    fontSize: 9,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>
+                    '{set.releaseDate.slice(2, 4)}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Card grid */}
       {browsing ? (
@@ -260,7 +316,7 @@ export default function CardBrowser({ onCardSelect }) {
               <div style={{
                 padding: '4px 2px 2px',
                 fontSize: 9,
-                color: '#4A4840',
+                color: '#7A7368',
                 fontFamily: "'Syne', sans-serif",
                 fontWeight: 500,
                 lineHeight: 1.3,
@@ -280,7 +336,7 @@ export default function CardBrowser({ onCardSelect }) {
           padding: '32px 0',
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 11,
-          color: '#2A2820',
+          color: '#494640',
           letterSpacing: '0.06em',
         }}>
           No cards found

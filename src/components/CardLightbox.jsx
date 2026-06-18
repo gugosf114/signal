@@ -21,7 +21,7 @@ function AnnotationChip({ label, value, color, style }) {
         fontWeight: 700,
         letterSpacing: '0.14em',
         textTransform: 'uppercase',
-        color: color || '#6B6860',
+        color: color || '#A8A498',
         opacity: 0.8,
       }}>
         {label}
@@ -121,7 +121,7 @@ export default function CardLightbox({
         right: 24,
         fontSize: 11,
         fontFamily: "'JetBrains Mono', monospace",
-        color: '#3A3830',
+        color: '#605C54',
         letterSpacing: '0.08em',
         pointerEvents: 'none',
       }}>
@@ -213,7 +213,7 @@ export default function CardLightbox({
           <AnnotationChip
             label="EN Price"
             value={enPrice}
-            color="#6B6860"
+            color="#A8A498"
             style={{ top: 20, right: -10 }}
           />
         )}

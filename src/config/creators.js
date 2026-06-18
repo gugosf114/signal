@@ -65,7 +65,7 @@ export const TIER_META = {
   T1: { color: '#C44040', label: 'T1' },
   T2: { color: '#A09060', label: 'T2' },
   T3: { color: '#608870', label: 'T3' },
-  unknown: { color: '#3A3830', label: '—' },
+  unknown: { color: '#605C54', label: '—' },
 };
 
 // Render a creator list as a string for prompt injection

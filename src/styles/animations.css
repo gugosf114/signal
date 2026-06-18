@@ -157,7 +157,7 @@
   transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .lt-kanji-backdrop--on {
-  opacity: 0.045;
+  opacity: 0.054;
 }
 
 /* ─── TOP CHROME ─────────────────────────────────────────────────── */
@@ -190,7 +190,7 @@
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.12em;
-  color: #2A2820;
+  color: #494640;
   text-align: center;
   transition: color 0.35s;
 }
@@ -205,7 +205,7 @@
   background: #2A2D34;
 }
 .lt-pip--past .lt-pip-label {
-  color: #4A4840;
+  color: #7A7368;
   opacity: 0.5;
 }
 .lt-pip--now .lt-pip-rail {
@@ -225,7 +225,7 @@
   margin-top: 8px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
-  color: #6B6860;
+  color: #A8A498;
   letter-spacing: 0.14em;
   text-align: left;
 }
@@ -279,7 +279,7 @@
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.22em;
-  color: #3A3830;
+  color: #605C54;
 }
 .lt-cardslate-name {
   font-family: 'Instrument Serif', serif;
@@ -317,12 +317,12 @@
 .lt-clock-tz {
   font-size: 8px;
   letter-spacing: 0.18em;
-  color: #3A3830;
+  color: #605C54;
   text-transform: uppercase;
 }
 .lt-clock-time {
   font-size: 12px;
-  color: #6B6860;
+  color: #A8A498;
   font-variant-numeric: tabular-nums;
 }
 .lt-clock-row--jp .lt-clock-tz {
@@ -472,7 +472,7 @@
   gap: 8px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  color: #5A5850;
+  color: #92897C;
   letter-spacing: 0.02em;
   animation: ltDetailIn 0.32s ease-out forwards;
   min-height: 18px;
@@ -482,7 +482,7 @@
   font-family: 'Noto Sans JP', monospace, 'JetBrains Mono';
 }
 .lt-detail-marker {
-  color: #3A3830;
+  color: #605C54;
 }
 .lt-detail-text {
   color: #8A8678;
@@ -527,7 +527,7 @@
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.24em;
-  color: #4A4840;
+  color: #7A7368;
 }
 .lt-log-host {
   font-family: 'JetBrains Mono', monospace;
@@ -555,7 +555,7 @@
   opacity: 0;
 }
 .lt-log-ts {
-  color: #4A4840;
+  color: #7A7368;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
@@ -584,7 +584,7 @@
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.24em;
-  color: #4A4840;
+  color: #7A7368;
 }
 .lt-grid-cells {
   display: grid;
@@ -632,7 +632,7 @@
   font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: #4A4840;
+  color: #7A7368;
   transition: color 0.3s;
 }
 .lt-grid-cell--active .lt-grid-label {
@@ -681,7 +681,7 @@
 }
 .lt-ticker-inner--en {
   animation: ltTickerLeft 38s linear infinite;
-  color: #6B6860;
+  color: #A8A498;
 }
 .lt-ticker-inner--jp {
   animation: ltTickerRight 52s linear infinite;
@@ -770,7 +770,7 @@
   text-underline-offset: 3px;
 }
 .signal-card-row:focus-visible {
-  outline: 1px solid var(--signal-color, #6B6860);
+  outline: 1px solid var(--signal-color, #A8A498);
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -845,7 +845,7 @@
 }
 .ns-label {
   font-family: 'Syne', sans-serif; font-size: 9px; font-weight: 700;
-  letter-spacing: 0.22em; color: #3A3830; text-transform: uppercase;
+  letter-spacing: 0.22em; color: #605C54; text-transform: uppercase;
 }
 .ns-dots { display: flex; align-items: center; gap: 7px; }
 .ns-dot {
@@ -933,7 +933,7 @@
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: #4A4840;
+  color: #7A7368;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

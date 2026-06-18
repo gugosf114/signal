@@ -14,7 +14,7 @@ const sectionLabelStyle = {
   letterSpacing: '0.18em',
   fontFamily: "'Syne', sans-serif",
   textTransform: 'uppercase',
-  color: '#4A4840',
+  color: '#7A7368',
 };
 
 const typeChipStyle = {
@@ -37,9 +37,9 @@ const priceStyle = {
 };
 
 const titleStyle = {
-  fontSize: 10,
+  fontSize: 13,
   fontFamily: "'JetBrains Mono', monospace",
-  color: '#6B6860',
+  color: '#A8A498',
   lineHeight: 1.4,
   marginTop: 6,
   display: '-webkit-box',
@@ -49,9 +49,9 @@ const titleStyle = {
 };
 
 const metaStyle = {
-  fontSize: 9,
+  fontSize: 12,
   fontFamily: "'JetBrains Mono', monospace",
-  color: '#5A5850',
+  color: '#92897C',
   marginTop: 6,
   lineHeight: 1.5,
 };
@@ -60,7 +60,7 @@ const linkStyle = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: 4,
-  fontSize: 9,
+  fontSize: 12,
   fontFamily: "'Syne', sans-serif",
   fontWeight: 700,
   letterSpacing: '0.12em',
@@ -108,7 +108,7 @@ function BinCard({ listing }) {
         {listing.seller && (
           <>
             <br />
-            <span style={{ color: '#3A3830' }}>{listing.seller}</span>
+            <span style={{ color: '#605C54' }}>{listing.seller}</span>
           </>
         )}
       </div>
@@ -121,7 +121,7 @@ function BinCard({ listing }) {
   );
 }
 
-function AuctionCard({ listing }) {
+function AuctionCard({ listing, isMobile }) {
   if (!listing) return null;
   return (
     <div style={{
@@ -141,7 +141,7 @@ function AuctionCard({ listing }) {
         display: 'flex',
         alignItems: 'center',
       }}>
-        <BrandIcon brand="ebay" size={40} />
+        <BrandIcon brand="ebay" size={isMobile ? 24 : 40} />
       </div>
       <div style={{
         ...typeChipStyle,
@@ -154,7 +154,7 @@ function AuctionCard({ listing }) {
       </div>
       <div style={{ ...priceStyle, color: '#E8E4DC' }}>
         {formatUSD(listing.current_bid_usd)}
-        <span style={{ fontSize: 9, color: '#5A5850', marginLeft: 6, fontFamily: "'Syne', sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: 12, color: '#92897C', marginLeft: 6, fontFamily: "'Syne', sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase' }}>
           current bid
         </span>
       </div>
@@ -210,9 +210,9 @@ export default function EbayListings({ data }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <BrandIcon brand="ebay" size={28} />
           <span style={{
-            fontSize: 10,
+            fontSize: 13,
             fontFamily: "'JetBrains Mono', monospace",
-            color: '#5A5850',
+            color: '#92897C',
             letterSpacing: '0.04em',
           }}>
             · live
@@ -227,5 +227,8 @@ export default function EbayListings({ data }) {
         {cards}
       </div>
     </div>
+  );
+}
+iv>
   );
 }
