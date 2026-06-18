@@ -10,7 +10,7 @@ import { fetchCardData, buildCardDataBlock } from './fetchCardData';
 import { fetchEnhancedPrice } from './fetchTCGPrice';
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-3-7-sonnet-20250219';
+const MODEL = 'claude-4-6-sonnet-20260514';
 
 function buildSystemPrompt(game) {
   // Curated creator directory injected into the prompt so the model
