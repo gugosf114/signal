@@ -229,6 +229,3 @@ export default function EbayListings({ data }) {
     </div>
   );
 }
-iv>
-  );
-}
