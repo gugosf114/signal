@@ -10,7 +10,7 @@ import { fetchCardData, buildCardDataBlock } from './fetchCardData';
 import { fetchEnhancedPrice } from './fetchTCGPrice';
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-3-7-sonnet-20250219';
+const MODEL = 'claude-sonnet-4-6';
 
 function buildSystemPrompt(game) {
   // Curated creator directory injected into the prompt so the model
@@ -124,6 +124,10 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 16000,
+      // Extended thinking: model reasons through cross-signal patterns before
+      // emitting the structured 9-signal scorecard. Budget covers the cognitive
+      // lift without blowing the response window (16k tokens stays for output).
+      thinking: { type: 'enabled', budget_tokens: 8000 },
       system: [
         {
           type: 'text',

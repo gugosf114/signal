@@ -9,7 +9,7 @@
 // directly inside the Capacitor WebView.
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-3-7-sonnet-20250219';
+const MODEL = 'claude-sonnet-4-6';
 
 const SYSTEM = `You are a trading card identifier. The user shows you a photo of a TCG card and you must identify it.
 
