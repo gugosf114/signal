@@ -11,6 +11,7 @@ import { fetchEnhancedPrice } from './fetchTCGPrice';
 import { fetchCommunity, communityBlock } from './fetchCommunity';
 import { fetchCreators, creatorsBlock } from './fetchCreators';
 import { fetchEbayListings, ebayBlock } from './fetchEbayListings';
+import { fetchJpSignal, jpBlock } from './fetchJpSignal';
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-6';
@@ -73,12 +74,13 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   // LLM web_search. Free always: card identity + EN price, Reddit (no key). Activate
   // with keys: eBay Browse, YouTube Data, paid price/JP overlay. Each parallel call
   // that succeeds removes one ~5-15s sequential web_search downstream.
-  const [cardData, enhancedData, community, creators, ebay] = await Promise.all([
+  const [cardData, enhancedData, community, creators, ebay, jp] = await Promise.all([
     fetchCardData(cardName, game).catch(() => null),
     fetchEnhancedPrice(cardName, game).catch(() => null),
     fetchCommunity(cardName, game).catch(() => null),
     fetchCreators(cardName, game).catch(() => null),
     fetchEbayListings(cardName, game).catch(() => null),
+    fetchJpSignal(cardName).catch(() => null),
   ]);
   // Merge enhanced price data into the card data block when available
   const mergedData = cardData
@@ -90,7 +92,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       } : {}) }
     : null;
   const dataBlock = buildCardDataBlock(mergedData);
-  const extraBlocks = [communityBlock(community), creatorsBlock(creators), ebayBlock(ebay)].filter(Boolean);
+  const extraBlocks = [communityBlock(community), creatorsBlock(creators), ebayBlock(ebay), jpBlock(jp)].filter(Boolean);
   const hasPreFetch = !!dataBlock || extraBlocks.length > 0;
 
   const baseMessage = game
@@ -105,7 +107,9 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   // JP price/hype is the wedge — but only meaningful for Pokémon / Yu-Gi-Oh (and
   // unknown game). Skipped for MTG.
   if (resolvedGame === 'pokemon' || resolvedGame === 'yugioh' || resolvedGame === '')
-    searchTargets.push('JP price & hype — Mercari JP / Yahoo Auctions JP (¥) + JP social / JP YouTube');
+    searchTargets.push(jp
+      ? 'JP price — Mercari JP / Yahoo Auctions JP current ¥ (JP hype/interest already in the JAPAN SIGNAL block above)'
+      : 'JP price & hype — Mercari JP / Yahoo Auctions JP (¥) + JP social / JP YouTube');
   // Tournament usage lives on Limitless = Pokémon only.
   if (resolvedGame === 'pokemon')
     searchTargets.push('Tournament — Limitless usage / ban list');
