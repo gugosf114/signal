@@ -41,10 +41,24 @@ public class ScanForegroundService extends Service {
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build();
 
-        if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-        } else {
-            startForeground(NOTIF_ID, n);
+        // startForeground() can throw on API 31+ when the app is started from the
+        // background (ForegroundServiceStartNotAllowedException) or on API 34+ for a
+        // type/permission mismatch. A missing POST_NOTIFICATIONS grant does NOT cause
+        // a throw — Android silently drops the notification but still lets the service
+        // promote itself. We catch broadly so that any unexpected restriction degrades
+        // gracefully: the service keeps running (and the WakeLock still fires below)
+        // without a visible notification, which is far better than a crash that leaves
+        // the scan unprotected.
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+            } else {
+                startForeground(NOTIF_ID, n);
+            }
+        } catch (Exception e) {
+            android.util.Log.w("ScanForegroundService",
+                    "startForeground failed — continuing without persistent notification: "
+                            + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
 
         try {

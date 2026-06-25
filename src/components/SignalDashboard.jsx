@@ -108,10 +108,9 @@ export default function SignalDashboard() {
     const controller = new AbortController();
     abortRef.current = controller;
     const myToken = ++navTokenRef.current;
-    // 150s hard ceiling. Most scans land in 30-60s; the long tail (full
-    // 10-13 web_search budget on a slow card / congested model) used to skirt
-    // the old 90s wall. 150s covers the 99th percentile without sacrificing
-    // search coverage or model quality.
+    // 120 s hard ceiling. Most scans land in 30-60 s; the long tail (full
+    // web_search budget on a slow card / congested model) can stretch to ~90 s.
+    // 120 s covers the 99th percentile without sacrificing search coverage.
     const timeout = setTimeout(() => controller.abort(), 120000);
 
     // Foreground service keeps the request alive if the user minimizes the app
@@ -133,7 +132,7 @@ export default function SignalDashboard() {
     } catch (err) {
       if (myToken !== navTokenRef.current) return;
       if (err.name === 'AbortError') {
-        setError('Scan exceeded 150 seconds. Network or model congestion — retry.');
+        setError('Scan exceeded 120 seconds. Network or model congestion — retry.');
       } else {
         setError(err.message);
       }
