@@ -110,7 +110,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   // clock. Dropping 2 saves 10-30s on the long tail without losing coverage
   // (the prompt now tells the model to combine signals where one search
   // covers two: e.g. one Mercari JP search → both jp_price + jp_hype).
-  const maxSearches = hasPreFetch ? 8 : 10;
+  const maxSearches = hasPreFetch ? 5 : 6;
 
   const response = await fetch(API_URL, {
     method: 'POST',
@@ -131,7 +131,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       // (Adaptive replaces the deprecated {type:'enabled',budget_tokens} form,
       //  which 400s on Opus 4.7+/Fable if the model is ever upgraded.)
       thinking: { type: 'adaptive' },
-      output_config: { effort: 'medium' },
+      output_config: { effort: 'low' },
       system: [
         {
           type: 'text',
