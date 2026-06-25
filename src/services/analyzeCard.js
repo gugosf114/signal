@@ -43,6 +43,16 @@ OUTPUT SHAPE:
     "buy_it_now": [ { "title": "", "price_usd": 0, "condition": "", "shipping": "", "seller": "", "url": "" } /* 2 */ ],
     "auction":    [ { "title": "", "current_bid_usd": 0, "condition": "", "bid_count": 0, "time_remaining": "", "url": "" } /* 1, omit if no live auction */ ]
   },
+  "grading_roi": {
+    "raw_price_usd": 0,
+    "psa10_est_usd": 0,
+    "grading_cost_usd": 25,
+    "net_roi_usd": 0,
+    "net_roi_pct": 0,
+    "verdict": "worth_grading | marginal | not_worth_grading | insufficient_data",
+    "confidence": "high | medium | low | insufficient_data",
+    "note": "one sentence — e.g. Reserved List card, PSA 10 pop is low, or card grades well due to black border"
+  },
   "signals": [
     /* exactly 9 — one per signal key. Each: { "key", "level" (1-5 int), "detail" (1 sentence), "sources": [ { "type","source","title","date","summary","implication","url","reach","audience" } ] }
        jp_price ALSO carries "jp_match": "exact" | "comp"
@@ -60,7 +70,16 @@ RULES:
 
 ${creatorBlocks}
 For "creator": top 3-4 EN creators from above (T1 first). Hits in sources[]; silences in detail.
-For "jp_hype": JP creators from the directory when present.`;
+For "jp_hype": JP creators from the directory when present.
+
+GRADING ROI:
+- raw_price_usd: use en_price (numeric, strip $)
+- psa10_est_usd: your best estimate of PSA 10 market value — use your knowledge of this card's graded sales; note as low confidence if uncertain
+- grading_cost_usd: 25 (economy/bulk); raise to 50 if raw > $100, 150 if raw > $500
+- net_roi_usd = psa10_est_usd - raw_price_usd - grading_cost_usd
+- verdict: worth_grading if net > $30 AND net_roi_pct > 30%; marginal if net $10-30; not_worth_grading if net < $10 or pct < 20%; insufficient_data if price unknown
+- note: one sentence on the key grading factor (pop scarcity, card condition sensitivity, border type, etc.)
+- If the card has no meaningful grading market (commons, low-value cards) → insufficient_data`;
 }
 
 export async function analyzeCard(cardName, game = null, opts = {}) {

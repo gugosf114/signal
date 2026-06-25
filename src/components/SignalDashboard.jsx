@@ -4,6 +4,7 @@ import QuickPicks from './QuickPicks';
 import RecentScans from './RecentScans';
 import PriceComparison from './PriceComparison';
 import EbayListings from './EbayListings';
+import GradingROI from './GradingROI';
 import OverallScore from './OverallScore';
 import SignalSection from './SignalSection';
 import SignalNav from './SignalNav';
@@ -537,6 +538,8 @@ export default function SignalDashboard() {
           />
 
           <EbayListings data={result.ebay_listings} />
+
+          <GradingROI data={result.grading_roi} />
 
           {/* Signal navigation — jump to any section */}
           <SignalNav signals={result.signals || []} />
