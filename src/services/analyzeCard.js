@@ -123,11 +123,15 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 16000,
-      // Extended thinking: model reasons through cross-signal patterns before
-      // emitting the structured 9-signal scorecard. Budget covers the cognitive
-      // lift without blowing the response window (16k tokens stays for output).
-      thinking: { type: 'enabled', budget_tokens: 8000 },
+      max_tokens: 24000,
+      // Adaptive thinking: the model decides how much to reason through
+      // cross-signal patterns before emitting the structured 9-signal scorecard.
+      // Thinking tokens are drawn from max_tokens, so max_tokens carries headroom
+      // (24k) to leave room for the full JSON output and avoid truncation.
+      // (Adaptive replaces the deprecated {type:'enabled',budget_tokens} form,
+      //  which 400s on Opus 4.7+/Fable if the model is ever upgraded.)
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'high' },
       system: [
         {
           type: 'text',
