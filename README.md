@@ -532,7 +532,7 @@ debugging" popup on phone.
 
 **Connection abort still unresolved (BLOCKER).** "Software caused
 connection abort" persists across multiple fix attempts. Root cause is
-confirmed (Samsung/Android OS freezes backgrounded app → OS tears down
+confirmed (Redmi/Android OS freezes backgrounded app → OS tears down
 open TCP sockets → SocketException), but no fix has been verified working
 in a live scan. Every APK was installed but the user couldn't complete a
 scan long enough to test because the app kept aborting. Fixes shipped but
