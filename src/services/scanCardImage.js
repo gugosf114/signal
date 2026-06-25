@@ -9,7 +9,9 @@
 // directly inside the Capacitor WebView.
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-sonnet-4-6';
+// Haiku handles reading a card's name/set/number off a clear photo just as well
+// as Sonnet at ~1/3 the cost — the heavy synthesis stays on Sonnet in analyzeCard.
+const MODEL = 'claude-haiku-4-5';
 
 const SYSTEM = `You are a trading card identifier. The user shows you a photo of a TCG card and you must identify it.
 

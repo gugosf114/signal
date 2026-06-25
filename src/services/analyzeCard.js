@@ -131,7 +131,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       // (Adaptive replaces the deprecated {type:'enabled',budget_tokens} form,
       //  which 400s on Opus 4.7+/Fable if the model is ever upgraded.)
       thinking: { type: 'adaptive' },
-      output_config: { effort: 'high' },
+      output_config: { effort: 'medium' },
       system: [
         {
           type: 'text',
@@ -141,7 +141,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       ],
       tools: [
         {
-          type: 'web_search_20250305',
+          type: 'web_search_20260209',
           name: 'web_search',
           max_uses: maxSearches,
         },
