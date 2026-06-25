@@ -50,10 +50,10 @@ OUTPUT SHAPE:
 }
 
 RULES:
-- Every "url" MUST be a URL you actually visited via web_search. Never invent. Same applies to eBay /itm/NUMBER URLs.
-- No real sources for a signal → "sources": [] and score level from what you observed. Empty > fake.
-- 1–3 sources per signal max. Detail = 1 sentence. Summary = 1–2 sentences. Be terse.
-- eBay listings: 2 BIN + 1 Auction (if live, else empty). Prefer raw NM/M unless user asked graded.
+- Every cited "url" MUST come from a web_search you actually ran OR from a pre-fetched block above. Never invent. No real source → "sources": [] (empty > fake).
+- EXACTLY 1 source per signal (the single strongest); [] if none. Keeps the response small and fast.
+- Detail = 1 short sentence. Summary = 1 sentence. Be terse.
+- eBay listings: include ONLY if a pre-fetched "EBAY LISTINGS" block is provided (copy those). Otherwise both arrays empty. NEVER invent eBay listings.
 - source.audience = verifiable metric only (e.g. "450k subs", "12k upvotes", "8.5M views") or null. Never guess.
 
 ${creatorBlocks}
@@ -97,12 +97,24 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     ? `Analyze the ${game} card: "${cardName}". Search both English and Japanese markets.`
     : `Analyze the trading card: "${cardName}". Determine which game it's from (Pokemon, Yu-Gi-Oh, or MTG), then search both English and Japanese markets.`;
 
-  // Only web_search for what the parallel pre-fetch could NOT pull directly.
-  const searchTargets = ['JP prices & hype — Mercari JP / Yahoo Auctions JP (¥) and JP social / JP YouTube'];
-  if (!ebay) searchTargets.push('eBay active listings — 2 Buy It Now + 1 Auction, real /itm/NUMBER URLs');
-  if (!community) searchTargets.push('Community sentiment — Reddit / Twitter recent activity');
-  if (!creators) searchTargets.push('Creator coverage — YouTube channels from the curated directory');
-  searchTargets.push('Tournament data — Limitless usage / ban list (skip if the card is not competitive)');
+  // Each web_search is 5-15s of SEQUENTIAL wall clock — the dominant cost. Only
+  // search for what the parallel pre-fetch can't cover, and gate by game so we
+  // never pay for irrelevant searches (e.g. JP/tournament for an MTG card).
+  const resolvedGame = (game || cardData?.game || '').toLowerCase();
+  const searchTargets = [];
+  // JP price/hype is the wedge — but only meaningful for Pokémon / Yu-Gi-Oh (and
+  // unknown game). Skipped for MTG.
+  if (resolvedGame === 'pokemon' || resolvedGame === 'yugioh' || resolvedGame === '')
+    searchTargets.push('JP price & hype — Mercari JP / Yahoo Auctions JP (¥) + JP social / JP YouTube');
+  // Tournament usage lives on Limitless = Pokémon only.
+  if (resolvedGame === 'pokemon')
+    searchTargets.push('Tournament — Limitless usage / ban list');
+  // Only sweep community+creators if BOTH direct pulls came back empty.
+  if (!community && !creators)
+    searchTargets.push('Recent community + creator coverage — Reddit / YouTube');
+  // eBay is no longer searched — it comes only from the eBay Browse pre-fetch (keyed).
+
+  const maxSearches = searchTargets.length; // 0 for MTG, ~1-2 for Pokémon
 
   const userMessage = hasPreFetch
     ? [
@@ -110,16 +122,12 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
         ...(dataBlock ? ['', dataBlock] : []),
         ...(extraBlocks.length ? ['', extraBlocks.join('\n\n')] : []),
         '',
-        'The blocks above are pre-fetched and REAL. Use them directly and do NOT re-search anything already provided (EN price, Reddit, YouTube, or eBay when present).',
-        'web_search ONLY for what is missing below:',
+        maxSearches
+          ? 'The blocks above are pre-fetched and REAL — use them directly, do NOT re-search them. web_search ONLY for what is missing below:'
+          : 'The blocks above are pre-fetched and REAL. Score every signal from this data and your own knowledge — do NOT web_search (not needed for this card).',
         ...searchTargets.map((t, i) => `${i + 1}. ${t}`),
       ].join('\n')
     : baseMessage;
-
-  // One web_search per remaining target. Each is 5-15s of sequential wall clock,
-  // so the more the parallel pre-fetch covers, the fewer searches and the faster
-  // the scan. With all keys set this is ~2 (JP + tournament); with none, ~5.
-  const maxSearches = hasPreFetch ? Math.min(6, Math.max(2, searchTargets.length)) : 6;
 
   const response = await fetch(API_URL, {
     method: 'POST',
@@ -148,13 +156,12 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
           cache_control: { type: 'ephemeral' },
         },
       ],
-      tools: [
-        {
-          type: 'web_search_20260209',
-          name: 'web_search',
-          max_uses: maxSearches,
-        },
-      ],
+      // Attach web_search ONLY when there's something left to search — a card
+      // that needs no search (e.g. MTG) skips the tool entirely and just
+      // synthesizes from pre-fetched data, which is far faster.
+      ...(maxSearches > 0
+        ? { tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: maxSearches }] }
+        : {}),
       messages: [{ role: 'user', content: userMessage }],
     }),
   });
