@@ -12,6 +12,7 @@ import { fetchCommunity, communityBlock } from './fetchCommunity';
 import { fetchCreators, creatorsBlock } from './fetchCreators';
 import { fetchEbayListings, ebayBlock } from './fetchEbayListings';
 import { fetchJpSignal, jpBlock } from './fetchJpSignal';
+import { fetchCatalysts, catalystBlock } from './fetchCatalysts';
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-6';
@@ -25,7 +26,7 @@ function buildSystemPrompt(game) {
 
   return `You are a trading card market analyst. Search EN + JP sources to score 9 signals on the given card. Output strict JSON only — no markdown, no fences, no prose.
 
-EFFICIENCY: budget is tight. One web_search per signal max. Combine signals when one search covers multiple (e.g. one Mercari JP search → both jp_price and jp_hype). If pre-fetched EN price data is in the user message, DO NOT re-search EN prices — spend that budget on JP, creators, tournaments, community, and eBay listings.
+EFFICIENCY: budget is tight. One web_search per signal max. Combine signals when one search covers multiple (e.g. one Mercari JP search → both jp_price and jp_hype). If pre-fetched EN price data is in the user message, DO NOT re-search EN prices. If a CATALYST CONTEXT block is present, use it directly for competitive/scarcity/jp_release — do NOT re-search ban status, legality, set dates, or print counts.
 
 ENUMS (exact lowercase):
 - game: pokemon | yugioh | mtg
@@ -74,13 +75,14 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   // LLM web_search. Free always: card identity + EN price, Reddit (no key). Activate
   // with keys: eBay Browse, YouTube Data, paid price/JP overlay. Each parallel call
   // that succeeds removes one ~5-15s sequential web_search downstream.
-  const [cardData, enhancedData, community, creators, ebay, jp] = await Promise.all([
+  const [cardData, enhancedData, community, creators, ebay, jp, catalysts] = await Promise.all([
     fetchCardData(cardName, game).catch(() => null),
     fetchEnhancedPrice(cardName, game).catch(() => null),
     fetchCommunity(cardName, game).catch(() => null),
     fetchCreators(cardName, game).catch(() => null),
     fetchEbayListings(cardName, game).catch(() => null),
     fetchJpSignal(cardName).catch(() => null),
+    fetchCatalysts(cardName, game).catch(() => null),
   ]);
   // Merge enhanced price data into the card data block when available
   const mergedData = cardData
@@ -92,7 +94,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       } : {}) }
     : null;
   const dataBlock = buildCardDataBlock(mergedData);
-  const extraBlocks = [communityBlock(community), creatorsBlock(creators), ebayBlock(ebay), jpBlock(jp)].filter(Boolean);
+  const extraBlocks = [communityBlock(community), creatorsBlock(creators), ebayBlock(ebay), jpBlock(jp), catalystBlock(catalysts)].filter(Boolean);
   const hasPreFetch = !!dataBlock || extraBlocks.length > 0;
 
   const baseMessage = game
@@ -110,9 +112,12 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     searchTargets.push(jp
       ? 'JP price — Mercari JP / Yahoo Auctions JP current ¥ (JP hype/interest already in the JAPAN SIGNAL block above)'
       : 'JP price & hype — Mercari JP / Yahoo Auctions JP (¥) + JP social / JP YouTube');
-  // Tournament usage lives on Limitless = Pokémon only.
+  // Tournament/competitive: only search if we don't already have structured data.
+  // YGO banlist and MTG legality come from catalyst pre-fetch. Pokémon needs Limitless.
   if (resolvedGame === 'pokemon')
     searchTargets.push('Tournament — Limitless usage / ban list');
+  else if ((resolvedGame === 'yugioh' || resolvedGame === 'mtg') && !catalysts)
+    searchTargets.push('Tournament / competitive usage + ban status');
   // Only sweep community+creators if BOTH direct pulls came back empty.
   if (!community && !creators)
     searchTargets.push('Recent community + creator coverage — Reddit / YouTube');
