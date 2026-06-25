@@ -18,6 +18,7 @@ import { analyzeCard } from '../services/analyzeCard';
 import { exportReportToPdf, shareReportAsPdf } from '../services/exportReport';
 import { lookupBySetCode, looksLikeSetCode } from '../services/lookupBySetCode';
 import { getCachedScan, setCachedScan, clearCachedScan } from '../services/scanCache';
+import { startScanKeepAlive, stopScanKeepAlive } from '../services/scanKeepAlive';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function SignalDashboard() {
@@ -112,6 +113,10 @@ export default function SignalDashboard() {
     // search coverage or model quality.
     const timeout = setTimeout(() => controller.abort(), 120000);
 
+    // Foreground service keeps the request alive if the user minimizes the app
+    // mid-scan (Android/Samsung otherwise freezes the app and aborts the fetch).
+    startScanKeepAlive();
+
     try {
       const data = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal });
       // If goHome() bumped the nav token while we were scanning, the user has
@@ -133,6 +138,7 @@ export default function SignalDashboard() {
       }
     } finally {
       clearTimeout(timeout);
+      stopScanKeepAlive();
       if (abortRef.current === controller) abortRef.current = null;
       if (myToken === navTokenRef.current) {
         setLoading(false);
