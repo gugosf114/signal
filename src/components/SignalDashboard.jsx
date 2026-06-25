@@ -110,7 +110,7 @@ export default function SignalDashboard() {
     // 10-13 web_search budget on a slow card / congested model) used to skirt
     // the old 90s wall. 150s covers the 99th percentile without sacrificing
     // search coverage or model quality.
-    const timeout = setTimeout(() => controller.abort(), 45000);
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
     try {
       const data = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal });
