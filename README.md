@@ -454,6 +454,167 @@ launcher for next session so this isn't a foot-gun.
 
 ---
 
+## Session log — 2026-06-25 (Sonnet 4.6, 1M context)
+
+Full day of cost/latency work, new data signals, and an unresolved background
+scan survival bug. Working tree against `216627d` at session open.
+
+**Model fix.** Phone had an old APK built June 17 running
+`claude-3-7-sonnet-20250219` (404). Fixed in `e615c13`: model → `claude-sonnet-4-6`,
+thinking → `{type:'adaptive'}` (replaces deprecated `budget_tokens` form that
+400s on 4.7+), `output_config: {effort:'low'}`, `max_tokens` raised 16k → 24k
+to leave headroom for thinking tokens. Camera scan model (`scanCardImage.js`)
+downgraded Sonnet → Haiku (3× cheaper, same quality for photo ID).
+
+**Parallel direct-API pre-fetch.** Replaced 5 sequential `web_search` calls
+(5–15s each) with parallel free-API pulls that run before the main Anthropic
+call. New services: `fetchCommunity.js` (Reddit JSON, no key), `fetchCreators.js`
+(YouTube Data API v3, keyed — key minted headlessly via gcloud on the laptop
+SSH bridge), `fetchEbayListings.js` (eBay Browse API stub, no key — returns null,
+falls back to nothing since eBay search was removed entirely). YouTube key
+stored in `.env.local` as `VITE_YOUTUBE_API_KEY`, verified working.
+
+**Game-aware search gating.** MTG cards now do **0 web_searches** — the web
+search tool is omitted entirely from the request. Pokémon: 1–2 searches
+(JP price + tournament). Unknown game: 1 search. Each search saved is ~5–15s
+wall clock. Search targets derived from resolved game so the model never
+spends budget on irrelevant JP/tournament data for MTG.
+
+**Foreground service (background survival).** `ScanForegroundService.java` +
+`ScanServicePlugin.java` — native Android foreground service started when a
+scan begins, stopped when it ends. WakeLock (PARTIAL, 3-min cap). Low-priority
+"Analyzing card" notification. Manifest: `FOREGROUND_SERVICE`,
+`FOREGROUND_SERVICE_DATA_SYNC`, `WAKE_LOCK`, `POST_NOTIFICATIONS`. MainActivity
+registers `ScanServicePlugin`. JS wrapper: `scanKeepAlive.js`. Called from
+`SignalDashboard.jsx` around the scan try/finally block. **Status: installed,
+not confirmed working** — connection abort persisted through the session.
+
+**Japan signal.** `fetchJpSignal.js` — parallel: (1) YouTube Data API filtered
+to `regionCode=JP&relevanceLanguage=ja` (JP creator hype, uses existing key);
+(2) Google Trends unofficial endpoint, JP vs US interest comparison (best-effort,
+degrades to null on block). Output feeds `jp_hype` signal and adds the
+"JP rising faster than US" lead indicator text. `analyzeCard.js` reduces JP
+web_search to price-only when JP signal pre-fetched.
+
+**Catalyst Radar.** `fetchCatalysts.js` — per-game structured data:
+- MTG → Scryfall card legality + Reserved List flag + print count + upcoming sets
+- YGO → YGOPRODeck TCG/OCG ban status + archetype
+- Pokémon → TCG API full print history (scarcity signal) + upcoming/recent EN sets
+
+Feeds `competitive`, `scarcity`, `jp_release` signals. Search gating updated:
+MTG/YGO skip competitive web_search when catalyst data loads.
+
+**Grading ROI.** `grading_roi` field added to output JSON schema. Claude
+estimates PSA 10 market value from its knowledge, subtracts grading cost
+(tiered: $25 / $50 / $150 by raw value). `GradingROI.jsx` renders a math
+strip: Raw → PSA 10 − Grading = Net (+%). verdict enum:
+`worth_grading | marginal | not_worth_grading | insufficient_data`.
+
+**Foreground service hardening (ultracode workflow).** 5-agent diagnosis
+confirmed: phone is Android 16 (API 36), foreground service `startForeground()`
+was not wrapped in try/catch — `ForegroundServiceStartNotAllowedException` on
+newer Android silently killed the service before WakeLock was acquired.
+Fixed: wrapped in try/catch, service continues (WakeLock acquired) even if
+notification is blocked. Also confirmed: CapacitorHttp has no read timeout
+(`HttpURLConnection` defaults to 0 = infinite) — the only kill switch is the
+JS `AbortController`. Logcat also showed notification `importance=NONE` for
+Signal — notifications are silently suppressed on this device.
+
+**Agent-bridge orchestration.** All builds done on the laptop via SSH
+(`George Abrahamyan@100.109.240.20`), APKs transferred via scp, installed
+via `adb -s 127.0.0.1:5555 install -r`. Total ~8 build/install cycles this
+session. Recovery: USB cable → `adb tcpip 5555` → approve "Allow wireless
+debugging" popup on phone.
+
+---
+
+## Failure log — 2026-06-25
+
+**Connection abort still unresolved (BLOCKER).** "Software caused
+connection abort" persists across multiple fix attempts. Root cause is
+confirmed (Samsung/Android OS freezes backgrounded app → OS tears down
+open TCP sockets → SocketException), but no fix has been verified working
+in a live scan. Every APK was installed but the user couldn't complete a
+scan long enough to test because the app kept aborting. Fixes shipped but
+unverified: foreground service (3 attempts), battery whitelist via adb
+(reverted — per-device, not universal), foreground service hardening
+(try/catch around startForeground). **Next session must verify with live
+CDP scan monitoring before shipping any more fixes.**
+
+**45s timeout caused its own aborts.** Timeout was cut to 45s during latency
+work. Caused "connection abort" for valid scans (Pokémon/YGO still need
+1–2 searches × 5–15s each). Reverted to 120s (`7bae5c0`). Never go below 90s.
+
+**None of the new features have been verified in a real scan.** Japan signal,
+Catalyst Radar, and Grading ROI are all installed but the user hasn't
+completed a single scan this session due to the connection abort. Source data
+pipelines could be returning null (CORS, API errors, rate limits) without
+showing any visible failure — they silently degrade by design.
+
+**YouTube key quota unknown.** Key minted this session, one test showed
+`items=1 first=PokeUnlocked`. Daily quota for YouTube Data API v3 is 10,000
+units; one search = 100 units. ~100 scans/day before quota exhausts. No
+quota monitoring in place.
+
+**Google Trends endpoint is unofficial.** The two-step Trends API call
+(`/explore` then `/widgetdata/multiline`) is not a supported API — Google
+can break or rate-limit it at any time. If blocked, JP Trends data returns
+null silently. No fallback or indicator in the UI when this happens.
+
+**CapacitorHttp vs WebView fetch.** Research confirmed CapacitorHttp routes
+all fetch() calls through native Android `HttpURLConnection`. This is a
+different network stack than the Chromium WebView's own fetch. The native
+stack IS subject to OS-level socket teardown when the app is backgrounded.
+Hypothesis not tested: disabling CapacitorHttp (`"enabled": false`) and
+using WebView fetch instead might survive backgrounding differently (or
+might fail CORS). Untested.
+
+**Per-device battery whitelist was wrong approach.** Early in the session,
+tried `dumpsys deviceidle whitelist +com.gugosf114.signal` and `device_config
+put activity_manager_native_boot use_freezer false` via adb. These are
+per-device admin tweaks — they affect only this phone, not all users, and
+were reverted before final testing. Do not repeat this approach.
+
+---
+
+## To-do — next session
+
+### BLOCKER (do first, don't touch anything else until resolved)
+
+1. **Verify or kill the connection abort.** Use the CDP bridge (`cdp.py`) to
+   trigger a real scan from the command line while the phone screen is off /
+   app backgrounded, and watch live for `Network.loadingFailed` events. The
+   script is at `/root/cdp.py` — get the adb port forward working (`adb
+   forward tcp:9333 localabstract:webview_devtools_remote_<PID>`), then run
+   `python3 /root/cdp.py`. Do not skip this step.
+
+2. **If foreground service still isn't working:** try disabling CapacitorHttp
+   entirely (`capacitor.config.json` → `"CapacitorHttp": {"enabled": false}`)
+   and re-test. The CORS block that CapacitorHttp was added to fix may no
+   longer apply since Anthropic added `anthropic-dangerous-direct-browser-access`.
+
+### Features (after BLOCKER resolved)
+
+3. **Verify Japan signal, Catalyst Radar, Grading ROI in a real scan.** Scan
+   Charizard ex (Pokémon), Fiendsmith Lurgia (YGO), Deranged Hermit (MTG) and
+   confirm each new block appears in the scorecard output.
+
+4. **YouTube quota monitoring.** Add a `console.warn` when the YouTube API
+   returns `quotaExceeded` (HTTP 403 with `reason: quotaExceeded`) so it's
+   visible in logcat. Consider caching YouTube results in `sessionStorage`
+   keyed by card name to avoid burning quota on repeated scans of the same card.
+
+5. **Suruga-ya JP price.** The JP price in ¥ is still missing (currently only
+   JP hype/interest). Suruga-ya is scrapeable, no key, gives the JP "shelf
+   price" for singles. Adds the ¥ number to make the JP lead headline concrete.
+
+6. **Update architecture quick reference** in README — it's stale (doesn't
+   list the 8 new service files added since 2026-06-06).
+
+7. **Update `Current state` date** at the top of the README from 2026-06-06.
+
+---
+
 ## Architecture quick reference
 
 ```
