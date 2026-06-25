@@ -8,6 +8,9 @@
 import { creatorListForPrompt } from '../config/creators';
 import { fetchCardData, buildCardDataBlock } from './fetchCardData';
 import { fetchEnhancedPrice } from './fetchTCGPrice';
+import { fetchCommunity, communityBlock } from './fetchCommunity';
+import { fetchCreators, creatorsBlock } from './fetchCreators';
+import { fetchEbayListings, ebayBlock } from './fetchEbayListings';
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-6';
@@ -66,11 +69,16 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     );
   }
 
-  // Pre-fetch structured card data — free APIs first, paid API overlay if keys exist.
-  // Runs in parallel; paid API enriches with 30d history, JP pricing, multi-marketplace.
-  const [cardData, enhancedData] = await Promise.all([
+  // Pre-fetch structured data in PARALLEL — direct APIs instead of slow, sequential
+  // LLM web_search. Free always: card identity + EN price, Reddit (no key). Activate
+  // with keys: eBay Browse, YouTube Data, paid price/JP overlay. Each parallel call
+  // that succeeds removes one ~5-15s sequential web_search downstream.
+  const [cardData, enhancedData, community, creators, ebay] = await Promise.all([
     fetchCardData(cardName, game).catch(() => null),
     fetchEnhancedPrice(cardName, game).catch(() => null),
+    fetchCommunity(cardName, game).catch(() => null),
+    fetchCreators(cardName, game).catch(() => null),
+    fetchEbayListings(cardName, game).catch(() => null),
   ]);
   // Merge enhanced price data into the card data block when available
   const mergedData = cardData
@@ -82,35 +90,36 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       } : {}) }
     : null;
   const dataBlock = buildCardDataBlock(mergedData);
-  const hasPreFetch = !!dataBlock;
+  const extraBlocks = [communityBlock(community), creatorsBlock(creators), ebayBlock(ebay)].filter(Boolean);
+  const hasPreFetch = !!dataBlock || extraBlocks.length > 0;
 
   const baseMessage = game
     ? `Analyze the ${game} card: "${cardName}". Search both English and Japanese markets.`
     : `Analyze the trading card: "${cardName}". Determine which game it's from (Pokemon, Yu-Gi-Oh, or MTG), then search both English and Japanese markets.`;
 
+  // Only web_search for what the parallel pre-fetch could NOT pull directly.
+  const searchTargets = ['JP prices & hype — Mercari JP / Yahoo Auctions JP (¥) and JP social / JP YouTube'];
+  if (!ebay) searchTargets.push('eBay active listings — 2 Buy It Now + 1 Auction, real /itm/NUMBER URLs');
+  if (!community) searchTargets.push('Community sentiment — Reddit / Twitter recent activity');
+  if (!creators) searchTargets.push('Creator coverage — YouTube channels from the curated directory');
+  searchTargets.push('Tournament data — Limitless usage / ban list (skip if the card is not competitive)');
+
   const userMessage = hasPreFetch
     ? [
         baseMessage,
+        ...(dataBlock ? ['', dataBlock] : []),
+        ...(extraBlocks.length ? ['', extraBlocks.join('\n\n')] : []),
         '',
-        dataBlock,
-        '',
-        'Your web searches should focus ONLY on what is NOT in the pre-fetched data above:',
-        '1. JP prices — Mercari JP and Yahoo Auctions current prices in ¥',
-        '2. Creator coverage — YouTube channels from the curated directory (check 3-4 channels)',
-        '3. Tournament data — Limitless usage rates, ban list status',
-        '4. Community sentiment — Reddit and Twitter/X recent activity',
-        '5. JP community hype — Japanese Twitter/X, JP YouTube',
-        '6. eBay active listings — search eBay for the card and pull 2 Buy It Now + 1 Auction from the results. Use the real /itm/NUMBER URLs.',
-        '',
-        'Use the pre-fetched EN price data to score price-related signals without re-searching.',
+        'The blocks above are pre-fetched and REAL. Use them directly and do NOT re-search anything already provided (EN price, Reddit, YouTube, or eBay when present).',
+        'web_search ONLY for what is missing below:',
+        ...searchTargets.map((t, i) => `${i + 1}. ${t}`),
       ].join('\n')
     : baseMessage;
 
-  // Tighter budget after the prompt trim — each web_search is 5-15s of wall
-  // clock. Dropping 2 saves 10-30s on the long tail without losing coverage
-  // (the prompt now tells the model to combine signals where one search
-  // covers two: e.g. one Mercari JP search → both jp_price + jp_hype).
-  const maxSearches = hasPreFetch ? 5 : 6;
+  // One web_search per remaining target. Each is 5-15s of sequential wall clock,
+  // so the more the parallel pre-fetch covers, the fewer searches and the faster
+  // the scan. With all keys set this is ~2 (JP + tournament); with none, ~5.
+  const maxSearches = hasPreFetch ? Math.min(6, Math.max(2, searchTargets.length)) : 6;
 
   const response = await fetch(API_URL, {
     method: 'POST',
