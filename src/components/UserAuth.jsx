@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { SocialLogin } from '@capgo/capacitor-social-login';
+import { Capacitor } from '@capacitor/core';
 import UserProfileModal from './UserProfileModal';
 
 // Setup Supabase Client
@@ -8,8 +9,9 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://mock.supabase.
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'mock-key';
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Initialize Native Social Login
-SocialLogin.initialize({
+// Initialize Native Social Login (native platforms only — the plugin
+// doesn't exist on plain web and init just logs an error there)
+if (Capacitor.isNativePlatform()) SocialLogin.initialize({
   google: {
     webClientId: import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID || 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
   }
@@ -47,7 +49,8 @@ export default function UserAuth({ onUserLoad }) {
 
   const fetchScansLeft = async (currentUser) => {
     try {
-      const proxyUrl = import.meta.env.VITE_PROXY_URL || 'http://192.168.1.65:3001';
+      const proxyUrl = import.meta.env.VITE_PROXY_URL;
+      if (!proxyUrl) return;
       const res = await fetch(`${proxyUrl}/api/user/scans?userId=${currentUser.id}`);
       if (res.ok) {
         const data = await res.json();
@@ -73,7 +76,7 @@ export default function UserAuth({ onUserLoad }) {
       };
       setUser(mockUser);
       onUserLoad(mockUser);
-      fetchScansLeft(mockUser);
+      setLoading(false);
       return;
     }
 
