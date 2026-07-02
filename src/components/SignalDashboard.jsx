@@ -68,6 +68,13 @@ export default function SignalDashboard() {
       // eslint-disable-next-line no-console
       console.warn('[signal:cache] fast-path lookup', { query, game, hit: !!fastCached });
       if (fastCached) {
+        // Invalidate any in-flight scan so it can't overwrite this result
+        // when it lands later.
+        navTokenRef.current += 1;
+        if (abortRef.current) {
+          try { abortRef.current.abort(); } catch {}
+          abortRef.current = null;
+        }
         setResult(fastCached);
         setLastSearched({ name: query, game });
         return;
