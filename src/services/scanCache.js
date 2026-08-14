@@ -4,7 +4,12 @@
 // Re-scan button on the result page forces a fresh fetch when needed.
 
 const CACHE_KEY = 'signal_scan_cache_v1';
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+// Two clocks, because the two halves of a scan go stale at very different rates.
+// Signals (creator buzz, scarcity, ban status, JP release timing) move over
+// weeks. Prices move daily. Holding both for 7 days served stale money numbers;
+// holding both for 24h burned a fresh Anthropic call for data that hadn't moved.
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;       // whole scan — 7 days
+const PRICE_TTL_MS = 24 * 60 * 60 * 1000;           // price block — 1 day
 const MAX_ENTRIES = 200;
 
 function keyFor(name, game) {
@@ -47,10 +52,40 @@ export function getCachedScan(name, game) {
   return entry.data;
 }
 
+// Same lookup, but also reports whether the PRICE half has aged out. The caller
+// renders the cached scan instantly (no loading theater, no Anthropic call) and
+// then tops up just the prices from the free TCG APIs when this is true.
+export function getCachedScanEntry(name, game) {
+  if (!name) return null;
+  const cache = loadCache();
+  const entry = cache[keyFor(name, game)];
+  if (!entry || !entry.data) return null;
+  const age = Date.now() - (entry.ts || 0);
+  if (age > CACHE_TTL_MS) return null;
+  // priceTs tracks the last price top-up independently of the scan timestamp.
+  const priceAge = Date.now() - (entry.priceTs || entry.ts || 0);
+  return { data: entry.data, pricesStale: priceAge > PRICE_TTL_MS };
+}
+
 export function setCachedScan(name, game, data) {
   if (!name || !data) return;
   const cache = loadCache();
-  cache[keyFor(name, game)] = { ts: Date.now(), data };
+  const now = Date.now();
+  cache[keyFor(name, game)] = { ts: now, priceTs: now, data };
+  saveCache(cache);
+}
+
+// Overwrite only the price block on an existing entry and restart the price
+// clock. Leaves the scan's own 7-day clock alone — the signals are unchanged.
+export function refreshCachedPrices(name, game, prices) {
+  if (!name || !prices) return;
+  const cache = loadCache();
+  const k = keyFor(name, game);
+  const entry = cache[k];
+  if (!entry || !entry.data) return;
+  entry.data = { ...entry.data, prices: { ...entry.data.prices, ...prices } };
+  entry.priceTs = Date.now();
+  cache[k] = entry;
   saveCache(cache);
 }
 

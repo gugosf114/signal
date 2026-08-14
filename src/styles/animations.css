@@ -171,6 +171,8 @@
 }
 
 /* Phase pip strip */
+/* Column count is set inline — the phase list shrinks for games that skip the
+   JP searches, so it isn't always 8. */
 .lt-pips {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
@@ -792,7 +794,6 @@
 
 @media (max-width: 639px) {
   .lt-pips {
-    grid-template-columns: repeat(8, 1fr);
     gap: 2px;
   }
   .lt-pip-label {

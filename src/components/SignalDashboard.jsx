@@ -18,7 +18,8 @@ import { SIGNAL_SECTIONS, calculateOverallScore } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { exportReportToPdf, shareReportAsPdf } from '../services/exportReport';
 import { lookupBySetCode, looksLikeSetCode } from '../services/lookupBySetCode';
-import { getCachedScan, setCachedScan, clearCachedScan } from '../services/scanCache';
+import { getCachedScanEntry, setCachedScan, clearCachedScan, refreshCachedPrices } from '../services/scanCache';
+import { refreshPrices } from '../services/refreshPrices';
 import { startScanKeepAlive, stopScanKeepAlive } from '../services/scanKeepAlive';
 import { useIsMobile } from '../hooks/useIsMobile';
 
@@ -57,6 +58,21 @@ export default function SignalDashboard() {
     setPendingCard(null);
   };
 
+  // Cache hit with a stale price block: the scan itself is still good, only the
+  // money number has aged. Refresh it straight from the free TCG APIs — no
+  // Anthropic call, no loading theater. The result is already on screen; this
+  // just swaps the price under it a moment later.
+  const topUpPrices = async (name, game, myToken) => {
+    const patch = await refreshPrices(name, game);
+    if (!patch) return;
+    refreshCachedPrices(name, game, patch);
+    // The user may have navigated away while the free API was in flight.
+    if (myToken !== navTokenRef.current) return;
+    setResult((prev) =>
+      prev ? { ...prev, prices: { ...prev.prices, ...patch } } : prev
+    );
+  };
+
   const handleSearch = async (query, game = null, opts = {}) => {
     const { force = false } = opts;
     setError(null);
@@ -64,10 +80,8 @@ export default function SignalDashboard() {
     // Fast-path cache check BEFORE flipping loading state — already-scanned
     // cards must return instantly with zero loading-theater flash.
     if (!force && game) {
-      const fastCached = getCachedScan(query, game);
-      // eslint-disable-next-line no-console
-      console.warn('[signal:cache] fast-path lookup', { query, game, hit: !!fastCached });
-      if (fastCached) {
+      const fastEntry = getCachedScanEntry(query, game);
+      if (fastEntry) {
         // Invalidate any in-flight scan so it can't overwrite this result
         // when it lands later.
         navTokenRef.current += 1;
@@ -75,8 +89,9 @@ export default function SignalDashboard() {
           try { abortRef.current.abort(); } catch {}
           abortRef.current = null;
         }
-        setResult(fastCached);
+        setResult(fastEntry.data);
         setLastSearched({ name: query, game });
+        if (fastEntry.pricesStale) topUpPrices(query, game, ++navTokenRef.current);
         return;
       }
     }
@@ -100,9 +115,10 @@ export default function SignalDashboard() {
 
     // Second cache check now that the set-code resolved (if it did).
     if (!force) {
-      const cached = getCachedScan(resolvedName, resolvedGame);
-      if (cached) {
-        setResult(cached);
+      const entry = getCachedScanEntry(resolvedName, resolvedGame);
+      if (entry) {
+        setResult(entry.data);
+        if (entry.pricesStale) topUpPrices(resolvedName, resolvedGame, ++navTokenRef.current);
         return;
       }
     }

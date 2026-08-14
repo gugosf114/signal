@@ -111,15 +111,18 @@ export const WEIGHTS = {
 
 // ─── Sample Cards (Quick Picks) ──────────────────────────────────────────────
 
+// Fallback chips only — QuickPicks replaces these with live movers from
+// getTopTrending() as soon as that resolves. Nothing renders `set`, so the
+// three entries that carried an unverified TODO_VERIFY set name have simply
+// had it removed rather than shipping a guess as data.
 export const SAMPLE_CARDS = [
   // Present-tense reseller targets — confirmed real sets
   { name: 'Umbreon ex', set: 'Stellar Crown', game: 'pokemon' },
   { name: 'Dragapult ex', set: 'Twilight Masquerade', game: 'pokemon' },
   { name: 'Charizard ex', set: 'SV 151', game: 'pokemon' },
-  // TODO_VERIFY: set names below are unconfirmed release names
-  { name: 'Mega Dragonite ex', set: 'Ascended Heroes', game: 'pokemon', year: "'26" },
-  { name: 'Mega Zygarde ex', set: 'Perfect Order', game: 'pokemon', year: "'26" },
-  { name: 'Mega Charizard X ex', set: 'Phantasmal Flames', game: 'pokemon', year: "'25" },
+  { name: 'Mega Dragonite ex', game: 'pokemon' },
+  { name: 'Mega Zygarde ex', game: 'pokemon' },
+  { name: 'Mega Charizard X ex', game: 'pokemon' },
   // Yu-Gi-Oh!
   { name: 'Fiendsmith Lurgia', set: 'Legacy of Destruction', game: 'yugioh' },
 ];

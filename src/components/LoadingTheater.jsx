@@ -172,13 +172,28 @@ const PHASES = [
   },
 ];
 
-const PHASE_MS = 4400;
 const DETAIL_MS = 1450;
 const TICK_MS = 120;
-// Nominal scan duration. Progress bar fills linearly to 90% across this
-// window, then eases asymptotically toward 99% if the scan keeps running
-// (rare — usually the result lands inside the nominal window).
-const NOMINAL_SCAN_MS = 35200; // 8 phases * 4400ms
+
+// Phase pacing is derived from the scan the app is ACTUALLY running, not a
+// fixed 35-second script. analyzeCard gates web_search by game: MTG resolves
+// entirely from pre-fetched Scryfall data with zero searches and lands in
+// ~10-15s, while Pokémon/Yu-Gi-Oh! still spend 1-2 searches at 5-15s each.
+// Running the full eight-phase show for MTG meant sitting through 20 seconds
+// of theater after the answer was already in hand — and parading JP phases at
+// a card that never touched the JP market.
+const SLOW_PHASE_MS = 4400;   // live search in play
+const FAST_PHASE_MS = 2200;   // pure synthesis, no search
+
+// MTG skips the JP searches entirely (see analyzeCard searchTargets), so the
+// two JP phases would be pure fiction on an MTG scan.
+const JP_PHASE_IDS = new Set(['japan-crossing', 'mercari']);
+
+function phasesForGame(game) {
+  const g = (game || '').toLowerCase();
+  if (g === 'mtg') return PHASES.filter((p) => !JP_PHASE_IDS.has(p.id));
+  return PHASES;
+}
 
 const SOLARI_GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789▲▼◆▸▤▦株渡日¥';
 
@@ -206,24 +221,31 @@ export default function LoadingTheater({ cardName, game }) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
+  // Which show to run, and how fast, both follow the real scan shape.
+  const phases = useMemo(() => phasesForGame(game), [game]);
+  const phaseMs = (game || '').toLowerCase() === 'mtg' ? FAST_PHASE_MS : SLOW_PHASE_MS;
+  // Progress bar fills linearly to 90% across this window, then eases
+  // asymptotically toward 99% if the scan keeps running.
+  const nominalScanMs = phases.length * phaseMs;
+
   const elapsed = now - start;
-  const rawIdx = Math.floor(elapsed / PHASE_MS);
+  const rawIdx = Math.floor(elapsed / phaseMs);
   let phaseIdx;
-  if (rawIdx < PHASES.length) {
+  if (rawIdx < phases.length) {
     phaseIdx = rawIdx;
   } else {
-    const loop = [4, 5, 7];
-    phaseIdx = loop[(rawIdx - PHASES.length) % loop.length];
+    // Overrun: loop the last few phases rather than freezing on one frame.
+    const loop = [phases.length - 3, phases.length - 2, phases.length - 1]
+      .filter((i) => i >= 0);
+    phaseIdx = loop[(rawIdx - phases.length) % loop.length];
   }
-  const phase = PHASES[phaseIdx];
-  const inPhase = elapsed - rawIdx * PHASE_MS;
+  const phase = phases[phaseIdx];
+  const inPhase = elapsed - rawIdx * phaseMs;
   const detailIdx = Math.min(phase.details.length - 1, Math.floor(inPhase / DETAIL_MS));
 
-  // Linear to 90% across the nominal window; asymptote toward 99% if the
-  // scan runs long. Never reaches 100% — the parent unmounts on completion.
-  const progress = elapsed < NOMINAL_SCAN_MS
-    ? Math.min(0.9, (elapsed / NOMINAL_SCAN_MS) * 0.9)
-    : 0.9 + 0.09 * (1 - Math.exp(-(elapsed - NOMINAL_SCAN_MS) / 18000));
+  const progress = elapsed < nominalScanMs
+    ? Math.min(0.9, (elapsed / nominalScanMs) * 0.9)
+    : 0.9 + 0.09 * (1 - Math.exp(-(elapsed - nominalScanMs) / 18000));
 
   return (
     <div ref={rootRef} className="lt-canvas" data-jp={phase.jp || undefined}>
@@ -232,7 +254,7 @@ export default function LoadingTheater({ cardName, game }) {
       <KanjiBackdrop visible={phase.jp} />
 
       <div className="lt-top">
-        <PhasePips activeIdx={rawIdx < PHASES.length ? rawIdx : PHASES.length - 1} />
+        <PhasePips phases={phases} activeIdx={rawIdx < phases.length ? rawIdx : phases.length - 1} />
         <ScanProgressBar percent={progress * 100} accent={phase.color} />
         <div className="lt-top-row">
           <CardSlate cardName={cardName} game={game} onImageLoad={setCardImageUrl} />
@@ -372,12 +394,12 @@ function ScanProgressBar({ percent, accent }) {
   );
 }
 
-function PhasePips({ activeIdx }) {
-  const idx = Math.max(0, Math.min(activeIdx, PHASES.length - 1));
-  const active = PHASES[idx];
+function PhasePips({ phases, activeIdx }) {
+  const idx = Math.max(0, Math.min(activeIdx, phases.length - 1));
+  const active = phases[idx];
   return (
-    <div className="lt-pips">
-      {PHASES.map((p, i) => {
+    <div className="lt-pips" style={{ gridTemplateColumns: `repeat(${phases.length}, 1fr)` }}>
+      {phases.map((p, i) => {
         const state = i < idx ? 'past' : i === idx ? 'now' : 'future';
         return (
           <div key={p.id} className={`lt-pip lt-pip--${state}`} style={{ '--pip-color': p.color }}>
@@ -387,7 +409,7 @@ function PhasePips({ activeIdx }) {
         );
       })}
       <div className="lt-pip-meta">
-        PHASE {String(idx + 1).padStart(2, '0')} / {String(PHASES.length).padStart(2, '0')} &middot; <span style={{ color: active.color, opacity: 0.85 }}>{active.title}</span>
+        PHASE {String(idx + 1).padStart(2, '0')} / {String(phases.length).padStart(2, '0')} &middot; <span style={{ color: active.color, opacity: 0.85 }}>{active.title}</span>
       </div>
     </div>
   );

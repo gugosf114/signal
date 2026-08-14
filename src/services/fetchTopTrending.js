@@ -18,12 +18,16 @@ const VERTICALS = [
   { id: 'yugioh',  game: 'yugioh',  target: 1 },
 ];
 
+// `dir` is what the SOURCE ARTICLE is about, not a per-card measurement — a
+// "Biggest Price Spikes" piece is a list of things that went up, so the chip can
+// honestly show ▲. "Biggest movers" and "bestselling" mix directions, so those
+// carry no arrow rather than a guessed one.
 const TRENDING_TITLE_PATTERNS = [
-  /price spike/i,
-  /biggest mover/i,
-  /bestselling cards/i,
-  /most expensive .* cards in packs/i,
-  /movers and shakers/i,
+  { re: /price spike/i,                      dir: 'up' },
+  { re: /biggest mover/i,                    dir: null },
+  { re: /bestselling cards/i,                dir: null },
+  { re: /most expensive .* cards in packs/i, dir: null },
+  { re: /movers and shakers/i,               dir: null },
 ];
 
 function decodeEntities(s) {
@@ -49,9 +53,11 @@ async function findLatestTrendingArticle(verticalId) {
   if (!res.ok) return null;
   const data = await res.json();
   const items = Array.isArray(data?.result) ? data.result : [];
-  return items.find((it) =>
-    TRENDING_TITLE_PATTERNS.some((p) => p.test(it.title || ''))
-  ) || null;
+  for (const it of items) {
+    const hit = TRENDING_TITLE_PATTERNS.find((p) => p.re.test(it.title || ''));
+    if (hit) return { ...it, dir: hit.dir, sourceTitle: it.title || '' };
+  }
+  return null;
 }
 
 async function fetchArticleBody(uuid) {
@@ -64,7 +70,7 @@ async function fetchArticleBody(uuid) {
   return data?.result?.article?.body || null;
 }
 
-function parseCardsFromBody(body, game, target) {
+function parseCardsFromBody(body, game, target, meta = {}) {
   if (!body) return [];
   const seen = new Set();
   const out = [];
@@ -88,7 +94,7 @@ function parseCardsFromBody(body, game, target) {
     const key = name.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push({ name, game });
+    out.push({ name, game, dir: meta.dir || null, sourceTitle: meta.sourceTitle || null });
   }
   return out;
 }
@@ -124,7 +130,7 @@ export async function getTopTrending() {
         const article = await findLatestTrendingArticle(v.id);
         if (!article?.uuid) return [];
         const body = await fetchArticleBody(article.uuid);
-        return parseCardsFromBody(body, v.game, v.target);
+        return parseCardsFromBody(body, v.game, v.target, article);
       } catch {
         return [];
       }

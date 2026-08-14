@@ -276,6 +276,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
                 level={sig?.level ?? 0}
                 detail={sig?.detail || '—'}
                 sources={sig?.sources || []}
+                dropped={sig?.dropped || 0}
                 weightPct={Math.round(effWeight * 100)}
                 downweighted={key === 'jp_price' && isCompJp}
               />
@@ -424,7 +425,7 @@ function ListingRow({ listing }) {
   );
 }
 
-function SignalBlock({ label, level, detail, sources, weightPct, downweighted }) {
+function SignalBlock({ label, level, detail, sources, dropped = 0, weightPct, downweighted }) {
   const bars = Array.from({ length: 5 }).map((_, i) => i < level);
   const realSources = (sources || []).filter((s) => s && (s.url || s.title));
 
@@ -491,16 +492,35 @@ function SignalBlock({ label, level, detail, sources, weightPct, downweighted })
         </div>
       )}
 
-      {/* When the LLM said "no sources" — call it out instead of leaving blank */}
+      {/* Distinguish "nothing was found" from "citations were fabricated and
+          rejected" — on an audit document those are not the same statement. */}
       {realSources.length === 0 && (
         <div style={{
           fontFamily: "'JetBrains Mono', Menlo, monospace",
           fontSize: 9,
-          color: INK_FAINT,
+          color: dropped > 0 ? BRAND_RED : INK_FAINT,
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
           fontWeight: 600,
-        }}>No sources surfaced — score reflects absence of signal.</div>
+        }}>
+          {dropped > 0
+            ? `${dropped} citation${dropped === 1 ? '' : 's'} rejected — URL could not be verified against a retrieval.`
+            : 'No sources surfaced — score reflects absence of signal.'}
+        </div>
+      )}
+
+      {realSources.length > 0 && dropped > 0 && (
+        <div style={{
+          marginTop: 8,
+          fontFamily: "'JetBrains Mono', Menlo, monospace",
+          fontSize: 9,
+          color: BRAND_RED,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          fontWeight: 600,
+        }}>
+          {dropped} further citation{dropped === 1 ? '' : 's'} rejected — URL could not be verified.
+        </div>
       )}
     </div>
   );

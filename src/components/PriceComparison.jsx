@@ -1,6 +1,51 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrandIcon } from '../config/brandIcons';
 import { useIsMobile } from '../hooks/useIsMobile';
+
+// The JP price is often not a number. When there's no JP printing the model
+// returns a full sentence — "N/A — no direct OCG printing of this alt-art /
+// starlight found" — which on a 375px phone wrapped to five lines and swallowed
+// the whole price strip. Clamp long prose to one line; tap to read the rest.
+// Actual prices (¥7,200) are short and never clamp.
+function JpPriceValue({ value }) {
+  const [expanded, setExpanded] = useState(false);
+  const text = value || '—';
+  const isProse = text.length > 24;
+
+  if (!isProse) {
+    return <div style={{ ...valStyle, fontSize: 16, color: '#C44040' }}>{text}</div>;
+  }
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      title={expanded ? 'Tap to collapse' : text}
+      onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded((v) => !v); }
+      }}
+      style={{
+        ...valStyle,
+        fontSize: 13,
+        color: '#C44040',
+        cursor: 'pointer',
+        lineHeight: 1.4,
+        ...(expanded ? {} : {
+          display: '-webkit-box',
+          WebkitLineClamp: 1,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }),
+      }}
+    >
+      {text}
+      {!expanded && (
+        <span style={{ color: '#8A4040', marginLeft: 4, fontSize: 11 }}>▸</span>
+      )}
+    </div>
+  );
+}
 
 function trendMeta(trend) {
   if (!trend) return { sym: '—', color: '#605C54' };
@@ -102,9 +147,7 @@ export default function PriceComparison({ data, jpMatch }) {
           <span style={{ fontFamily: "'JetBrains Mono'", fontSize: 10, opacity: 0.6 }}>¥</span>
           JP Price
         </div>
-        <div style={{ ...valStyle, fontSize: 16, color: '#C44040' }}>
-          {data.jp_price || '—'}
-        </div>
+        <JpPriceValue value={data.jp_price} />
         {matchBadge && (
           <div
             title={matchBadge.tip}

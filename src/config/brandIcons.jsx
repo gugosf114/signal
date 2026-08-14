@@ -536,21 +536,10 @@ function CustomBrandSvg({ kind, color, size, label, className, style }) {
 
 // ─── YouTube helpers ─────────────────────────────────────────────────────────
 
-export function extractYouTubeId(url) {
-  if (!url) return null;
-  const patterns = [
-    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/watch\?[^#]*v=([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
-  ];
-  for (const p of patterns) {
-    const m = url.match(p);
-    if (m) return m[1];
-  }
-  return null;
-}
+// Single source of truth lives in services/citations.js, where the citation
+// filter needs it and where it is unit-tested. This file used to carry a
+// hand-copied second definition; the two are now guaranteed to agree.
+export { extractYouTubeId } from '../services/citations';
 
 export function youtubeThumbUrl(videoId, quality = 'mqdefault') {
   return `https://img.youtube.com/vi/${videoId}/${quality}.jpg`;

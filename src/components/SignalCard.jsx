@@ -81,6 +81,9 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
   }, [expanded]);
 
   const sources = Array.isArray(signal.sources) ? signal.sources : [];
+  // Citations the filter binned because their URL couldn't be traced back to a
+  // real retrieval. Set by filterHallucinatedSources; absent on legacy cached scans.
+  const dropped = typeof signal.dropped === 'number' ? signal.dropped : 0;
   const ytSources = sources.filter(s => extractYouTubeId(s.url));
   const otherSources = sources.filter(s => !extractYouTubeId(s.url));
 
@@ -316,17 +319,35 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
                 </div>
               )}
 
+              {/* Two very different kinds of empty. "Nothing was found" is a
+                  market fact; "we caught fabricated citations and binned them"
+                  is the filter earning its keep. Never render them the same. */}
               {sources.length === 0 && (
                 <div style={{
                   marginTop: 8,
                   paddingTop: 10,
                   borderTop: '1px solid rgba(26, 29, 36, 0.4)',
                   fontSize: 13,
-                  color: '#494640',
+                  color: dropped > 0 ? '#A09060' : '#494640',
                   fontFamily: "'JetBrains Mono', monospace",
                   letterSpacing: '0.06em',
                 }}>
-                  // no verified sources for this signal
+                  {dropped > 0
+                    ? `// ${dropped} source${dropped === 1 ? '' : 's'} rejected — link could not be verified`
+                    : '// no sources found for this signal'}
+                </div>
+              )}
+
+              {/* Some survived, some didn't — still worth saying so. */}
+              {sources.length > 0 && dropped > 0 && (
+                <div style={{
+                  marginTop: 10,
+                  fontSize: 12,
+                  color: '#A09060',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  letterSpacing: '0.06em',
+                }}>
+                  // {dropped} more rejected — link could not be verified
                 </div>
               )}
             </div>

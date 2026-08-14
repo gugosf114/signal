@@ -13,17 +13,69 @@ Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
 
 ---
 
-## Current state — 2026-06-06
+## Current state — 2026-08-14
 
 - Stack: Vite 6 + React 18, `simple-icons` NPM, html2pdf.js,
-  `@capacitor/filesystem` (new), Capacitor 8 (Android wrapper), no TypeScript
-- Bundle: ~488 KB / ~143 KB gzipped main JS
+  `@capacitor/filesystem`, Capacitor 8 (Android wrapper), no TypeScript
 - Dev server: `npm run dev` → http://localhost:3000
+- Tests: `npm test` → Node's built-in runner over `src/services/`. No test
+  framework, no new dependency. 28 tests covering the citation filter and the
+  truncated-JSON recovery path.
 - Android: `cd android && ./gradlew assembleDebug` → APK at
   `android/app/build/outputs/apk/debug/app-debug.apk`
 - Android JDK: bundled JBR at `C:/Program Files/Android/Android Studio/jbr`
   (set `JAVA_HOME` before invoking gradle from this shell — Windows PATH
   doesn't ship a `java`)
+
+### Verified working end-to-end on device, 2026-08-14
+
+A full live scan was observed on the Redmi (Reinforcement of the Army
+(Alternate Art) (Starlight Rare), `L26D-ENS08`, score 62). The connection-abort
+blocker no longer prevents completion. Japan signal, Catalyst Radar and Grading
+ROI — all listed as "never seen in a completed scan" in the 2026-06-25 failure
+log — render correctly. `L26D-ENS08`, flagged as unresolvable on 2026-06-03,
+resolves. Those failure-log entries are closed.
+
+### 2026-08-14 maintenance pass
+
+**Citation filter was silently deleting honest sources (fixed).** `realUrls`
+was built only from `web_search_tool_result` blocks, so every URL supplied via a
+pre-fetch block — Reddit posts, YouTube videos, eBay items, JP videos — failed
+verification and was dropped, even though the app had fetched them itself
+moments earlier. This is why so many signals rendered "no verified sources."
+`collectPrefetchUrls` now feeds those URLs into the same set.
+
+**Rejections are now visible.** The drop count per signal reaches the UI and the
+PDF instead of only `console.warn`. "No sources found" and "N sources rejected —
+link could not be verified" are different statements and now read differently.
+
+**Two-tier model.** Scans that need zero web searches (MTG resolves entirely
+from pre-fetched Scryfall data) run on Haiku; anything needing live search stays
+on Sonnet. Flip `FAST_MODEL` to `SMART_MODEL` in `analyzeCard.js` to disable.
+
+**Split cache clock.** The scan is cached 7 days, the price block 24 hours. A
+stale-price hit refreshes the price from the free TCG APIs — no Anthropic call,
+no loading theater.
+
+**Loading theater follows the real scan.** Phase list and pacing derive from the
+game: MTG drops the two JP phases it never searches and runs at half the phase
+duration, instead of playing a fixed 35-second script over a 12-second scan.
+
+**Card art is cached.** Four components were independently fetching the same
+image; resolved URLs are now memoised in-session and in `localStorage` (7d),
+with concurrent requests de-duped.
+
+**Dead code removed** — 538 lines that had never executed: `fetchTCGPrice.js`
+(four paid price APIs, no keys), `UserAuth.jsx` and `UserProfileModal.jsx` (the
+mock-Supabase login and the decorative "10 SCANS LEFT" counter). The
+`@supabase/supabase-js` and `@capgo/capacitor-social-login` packages are left in
+`package.json` on purpose — removing them without regenerating
+`package-lock.json` would break `npm ci` in CI.
+
+**Extracted `citations.js` and `jsonRepair.js`** out of `analyzeCard.js`. Both
+are import-free so they run under `node --test`. `brandIcons.jsx` now re-exports
+`extractYouTubeId` from `citations.js` rather than keeping a second hand-copied
+definition.
 
 ---
 
@@ -636,8 +688,12 @@ src/
     creators.js             — curated creator directory per game
     brandIcons.jsx          — brand logo registry (simple-icons + custom)
   services/
-    analyzeCard.js          — Anthropic API + structured JSON parse + URL filter
-    fetchCardImage.js       — Scryfall/YGOPRODeck/PokemonTCG API wrappers
+    analyzeCard.js          — Anthropic call, pre-fetch orchestration, model tiering
+    citations.js            — URL verification (web_search + pre-fetch); tested
+    jsonRepair.js           — truncated-response recovery; tested
+    scanCache.js            — 7d scan cache / 24h price cache
+    refreshPrices.js        — price-only top-up from the free TCG APIs
+    fetchCardImage.js       — Scryfall/YGOPRODeck/PokemonTCG wrappers + URL cache
   styles/
     animations.css          — keyframes + theater layout + (some) responsive
 ```
@@ -650,6 +706,7 @@ src/
 cd C:/Users/georg/Documents/GitHub/signal
 npm install                 # if first run
 npm run dev                 # http://localhost:3000
+npm test                    # citation filter + JSON recovery tests
 npm run build               # production build into dist/
 ```
 
@@ -679,6 +736,7 @@ is gitignored).
 - No analytics, telemetry, or tracking
 - No security/privacy/confidentiality claims in UI text
 - No monetization scaffolding
-- No new dependencies beyond Vite, React, `simple-icons`
+- No new dependencies beyond Vite, React, `simple-icons` (tests deliberately
+  use Node's built-in runner so this holds)
 - No TypeScript
 - Don't break the audit fixes from `893429f`

@@ -118,6 +118,21 @@ export default function QuickPicks({ onSelect, loading }) {
             >
               <BrandIcon brand={GAME_BRAND[card.game]} size={11} style={{ opacity: 0.7, flexShrink: 0 }} />
               {card.name}
+              {/* Only shown when the source article was specifically about price
+                  spikes — a mixed "biggest movers" list carries no arrow rather
+                  than a guessed direction. Title names the article. */}
+              {card.dir === 'up' && (
+                <span
+                  title={card.sourceTitle || 'Listed in this week’s price-spike article'}
+                  style={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: '#608870',
+                    flexShrink: 0,
+                  }}
+                >▲</span>
+              )}
             </button>
           );
         })}

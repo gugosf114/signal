@@ -7,15 +7,27 @@
 
 import { creatorListForPrompt } from '../config/creators';
 import { fetchCardData, buildCardDataBlock } from './fetchCardData';
-import { fetchEnhancedPrice } from './fetchTCGPrice';
 import { fetchCommunity, communityBlock } from './fetchCommunity';
 import { fetchCreators, creatorsBlock } from './fetchCreators';
 import { fetchEbayListings, ebayBlock } from './fetchEbayListings';
 import { fetchJpSignal, jpBlock } from './fetchJpSignal';
 import { fetchCatalysts, catalystBlock } from './fetchCatalysts';
+import {
+  extractRealUrls,
+  collectPrefetchUrls,
+  filterHallucinatedSources,
+} from './citations';
+import { tryParseSignalJSON } from './jsonRepair';
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-sonnet-4-6';
+
+// Two-tier model selection. When the pre-fetch has already answered everything
+// (MTG resolves with 0 web_searches), the model is only judging supplied facts
+// and emitting JSON — work Haiku handles at ~1/3 the cost. Sonnet is reserved
+// for scans that still need live search and cross-source synthesis.
+// Flip FAST_MODEL to SMART_MODEL to disable the tiering in one edit.
+const SMART_MODEL = 'claude-sonnet-4-6';
+const FAST_MODEL = 'claude-haiku-4-5';
 
 function buildSystemPrompt(game) {
   // Curated creator directory injected into the prompt so the model
@@ -91,28 +103,19 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   }
 
   // Pre-fetch structured data in PARALLEL — direct APIs instead of slow, sequential
-  // LLM web_search. Free always: card identity + EN price, Reddit (no key). Activate
-  // with keys: eBay Browse, YouTube Data, paid price/JP overlay. Each parallel call
-  // that succeeds removes one ~5-15s sequential web_search downstream.
-  const [cardData, enhancedData, community, creators, ebay, jp, catalysts] = await Promise.all([
+  // LLM web_search. Free always: card identity + EN price (pokemontcg.io /
+  // Scryfall / YGOPRODeck), Reddit (no key). Activate with keys: eBay Browse,
+  // YouTube Data. Each parallel call that succeeds removes one ~5-15s
+  // sequential web_search downstream.
+  const [cardData, community, creators, ebay, jp, catalysts] = await Promise.all([
     fetchCardData(cardName, game).catch(() => null),
-    fetchEnhancedPrice(cardName, game).catch(() => null),
     fetchCommunity(cardName, game).catch(() => null),
     fetchCreators(cardName, game).catch(() => null),
     fetchEbayListings(cardName, game).catch(() => null),
     fetchJpSignal(cardName).catch(() => null),
     fetchCatalysts(cardName, game).catch(() => null),
   ]);
-  // Merge enhanced price data into the card data block when available
-  const mergedData = cardData
-    ? { ...cardData, ...(enhancedData ? {
-        priceLines: enhancedData.priceLines || cardData.priceLines,
-        jpPriceLine: enhancedData.jpPriceLine || null,
-        trend30d: enhancedData.trend30d || null,
-        priceSource: enhancedData.source,
-      } : {}) }
-    : null;
-  const dataBlock = buildCardDataBlock(mergedData);
+  const dataBlock = buildCardDataBlock(cardData);
   const extraBlocks = [communityBlock(community), creatorsBlock(creators), ebayBlock(ebay), jpBlock(jp), catalystBlock(catalysts)].filter(Boolean);
   const hasPreFetch = !!dataBlock || extraBlocks.length > 0;
 
@@ -144,6 +147,15 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
 
   const maxSearches = searchTargets.length; // 0 for MTG, ~1-2 for Pokémon
 
+  // Every URL handed to the model in a pre-fetch block is REAL — it came from a
+  // live API call we made ourselves. The citation filter below must know about
+  // these or it drops every honestly-cited Reddit / YouTube / eBay / JP source,
+  // since those never appear in a web_search_tool_result block.
+  const prefetchUrls = collectPrefetchUrls({ cardData, community, creators, ebay, jp });
+
+  // Haiku for pure-synthesis scans, Sonnet whenever live search is in play.
+  const model = maxSearches === 0 ? FAST_MODEL : SMART_MODEL;
+
   const userMessage = hasPreFetch
     ? [
         baseMessage,
@@ -167,16 +179,20 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 24000,
+      model,
+      // Sonnet runs adaptive thinking, so it needs headroom above the ~4k of
+      // JSON the schema produces. The Haiku path does no thinking and only has
+      // to format pre-fetched facts, so 8k is ample and keeps the bill down.
+      max_tokens: model === FAST_MODEL ? 8000 : 24000,
       // Adaptive thinking: the model decides how much to reason through
       // cross-signal patterns before emitting the structured 9-signal scorecard.
       // Thinking tokens are drawn from max_tokens, so max_tokens carries headroom
       // (24k) to leave room for the full JSON output and avoid truncation.
       // (Adaptive replaces the deprecated {type:'enabled',budget_tokens} form,
       //  which 400s on Opus 4.7+/Fable if the model is ever upgraded.)
-      thinking: { type: 'adaptive' },
-      output_config: { effort: 'low' },
+      ...(model === FAST_MODEL
+        ? {}
+        : { thinking: { type: 'adaptive' }, output_config: { effort: 'low' } }),
       system: [
         {
           type: 'text',
@@ -201,9 +217,12 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
 
   const result = await response.json();
 
-  // Build the set of URLs Claude actually retrieved via web_search.
-  // Anything Claude cites NOT in this set is hallucinated and gets dropped.
+  // Build the set of URLs that provably exist: everything Claude retrieved via
+  // web_search, PLUS everything we handed it in a pre-fetch block (those came
+  // from our own live API calls, so they're at least as trustworthy).
+  // Anything Claude cites outside this set is hallucinated and gets dropped.
   const realUrls = extractRealUrls(result.content || []);
+  for (const u of prefetchUrls) realUrls.add(u);
 
   // Web search responses have many content blocks: text, tool_use, tool_result
   // The structured JSON is typically in the LAST text block after all searches complete.
@@ -252,242 +271,4 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       ? 'Response was truncated by max_tokens — try a more specific card or simpler query.'
       : 'Failed to parse signal data from API response. Check console for raw output.'
   );
-}
-
-// ─── URL Verification ────────────────────────────────────────────────────────
-// Extract every URL the model actually retrieved via web_search.
-// Used to filter out hallucinated source URLs.
-
-function extractRealUrls(contentBlocks) {
-  const urls = new Set();
-  for (const block of contentBlocks) {
-    if (block.type !== 'web_search_tool_result') continue;
-    const items = Array.isArray(block.content) ? block.content : [];
-    for (const item of items) {
-      if (item.type === 'web_search_result' && item.url) {
-        urls.add(normalizeUrl(item.url));
-      }
-    }
-  }
-  return urls;
-}
-
-function normalizeUrl(url) {
-  try {
-    const u = new URL(url);
-    let path = u.pathname.replace(/\/+$/, '');
-    return `${u.protocol}//${u.host.toLowerCase()}${path}${u.search}`;
-  } catch {
-    return url.replace(/\/+$/, '').toLowerCase();
-  }
-}
-
-// YouTube/youtu.be video ID extractor — duplicated from brandIcons.jsx so this
-// module stays JSX-import-free.
-const YT_ID_PATTERNS = [
-  /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-  /youtube\.com\/watch\?[^#]*v=([a-zA-Z0-9_-]{11})/,
-  /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-  /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
-  /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
-];
-
-function ytId(url) {
-  if (!url) return null;
-  for (const p of YT_ID_PATTERNS) {
-    const m = url.match(p);
-    if (m) return m[1];
-  }
-  return null;
-}
-
-function urlIsReal(url, realUrls) {
-  if (!url) return false;
-
-  // 1. Exact normalized match — strongest signal
-  if (realUrls.has(normalizeUrl(url))) return true;
-
-  // 2. Host-aware fallback for cases where the model visited a parent page
-  //    and cited a deeper one. Strict by host class to prevent path-prefix
-  //    holes (e.g. '/watch' matching '/watch?v=ANYTHING' since URL.pathname
-  //    excludes the query string).
-  let a;
-  try { a = new URL(url); } catch { return false; }
-
-  // YouTube: match by video ID, not pathname. One real /watch URL must NOT
-  // unlock unlimited fabricated /watch?v=X citations.
-  if (a.host.endsWith('youtube.com') || a.host.endsWith('youtu.be')) {
-    const id = ytId(url);
-    if (!id) return false;
-    for (const real of realUrls) {
-      if (ytId(real) === id) return true;
-    }
-    return false;
-  }
-
-  // Other hosts: accept only true sub-paths of a real URL. Require a slash
-  // boundary so '/products/foo' doesn't accept '/products-fake'. Reject
-  // bare-host roots so '/' doesn't pass everything on the host.
-  for (const real of realUrls) {
-    let b;
-    try { b = new URL(real); } catch { continue; }
-    if (a.host.toLowerCase() !== b.host.toLowerCase()) continue;
-    if (b.pathname.length <= 1) continue; // '/' or '' — too permissive
-    if (a.pathname === b.pathname) return true;
-    if (a.pathname.startsWith(b.pathname + '/')) return true;
-  }
-  return false;
-}
-
-function filterHallucinatedSources(parsed, realUrls) {
-  if (!Array.isArray(parsed.signals)) {
-    parsed.signals = [];
-    parsed._truncated = true;
-    return parsed;
-  }
-  const droppedByKey = {};
-  let totalDropped = 0;
-  for (const signal of parsed.signals) {
-    if (!Array.isArray(signal.sources)) {
-      signal.sources = [];
-      continue;
-    }
-    const before = signal.sources;
-    signal.sources = before.filter((s) => urlIsReal(s.url, realUrls));
-    const drops = before.filter((s) => !urlIsReal(s.url, realUrls)).map((s) => s.url);
-    if (drops.length) {
-      droppedByKey[signal.key || '?'] = drops;
-      totalDropped += drops.length;
-    }
-  }
-  if (totalDropped > 0) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      `[signal] dropped ${totalDropped} source URL(s) not in web_search results:`,
-      droppedByKey
-    );
-  }
-  return parsed;
-}
-
-// ─── JSON parsing with truncation repair ─────────────────────────────────────
-
-function tryParseSignalJSON(text) {
-  if (!text) return null;
-
-  // Strip markdown code fences if present
-  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const cleaned = fenceMatch ? fenceMatch[1].trim() : text.trim();
-
-  // Fast path
-  const direct = tryParse(cleaned);
-  if (direct) return direct;
-
-  // Find the largest JSON object in the text, balanced or not
-  const extracted = extractJsonObject(cleaned);
-  if (!extracted) return null;
-
-  const fromExtracted = tryParse(extracted);
-  if (fromExtracted) return fromExtracted;
-
-  // Repair attempt: balance braces, drop trailing partial member.
-  // If repair succeeds, mark the result so the UI can surface "partial".
-  const repaired = repairTruncatedJson(extracted);
-  if (repaired && repaired !== extracted) {
-    const fromRepaired = tryParse(repaired);
-    if (fromRepaired) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[signal] truncated JSON repaired: ${extracted.length} → ${repaired.length} chars`
-      );
-      fromRepaired._truncated = true;
-      return fromRepaired;
-    }
-  }
-
-  return null;
-}
-
-function tryParse(s) {
-  try {
-    const data = JSON.parse(s);
-    if (data && (data.signals || data.card_name)) return data;
-  } catch {}
-  return null;
-}
-
-function extractJsonObject(text) {
-  const start = text.indexOf('{');
-  if (start < 0) return null;
-  let depth = 0;
-  let inString = false;
-  let escape = false;
-  for (let i = start; i < text.length; i++) {
-    const c = text[i];
-    if (escape) { escape = false; continue; }
-    if (c === '\\') { escape = true; continue; }
-    if (c === '"' && !inString) { inString = true; continue; }
-    if (c === '"' && inString) { inString = false; continue; }
-    if (inString) continue;
-    if (c === '{') depth++;
-    else if (c === '}') {
-      depth--;
-      if (depth === 0) return text.substring(start, i + 1);
-    }
-  }
-  // Unbalanced — return what we got, repair will handle
-  return text.substring(start);
-}
-
-function repairTruncatedJson(s) {
-  let braceDepth = 0;
-  let bracketDepth = 0;
-  let inString = false;
-  let escape = false;
-  let lastSafe = -1;
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    if (escape) { escape = false; continue; }
-    if (c === '\\') { escape = true; continue; }
-    if (c === '"' && !inString) { inString = true; continue; }
-    if (c === '"' && inString) { inString = false; continue; }
-    if (inString) continue;
-    if (c === '{') braceDepth++;
-    else if (c === '}') braceDepth--;
-    else if (c === '[') bracketDepth++;
-    else if (c === ']') bracketDepth--;
-    // Mark a safe truncation point right after a complete member terminator
-    if (!inString && (c === '}' || c === ']')) {
-      lastSafe = i;
-    }
-  }
-
-  if (braceDepth === 0 && bracketDepth === 0 && !inString) return s;
-
-  // No safe truncation point ever found — bail rather than emit a guaranteed-
-  // broken string. (`> 0` was wrong: it conflated "no safe point" with
-  // "safe at index 0".)
-  if (lastSafe < 0) return null;
-
-  // Trim to last safe close, then re-balance
-  let trimmed = s.substring(0, lastSafe + 1);
-  trimmed = trimmed.replace(/,\s*$/, '');
-
-  // Recount on the trimmed string
-  let bd = 0, kd = 0, inS = false, esc = false;
-  for (let i = 0; i < trimmed.length; i++) {
-    const c = trimmed[i];
-    if (esc) { esc = false; continue; }
-    if (c === '\\') { esc = true; continue; }
-    if (c === '"' && !inS) { inS = true; continue; }
-    if (c === '"' && inS) { inS = false; continue; }
-    if (inS) continue;
-    if (c === '{') bd++;
-    else if (c === '}') bd--;
-    else if (c === '[') kd++;
-    else if (c === ']') kd--;
-  }
-  while (kd > 0) { trimmed += ']'; kd--; }
-  while (bd > 0) { trimmed += '}'; bd--; }
-  return trimmed;
 }

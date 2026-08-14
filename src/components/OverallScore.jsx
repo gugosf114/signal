@@ -137,7 +137,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
           <div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
               <span className="score-animate" style={{
-                fontSize: 64,
+                fontSize: 48,
                 fontWeight: 700,
                 fontFamily: "'JetBrains Mono', monospace",
                 color,
@@ -147,7 +147,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
                 {score}
               </span>
               <span style={{
-                fontSize: 18,
+                fontSize: 15,
                 fontFamily: "'JetBrains Mono', monospace",
                 color: '#2A2D34',
                 fontWeight: 400,
@@ -196,15 +196,35 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               {blurb}
             </div>
 
+            {/* A bare "62" is meaningless on its own — the comparison to the
+                user's own scan history is the line that actually lands. It used
+                to be 13px grey under a 64px number; the number has come down
+                and this has come up so the sentence reads first. */}
             {percentileInfo && (
               <div style={{
-                marginTop: 4,
-                fontSize: 13,
-                fontFamily: "'JetBrains Mono', monospace",
-                color: '#7A7368',
-                letterSpacing: '0.06em',
+                marginTop: 8,
+                display: 'inline-flex',
+                alignItems: 'baseline',
+                gap: 6,
+                flexWrap: 'wrap',
               }}>
-                Top {percentileInfo.topPct}% of your last {percentileInfo.total} scans
+                <span style={{
+                  fontSize: 20,
+                  fontFamily: "'Instrument Serif', serif",
+                  fontStyle: 'italic',
+                  color: '#E8E4DC',
+                  lineHeight: 1.2,
+                }}>
+                  Top {percentileInfo.topPct}%
+                </span>
+                <span style={{
+                  fontSize: 12,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  color: '#7A7368',
+                  letterSpacing: '0.04em',
+                }}>
+                  of your last {percentileInfo.total} scans
+                </span>
               </div>
             )}
 
