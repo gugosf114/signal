@@ -1,0 +1,97 @@
+// Tests for the card-image cache.
+//
+// The bug this pins: v1 of the cache stored every null for 7 days, including
+// the nulls produced by a transient pokemontcg.io 500. One bad minute on their
+// end blanked a card's artwork for a week, and no amount of re-scanning would
+// bring it back. A failure to reach the server is a fact about the server, not
+// a fact about the card, and must not be remembered as one.
+//
+// fetch and localStorage are stubbed before the module is imported.
+
+import { test, describe, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
+
+// ─── Stubs ───────────────────────────────────────────────────────────────────
+let store = {};
+globalThis.localStorage = {
+  getItem: (k) => (k in store ? store[k] : null),
+  setItem: (k, v) => { store[k] = String(v); },
+  removeItem: (k) => { delete store[k]; },
+};
+
+let responder = () => ({ ok: true, status: 200, json: async () => ({}) });
+let callCount = 0;
+globalThis.fetch = async (url) => { callCount++; return responder(url); };
+
+const okPokemon = (imgUrl) => () => ({
+  ok: true,
+  status: 200,
+  json: async () => ({ data: [{ images: { large: imgUrl } }] }),
+});
+const status = (code) => () => ({ ok: false, status: code, json: async () => ({}) });
+const notFound = () => ({ ok: false, status: 404, json: async () => ({}) });
+
+const { fetchCardImage } = await import('./fetchCardImage.js');
+
+describe('fetchCardImage cache', () => {
+  beforeEach(() => {
+    store = {};
+    callCount = 0;
+  });
+
+  test('a found image is returned and cached', async () => {
+    responder = okPokemon('https://img.example.com/pikachu.png');
+    const a = await fetchCardImage('Pikachu Test A', 'pokemon');
+    assert.equal(a, 'https://img.example.com/pikachu.png');
+    assert.ok(store['signal_card_image_cache_v2'], 'wrote to the v2 cache key');
+  });
+
+  test('a server error is NOT cached, so the next call retries', async () => {
+    responder = status(500);
+    const first = await fetchCardImage('Slowbro Test B', 'pokemon');
+    assert.equal(first, null, 'returns null to the caller');
+
+    const cache = JSON.parse(store['signal_card_image_cache_v2'] || '{}');
+    assert.equal(Object.keys(cache).length, 0, 'nothing written to the cache');
+
+    // The API recovers; the very next call must reach it rather than serve a
+    // remembered failure.
+    responder = okPokemon('https://img.example.com/slowbro.png');
+    const second = await fetchCardImage('Slowbro Test B', 'pokemon');
+    assert.equal(second, 'https://img.example.com/slowbro.png');
+  });
+
+  test('a rate-limit is treated the same as any other server error', async () => {
+    responder = status(429);
+    await fetchCardImage('Ratelimited Test C', 'pokemon');
+    const cache = JSON.parse(store['signal_card_image_cache_v2'] || '{}');
+    assert.equal(Object.keys(cache).length, 0);
+  });
+
+  test('a genuine 404 IS cached — that is a fact about the card', async () => {
+    responder = notFound;
+    const r = await fetchCardImage('Nonexistent Test D', 'pokemon');
+    assert.equal(r, null);
+    const cache = JSON.parse(store['signal_card_image_cache_v2'] || '{}');
+    assert.equal(Object.keys(cache).length, 1, 'the genuine miss was remembered');
+    assert.equal(Object.values(cache)[0].url, null);
+  });
+
+  test('concurrent callers share a single request', async () => {
+    responder = okPokemon('https://img.example.com/shared.png');
+    const [a, b, c] = await Promise.all([
+      fetchCardImage('Shared Test E', 'pokemon'),
+      fetchCardImage('Shared Test E', 'pokemon'),
+      fetchCardImage('Shared Test E', 'pokemon'),
+    ]);
+    assert.equal(a, b);
+    assert.equal(b, c);
+    assert.equal(callCount, 1, 'four components, one round trip');
+  });
+
+  test('an empty card name never hits the network', async () => {
+    responder = okPokemon('https://img.example.com/x.png');
+    assert.equal(await fetchCardImage('', 'pokemon'), null);
+    assert.equal(callCount, 0);
+  });
+});

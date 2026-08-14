@@ -5,8 +5,13 @@
 // YGOPRODeck (Yu-Gi-Oh) — https://db.ygoprodeck.com
 // Pokémon TCG API       — https://api.pokemontcg.io
 //
-// 404 from any API = legitimate "card not found" — silent, returns null.
-// Other failures (4xx, 5xx, network, parse) = operational issue — logged.
+// Three distinct outcomes, and keeping them apart is the whole point:
+//   a URL   — found it
+//   null    — the API answered, and this card genuinely has no art (404)
+//   FAILED  — the API did not answer properly (5xx, network, parse)
+//
+// Only the first two are facts about the card. FAILED is a fact about the
+// server, and must never be remembered as if it were a fact about the card.
 
 // ─── Image URL cache ─────────────────────────────────────────────────────────
 // The same card's art is requested by up to four components at once —
@@ -15,11 +20,20 @@
 // answer. The resolved URL is stable for days, so cache it: in memory for the
 // session (also de-duping concurrent in-flight requests) and in localStorage
 // across launches.
-const IMG_CACHE_KEY = 'signal_card_image_cache_v1';
-const IMG_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+//
+// v2: v1 cached every null for 7 days, including the nulls produced by a
+// transient pokemontcg.io 500. One bad minute on their end blanked a card's art
+// for a week. Negatives now expire in an hour, and outright failures aren't
+// cached at all. The key was bumped so poisoned v1 entries are simply dropped.
+const IMG_CACHE_KEY = 'signal_card_image_cache_v2';
+const IMG_TTL_MS = 7 * 24 * 60 * 60 * 1000;   // found an image
+const NEG_TTL_MS = 60 * 60 * 1000;            // genuinely no image for this card
 const IMG_MAX_ENTRIES = 300;
 
-const memCache = new Map();     // key -> resolved URL (or null for a known miss)
+// Distinguishes "the server broke" from "this card has no art".
+const FAILED = Symbol('fetch-failed');
+
+const memCache = new Map();     // key -> URL string, or null for a known miss
 const inFlight = new Map();     // key -> Promise, so four callers share one fetch
 
 function imgKey(name, game) {
@@ -58,20 +72,27 @@ export async function fetchCardImage(cardName, game) {
   if (inFlight.has(key)) return inFlight.get(key);
 
   const persisted = readImgCache()[key];
-  if (persisted && Date.now() - (persisted.ts || 0) < IMG_TTL_MS) {
-    memCache.set(key, persisted.url ?? null);
-    return persisted.url ?? null;
+  if (persisted) {
+    const ttl = persisted.url ? IMG_TTL_MS : NEG_TTL_MS;
+    if (Date.now() - (persisted.ts || 0) < ttl) {
+      memCache.set(key, persisted.url ?? null);
+      return persisted.url ?? null;
+    }
   }
 
   const promise = fetchCardImageUncached(cardName, game)
-    .then((url) => {
-      memCache.set(key, url ?? null);
-      // Cache misses are cached too — a card with no art shouldn't re-query
-      // three free APIs on every render.
+    .then((result) => {
+      if (result === FAILED) {
+        // The API misbehaved. Remember nothing — the next render should try
+        // again rather than inherit a server outage as a permanent verdict.
+        return null;
+      }
+      const url = result ?? null;
+      memCache.set(key, url);
       const cache = readImgCache();
-      cache[key] = { ts: Date.now(), url: url ?? null };
+      cache[key] = { ts: Date.now(), url };
       writeImgCache(cache);
-      return url ?? null;
+      return url;
     })
     .finally(() => inFlight.delete(key));
 
@@ -85,56 +106,75 @@ async function fetchCardImageUncached(cardName, game) {
     if (game === 'yugioh') return await fetchYuGiOhImage(cardName);
     if (game === 'pokemon') return await fetchPokemonImage(cardName);
 
-    // Unknown game — try all three
-    const result =
-      (await fetchYuGiOhImage(cardName).catch((e) => {
-        console.warn(`[fetchCardImage] yugioh threw for "${cardName}":`, e);
-        return null;
-      })) ||
-      (await fetchMTGImage(cardName).catch((e) => {
-        console.warn(`[fetchCardImage] mtg threw for "${cardName}":`, e);
-        return null;
-      })) ||
-      (await fetchPokemonImage(cardName).catch((e) => {
-        console.warn(`[fetchCardImage] pokemon threw for "${cardName}":`, e);
-        return null;
-      }));
-    return result;
+    // Unknown game — try all three. A URL from any of them wins. Otherwise the
+    // result is only a genuine "no such card" if at least one API actually
+    // answered; if every one of them broke, that's FAILED and gets no cache.
+    const results = [];
+    for (const [label, fn] of [
+      ['yugioh', fetchYuGiOhImage],
+      ['mtg', fetchMTGImage],
+      ['pokemon', fetchPokemonImage],
+    ]) {
+      const r = await fn(cardName).catch((e) => {
+        console.warn(`[fetchCardImage] ${label} threw for "${cardName}":`, e);
+        return FAILED;
+      });
+      if (typeof r === 'string' && r) return r;
+      results.push(r);
+    }
+    return results.every((r) => r === FAILED) ? FAILED : null;
   } catch (err) {
     console.error(`[fetchCardImage] unexpected error for "${cardName}"/${game}:`, err);
-    return null;
+    return FAILED;
   }
 }
 
 async function fetchMTGImage(name) {
-  const res = await fetch(
-    `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`
-  );
+  let res;
+  try {
+    res = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`);
+  } catch (e) {
+    console.warn(`[fetchCardImage] scryfall network error for "${name}":`, e);
+    return FAILED;
+  }
   if (res.status === 404) return null;
   if (!res.ok) {
     console.warn(`[fetchCardImage] scryfall ${res.status} for "${name}"`);
-    return null;
+    return FAILED;
   }
-  const data = await res.json();
-  return (
-    data.image_uris?.large ||
-    data.image_uris?.normal ||
-    data.card_faces?.[0]?.image_uris?.large ||
-    null
-  );
+  try {
+    const data = await res.json();
+    return (
+      data.image_uris?.large ||
+      data.image_uris?.normal ||
+      data.card_faces?.[0]?.image_uris?.large ||
+      null
+    );
+  } catch {
+    return FAILED;
+  }
 }
 
 async function fetchYuGiOhImage(name) {
-  const res = await fetch(
-    `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(name)}`
-  );
-  if (res.status === 404) return null;
+  let res;
+  try {
+    res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(name)}`);
+  } catch (e) {
+    console.warn(`[fetchCardImage] ygoprodeck network error for "${name}":`, e);
+    return FAILED;
+  }
+  // YGOPRODeck answers a genuine miss with 400 as well as 404.
+  if (res.status === 404 || res.status === 400) return null;
   if (!res.ok) {
     console.warn(`[fetchCardImage] ygoprodeck ${res.status} for "${name}"`);
-    return null;
+    return FAILED;
   }
-  const data = await res.json();
-  return data.data?.[0]?.card_images?.[0]?.image_url || null;
+  try {
+    const data = await res.json();
+    return data.data?.[0]?.card_images?.[0]?.image_url || null;
+  } catch {
+    return FAILED;
+  }
 }
 
 async function fetchPokemonImage(name) {
@@ -145,14 +185,25 @@ async function fetchPokemonImage(name) {
     .replace(/"/g, '')
     .replace(/\s+(ex|EX|V|VMAX|VSTAR|GX)\s*$/i, '')
     .trim();
-  const res = await fetch(
-    `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(cleanName)}"&pageSize=1&orderBy=-set.releaseDate`
-  );
+  let res;
+  try {
+    res = await fetch(
+      `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(cleanName)}"&pageSize=1&orderBy=-set.releaseDate`
+    );
+  } catch (e) {
+    console.warn(`[fetchCardImage] pokemontcg network error for "${cleanName}":`, e);
+    return FAILED;
+  }
   if (res.status === 404) return null;
   if (!res.ok) {
+    // 500s and 429s from pokemontcg.io are routine and transient.
     console.warn(`[fetchCardImage] pokemontcg ${res.status} for "${cleanName}"`);
-    return null;
+    return FAILED;
   }
-  const data = await res.json();
-  return data.data?.[0]?.images?.large || data.data?.[0]?.images?.small || null;
+  try {
+    const data = await res.json();
+    return data.data?.[0]?.images?.large || data.data?.[0]?.images?.small || null;
+  } catch {
+    return FAILED;
+  }
 }
