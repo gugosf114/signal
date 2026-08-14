@@ -18,9 +18,11 @@ Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
 - Stack: Vite 6 + React 18, `simple-icons` NPM, html2pdf.js,
   `@capacitor/filesystem`, Capacitor 8 (Android wrapper), no TypeScript
 - Dev server: `npm run dev` → http://localhost:3000
-- Tests: `npm test` → Node's built-in runner over `src/services/`. No test
-  framework, no new dependency. 28 tests covering the citation filter and the
-  truncated-JSON recovery path.
+- Tests: `npm test` → Node's built-in runner. No test framework, no new
+  dependency. 28 tests covering the citation filter and the truncated-JSON
+  recovery path. Test files are listed explicitly in the `test` script rather
+  than passed as a directory — Node 20 globs a directory argument, Node 22
+  (what CI runs) tries to load it as a module. Add new test files to that list.
 - Android: `cd android && ./gradlew assembleDebug` → APK at
   `android/app/build/outputs/apk/debug/app-debug.apk`
 - Android JDK: bundled JBR at `C:/Program Files/Android/Android Studio/jbr`
