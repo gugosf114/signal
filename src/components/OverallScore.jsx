@@ -5,7 +5,7 @@ import { useWatchedCards } from './WatchedCards';
 import CardImage from './CardImage';
 import CardLightbox from './CardLightbox';
 
-export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, onRetry, signals = [], enPrice, jpPrice, trend, onCardImageLoaded }) {
+export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, onRetry, signals = [], enPrice, trend, onCardImageLoaded }) {
   const { label, color, blurb } = getScoreLabel(score);
   const gameMeta = GAME_LABELS[game];
   const glowColor = gameMeta?.color || '#C44040';
@@ -156,7 +156,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               </span>
               {/* Watch / unwatch button */}
               <button
-                onClick={() => toggleWatch({ name: cardName, game, score, enPrice, jpPrice })}
+                onClick={() => toggleWatch({ name: cardName, game, score, enPrice })}
                 title={watched ? 'Unwatch this card' : 'Watch this card'}
                 style={{
                   background: 'none',
@@ -305,7 +305,6 @@ export default function OverallScore({ score, cardName, game, summary, truncated
         scoreLabel={label}
         scoreColor={color}
         enPrice={enPrice}
-        jpPrice={jpPrice}
         trend={trend}
         topSignal={topSignal}
       />

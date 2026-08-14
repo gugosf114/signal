@@ -6,7 +6,7 @@ export const SIGNAL_SECTIONS = [
     id: 'japan',
     label: '⛩ Japan Market Intelligence',
     subtitle: 'Leading indicators from the JP market',
-    signals: ['jp_price', 'jp_hype', 'jp_release'],
+    signals: ['jp_hype', 'jp_release'],
   },
   {
     id: 'short-term',
@@ -53,11 +53,6 @@ export const SIGNAL_TYPES = {
     color: '#907888',
     description: 'Print run size, PSA population, out of print status',
   },
-  jp_price: {
-    label: 'JP Price Signal',
-    color: '#C44040',
-    description: 'Japanese market price vs English, JP–EN gap',
-  },
   jp_hype: {
     label: 'JP Community Buzz',
     color: '#B04848',
@@ -78,7 +73,6 @@ export const WEIGHTS = {
     competitive: 0.24,
     scarcity: 0.20,
     creator: 0.15,
-    jp_price: 0.12,
     community: 0.09,
     jp_hype: 0.08,
     editorial: 0.07,
@@ -89,7 +83,6 @@ export const WEIGHTS = {
     creator: 0.22,
     scarcity: 0.20,
     ip_momentum: 0.12,
-    jp_price: 0.12,
     jp_hype: 0.09,
     community: 0.09,
     editorial: 0.07,
@@ -102,7 +95,6 @@ export const WEIGHTS = {
     creator: 0.16,
     community: 0.11,
     editorial: 0.08,
-    jp_price: 0.08,
     ip_momentum: 0.03,
     jp_hype: 0.03,
     jp_release: 0.02,
@@ -151,11 +143,10 @@ export function getScoreLabel(score) {
 
 // ─── Weighted Score Calculator ───────────────────────────────────────────────
 
-// JP-match downweight: when jp_price is comparing a DIFFERENT printing of the
-// same character (not the same card), the comp is loose and shouldn't carry
-// its full nominal weight. Apply 60% of the normal weight in that case.
-const JP_COMP_WEIGHT_MULTIPLIER = 0.6;
-
+// Only signals actually present in the response contribute, and the divisor is
+// the weight of those signals alone — so a scan missing a signal re-shares its
+// weight across the rest rather than being silently penalised. (This is also
+// what let the jp_price signal be removed without re-tuning every other weight.)
 export function calculateOverallScore(signals, game) {
   const weights = WEIGHTS[game];
   if (!weights) return 0;
@@ -163,16 +154,9 @@ export function calculateOverallScore(signals, game) {
   let totalWeight = 0;
   let weightedSum = 0;
 
-  for (const [key, baseWeight] of Object.entries(weights)) {
+  for (const [key, weight] of Object.entries(weights)) {
     const signal = signals.find(s => s.key === key);
     if (signal && typeof signal.level === 'number') {
-      let weight = baseWeight;
-      // jp_price loses 40% of its weight when the comp is a different
-      // printing — fuzzy comps shouldn't get full say. Absent flag = treat
-      // as exact (safer default for legacy cached scans).
-      if (key === 'jp_price' && signal.jp_match === 'comp') {
-        weight = baseWeight * JP_COMP_WEIGHT_MULTIPLIER;
-      }
       weightedSum += (signal.level / 5) * weight;
       totalWeight += weight;
     }

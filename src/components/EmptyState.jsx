@@ -16,8 +16,6 @@ const SAMPLE_DATA = {
   score: 82,
   prices: {
     en_price: '$42.50',
-    jp_price: '¥7,200',
-    jp_en_gap: 'JP leads +$8',
     trend_30d: 'up — momentum stacking',
   },
   creator: {
@@ -212,26 +210,15 @@ function PriceTile({ prices }) {
       minWidth: 0,
     }}>
       <div style={{ display: 'flex', borderBottom: '1px solid #1A1D24' }}>
-        <div style={{ flex: 1, padding: '12px 14px', borderRight: '1px solid #1A1D24' }}>
+        <div style={{ flex: 1, padding: '12px 14px' }}>
           <div style={{ ...label, color: '#7A7368' }}>EN Price</div>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 600, color: '#E8E4DC' }}>
             {prices.en_price || '—'}
           </div>
         </div>
-        <div style={{ flex: 1, padding: '12px 14px', background: 'rgba(196,64,64,0.03)' }}>
-          <div style={{ ...label, color: '#8A4040' }}>¥ JP Price</div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 600, color: '#C44040' }}>
-            {prices.jp_price || '—'}
-          </div>
-        </div>
       </div>
+
       <div style={{ display: 'flex' }}>
-        <div style={{ flex: 1, padding: '10px 14px', borderRight: '1px solid #1A1D24' }}>
-          <div style={{ ...label, color: '#7A7368' }}>JP Comp</div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#A8A498', lineHeight: 1.5 }}>
-            {prices.jp_en_gap || '—'}
-          </div>
-        </div>
         <div style={{ flex: 1, padding: '10px 14px' }}>
           <div style={{ ...label, color: '#7A7368' }}>30-Day Trend</div>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 16, color: trend.color, fontWeight: 700 }}>

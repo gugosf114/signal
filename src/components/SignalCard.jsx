@@ -40,12 +40,6 @@ const MARKS = {
       <path d="M8 2 L11 7 L8 14 L5 7 Z" stroke={c} strokeWidth="1" fill="none" opacity="0.4" />
     </svg>
   ),
-  jp_price: (c) => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <text x="8" y="12" textAnchor="middle" fontSize="12" fill={c} opacity="0.6"
-        fontWeight="700" fontFamily="'JetBrains Mono'">¥</text>
-    </svg>
-  ),
   jp_hype: (c) => (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <text x="8" y="12" textAnchor="middle" fontSize="10" fill={c} opacity="0.6"

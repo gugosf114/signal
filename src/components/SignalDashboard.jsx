@@ -544,7 +544,6 @@ export default function SignalDashboard() {
               onRetry={() => handleSearch(result.card_name, result.game)}
               signals={result.signals || []}
               enPrice={result.prices?.en_price}
-              jpPrice={result.prices?.jp_price}
               trend={result.prices?.trend_30d}
               onCardImageLoaded={setCardImageUrl}
             />
@@ -556,7 +555,6 @@ export default function SignalDashboard() {
               trend_30d: result.prices?.trend_30d,
               signal_vs_market: result.prices?.signal_vs_market,
             }}
-            jpMatch={(result.signals || []).find(s => s.key === 'jp_price')?.jp_match}
           />
 
           <EbayListings data={result.ebay_listings} />

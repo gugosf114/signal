@@ -38,11 +38,11 @@ function buildSystemPrompt(game) {
 
   return `You are a trading card market analyst. Search EN + JP sources to score 9 signals on the given card. Output strict JSON only — no markdown, no fences, no prose.
 
-EFFICIENCY: budget is tight. One web_search per signal max. Combine signals when one search covers multiple (e.g. one Mercari JP search → both jp_price and jp_hype). If pre-fetched EN price data is in the user message, DO NOT re-search EN prices. If a CATALYST CONTEXT block is present, use it directly for competitive/scarcity/jp_release — do NOT re-search ban status, legality, set dates, or print counts.
+EFFICIENCY: budget is tight. One web_search per signal max. If pre-fetched EN price data is in the user message, DO NOT re-search EN prices. If a CATALYST CONTEXT block is present, use it directly for competitive/scarcity/jp_release — do NOT re-search ban status, legality, set dates, or print counts.
 
 ENUMS (exact lowercase):
 - game: pokemon | yugioh | mtg
-- signal key: creator | community | ip_momentum | editorial | competitive | scarcity | jp_price | jp_hype | jp_release
+- signal key: creator | community | ip_momentum | editorial | competitive | scarcity | jp_hype | jp_release
 - source.type: youtube | tournament | reddit | twitter | marketplace_en | marketplace_jp | editorial | population_report | other
 - source.implication: up | down | neutral
 - source.reach: T1 | T2 | T3 | unknown
@@ -50,7 +50,7 @@ ENUMS (exact lowercase):
 OUTPUT SHAPE:
 {
   "card_name": "", "game": "",
-  "prices": { "en_price": "", "jp_price": "", "jp_en_gap": "", "trend_30d": "", "signal_vs_market": "" },
+  "prices": { "en_price": "", "trend_30d": "", "signal_vs_market": "" },
   "ebay_listings": {
     "buy_it_now": [ { "title": "", "price_usd": 0, "condition": "", "shipping": "", "seller": "", "url": "" } /* 2 */ ],
     "auction":    [ { "title": "", "current_bid_usd": 0, "condition": "", "bid_count": 0, "time_remaining": "", "url": "" } /* 1, omit if no live auction */ ]
@@ -66,9 +66,7 @@ OUTPUT SHAPE:
     "note": "one sentence — e.g. Reserved List card, PSA 10 pop is low, or card grades well due to black border"
   },
   "signals": [
-    /* exactly 9 — one per signal key. Each: { "key", "level" (1-5 int), "detail" (1 sentence), "sources": [ { "type","source","title","date","summary","implication","url","reach","audience" } ] }
-       jp_price ALSO carries "jp_match": "exact" | "comp"
-         exact = direct JP printing of the same card; comp = different printing of same character/archetype */
+    /* exactly 8 — one per signal key. Each: { "key", "level" (1-5 int), "detail" (1 sentence), "sources": [ { "type","source","title","date","summary","implication","url","reach","audience" } ] } */
   ],
   "summary": ""
 }
@@ -128,12 +126,12 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   // never pay for irrelevant searches (e.g. JP/tournament for an MTG card).
   const resolvedGame = (game || cardData?.game || '').toLowerCase();
   const searchTargets = [];
-  // JP price/hype is the wedge — but only meaningful for Pokémon / Yu-Gi-Oh (and
-  // unknown game). Skipped for MTG.
-  if (resolvedGame === 'pokemon' || resolvedGame === 'yugioh' || resolvedGame === '')
-    searchTargets.push(jp
-      ? 'JP price — Mercari JP / Yahoo Auctions JP current ¥ (JP hype/interest already in the JAPAN SIGNAL block above)'
-      : 'JP price & hype — Mercari JP / Yahoo Auctions JP (¥) + JP social / JP YouTube');
+  // The JP yen price is no longer scored or displayed. It was the only part of
+  // the Japan angle that required a live web_search — Mercari JP and Yahoo
+  // Auctions JP have no free API — and it frequently came back N/A because the
+  // card has no direct OCG printing. JP buzz (YouTube, region JP) and JP release
+  // timing still come from the free pre-fetch, so the Japan section keeps its two
+  // leading indicators at zero search cost.
   // Tournament/competitive: only search if we don't already have structured data.
   // YGO banlist and MTG legality come from catalyst pre-fetch. Pokémon needs Limitless.
   if (resolvedGame === 'pokemon')
@@ -145,7 +143,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     searchTargets.push('Recent community + creator coverage — Reddit / YouTube');
   // eBay is no longer searched — it comes only from the eBay Browse pre-fetch (keyed).
 
-  const maxSearches = searchTargets.length; // 0 for MTG, ~1-2 for Pokémon
+  const maxSearches = searchTargets.length; // 0 for MTG and Yu-Gi-Oh, 1 for Pokémon
 
   // Every URL handed to the model in a pre-fetch block is REAL — it came from a
   // live API call we made ourselves. The citation filter below must know about

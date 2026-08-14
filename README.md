@@ -90,6 +90,18 @@ mock-Supabase login and the decorative "10 SCANS LEFT" counter). The
 `package.json` on purpose — removing them without regenerating
 `package-lock.json` would break `npm ci` in CI.
 
+**JP yen price removed (2026-08-14).** The `jp_price` signal, the `¥ JP Price`
+and `JP Comp` cells, and the `jp_match` 0.6× downweight are gone. It was the
+only part of the Japan angle that needed a live `web_search` — Mercari JP and
+Yahoo Auctions JP have no free API — and it routinely returned N/A because the
+card had no direct OCG printing. The two remaining Japan signals (JP YouTube
+buzz, JP release timing) come from the free pre-fetch, so the section keeps its
+leading indicators at zero search cost. Yu-Gi-Oh now runs **zero** searches and
+drops to the Haiku tier (~$0.12 → ~$0.02 per scan); Pokémon keeps its Limitless
+tournament search and stays on Sonnet. `calculateOverallScore` already
+normalised by the weight of signals actually present, so the remaining eight
+re-share the weight with no re-tuning.
+
 **Extracted `citations.js` and `jsonRepair.js`** out of `analyzeCard.js`. Both
 are import-free so they run under `node --test`. `brandIcons.jsx` now re-exports
 `extractYouTubeId` from `citations.js` rather than keeping a second hand-copied

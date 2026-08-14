@@ -49,7 +49,6 @@ export default function CardLightbox({
   scoreLabel,
   scoreColor,
   enPrice,
-  jpPrice,
   trend,
   topSignal,
 }) {
@@ -215,14 +214,6 @@ export default function CardLightbox({
             value={enPrice}
             color="#A8A498"
             style={{ top: 20, right: -10 }}
-          />
-        )}
-        {jpPrice && (
-          <AnnotationChip
-            label="JP Price"
-            value={jpPrice}
-            color="#C44040"
-            style={{ top: '45%', right: -90, transform: 'translateY(-50%)' }}
           />
         )}
         {trend && (

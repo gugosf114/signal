@@ -23,14 +23,13 @@ const SIGNAL_LABEL = {
   editorial:   'Editorial Attention',
   competitive: 'Competitive Demand',
   scarcity:    'Print Scarcity',
-  jp_price:    'JP Price',
   jp_hype:     'JP Community Buzz',
   jp_release:  'JP Release Timeline',
 };
 
 const SIGNAL_ORDER = [
   'creator', 'scarcity', 'competitive', 'ip_momentum', 'community',
-  'editorial', 'jp_price', 'jp_hype', 'jp_release',
+  'editorial', 'jp_hype', 'jp_release',
 ];
 
 const fmtUsd = (n) => {
@@ -49,9 +48,6 @@ export default function PdfReport({ result, score, cardImageUrl }) {
   const gameMeta  = GAME_LABELS[gameKey] || GAME_LABELS.pokemon;
   const scoreMeta = getScoreLabel(score || 0);
   const weights   = WEIGHTS[gameKey] || WEIGHTS.pokemon;
-  const jpSignal  = (result.signals || []).find((s) => s.key === 'jp_price');
-  const jpMatch   = jpSignal?.jp_match;
-  const isCompJp  = jpMatch === 'comp';
 
   const now = new Date();
   const bin = Array.isArray(result.ebay_listings?.buy_it_now) ? result.ebay_listings.buy_it_now : [];
@@ -226,7 +222,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
       {/* ─── PRICES ───────────────────────────────────────────────────────── */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr 1fr',
+        gridTemplateColumns: '1fr 1fr 1fr',
         gap: 0,
         borderTop: `1px solid ${RULE_HAIR}`,
         borderBottom: `1px solid ${RULE_HAIR}`,
@@ -234,15 +230,14 @@ export default function PdfReport({ result, score, cardImageUrl }) {
         marginBottom: 28,
       }}>
         <PriceCell label="EN Price" value={result.prices?.en_price} />
-        <PriceCell label="¥ JP Price" value={result.prices?.jp_price} color={BRAND_RED} />
-        <PriceCell
-          label={isCompJp ? 'JP Comp · 0.6×' : 'JP Comp'}
-          value={result.prices?.jp_en_gap}
-          smallFont
-        />
         <PriceCell
           label="30-Day Trend"
           value={result.prices?.trend_30d}
+          smallFont
+        />
+        <PriceCell
+          label="Signal vs Market"
+          value={result.prices?.signal_vs_market}
           smallFont
         />
       </div>
@@ -265,10 +260,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {SIGNAL_ORDER.map((key) => {
             const sig = (result.signals || []).find((s) => s.key === key);
-            const baseWeight = weights[key] || 0;
-            const effWeight = key === 'jp_price' && isCompJp
-              ? baseWeight * 0.6
-              : baseWeight;
+            const weight = weights[key] || 0;
             return (
               <SignalBlock
                 key={key}
@@ -277,8 +269,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
                 detail={sig?.detail || '—'}
                 sources={sig?.sources || []}
                 dropped={sig?.dropped || 0}
-                weightPct={Math.round(effWeight * 100)}
-                downweighted={key === 'jp_price' && isCompJp}
+                weightPct={Math.round(weight * 100)}
               />
             );
           })}
@@ -425,7 +416,7 @@ function ListingRow({ listing }) {
   );
 }
 
-function SignalBlock({ label, level, detail, sources, dropped = 0, weightPct, downweighted }) {
+function SignalBlock({ label, level, detail, sources, dropped = 0, weightPct }) {
   const bars = Array.from({ length: 5 }).map((_, i) => i < level);
   const realSources = (sources || []).filter((s) => s && (s.url || s.title));
 
@@ -467,10 +458,10 @@ function SignalBlock({ label, level, detail, sources, dropped = 0, weightPct, do
         <div style={{
           fontFamily: "'JetBrains Mono', Menlo, monospace",
           fontSize: 10,
-          color: downweighted ? BRAND_RED : INK_MUTE,
+          color: INK_MUTE,
           fontWeight: 700,
           letterSpacing: '0.04em',
-        }}>{weightPct}%{downweighted ? '*' : ''}</div>
+        }}>{weightPct}%</div>
       </div>
 
       {/* Single-line detail */}

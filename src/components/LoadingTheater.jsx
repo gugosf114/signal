@@ -662,7 +662,6 @@ const SIGNAL_LATTICE = [
   { key: 'editorial',   label: 'EDT', phaseId: 'editorial' },
   { key: 'competitive', label: 'CMP', phaseId: 'tournament' },
   { key: 'scarcity',    label: 'SCR', phaseId: 'synthesis' },
-  { key: 'jp_price',    label: '¥PR', phaseId: 'mercari' },
   { key: 'jp_hype',     label: '熱',  phaseId: 'mercari' },
   { key: 'jp_release',  label: '先',  phaseId: 'japan-crossing' },
 ];
