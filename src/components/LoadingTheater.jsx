@@ -91,43 +91,23 @@ const PHASES = [
   },
   {
     id: 'japan-crossing',
-    title: '渡日中 — Crossing Markets',
+    title: '渡日中 — Japan Signal',
     pip: '渡日',
     color: '#C44040',
     jp: true,
     trace: 'kanji',
     kanji: '株',
-    brands: ['google', 'pokemon'],
+    brands: ['youtube', 'google', 'pokemon'],
     details: [
-      'Japanese name · resolved',
+      'JP creator coverage · region JP',
+      'JP vs US search interest',
       'JP set release calendar',
-      'Translating signal terminology',
     ],
     log: [
-      '> shifting locale · jp-JP',
-      '> jisho.org · romaji ↔ kanji',
-      '> pokebeach.jp · release calendar',
-      '> tokyo time · 03:42:11',
-    ],
-  },
-  {
-    id: 'mercari',
-    title: 'メルカリ — Mercari JP',
-    pip: '¥MR',
-    color: '#FF0211',
-    jp: true,
-    trace: 'yen',
-    brands: ['mercari', 'rakuten', 'yahoo'],
-    details: [
-      '¥77,000 · SAR variant · sold',
-      '¥125,000 · MUR · active',
-      '¥68,500 · Master Art · sold',
-    ],
-    log: [
-      '> jp.mercari.com/search?q=...',
-      '> sold history · last 14 days',
-      '> ヤフオク crossreference · ok',
-      '> ¥/$ · 152.4 · arbitrage delta',
+      '> youtube · regionCode=JP',
+      '> relevanceLanguage=ja',
+      '> trends · JP vs US · 3mo',
+      '> jp release calendar · upcoming',
     ],
   },
   {
@@ -160,7 +140,7 @@ const PHASES = [
     brands: [],
     details: [
       'Per-game weighting model',
-      'Normalizing 9 signals',
+      'Normalizing 8 signals',
       'Computing 0-100 score',
     ],
     log: [
@@ -175,30 +155,31 @@ const PHASES = [
 const DETAIL_MS = 1450;
 const TICK_MS = 120;
 
-// Phase pacing is derived from the scan the app is ACTUALLY running, not a
-// fixed 35-second script. analyzeCard gates web_search by game: MTG resolves
-// entirely from pre-fetched Scryfall data with zero searches and lands in
-// ~10-15s, while Pokémon/Yu-Gi-Oh! still spend 1-2 searches at 5-15s each.
-// Running the full eight-phase show for MTG meant sitting through 20 seconds
-// of theater after the answer was already in hand — and parading JP phases at
-// a card that never touched the JP market.
+// Pacing follows the number of live web_searches the scan will actually run
+// (see analyzeCard searchTargets), not the game name. A search costs 5-15s of
+// wall clock; a scan with none resolves entirely from the pre-fetch and lands
+// in ~10-15s, so running the full slow script over it means watching theater
+// after the answer is already in hand.
+//
+//   MTG        — 0 searches (Scryfall covers price, legality, scarcity)
+//   Yu-Gi-Oh!  — 0 searches (YGOPRODeck covers the ban list; no yen lookup)
+//   Pokémon    — 1 search  (Limitless tournament usage)
 const SLOW_PHASE_MS = 4400;   // live search in play
 const FAST_PHASE_MS = 2200;   // pure synthesis, no search
 
-// MTG skips the JP searches entirely (see analyzeCard searchTargets), so the
-// two JP phases would be pure fiction on an MTG scan.
-const JP_PHASE_IDS = new Set(['japan-crossing', 'mercari']);
+const NO_SEARCH_GAMES = new Set(['mtg', 'yugioh']);
 
+// MTG never touches the JP market, so the JP phase would be pure fiction there.
 function phasesForGame(game) {
   const g = (game || '').toLowerCase();
-  if (g === 'mtg') return PHASES.filter((p) => !JP_PHASE_IDS.has(p.id));
+  if (g === 'mtg') return PHASES.filter((p) => p.id !== 'japan-crossing');
   return PHASES;
 }
 
 const SOLARI_GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789▲▼◆▸▤▦株渡日¥';
 
 const TICKER_EN = '▲ TCGPLAYER ▼ EBAY ◆ LIMITLESS ▸ POKEBEACH ▲ GAME8 ▼ MTGGOLDFISH ◆ TCGFISH ▸ ';
-const TICKER_JP = '¥ メルカリ ⛩ ヤフオク 株 ポケビーチ ¥ 価格 株 渡日 ¥ メルカリ ⛩ ヤフオク 株 ';
+const TICKER_JP = '株 渡日 ⛩ ポケビーチ 株 発売日 ⛩ 注目 株 渡日 ⛩ ポケビーチ 株 発売日 ⛩ 注目 ';
 
 export default function LoadingTheater({ cardName, game }) {
   const [start] = useState(() => Date.now());
@@ -223,7 +204,7 @@ export default function LoadingTheater({ cardName, game }) {
 
   // Which show to run, and how fast, both follow the real scan shape.
   const phases = useMemo(() => phasesForGame(game), [game]);
-  const phaseMs = (game || '').toLowerCase() === 'mtg' ? FAST_PHASE_MS : SLOW_PHASE_MS;
+  const phaseMs = NO_SEARCH_GAMES.has((game || '').toLowerCase()) ? FAST_PHASE_MS : SLOW_PHASE_MS;
   // Progress bar fills linearly to 90% across this window, then eases
   // asymptotically toward 99% if the scan keeps running.
   const nominalScanMs = phases.length * phaseMs;
@@ -581,8 +562,6 @@ function tracePath(kind) {
       return 'M 0 30 L 60 30 L 60 50 L 120 50 L 120 30 L 180 30 L 180 60 L 240 60 L 240 25 L 300 25 L 300 50 L 360 50';
     case 'kanji':
       return 'M 30 20 L 80 20 M 50 12 L 50 70 M 20 40 L 90 40 M 110 25 C 140 25, 170 25, 200 25 L 200 65 M 220 18 L 280 18 L 280 65 L 340 65';
-    case 'yen':
-      return 'M 20 25 L 50 50 L 80 25 M 50 50 L 50 70 M 20 55 L 80 55 M 20 65 L 80 65 M 110 40 L 360 40';
     case 'columns':
       return 'M 0 65 L 30 65 L 30 18 L 60 18 L 60 65 L 100 65 L 100 30 L 130 30 L 130 65 L 170 65 L 170 22 L 200 22 L 200 65 L 240 65 L 240 35 L 270 35 L 270 65 L 310 65 L 310 25 L 340 25 L 340 65 L 360 65';
     case 'matrix':
@@ -597,7 +576,6 @@ function traceY(kind, t) {
     case 'sawtooth': return Math.sin(t * 18) * 18;
     case 'wave': return Math.sin(t * 8 * Math.PI) * 22;
     case 'kanji': return -10 + Math.sin(t * 4) * 8;
-    case 'yen': return Math.sin(t * 8) * 16;
     case 'matrix': return Math.sin(t * 4) * 25 - 5;
     default: return 0;
   }
@@ -662,7 +640,7 @@ const SIGNAL_LATTICE = [
   { key: 'editorial',   label: 'EDT', phaseId: 'editorial' },
   { key: 'competitive', label: 'CMP', phaseId: 'tournament' },
   { key: 'scarcity',    label: 'SCR', phaseId: 'synthesis' },
-  { key: 'jp_hype',     label: '熱',  phaseId: 'mercari' },
+  { key: 'jp_hype',     label: '熱',  phaseId: 'japan-crossing' },
   { key: 'jp_release',  label: '先',  phaseId: 'japan-crossing' },
 ];
 
