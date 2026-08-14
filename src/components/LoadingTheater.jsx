@@ -266,7 +266,7 @@ export default function LoadingTheater({ cardName, game }) {
       </div>
 
       <div className="lt-stage">
-        <ScanLog phase={phase} phaseStartedAt={start + rawIdx * PHASE_MS} />
+        <ScanLog phase={phase} phaseStartedAt={start + rawIdx * phaseMs} />
         <div className="lt-center">
           {/* Card art — large, dominant. Shows once image loads. */}
           {cardImageUrl && (
