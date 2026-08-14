@@ -1,13 +1,13 @@
 # 株 Signal
 
-### ⬇ [Download the latest APK — 1.1 (versionCode 2)](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v1.1/signal-1.1.apk)
+### ⬇ [Download the latest APK — 1.4 (versionCode 5)](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v1.4/signal-1.4.apk)
 
 Tap that on the phone, then open the downloaded file to install. It's signed
 with the debug key, the same one every previous sideload used, so it installs
 straight over the existing app as an update and keeps your scan history. To
 start clean instead, uninstall Signal first and then open the file.
 
-Built from `9b07446`. All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio-assets/releases).
+Built from `cb360cf`. All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio-assets/releases).
 
 The APK lives on the private `portfolio-assets` repo rather than here, because
 the build compiles `VITE_ANTHROPIC_API_KEY` into the bundle — a public download
@@ -19,11 +19,11 @@ phone for the link to resolve.
 Trading card price intelligence powered by alternative data signals. Japanese
 market intelligence included.
 
-Single-card scan returns a 9-signal scorecard with structured, link-verified
+Single-card scan returns an 8-signal scorecard with structured, link-verified
 citations, weighted to a 0-100 score. Sources span English (TCGPlayer, eBay,
 YouTube creators, Reddit, tournaments via Limitless, editorial outlets like
-PokeBeach / Game8 / TCGFish) and Japanese (Mercari JP, Yahoo Auctions JP,
-Rakuten, JP-language YouTube, JP set release calendars).
+PokeBeach / Game8 / TCGFish) and Japanese (JP-language YouTube,
+JP set release calendars).
 
 Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
 
@@ -35,7 +35,7 @@ Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
   `@capacitor/filesystem`, Capacitor 8 (Android wrapper), no TypeScript
 - Dev server: `npm run dev` → http://localhost:3000
 - Tests: `npm test` → Node's built-in runner. No test framework, no new
-  dependency. 28 tests covering the citation filter and the truncated-JSON
+  dependency. 34 tests covering the citation filter and the truncated-JSON
   recovery path. Test files are listed explicitly in the `test` script rather
   than passed as a directory — Node 20 globs a directory argument, Node 22
   (what CI runs) tries to load it as a module. Add new test files to that list.
