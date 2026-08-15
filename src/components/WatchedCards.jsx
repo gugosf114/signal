@@ -17,9 +17,12 @@ export function useWatchedCards() {
     try {
       const raw = localStorage.getItem('signal_watched_cards');
       const list = raw ? JSON.parse(raw) : [];
-      const exists = list.some(w => w.name === card.name && w.game === card.game);
+      const sameCard = (w) =>
+        w.name === card.name && w.game === card.game &&
+        (w.pin?.id || null) === (card.pin?.id || null);
+      const exists = list.some(sameCard);
       const next = exists
-        ? list.filter(w => !(w.name === card.name && w.game === card.game))
+        ? list.filter(w => !sameCard(w))
         : [{ ...card, watchedAt: new Date().toISOString() }, ...list].slice(0, 20);
       localStorage.setItem('signal_watched_cards', JSON.stringify(next));
       setWatched(next);
@@ -27,7 +30,8 @@ export function useWatchedCards() {
     } catch { return false; }
   };
 
-  const isWatched = (name, game) => watched.some(w => w.name === name && w.game === game);
+  const isWatched = (name, game, pin = null) =>
+    watched.some(w => w.name === name && w.game === game && (w.pin?.id || null) === (pin?.id || null));
 
   return { watched, toggle, isWatched, reload: load };
 }
@@ -67,7 +71,7 @@ export default function WatchedCards({ onSelect }) {
               }}
             >
               <button
-                onClick={() => onSelect(card.name, card.game)}
+                onClick={() => onSelect(card.name, card.game, { pin: card.pin || null })}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',

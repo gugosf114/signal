@@ -381,3 +381,46 @@ export async function suggestCards(query, limit = 8) {
     .sort((a, b) => rank(a) - rank(b))
     .slice(0, limit);
 }
+
+// ─── Camera → exact printing ─────────────────────────────────────────────────
+// The photo scanner already reads the set and collector number off the card,
+// then handed back only the name — so photographing the $1,499 Umbreon ex and
+// the $7 one produced identical scans. This turns what the camera read into a
+// catalogue row, which becomes the pin.
+//
+// Returns null when nothing matches confidently; the caller falls back to a
+// plain name search, which is what it did before.
+export async function resolvePrinting({ name, game, number, set } = {}) {
+  const n = (name || '').trim();
+  if (n.length < 2) return null;
+
+  // "199/198" is printed on the card; catalogues store "199".
+  const num = number ? String(number).split('/')[0].trim().toLowerCase() : null;
+  const setText = (set || '').trim().toLowerCase();
+  if (!num && !setText) return null;
+
+  const games = game ? [game] : ['pokemon', 'mtg', 'yugioh'];
+  const settled = await Promise.allSettled(
+    games.map((g) => searchCardsByName(g, n, null))
+  );
+  const hits = settled.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+  if (!hits.length) return null;
+
+  const exactName = hits.filter((c) => (c.name || '').toLowerCase() === n.toLowerCase());
+  const pool = exactName.length ? exactName : hits;
+
+  // A matching collector number is decisive; a matching set name is a good
+  // second. Anything less is a guess, and a wrong pin is worse than no pin.
+  if (num) {
+    const byNumber = pool.find((c) => String(c.number || '').toLowerCase() === num);
+    if (byNumber) return byNumber;
+  }
+  if (setText) {
+    const bySet = pool.find((c) => {
+      const s = (c.setName || '').toLowerCase();
+      return s && (s === setText || s.includes(setText) || setText.includes(s));
+    });
+    if (bySet) return bySet;
+  }
+  return null;
+}

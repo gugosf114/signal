@@ -56,7 +56,7 @@ export default function RecentScans({ onSelect, loading }) {
           return (
             <button
               key={i}
-              onClick={() => !loading && onSelect(s.name, s.game)}
+              onClick={() => !loading && onSelect(s.name, s.game, { pin: s.pin || null })}
               disabled={loading}
               style={{
                 display: 'inline-flex',

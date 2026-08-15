@@ -5,7 +5,7 @@ import { useWatchedCards } from './WatchedCards';
 import CardImage from './CardImage';
 import CardLightbox from './CardLightbox';
 
-export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, onRetry, signals = [], enPrice, onCardImageLoaded }) {
+export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null }) {
   const { label, color, blurb } = getScoreLabel(score);
   const gameMeta = GAME_LABELS[game];
   const glowColor = gameMeta?.color || '#C44040';
@@ -15,21 +15,21 @@ export default function OverallScore({ score, cardName, game, summary, truncated
   const [cardImageUrl, setCardImageUrl] = useState(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const { toggle: toggleWatch, isWatched } = useWatchedCards();
-  const watched = isWatched(cardName, game);
+  const watched = isWatched(cardName, game, pin);
 
   useEffect(() => {
     if (score === null || score === undefined || !cardName) return;
     try {
       const raw = localStorage.getItem('signal_score_history');
       const history = raw ? JSON.parse(raw) : [];
-      const entry = { score, date: new Date().toISOString(), cardName, game };
+      const entry = { score, date: new Date().toISOString(), cardName, game, pin };
       const deduped = [entry, ...history.filter(h => !(h.cardName === cardName && h.game === game))];
       const trimmed = deduped.slice(0, 100);
       localStorage.setItem('signal_score_history', JSON.stringify(trimmed));
       try {
         const recentRaw = localStorage.getItem('signal_recent_scans');
         const recent = recentRaw ? JSON.parse(recentRaw) : [];
-        const recentEntry = { name: cardName, game, score, scoredAt: entry.date };
+        const recentEntry = { name: cardName, game, score, scoredAt: entry.date, pin };
         const recentNew = [recentEntry, ...recent.filter(r => !(r.name === cardName && r.game === game))].slice(0, 8);
         localStorage.setItem('signal_recent_scans', JSON.stringify(recentNew));
       } catch {}
@@ -40,7 +40,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
         setPercentileInfo({ topPct, total: trimmed.length });
       }
     } catch {}
-  }, [score, cardName, game]);
+  }, [score, cardName, game, pin]);
 
   return (
     <>
@@ -98,6 +98,22 @@ export default function OverallScore({ score, cardName, game, summary, truncated
             }}>
               {cardName}
             </h1>
+            {/* Which printing this is. "Charizard" is hundreds of cards at
+                hundreds of prices; the name alone never said which one the
+                numbers below belong to. */}
+            {printing && (printing.setName || printing.number) && (
+              <div style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                color: '#7A7368',
+                marginBottom: 10,
+                letterSpacing: '0.02em',
+              }}>
+                {printing.setName || 'Unknown set'}
+                {printing.number ? ` · ${printing.number}` : ''}
+                {printing.rarity ? ` · ${printing.rarity}` : ''}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               {gameMeta && (
                 <span style={{
@@ -148,7 +164,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               </span>
               {/* Watch / unwatch button */}
               <button
-                onClick={() => toggleWatch({ name: cardName, game, score, enPrice })}
+                onClick={() => toggleWatch({ name: cardName, game, score, enPrice, pin })}
                 title={watched ? 'Unwatch this card' : 'Watch this card'}
                 style={{
                   background: 'none',

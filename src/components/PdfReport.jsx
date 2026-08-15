@@ -177,6 +177,21 @@ export default function PdfReport({ result, score, cardImageUrl }) {
           }}>
             {result.card_name}
           </div>
+          {/* An exported report that names a card but not its printing is a
+              report about a price nobody can look up. */}
+          {result.printing && (result.printing.setName || result.printing.number) && (
+            <div style={{
+              fontFamily: "'JetBrains Mono', Menlo, monospace",
+              fontSize: 11,
+              color: INK_FAINT,
+              marginTop: -8,
+              marginBottom: 14,
+            }}>
+              {result.printing.setName || 'Unknown set'}
+              {result.printing.number ? ` \u00b7 ${result.printing.number}` : ''}
+              {result.printing.rarity ? ` \u00b7 ${result.printing.rarity}` : ''}
+            </div>
+          )}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
             <span style={{
               fontFamily: "'JetBrains Mono', Menlo, monospace",

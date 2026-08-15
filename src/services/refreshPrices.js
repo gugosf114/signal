@@ -24,9 +24,12 @@ function headlinePrice(priceLines) {
   return null;
 }
 
-export async function refreshPrices(cardName, game) {
+// `pin` is the printing this cached scan is actually about. Without it the
+// top-up looks the name up fresh and can come back with a different printing's
+// price — a $7 card quietly wearing a $1,499 number a day later.
+export async function refreshPrices(cardName, game, pin = null) {
   try {
-    const data = await fetchCardData(cardName, game);
+    const data = await fetchCardData(cardName, game, pin);
     if (!data) return null;
     const en = headlinePrice(data.priceLines);
     if (!en) return null;

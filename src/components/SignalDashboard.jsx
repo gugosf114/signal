@@ -63,7 +63,7 @@ export default function SignalDashboard() {
   // Anthropic call, no loading theater. The result is already on screen; this
   // just swaps the price under it a moment later.
   const topUpPrices = async (name, game, myToken, pin = null) => {
-    const patch = await refreshPrices(name, game);
+    const patch = await refreshPrices(name, game, pin);
     if (!patch) return;
     refreshCachedPrices(name, game, patch, pin);
     // The user may have navigated away while the free API was in flight.
@@ -143,7 +143,8 @@ export default function SignalDashboard() {
     startScanKeepAlive();
 
     try {
-      const data = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal, pin });
+      const raw = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal, pin });
+      const data = pin ? { ...raw, _pin: pin } : raw;
       // If goHome() bumped the nav token while we were scanning, the user has
       // already left the result page — do NOT yank them back by setting result.
       if (myToken !== navTokenRef.current) return;
@@ -544,10 +545,12 @@ export default function SignalDashboard() {
               summary={result.summary}
               truncated={result._truncated}
               signalCount={(result.signals || []).length}
-              onRetry={() => handleSearch(result.card_name, result.game)}
+              onRetry={() => handleSearch(result.card_name, result.game, { pin: result._pin || null })}
               signals={result.signals || []}
               enPrice={result.prices?.en_price}
               onCardImageLoaded={setCardImageUrl}
+              printing={result.printing}
+              pin={result._pin || null}
             />
           )}
 

@@ -261,10 +261,28 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     throw new Error(`No text response from API (stop_reason: ${result.stop_reason || 'unknown'}). Check console for diagnostic.`);
   }
 
+  // The exact printing this scan is about, carried back so the result page can
+  // say which one it read. Without it the answer just says "Umbreon ex", and
+  // the user has no way to tell whether the card they picked is the card that
+  // got scanned.
+  const printingInfo = (pin || cardData)
+    ? {
+        setName: pin?.setName || cardData?.setName || null,
+        setId: pin?.setId || cardData?.setId || null,
+        number: pin?.number || cardData?.number || null,
+        rarity: cardData?.rarity || null,
+        pinned: !!pin,
+      }
+    : null;
+
   // Try each text block from last to first — JSON is almost always in the final one
   for (let i = textBlocks.length - 1; i >= 0; i--) {
     const parsed = tryParseSignalJSON(textBlocks[i]);
-    if (parsed) return filterHallucinatedSources(parsed, realUrls);
+    if (parsed) {
+      const clean = filterHallucinatedSources(parsed, realUrls);
+      if (printingInfo && (printingInfo.setName || printingInfo.number)) clean.printing = printingInfo;
+      return clean;
+    }
   }
 
   // eslint-disable-next-line no-console

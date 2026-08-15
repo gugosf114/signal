@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { scanCardImage } from '../services/scanCardImage';
-import { suggestCards } from '../services/fetchExpansions';
+import { suggestCards, resolvePrinting } from '../services/fetchExpansions';
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
 // Typing "Charizard" and hitting Enter used to scan whatever printing the API
@@ -25,6 +25,7 @@ export default function SearchBar({ onSearch, loading }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const fileInputRef = useRef(null);
+  const formRef = useRef(null);
   // Bumped on every keystroke and every pick, so a slow catalogue reply that
   // lands after the user moved on can't repopulate the list.
   const reqToken = useRef(0);
@@ -60,6 +61,15 @@ export default function SearchBar({ onSearch, loading }) {
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [query, loading, identifying]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocDown = (e) => {
+      if (!formRef.current?.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', onDocDown);
+    return () => document.removeEventListener('pointerdown', onDocDown);
+  }, [open]);
 
   const pick = (card) => {
     reqToken.current += 1;
@@ -113,13 +123,18 @@ export default function SearchBar({ onSearch, loading }) {
     setScanError(null);
     try {
       const card = await scanCardImage(file);
+      // The photo showed one specific printing and the scanner read its set and
+      // number off the card. Turn that into a catalogue row so the scan is
+      // pinned to the card actually photographed — otherwise a picture of the
+      // $1,499 Umbreon ex and a picture of the $7 one produce the same answer.
+      const pin = await resolvePrinting(card).catch(() => null);
       // The camera already identified one specific card; don't turn its name
       // back into a list of alternatives.
       reqToken.current += 1;
       quietFor.current = card.name;
       setQuery(card.name);
       setOpen(false);
-      onSearch(card.name, card.game || null);
+      onSearch(card.name, pin?.game || card.game || null, pin ? { pin } : {});
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('[signal] card image scan failed', err);
@@ -133,7 +148,7 @@ export default function SearchBar({ onSearch, loading }) {
   const busy = loading || identifying;
 
   return (
-    <form onSubmit={handleSubmit} style={{
+    <form ref={formRef} onSubmit={handleSubmit} style={{
       position: 'relative',
       width: '100%',
       maxWidth: 580,
@@ -199,7 +214,7 @@ export default function SearchBar({ onSearch, loading }) {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => { setFocused(true); if (suggestions.length) setOpen(true); }}
-          onBlur={() => { setFocused(false); setOpen(false); }}
+          onBlur={() => setFocused(false)}
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -233,9 +248,7 @@ export default function SearchBar({ onSearch, loading }) {
                 <button
                   type="button"
                   className={`sb-item ${i === active ? 'sb-item--on' : ''}`}
-                  // pointerdown, not click: the input's blur fires first and
-                  // would unmount this row before a click could land on it.
-                  onPointerDown={(e) => { e.preventDefault(); pick(card); }}
+                  onClick={() => pick(card)}
                   onMouseEnter={() => setActive(i)}
                 >
                   {card.imageUrl ? (
