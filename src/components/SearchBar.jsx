@@ -51,9 +51,11 @@ export default function SearchBar({ onSearch, loading }) {
         setActive(-1);
         setOpen(hits.length > 0);
       } catch {
+        // pokemontcg.io 500s in bursts that outlast every retry. Emptying the
+        // list on their bad minute makes the feature look broken; the last good
+        // suggestions are still better than nothing, and the next keystroke
+        // tries again.
         if (myToken !== reqToken.current) return;
-        setSuggestions([]);
-        setOpen(false);
       }
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);

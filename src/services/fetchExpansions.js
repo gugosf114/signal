@@ -15,7 +15,7 @@ const PAGE = 21;
 // and stay empty until you switched games. Scryfall and YGOPRODeck are steadier
 // but get the same treatment for free. Throws after the last attempt so callers
 // can tell "nothing found" from "couldn't reach it".
-async function getJSON(url, tries = 3) {
+async function getJSON(url, tries = 4) {
   let last;
   for (let i = 0; i < tries; i++) {
     try {
@@ -358,6 +358,13 @@ export async function suggestCards(query, limit = 8) {
     if (n.includes(needle)) return 2;        // contains it
     return 3;                                // matched on card text
   };
+
+  // "Nobody answered" is not the same fact as "this card doesn't exist", and
+  // the caller renders them very differently — an empty list versus keeping
+  // what it already had. Only the first is worth showing.
+  if (settled.every((r) => r.status === 'rejected')) {
+    throw settled[0].reason || new Error('all catalogues unreachable');
+  }
 
   // Interleave the three lists so one game with many hits can't crowd out the
   // others — someone typing "dragon" should see all three games represented.
