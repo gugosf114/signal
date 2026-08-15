@@ -14,6 +14,8 @@ import CardBrowser from './CardBrowser';
 import WatchedCards from './WatchedCards';
 import NewsStrip from './NewsStrip';
 import PdfReport from './PdfReport';
+import PageTabs from './PageTabs';
+import Collection from './Collection';
 import { SIGNAL_SECTIONS, calculateOverallScore } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { exportReportToPdf, shareReportAsPdf } from '../services/exportReport';
@@ -24,6 +26,9 @@ import { startScanKeepAlive, stopScanKeepAlive } from '../services/scanKeepAlive
 import { useIsMobile } from '../hooks/useIsMobile';
 
 export default function SignalDashboard() {
+  // Which page is showing. The header and tab strip are shared; everything
+  // below them belongs to one page or the other.
+  const [page, setPage] = useState('signal');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -243,6 +248,12 @@ export default function SignalDashboard() {
         </div>
       </div>
 
+      <PageTabs page={page} onChange={setPage} />
+
+      {page === 'collection' && <Collection />}
+
+      {page === 'signal' && (
+      <>
       {/* Search */}
       <div style={{
         display: 'flex',
@@ -601,6 +612,8 @@ export default function SignalDashboard() {
           <EmptyState />
           <CardBrowser onCardSelect={handleSearch} />
         </>
+      )}
+      </>
       )}
 
       {/* Off-screen premium PDF report — mounted only during Save PDF flow so
