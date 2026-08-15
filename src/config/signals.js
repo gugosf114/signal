@@ -143,6 +143,45 @@ export function getScoreLabel(score) {
 
 // ─── Weighted Score Calculator ───────────────────────────────────────────────
 
+// ─── Direction ───────────────────────────────────────────────────────────────
+// Every cited source carries an `implication` — up, down, or neutral — and the
+// UI has always drawn it as a ▲▼ arrow. The score ignored it completely: a
+// signal contributed on `level` alone, which measures how MUCH is being said,
+// never WHICH WAY.
+//
+// That produced a real miss. Umbreon ex scored 77 (SURGING, "real upward
+// pressure") off huge community volume — volume driven by backlash over
+// scalping. Its own summary read "strong bearish signals"; the price then fell.
+// The score could not tell excitement from a riot.
+//
+// A signal whose sources lean bearish now contributes less. Halved at fully
+// bearish rather than zeroed: the level still says real attention is being paid,
+// and attention on the way down is not worth nothing. Sources with no stated
+// implication, and signals with no surviving sources at all, are left at full
+// contribution — deliberately out of scope for this change so the before/after
+// comparison isolates direction alone.
+const MAX_BEARISH_PENALTY = 0.5;
+
+// −1 (every source bearish) … 0 (balanced / neutral / unsourced) … +1 (all bullish)
+export function sourceDirection(sources) {
+  const list = Array.isArray(sources) ? sources : [];
+  let up = 0, down = 0;
+  for (const s of list) {
+    if (s?.implication === 'up') up++;
+    else if (s?.implication === 'down') down++;
+  }
+  const counted = up + down;
+  return counted === 0 ? 0 : (up - down) / counted;
+}
+
+// Bullish and neutral are unpenalised; only bearish evidence damps the signal.
+export function directionMultiplier(sources) {
+  const net = sourceDirection(sources);
+  return net >= 0 ? 1 : 1 + net * MAX_BEARISH_PENALTY;
+}
+
+// ─── Weighted Score Calculator ───────────────────────────────────────────────
+
 // Only signals actually present in the response contribute, and the divisor is
 // the weight of those signals alone — so a scan missing a signal re-shares its
 // weight across the rest rather than being silently penalised. (This is also
@@ -157,7 +196,8 @@ export function calculateOverallScore(signals, game) {
   for (const [key, weight] of Object.entries(weights)) {
     const signal = signals.find(s => s.key === key);
     if (signal && typeof signal.level === 'number') {
-      weightedSum += (signal.level / 5) * weight;
+      const contribution = (signal.level / 5) * directionMultiplier(signal.sources);
+      weightedSum += contribution * weight;
       totalWeight += weight;
     }
   }

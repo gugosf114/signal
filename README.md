@@ -102,6 +102,41 @@ tournament search and stays on Sonnet. `calculateOverallScore` already
 normalised by the weight of signals actually present, so the remaining eight
 re-share the weight with no re-tuning.
 
+**The score now reads direction, not just volume (2026-08-14).** Every cited
+source carries an `implication` — up, down, or neutral — which the UI has always
+drawn as a ▲▼ arrow and which the score ignored entirely. `calculateOverallScore`
+read `level` alone: how MUCH is being said, never WHICH WAY.
+
+That produced a measurable miss. Umbreon ex scored **77 — SURGING, "real upward
+pressure"** — off enormous community volume. The volume was backlash over
+scalping; the app's own summary read "strong bearish signals" and its trend field
+read "Down -13.8%". The score contradicted its own analysis, and the price then
+fell from $1,564.85 (2026-06-06) to $1,494.97. The score could not tell
+excitement from a riot.
+
+A signal whose sources lean bearish is now damped, halved at fully bearish
+(`MAX_BEARISH_PENALTY`). Halved rather than zeroed: a high level still means real
+attention is being paid, and attention on the way down is not worth nothing.
+Sources with no stated implication and signals with no surviving sources are left
+at full contribution — deliberately out of scope so the before/after comparison
+isolates direction alone. Because the score is computed at render time, cached
+scans re-score themselves on open.
+
+**Backtest harness — `scripts/backtest.py`.** The scorecard had never once been
+checked against what prices actually did. `snapshot` freezes today's US price
+next to each recorded score; `check` re-prices and reports whether the high
+scores outperformed the low ones. Baseline is committed so the comparison
+survives a reinstall. Prices come from the same free US feeds the app uses
+(pokemontcg.io / Scryfall / YGOPRODeck); Cardmarket is deliberately excluded —
+it is European, in euros, and returns nothing at all for the high-value chase
+cards, which are the ones worth testing.
+
+First results, from the manual pass that motivated this: the app called Umbreon
+ex falling and it fell; it scored The Unbeatable Squirrel Girl **36 — DORMANT**
+at $12.93 on 2026-06-25 and the card is now **$1.77**. Both correct. Both were
+bearish calls — no bullish call has ever been verified, which is what the
+harness exists to settle.
+
 **Extracted `citations.js` and `jsonRepair.js`** out of `analyzeCard.js`. Both
 are import-free so they run under `node --test`. `brandIcons.jsx` now re-exports
 `extractYouTubeId` from `citations.js` rather than keeping a second hand-copied

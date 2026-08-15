@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test src/services/citations.test.js src/services/jsonRepair.test.js src/services/fetchCardImage.test.js"
+    "test": "node --test src/services/citations.test.js src/services/jsonRepair.test.js src/services/fetchCardImage.test.js src/config/signals.test.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",

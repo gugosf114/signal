@@ -1,0 +1,146 @@
+{
+  "_readme": "Baseline for scripts/backtest.py. Scores are the pre-direction-fix scores read off the device on 2026-08-14, before calculateOverallScore started weighting source implication. scanned_price is what the app reported at scan time. Run `python3 scripts/backtest.py snapshot` to fill in baseline_price, then `check` in ~30 days.",
+  "_price_matching_caveat": "baseline_price is the HIGHEST market price across all printings of that card name, so it often names a different (pricier) printing than the one the app scanned - Dark Machamp reads $144 here against the app's ~$12 non-holo, and Slowbro $242 against the app's $1-25 range. That is fine for this test: it measures MOVEMENT, and the same query returns the same printing on the next run. Do not read baseline_price as 'what the scanned card is worth'.",
+  "snapshot_date": "2026-08-15",
+  "cards": [
+    {
+      "card": "Umbreon ex",
+      "game": "pokemon",
+      "set_hint": "Prismatic",
+      "score": 77,
+      "scanned": "2026-06-06",
+      "scanned_price": "$1564.85 market",
+      "app_said": "Down -$183 (-13.8%) in last 30 days; strong bearish signals",
+      "new_set": false,
+      "baseline_price": 1494.97,
+      "baseline_source": "Prismatic Evolutions",
+      "baseline_date": "2026-08-15"
+    },
+    {
+      "card": "Mega Feraligatr ex",
+      "game": "pokemon",
+      "set_hint": "Ascended Heroes",
+      "score": 62,
+      "scanned": "2026-06-11",
+      "scanned_price": "not reported",
+      "app_said": "Stable since April 2026 launch",
+      "new_set": true,
+      "baseline_price": null
+    },
+    {
+      "card": "Red-Eyes Black Dragon Exceed",
+      "game": "yugioh",
+      "score": 57,
+      "scanned": "2026-06-07",
+      "scanned_price": "no English release yet",
+      "app_said": "Stable pre-order speculation; high hype vs no market data",
+      "new_set": true,
+      "baseline_price": null
+    },
+    {
+      "card": "Cinccino ex",
+      "game": "pokemon",
+      "set_hint": "Chaos Rising",
+      "score": 48,
+      "scanned": "2026-06-27",
+      "scanned_price": "$82.60",
+      "app_said": "Volatile — freshly released set, post-hype correction risk",
+      "new_set": true,
+      "baseline_price": null
+    },
+    {
+      "card": "Dark Machamp",
+      "game": "pokemon",
+      "set_hint": "Team Rocket",
+      "score": 47,
+      "scanned": "2026-07-01",
+      "scanned_price": "~$12",
+      "app_said": "stable/flat — vintage non-holo rare with low volatility",
+      "new_set": false,
+      "baseline_price": 144.45,
+      "baseline_source": "Team Rocket",
+      "baseline_date": "2026-08-15"
+    },
+    {
+      "card": "Mega Clefable EX",
+      "game": "pokemon",
+      "set_hint": "Mega Moonlit",
+      "score": 43,
+      "scanned": "2026-06-24",
+      "scanned_price": "~$8-14 (tin promo, raw)",
+      "app_said": "stable/slight uptick on tin release hype",
+      "new_set": true,
+      "baseline_price": null
+    },
+    {
+      "card": "The Unbeatable Squirrel Girl",
+      "game": "mtg",
+      "score": 36,
+      "scanned": "2026-06-25",
+      "scanned_price": "$12.93 non-foil",
+      "app_said": "no spike signal detected; low EDHREC adoption",
+      "new_set": true,
+      "baseline_price": 1.77,
+      "baseline_source": "Marvel Super Heroes",
+      "baseline_date": "2026-08-15"
+    },
+    {
+      "card": "Thorin, King of Durin's Folk",
+      "game": "mtg",
+      "score": null,
+      "scanned": "2026-08-14",
+      "scanned_price": "$10.99",
+      "app_said": "fresh Hobbit Eternal rare; strong T1 Commander validation",
+      "new_set": true,
+      "baseline_price": 10.99,
+      "baseline_source": "The Hobbit Eternal",
+      "baseline_date": "2026-08-15"
+    },
+    {
+      "card": "Slowbro",
+      "game": "pokemon",
+      "score": null,
+      "scanned": "2026-08-14",
+      "scanned_price": "$1-$25 (varies widely by print)",
+      "app_said": "US interest rising sharply (28->42); JP flat; EN leading JP",
+      "new_set": false,
+      "baseline_price": 242.09,
+      "baseline_source": "Legendary Collection",
+      "baseline_date": "2026-08-15"
+    },
+    {
+      "card": "Doublade",
+      "game": "pokemon",
+      "score": null,
+      "scanned": "2026-06-07",
+      "scanned_price": "$4.00-$6.00",
+      "app_said": "Stable; signals weak relative to stable price",
+      "new_set": false,
+      "baseline_price": 0.76,
+      "baseline_source": "XY",
+      "baseline_date": "2026-08-15"
+    },
+    {
+      "card": "Night Stretcher",
+      "game": "pokemon",
+      "score": null,
+      "scanned": "2026-06-07",
+      "scanned_price": "Unknown",
+      "app_said": "staple trainer card; stable, neutral",
+      "new_set": false,
+      "baseline_price": 9.56,
+      "baseline_source": "Surging Sparks",
+      "baseline_date": "2026-08-15"
+    },
+    {
+      "card": "Reincarnation of the Unchained",
+      "game": "yugioh",
+      "score": null,
+      "scanned": "2026-06-01",
+      "scanned_price": "no EN price data",
+      "app_said": "Rising due to RV01 release hype; positive momentum",
+      "new_set": true,
+      "baseline_price": null
+    }
+  ]
+}
