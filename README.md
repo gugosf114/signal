@@ -1,13 +1,13 @@
 # 株 Signal
 
-### ⬇ [Download the latest APK — 2.2 (versionCode 13)](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v2.2/signal-2.2.apk)
+### ⬇ [Download the latest APK — 2.3 (versionCode 14)](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v2.3/signal-2.3.apk)
 
 Tap that on the phone, then open the downloaded file to install. It's signed
 with the debug key, the same one every previous sideload used, so it installs
 straight over the existing app as an update and keeps your scan history. To
 start clean instead, uninstall Signal first and then open the file.
 
-Built from `aa20b06`. All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio-assets/releases).
+Built from `b433516`. All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio-assets/releases).
 
 The APK lives on the private `portfolio-assets` repo rather than here, because
 the build compiles `VITE_ANTHROPIC_API_KEY` into the bundle — a public download
