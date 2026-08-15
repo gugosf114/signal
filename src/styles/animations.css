@@ -1127,11 +1127,19 @@
 }
 .cl-hint--on { opacity: 1; }
 
-.cl-reset {
+.cl-actions {
   position: absolute;
-  bottom: 62px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 58px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 20px;
+  flex-wrap: wrap;
+}
+
+.cl-btn {
   padding: 9px 18px;
   min-height: 38px;
   background: transparent;
@@ -1144,11 +1152,21 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
-.cl-reset:hover, .cl-reset:focus-visible {
+.cl-btn:hover, .cl-btn:focus-visible {
   color: #C44040;
   border-color: rgba(196, 64, 64, 0.5);
+}
+.cl-btn--go {
+  color: #C8C4BC;
+  border-color: rgba(196, 64, 64, 0.45);
+  background: rgba(196, 64, 64, 0.07);
+}
+.cl-btn--go:hover, .cl-btn--go:focus-visible {
+  color: #E8E4DC;
+  border-color: #C44040;
+  background: rgba(196, 64, 64, 0.14);
 }
 
 /* ─── Card browser search ───────────────────────────────────────────────── */

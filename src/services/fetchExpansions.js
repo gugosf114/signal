@@ -128,6 +128,13 @@ function mtgOrder(priceSort) {
   if (priceSort) return `order=usd&dir=${priceSort === 'asc' ? 'asc' : 'desc'}`;
   return 'order=released&dir=desc';
 }
+// Scryfall's best available still: png is the sharpest, then large. Falls back
+// through the faces array for double-sided cards.
+function mtgLargeArt(c) {
+  const u = c.image_uris || c.card_faces?.[0]?.image_uris || {};
+  return u.png || u.large || u.normal || u.small || null;
+}
+
 function sortYugiohByPrice(cards, priceSort) {
   if (!priceSort) return cards;
   const priceOf = (c) => {
@@ -149,6 +156,7 @@ export async function fetchLatestCardsForGame(game, priceSort = null) {
       return (data.data || []).map((c) => ({
         id: c.id, name: c.name, game: 'pokemon',
         setName: c.set?.name || '', imageUrl: c.images?.small || null,
+        imageLarge: c.images?.large || c.images?.small || null,
       }));
     }
     if (game === 'mtg') {
@@ -161,6 +169,7 @@ export async function fetchLatestCardsForGame(game, priceSort = null) {
         id: c.id, name: c.name, game: 'mtg',
         setName: c.set_name || '',
         imageUrl: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || null,
+        imageLarge: mtgLargeArt(c),
       }));
     }
     if (game === 'yugioh') {
@@ -176,6 +185,7 @@ export async function fetchLatestCardsForGame(game, priceSort = null) {
         id: String(c.id), name: c.name, game: 'yugioh',
         setName: c.type || '',
         imageUrl: c.card_images?.[0]?.image_url_small || null,
+        imageLarge: c.card_images?.[0]?.image_url || c.card_images?.[0]?.image_url_small || null,
       }));
     }
   } catch (err) {
@@ -203,6 +213,7 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
       return (data.data || []).map((c) => ({
         id: c.id, name: c.name, game: 'pokemon',
         setName: c.set?.name || set.name, imageUrl: c.images?.small || null,
+        imageLarge: c.images?.large || c.images?.small || null,
       }));
     }
     if (game === 'mtg') {
@@ -217,6 +228,7 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
         id: c.id, name: c.name, game: 'mtg',
         setName: c.set_name || set.name,
         imageUrl: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || null,
+        imageLarge: mtgLargeArt(c),
       }));
     }
     if (game === 'yugioh') {
@@ -230,6 +242,7 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
         id: String(c.id), name: c.name, game: 'yugioh',
         setName: set.name,
         imageUrl: c.card_images?.[0]?.image_url_small || null,
+        imageLarge: c.card_images?.[0]?.image_url || c.card_images?.[0]?.image_url_small || null,
       }));
     }
   } catch (err) {
@@ -256,6 +269,7 @@ export async function searchCardsByName(game, query, priceSort = null) {
     return (data.data || []).map((c) => ({
       id: c.id, name: c.name, game: 'pokemon',
       setName: c.set?.name || '', imageUrl: c.images?.small || null,
+      imageLarge: c.images?.large || c.images?.small || null,
     }));
   }
 
@@ -270,6 +284,7 @@ export async function searchCardsByName(game, query, priceSort = null) {
       id: c.id, name: c.name, game: 'mtg',
       setName: c.set_name || '',
       imageUrl: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || null,
+      imageLarge: mtgLargeArt(c),
     }));
   }
 
@@ -294,6 +309,7 @@ export async function searchCardsByName(game, query, priceSort = null) {
     return cards.slice(0, PAGE).map((c) => ({
       id: String(c.id), name: c.name, game: 'yugioh',
       setName: c.type || '', imageUrl: c.card_images?.[0]?.image_url_small || null,
+      imageLarge: c.card_images?.[0]?.image_url || c.card_images?.[0]?.image_url_small || null,
     }));
   }
 

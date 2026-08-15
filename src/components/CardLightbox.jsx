@@ -26,7 +26,7 @@ const TAP_SLOP = 8;             // px of travel still counted as a tap, not a dr
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-export default function CardLightbox({ isOpen, onClose, imageUrl, cardName }) {
+export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, onScan }) {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [settling, setSettling] = useState(false);
@@ -214,15 +214,28 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName }) {
         Drag to turn · Pinch to zoom · Double-tap to zoom
       </div>
 
-      {moved && (
-        <button
-          type="button"
-          className="cl-reset"
-          onClick={(e) => { e.stopPropagation(); reset(); }}
-        >
-          Straighten
-        </button>
-      )}
+      <div className="cl-actions">
+        {moved && (
+          <button
+            type="button"
+            className="cl-btn"
+            onClick={(e) => { e.stopPropagation(); reset(); }}
+          >
+            Straighten
+          </button>
+        )}
+        {/* Opening a card from the browser is free; scanning it costs money and
+            a minute, so it stays a separate, deliberate tap. */}
+        {onScan && (
+          <button
+            type="button"
+            className="cl-btn cl-btn--go"
+            onClick={(e) => { e.stopPropagation(); onScan(); }}
+          >
+            Scan this card
+          </button>
+        )}
+      </div>
     </div>
   );
 }

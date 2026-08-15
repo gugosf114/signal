@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { GAME_LABELS } from '../config/signals';
 import { BrandIcon } from '../config/brandIcons';
 import { getExpansions, fetchCardsBySet, fetchLatestCardsForGame, searchCardsByName } from '../services/fetchExpansions';
+import CardLightbox from './CardLightbox';
 
 const GAME_BRAND = { pokemon: 'pokemon', mtg: 'mtg', yugioh: 'yugioh' };
 
@@ -22,6 +23,9 @@ export default function CardBrowser({ onCardSelect }) {
   const [debounced, setDebounced] = useState('');
   const [failed, setFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // Tapping a browsed card opens it in the viewer rather than spending a scan.
+  // Scanning is a deliberate second step, from inside the viewer.
+  const [viewing, setViewing] = useState(null);
 
   // Typing shouldn't fire a request per keystroke.
   useEffect(() => {
@@ -313,7 +317,7 @@ export default function CardBrowser({ onCardSelect }) {
           {cards.slice(0, Math.max(3, Math.floor(cards.length / 3) * 3)).map(card => (
             <button
               key={card.id}
-              onClick={() => onCardSelect(card.name, card.game)}
+              onClick={() => setViewing(card)}
               title={`${card.name}${card.setName ? ' · ' + card.setName : ''}`}
               style={{
                 display: 'flex',
@@ -393,6 +397,18 @@ export default function CardBrowser({ onCardSelect }) {
           {debounced ? `No ${activeTab.label} card matches "${debounced}"` : 'No cards found'}
         </div>
       )}
+
+      <CardLightbox
+        isOpen={!!viewing}
+        onClose={() => setViewing(null)}
+        imageUrl={viewing?.imageLarge || viewing?.imageUrl}
+        cardName={viewing?.name}
+        onScan={() => {
+          const c = viewing;
+          setViewing(null);
+          onCardSelect(c.name, c.game);
+        }}
+      />
     </div>
   );
 }
