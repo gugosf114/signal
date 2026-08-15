@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GAME_LABELS } from '../config/signals';
 import { BrandIcon } from '../config/brandIcons';
-import { getExpansions, fetchCardsBySet, fetchLatestCardsForGame } from '../services/fetchExpansions';
+import { getExpansions, fetchCardsBySet, fetchLatestCardsForGame, searchCardsByName } from '../services/fetchExpansions';
 
 const GAME_BRAND = { pokemon: 'pokemon', mtg: 'mtg', yugioh: 'yugioh' };
 
@@ -18,6 +18,16 @@ export default function CardBrowser({ onCardSelect }) {
   const [priceSort, setPriceSort] = useState(null); // null | 'asc' | 'desc'
   const [cards, setCards] = useState([]);
   const [browsing, setBrowsing] = useState(false);
+  const [query, setQuery] = useState('');
+  const [debounced, setDebounced] = useState('');
+  const [failed, setFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Typing shouldn't fire a request per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query.trim()), 350);
+    return () => clearTimeout(t);
+  }, [query]);
 
   // One-shot expansion fetch on mount; cached 7d.
   useEffect(() => {
@@ -50,22 +60,33 @@ export default function CardBrowser({ onCardSelect }) {
   // "latest cards" fetch for the active game if the expansion list hasn't
   // returned yet (or returned empty). Guarantees the grid never sits empty
   // while the user waits on a slow set-list lookup.
+  // A name search replaces the expansion browse while there's a query; clearing
+  // the box drops straight back to whichever set was selected.
   useEffect(() => {
     let cancelled = false;
     setBrowsing(true);
-    const fetcher = activeSet
-      ? fetchCardsBySet(activeSet.game, activeSet, priceSort)
-      : fetchLatestCardsForGame(activeGame, priceSort);
+    setFailed(false);
+    const searching = debounced.length >= 2;
+    const fetcher = searching
+      ? searchCardsByName(activeGame, debounced, priceSort)
+      : activeSet
+        ? fetchCardsBySet(activeSet.game, activeSet, priceSort)
+        : fetchLatestCardsForGame(activeGame, priceSort);
     fetcher.then((results) => {
       if (cancelled) return;
       setCards(results);
       setBrowsing(false);
     }).catch(() => {
       if (cancelled) return;
+      // The catalogue APIs — pokemontcg.io especially — fail intermittently.
+      // Say so and offer a retry rather than showing an empty shelf, which
+      // reads as "this game has no cards".
+      setCards([]);
+      setFailed(true);
       setBrowsing(false);
     });
     return () => { cancelled = true; };
-  }, [activeSet, activeGame, priceSort]);
+  }, [activeSet, activeGame, priceSort, debounced, reloadKey]);
 
   const activeTab = TABS.find(t => t.id === activeGame);
   const activeExpansions = expansions[activeGame] || [];
@@ -122,6 +143,36 @@ export default function CardBrowser({ onCardSelect }) {
         </div>
       </div>
 
+      {/* Name search — looks the card up in the same catalogue the grid browses.
+          This does NOT run a scan; tapping a result does, same as tapping any
+          browsed card. */}
+      <div className="cb-search">
+        <svg className="cb-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+          <circle cx="11" cy="11" r="7" />
+          <line x1="20" y1="20" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          type="text"
+          className="cb-search-input"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={`Find a ${activeTab.label} card by name`}
+          enterKeyHint="search"
+          autoComplete="off"
+          spellCheck="false"
+        />
+        {query && (
+          <button type="button" className="cb-search-clear" onClick={() => setQuery('')} aria-label="Clear search">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
+      </div>
+
       {/* Price-sort toggles — none / low→high / high→low */}
       <div style={{
         display: 'flex',
@@ -173,7 +224,7 @@ export default function CardBrowser({ onCardSelect }) {
       </div>
 
       {/* Expansion picker — last 6 expansions per game, horizontal scroll */}
-      {activeExpansions.length > 0 && (
+      {activeExpansions.length > 0 && !debounced && (
         <div style={{
           display: 'flex',
           gap: 6,
@@ -330,16 +381,16 @@ export default function CardBrowser({ onCardSelect }) {
             </button>
           ))}
         </div>
+      ) : failed ? (
+        <div className="cb-empty">
+          <div>Couldn't reach the card catalogue.</div>
+          <button type="button" className="cb-retry" onClick={() => setReloadKey((k) => k + 1)}>
+            Try again
+          </button>
+        </div>
       ) : (
-        <div style={{
-          textAlign: 'center',
-          padding: '32px 0',
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 11,
-          color: '#494640',
-          letterSpacing: '0.06em',
-        }}>
-          No cards found
+        <div className="cb-empty">
+          {debounced ? `No ${activeTab.label} card matches "${debounced}"` : 'No cards found'}
         </div>
       )}
     </div>

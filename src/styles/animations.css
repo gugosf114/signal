@@ -1150,3 +1150,85 @@
   color: #C44040;
   border-color: rgba(196, 64, 64, 0.5);
 }
+
+/* ─── Card browser search ───────────────────────────────────────────────── */
+
+.cb-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  background: #0E1014;
+  border: 1px solid #1A1D24;
+  border-radius: 3px;
+  transition: border-color 0.2s;
+}
+.cb-search:focus-within { border-color: #2A2D34; }
+
+.cb-search-icon {
+  position: absolute;
+  left: 12px;
+  color: #494640;
+  pointer-events: none;
+}
+
+.cb-search-input {
+  width: 100%;
+  padding: 11px 38px 11px 34px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #E8E4DC;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+.cb-search-input::placeholder { color: #494640; }
+
+.cb-search-clear {
+  position: absolute;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #605C54;
+  cursor: pointer;
+}
+.cb-search-clear:hover { color: #C44040; }
+
+.cb-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 32px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #494640;
+  letter-spacing: 0.06em;
+}
+
+.cb-retry {
+  padding: 7px 16px;
+  min-height: 34px;
+  background: transparent;
+  border: 1px solid #2A2D34;
+  border-radius: 3px;
+  color: #7A7368;
+  font-family: 'Syne', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.cb-retry:hover, .cb-retry:focus-visible {
+  color: #C44040;
+  border-color: rgba(196, 64, 64, 0.5);
+}

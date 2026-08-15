@@ -8,12 +8,33 @@
 const CACHE_KEY = 'signal_expansions_v1';
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const COUNT = 6;
+const PAGE = 21;
+
+// pokemontcg.io returns 500/502 intermittently — often enough that a single
+// unretried failure was the reason the Pokémon browse grid would come up empty
+// and stay empty until you switched games. Scryfall and YGOPRODeck are steadier
+// but get the same treatment for free. Throws after the last attempt so callers
+// can tell "nothing found" from "couldn't reach it".
+async function getJSON(url, tries = 3) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (res.status === 404 || res.status === 400) return null;   // genuine no-match
+      if (!res.ok) throw new Error(`${res.status}`);
+      return await res.json();
+    } catch (e) {
+      last = e;
+      if (i < tries - 1) await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+    }
+  }
+  throw last;
+}
 
 async function fetchPokemonSets() {
   try {
-    const r = await fetch('https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate&pageSize=12');
-    if (!r.ok) return [];
-    const data = await r.json();
+    const data = await getJSON('https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate&pageSize=12');
+    if (!data) return [];
     return (data.data || [])
       .slice(0, COUNT)
       .map((s) => ({
@@ -28,9 +49,8 @@ async function fetchPokemonSets() {
 
 async function fetchMtgSets() {
   try {
-    const r = await fetch('https://api.scryfall.com/sets');
-    if (!r.ok) return [];
-    const data = await r.json();
+    const data = await getJSON('https://api.scryfall.com/sets');
+    if (!data) return [];
     const sets = (data.data || [])
       .filter((s) => s.set_type === 'expansion' && s.released_at)
       .sort((a, b) => b.released_at.localeCompare(a.released_at));
@@ -46,9 +66,8 @@ async function fetchMtgSets() {
 
 async function fetchYugiohSets() {
   try {
-    const r = await fetch('https://db.ygoprodeck.com/api/v7/cardsets.php');
-    if (!r.ok) return [];
-    const data = await r.json();
+    const data = await getJSON('https://db.ygoprodeck.com/api/v7/cardsets.php');
+    if (!data) return [];
     // The API returns an array of {set_name, set_code, num_of_cards, tcg_date}.
     // Filter to entries with a real TCG release date and sort desc.
     const sets = (Array.isArray(data) ? data : [])
@@ -122,25 +141,23 @@ function sortYugiohByPrice(cards, priceSort) {
 export async function fetchLatestCardsForGame(game, priceSort = null) {
   try {
     if (game === 'pokemon') {
-      const r = await fetch(
+      const data = await getJSON(
         'https://api.pokemontcg.io/v2/cards?q=' + encodeURIComponent('-set.releaseDate:[* TO 2010-01-01]') +
-        `&pageSize=21&orderBy=${encodeURIComponent(pokemonOrderBy(priceSort))}`
+        `&pageSize=${PAGE}&orderBy=${encodeURIComponent(pokemonOrderBy(priceSort))}`
       );
-      if (!r.ok) return [];
-      const data = await r.json();
+      if (!data) return [];
       return (data.data || []).map((c) => ({
         id: c.id, name: c.name, game: 'pokemon',
         setName: c.set?.name || '', imageUrl: c.images?.small || null,
       }));
     }
     if (game === 'mtg') {
-      const r = await fetch(
+      const data = await getJSON(
         'https://api.scryfall.com/cards/search?q=' + encodeURIComponent('game:paper r:mythic') +
         `&${mtgOrder(priceSort)}&unique=cards`
       );
-      if (!r.ok) return [];
-      const data = await r.json();
-      return (data.data || []).slice(0, 21).map((c) => ({
+      if (!data) return [];
+      return (data.data || []).slice(0, PAGE).map((c) => ({
         id: c.id, name: c.name, game: 'mtg',
         setName: c.set_name || '',
         imageUrl: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || null,
@@ -150,19 +167,22 @@ export async function fetchLatestCardsForGame(game, priceSort = null) {
       // YGOPRODeck has no native price sort; pull a wider sample + sort
       // client-side by tcgplayer_price.
       const fetchSize = priceSort ? 60 : 21;
-      const r = await fetch(
+      const data = await getJSON(
         `https://db.ygoprodeck.com/api/v7/cardinfo.php?sort=new&num=${fetchSize}&offset=0`
       );
-      if (!r.ok) return [];
-      const data = await r.json();
+      if (!data) return [];
       const cards = data.data || [];
-      return sortYugiohByPrice(cards, priceSort).slice(0, 21).map((c) => ({
+      return sortYugiohByPrice(cards, priceSort).slice(0, PAGE).map((c) => ({
         id: String(c.id), name: c.name, game: 'yugioh',
         setName: c.type || '',
         imageUrl: c.card_images?.[0]?.image_url_small || null,
       }));
     }
-  } catch {}
+  } catch (err) {
+    // Surfaced so the grid can say "couldn't load" with a retry, instead of
+    // rendering an empty shelf that looks like the game simply has no cards.
+    throw err;
+  }
   return [];
 }
 
@@ -176,11 +196,10 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
       const orderBy = priceSort
         ? (priceSort === 'asc' ? 'cardmarket.prices.averageSellPrice' : '-cardmarket.prices.averageSellPrice')
         : '-number';
-      const r = await fetch(
-        `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent('set.id:' + set.id)}&pageSize=21&orderBy=${encodeURIComponent(orderBy)}`
+      const data = await getJSON(
+        `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent('set.id:' + set.id)}&pageSize=${PAGE}&orderBy=${encodeURIComponent(orderBy)}`
       );
-      if (!r.ok) return [];
-      const data = await r.json();
+      if (!data) return [];
       return (data.data || []).map((c) => ({
         id: c.id, name: c.name, game: 'pokemon',
         setName: c.set?.name || set.name, imageUrl: c.images?.small || null,
@@ -190,12 +209,11 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
       const orderStr = priceSort
         ? `order=usd&dir=${priceSort === 'asc' ? 'asc' : 'desc'}`
         : 'order=released&dir=desc';
-      const r = await fetch(
+      const data = await getJSON(
         `https://api.scryfall.com/cards/search?q=${encodeURIComponent('s:' + set.code + ' game:paper')}&${orderStr}&unique=cards`
       );
-      if (!r.ok) return [];
-      const data = await r.json();
-      return (data.data || []).slice(0, 21).map((c) => ({
+      if (!data) return [];
+      return (data.data || []).slice(0, PAGE).map((c) => ({
         id: c.id, name: c.name, game: 'mtg',
         setName: c.set_name || set.name,
         imageUrl: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || null,
@@ -203,18 +221,81 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
     }
     if (game === 'yugioh') {
       const fetchSize = priceSort ? 60 : 21;
-      const r = await fetch(
+      const data = await getJSON(
         `https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(set.name)}&num=${fetchSize}&offset=0`
       );
-      if (!r.ok) return [];
-      const data = await r.json();
+      if (!data) return [];
       const cards = data.data || [];
-      return sortYugiohByPrice(cards, priceSort).slice(0, 21).map((c) => ({
+      return sortYugiohByPrice(cards, priceSort).slice(0, PAGE).map((c) => ({
         id: String(c.id), name: c.name, game: 'yugioh',
         setName: set.name,
         imageUrl: c.card_images?.[0]?.image_url_small || null,
       }));
     }
-  } catch {}
+  } catch (err) {
+    throw err;
+  }
+  return [];
+}
+
+// ─── Name search ─────────────────────────────────────────────────────────────
+// Searches the same free catalogues the browse grid already reads — this looks
+// a card up in the library, it does NOT run a scan. Tapping a result is what
+// starts a scan, exactly as tapping a browsed card does.
+export async function searchCardsByName(game, query, priceSort = null) {
+  const q = (query || '').trim();
+  if (q.length < 2) return [];
+
+  if (game === 'pokemon') {
+    // pokemontcg.io wants wildcards spelled out; quote it so multi-word names work.
+    const data = await getJSON(
+      `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(`name:"*${q}*"`)}` +
+      `&pageSize=${PAGE}&orderBy=${encodeURIComponent(pokemonOrderBy(priceSort))}`
+    );
+    if (!data) return [];
+    return (data.data || []).map((c) => ({
+      id: c.id, name: c.name, game: 'pokemon',
+      setName: c.set?.name || '', imageUrl: c.images?.small || null,
+    }));
+  }
+
+  if (game === 'mtg') {
+    // Scryfall answers a no-match with 404, which getJSON maps to null.
+    const data = await getJSON(
+      `https://api.scryfall.com/cards/search?q=${encodeURIComponent(q + ' game:paper')}` +
+      `&${mtgOrder(priceSort)}&unique=cards`
+    );
+    if (!data) return [];
+    return (data.data || []).slice(0, PAGE).map((c) => ({
+      id: c.id, name: c.name, game: 'mtg',
+      setName: c.set_name || '',
+      imageUrl: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || null,
+    }));
+  }
+
+  if (game === 'yugioh') {
+    // fname is YGOPRODeck's fuzzy match; it 400s on no-match. It also matches
+    // card TEXT, so searching "reinforcement" returns Charge Into a Dark World
+    // ahead of Reinforcement of the Army in the API's alphabetical order. Pull
+    // name matches to the front, earliest position first, before any price sort.
+    const fetchSize = priceSort ? 60 : PAGE * 3;
+    const data = await getJSON(
+      `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(q)}&num=${fetchSize}&offset=0`
+    );
+    if (!data || data.error) return [];
+    const needle = q.toLowerCase();
+    const rank = (c) => {
+      const i = (c.name || '').toLowerCase().indexOf(needle);
+      return i < 0 ? Number.MAX_SAFE_INTEGER : i;
+    };
+    const cards = priceSort
+      ? sortYugiohByPrice(data.data || [], priceSort)
+      : [...(data.data || [])].sort((a, b) => rank(a) - rank(b));
+    return cards.slice(0, PAGE).map((c) => ({
+      id: String(c.id), name: c.name, game: 'yugioh',
+      setName: c.type || '', imageUrl: c.card_images?.[0]?.image_url_small || null,
+    }));
+  }
+
   return [];
 }
