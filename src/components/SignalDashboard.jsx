@@ -330,6 +330,7 @@ export default function SignalDashboard() {
           <LoadingTheater
             cardName={pendingCard?.name}
             game={pendingCard?.game}
+            onCancel={goHome}
           />
         </div>
       )}

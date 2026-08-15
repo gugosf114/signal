@@ -692,6 +692,50 @@
   letter-spacing: 0.18em;
 }
 
+/* ─── Stop button ───────────────────────────────────────────────────── */
+/* Deliberately quiet: it should be findable the moment you want out, and
+   invisible the rest of the time. Full-width tap target on a phone. */
+
+.lt-cancel-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+.lt-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 20px;
+  min-height: 38px;
+  background: transparent;
+  border: 1px solid #2A2D34;
+  border-radius: 3px;
+  color: #7A7368;
+  font-family: 'Syne', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.lt-cancel:hover,
+.lt-cancel:focus-visible {
+  color: #C44040;
+  border-color: rgba(196, 64, 64, 0.5);
+  background: rgba(196, 64, 64, 0.05);
+}
+.lt-cancel:active {
+  background: rgba(196, 64, 64, 0.1);
+}
+
+@media (max-width: 639px) {
+  .lt-cancel { width: 100%; }
+}
+
 /* ─── Brand logo strip ──────────────────────────────────────────────── */
 
 @keyframes ltBrandIn {
