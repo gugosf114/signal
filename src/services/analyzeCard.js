@@ -93,6 +93,7 @@ GRADING ROI:
 }
 
 export async function analyzeCard(cardName, game = null, opts = {}) {
+  const pin = opts.pin || null;
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -106,7 +107,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   // YouTube Data. Each parallel call that succeeds removes one ~5-15s
   // sequential web_search downstream.
   const [cardData, community, creators, ebay, jp, catalysts] = await Promise.all([
-    fetchCardData(cardName, game).catch(() => null),
+    fetchCardData(cardName, game, pin).catch(() => null),
     fetchCommunity(cardName, game).catch(() => null),
     fetchCreators(cardName, game).catch(() => null),
     fetchEbayListings(cardName, game).catch(() => null),
@@ -117,9 +118,19 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   const extraBlocks = [communityBlock(community), creatorsBlock(creators), ebayBlock(ebay), jpBlock(jp), catalystBlock(catalysts)].filter(Boolean);
   const hasPreFetch = !!dataBlock || extraBlocks.length > 0;
 
+  // A pinned printing must be named in the prompt, or the model's own searches
+  // drift back to the most famous version of the card — which is exactly the
+  // ambiguity the suggestion dropdown exists to remove.
+  const printing = pin
+    ? [pin.setName, pin.number ? `#${pin.number}` : null].filter(Boolean).join(' ')
+    : (cardData && cardData.setName
+        ? [cardData.setName, cardData.number ? `#${cardData.number}` : null].filter(Boolean).join(' ')
+        : '');
+  const exact = printing ? ` — the ${printing} printing specifically` : '';
+
   const baseMessage = game
-    ? `Analyze the ${game} card: "${cardName}". Search both English and Japanese markets.`
-    : `Analyze the trading card: "${cardName}". Determine which game it's from (Pokemon, Yu-Gi-Oh, or MTG), then search both English and Japanese markets.`;
+    ? `Analyze the ${game} card: "${cardName}"${exact}. Search both English and Japanese markets.`
+    : `Analyze the trading card: "${cardName}"${exact}. Determine which game it's from (Pokemon, Yu-Gi-Oh, or MTG), then search both English and Japanese markets.`;
 
   // Each web_search is 5-15s of SEQUENTIAL wall clock — the dominant cost. Only
   // search for what the parallel pre-fetch can't cover, and gate by game so we

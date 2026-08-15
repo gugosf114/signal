@@ -406,7 +406,9 @@ export default function CardBrowser({ onCardSelect }) {
         onScan={() => {
           const c = viewing;
           setViewing(null);
-          onCardSelect(c.name, c.game);
+          // The browser already knows exactly which printing is on screen, so
+          // pin it — same as picking a row in the search suggestions.
+          onCardSelect(c.name, c.game, { pin: c });
         }}
       />
     </div>

@@ -12,8 +12,13 @@ const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;       // whole scan — 7 days
 const PRICE_TTL_MS = 24 * 60 * 60 * 1000;           // price block — 1 day
 const MAX_ENTRIES = 200;
 
-function keyFor(name, game) {
-  return `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}`;
+// `pin` is a specific printing chosen from the search suggestions. Two
+// printings of the same card share a name but not a price, so they must not
+// share a cache entry — scanning the $1,495 Prismatic Umbreon must not serve
+// the $35 Obsidian Flames one from cache.
+function keyFor(name, game, pin) {
+  const base = `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}`;
+  return pin?.id ? `${base}::${String(pin.id).toLowerCase()}` : base;
 }
 
 function loadCache() {
@@ -43,10 +48,10 @@ function saveCache(cache) {
   }
 }
 
-export function getCachedScan(name, game) {
+export function getCachedScan(name, game, pin) {
   if (!name) return null;
   const cache = loadCache();
-  const entry = cache[keyFor(name, game)];
+  const entry = cache[keyFor(name, game, pin)];
   if (!entry || !entry.data) return null;
   if (Date.now() - (entry.ts || 0) > CACHE_TTL_MS) return null;
   return entry.data;
@@ -55,10 +60,10 @@ export function getCachedScan(name, game) {
 // Same lookup, but also reports whether the PRICE half has aged out. The caller
 // renders the cached scan instantly (no loading theater, no Anthropic call) and
 // then tops up just the prices from the free TCG APIs when this is true.
-export function getCachedScanEntry(name, game) {
+export function getCachedScanEntry(name, game, pin) {
   if (!name) return null;
   const cache = loadCache();
-  const entry = cache[keyFor(name, game)];
+  const entry = cache[keyFor(name, game, pin)];
   if (!entry || !entry.data) return null;
   const age = Date.now() - (entry.ts || 0);
   if (age > CACHE_TTL_MS) return null;
@@ -67,20 +72,20 @@ export function getCachedScanEntry(name, game) {
   return { data: entry.data, pricesStale: priceAge > PRICE_TTL_MS };
 }
 
-export function setCachedScan(name, game, data) {
+export function setCachedScan(name, game, data, pin) {
   if (!name || !data) return;
   const cache = loadCache();
   const now = Date.now();
-  cache[keyFor(name, game)] = { ts: now, priceTs: now, data };
+  cache[keyFor(name, game, pin)] = { ts: now, priceTs: now, data };
   saveCache(cache);
 }
 
 // Overwrite only the price block on an existing entry and restart the price
 // clock. Leaves the scan's own 7-day clock alone — the signals are unchanged.
-export function refreshCachedPrices(name, game, prices) {
+export function refreshCachedPrices(name, game, prices, pin) {
   if (!name || !prices) return;
   const cache = loadCache();
-  const k = keyFor(name, game);
+  const k = keyFor(name, game, pin);
   const entry = cache[k];
   if (!entry || !entry.data) return;
   entry.data = { ...entry.data, prices: { ...entry.data.prices, ...prices } };
@@ -89,9 +94,9 @@ export function refreshCachedPrices(name, game, prices) {
   saveCache(cache);
 }
 
-export function clearCachedScan(name, game) {
+export function clearCachedScan(name, game, pin) {
   if (!name) return;
   const cache = loadCache();
-  delete cache[keyFor(name, game)];
+  delete cache[keyFor(name, game, pin)];
   saveCache(cache);
 }

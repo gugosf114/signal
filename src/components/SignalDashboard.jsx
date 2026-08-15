@@ -62,10 +62,10 @@ export default function SignalDashboard() {
   // money number has aged. Refresh it straight from the free TCG APIs — no
   // Anthropic call, no loading theater. The result is already on screen; this
   // just swaps the price under it a moment later.
-  const topUpPrices = async (name, game, myToken) => {
+  const topUpPrices = async (name, game, myToken, pin = null) => {
     const patch = await refreshPrices(name, game);
     if (!patch) return;
-    refreshCachedPrices(name, game, patch);
+    refreshCachedPrices(name, game, patch, pin);
     // The user may have navigated away while the free API was in flight.
     if (myToken !== navTokenRef.current) return;
     setResult((prev) =>
@@ -74,13 +74,15 @@ export default function SignalDashboard() {
   };
 
   const handleSearch = async (query, game = null, opts = {}) => {
-    const { force = false } = opts;
+    // `pin` is a printing chosen from the search suggestions. It keys the cache
+    // and pins the pre-fetch, so two printings of one name stay separate scans.
+    const { force = false, pin = null } = opts;
     setError(null);
 
     // Fast-path cache check BEFORE flipping loading state — already-scanned
     // cards must return instantly with zero loading-theater flash.
     if (!force && game) {
-      const fastEntry = getCachedScanEntry(query, game);
+      const fastEntry = getCachedScanEntry(query, game, pin);
       if (fastEntry) {
         // Invalidate any in-flight scan so it can't overwrite this result
         // when it lands later.
@@ -91,7 +93,7 @@ export default function SignalDashboard() {
         }
         setResult(fastEntry.data);
         setLastSearched({ name: query, game });
-        if (fastEntry.pricesStale) topUpPrices(query, game, ++navTokenRef.current);
+        if (fastEntry.pricesStale) topUpPrices(query, game, ++navTokenRef.current, pin);
         return;
       }
     }
@@ -115,10 +117,10 @@ export default function SignalDashboard() {
 
     // Second cache check now that the set-code resolved (if it did).
     if (!force) {
-      const entry = getCachedScanEntry(resolvedName, resolvedGame);
+      const entry = getCachedScanEntry(resolvedName, resolvedGame, pin);
       if (entry) {
         setResult(entry.data);
-        if (entry.pricesStale) topUpPrices(resolvedName, resolvedGame, ++navTokenRef.current);
+        if (entry.pricesStale) topUpPrices(resolvedName, resolvedGame, ++navTokenRef.current, pin);
         return;
       }
     }
@@ -141,16 +143,16 @@ export default function SignalDashboard() {
     startScanKeepAlive();
 
     try {
-      const data = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal });
+      const data = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal, pin });
       // If goHome() bumped the nav token while we were scanning, the user has
       // already left the result page — do NOT yank them back by setting result.
       if (myToken !== navTokenRef.current) return;
       setResult(data);
       // Cache under BOTH the input game and the LLM-detected game so future
       // clicks from any surface hit the cache.
-      setCachedScan(resolvedName, resolvedGame, data);
+      setCachedScan(resolvedName, resolvedGame, data, pin);
       if (data?.game && data.game !== resolvedGame) {
-        setCachedScan(resolvedName, data.game, data);
+        setCachedScan(resolvedName, data.game, data, pin);
       }
     } catch (err) {
       if (myToken !== navTokenRef.current) return;

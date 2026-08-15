@@ -1,16 +1,102 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { scanCardImage } from '../services/scanCardImage';
+import { suggestCards } from '../services/fetchExpansions';
+
+// ─── Suggestions ─────────────────────────────────────────────────────────────
+// Typing "Charizard" and hitting Enter used to scan whatever printing the API
+// happened to hand back first — out of hundreds. The dropdown makes the
+// printing an explicit choice: pick a row and the scan is pinned to that exact
+// card (set + number), not to the name.
+//
+// Sources are the three free catalogues already powering the browse grid
+// (pokemontcg.io / Scryfall / YGOPRODeck). No key, no cost, no Anthropic call.
+
+const DEBOUNCE_MS = 250;
+const MIN_CHARS = 2;
+
+const GAME_LABEL = { pokemon: 'PKM', mtg: 'MTG', yugioh: 'YGO' };
 
 export default function SearchBar({ onSearch, loading }) {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [identifying, setIdentifying] = useState(false);
   const [scanError, setScanError] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
   const fileInputRef = useRef(null);
+  // Bumped on every keystroke and every pick, so a slow catalogue reply that
+  // lands after the user moved on can't repopulate the list.
+  const reqToken = useRef(0);
+  // The exact text we already acted on. Holding the string rather than a
+  // one-shot flag matters: `loading` flips twice per scan, so a flag gets
+  // consumed on the way in and the dropdown pops open again over the finished
+  // result. The list stays shut until the user actually types something else.
+  const quietFor = useRef(null);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q && q === quietFor.current) { setOpen(false); return; }
+    if (q.length < MIN_CHARS || loading || identifying) {
+      setSuggestions([]);
+      setOpen(false);
+      return;
+    }
+    const myToken = ++reqToken.current;
+    const timer = setTimeout(async () => {
+      try {
+        const hits = await suggestCards(q, 8);
+        if (myToken !== reqToken.current) return;
+        setSuggestions(hits);
+        setActive(-1);
+        setOpen(hits.length > 0);
+      } catch {
+        if (myToken !== reqToken.current) return;
+        setSuggestions([]);
+        setOpen(false);
+      }
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [query, loading, identifying]);
+
+  const pick = (card) => {
+    reqToken.current += 1;
+    quietFor.current = card.name;
+    setQuery(card.name);
+    setSuggestions([]);
+    setOpen(false);
+    setActive(-1);
+    // The whole row travels with the search: `pin` is what stops the scan from
+    // guessing a printing.
+    onSearch(card.name, card.game, { pin: card });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (query.trim() && !loading) onSearch(query.trim());
+    if (open && active >= 0 && suggestions[active]) {
+      pick(suggestions[active]);
+      return;
+    }
+    if (query.trim() && !loading) {
+      reqToken.current += 1;
+      quietFor.current = query.trim();
+      setOpen(false);
+      onSearch(query.trim());
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (!open || suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActive((i) => (i + 1) % suggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+      setActive(-1);
+    }
   };
 
   const openCamera = () => {
@@ -25,7 +111,12 @@ export default function SearchBar({ onSearch, loading }) {
     setScanError(null);
     try {
       const card = await scanCardImage(file);
+      // The camera already identified one specific card; don't turn its name
+      // back into a list of alternatives.
+      reqToken.current += 1;
+      quietFor.current = card.name;
       setQuery(card.name);
+      setOpen(false);
       onSearch(card.name, card.game || null);
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -104,8 +195,15 @@ export default function SearchBar({ onSearch, loading }) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => { setFocused(true); if (suggestions.length) setOpen(true); }}
+          onBlur={() => { setFocused(false); setOpen(false); }}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          role="combobox"
+          aria-expanded={open}
+          aria-autocomplete="list"
           placeholder={identifying ? 'Identifying card…' : 'Card name or set number — e.g. LOB-001'}
           disabled={busy}
           enterKeyHint="search"
@@ -125,6 +223,41 @@ export default function SearchBar({ onSearch, loading }) {
             boxSizing: 'border-box',
           }}
         />
+
+        {open && suggestions.length > 0 && (
+          <ul className="sb-list" role="listbox">
+            {suggestions.map((card, i) => (
+              <li key={`${card.game}-${card.id}`} role="option" aria-selected={i === active}>
+                <button
+                  type="button"
+                  className={`sb-item ${i === active ? 'sb-item--on' : ''}`}
+                  // pointerdown, not click: the input's blur fires first and
+                  // would unmount this row before a click could land on it.
+                  onPointerDown={(e) => { e.preventDefault(); pick(card); }}
+                  onMouseEnter={() => setActive(i)}
+                >
+                  {card.imageUrl ? (
+                    <img src={card.imageUrl} alt="" className="sb-thumb" loading="lazy" />
+                  ) : (
+                    <span className="sb-thumb sb-thumb--empty" />
+                  )}
+                  <span className="sb-text">
+                    <span className="sb-name">{card.name}</span>
+                    {/* The set line is the entire reason this dropdown exists. */}
+                    <span className="sb-meta">
+                      <span className="sb-game">{GAME_LABEL[card.game] || card.game}</span>
+                      {card.setName || 'Unknown set'}
+                      {card.number ? ` · ${card.number}` : ''}
+                    </span>
+                  </span>
+                  {card.price != null && (
+                    <span className="sb-price">${Number(card.price).toFixed(2)}</span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {scanError && (

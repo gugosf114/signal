@@ -8,8 +8,17 @@
 //   Scryfall         — api.scryfall.com    (MTG prices + legality + EDHREC rank)
 //   YGOPRODeck       — db.ygoprodeck.com   (YGO prices from TCGPlayer/Cardmarket)
 
-export async function fetchCardData(cardName, game) {
+// `pin` is a card picked from the search suggestions: {id, game, ...}. Without
+// it we look the name up and take the first hit, which for "Charizard" is one
+// arbitrary printing out of hundreds — different set, different rarity,
+// different price. With it we fetch that exact card by catalogue id.
+export async function fetchCardData(cardName, game, pin = null) {
   try {
+    if (pin?.id) {
+      const exact = await fetchPinned(pin);
+      if (exact) return exact;
+      // Fall through on a dead id rather than returning nothing.
+    }
     if (game === 'pokemon') return await fetchPokemonData(cardName);
     if (game === 'mtg')     return await fetchMTGData(cardName);
     if (game === 'yugioh')  return await fetchYGOData(cardName);
@@ -25,6 +34,64 @@ export async function fetchCardData(cardName, game) {
   }
 }
 
+// ─── Exact printing, by catalogue id ─────────────────────────────────────────
+// Every suggestion row carries the id its own catalogue gave it, so this is a
+// single direct GET — no name matching, no ranking, no guessing.
+
+// Scryfall rejects requests without one.
+const SCRYFALL_HEADERS = { 'User-Agent': 'SignalTCG/1.0', Accept: 'application/json' };
+
+// pokemontcg.io answers with 500/502 on roughly half of all requests — measured,
+// not guessed. Unretried, that silently dropped the pre-fetched price block from
+// a large share of Pokémon scans and sent the model off to web-search a price we
+// already had. 4xx is a real answer and is returned as-is; 5xx and network
+// errors get another go.
+async function retryFetch(url, init, tries = 3) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const res = await fetch(url, init);
+      if (res.ok || (res.status >= 400 && res.status < 500)) return res;
+      last = new Error(String(res.status));
+    } catch (e) {
+      last = e;
+    }
+    if (i < tries - 1) await new Promise((r) => setTimeout(r, 350 * (i + 1)));
+  }
+  throw last;
+}
+
+async function fetchPinned(pin) {
+  try {
+    if (pin.game === 'pokemon') {
+      const res = await retryFetch(`https://api.pokemontcg.io/v2/cards/${encodeURIComponent(pin.id)}`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.data ? shapePokemon(data.data) : null;
+    }
+    if (pin.game === 'mtg') {
+      const res = await retryFetch(`https://api.scryfall.com/cards/${encodeURIComponent(pin.id)}`, {
+        headers: SCRYFALL_HEADERS,
+      });
+      if (!res.ok) return null;
+      const card = await res.json();
+      return card.object === 'error' ? null : shapeMTG(card);
+    }
+    if (pin.game === 'yugioh') {
+      const res = await retryFetch(
+        `https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${encodeURIComponent(pin.id)}`
+      );
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data.error) return null;
+      return data.data?.[0] ? shapeYGO(data.data[0]) : null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 // ─── Pokémon TCG API ──────────────────────────────────────────────────────────
 
 async function fetchPokemonData(cardName) {
@@ -33,14 +100,17 @@ async function fetchPokemonData(cardName) {
     .replace(/\s+(ex|EX|V|VMAX|VSTAR|GX)\s*$/i, '')
     .trim();
 
-  const res = await fetch(
+  const res = await retryFetch(
     `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(cleanName)}"&pageSize=3&orderBy=-set.releaseDate`
   );
   if (!res.ok) return null;
   const data = await res.json();
   const card = data.data?.[0];
   if (!card) return null;
+  return shapePokemon(card);
+}
 
+function shapePokemon(card) {
   const p = card.tcgplayer?.prices || {};
   const priceLines = [];
   const variants = [
@@ -84,14 +154,18 @@ async function fetchPokemonData(cardName) {
 // ─── Scryfall (MTG) ───────────────────────────────────────────────────────────
 
 async function fetchMTGData(cardName) {
-  const res = await fetch(
-    `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`
+  const res = await retryFetch(
+    `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`,
+    { headers: SCRYFALL_HEADERS }
   );
   if (res.status === 404) return null;
   if (!res.ok) return null;
   const card = await res.json();
   if (card.object === 'error') return null;
+  return shapeMTG(card);
+}
 
+function shapeMTG(card) {
   const prices = card.prices || {};
   const priceLines = [];
   if (prices.usd)       priceLines.push(`Non-foil: $${prices.usd}`);
@@ -108,6 +182,8 @@ async function fetchMTGData(cardName) {
     game: 'mtg',
     name: card.name,
     setName: card.set_name,
+    setId: card.set,
+    number: card.collector_number,
     rarity: card.rarity,
     typeLine: card.type_line,
     priceLines: priceLines.length ? priceLines : null,
@@ -121,7 +197,7 @@ async function fetchMTGData(cardName) {
 // ─── YGOPRODeck (Yu-Gi-Oh!) ──────────────────────────────────────────────────
 
 async function fetchYGOData(cardName) {
-  const res = await fetch(
+  const res = await retryFetch(
     `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`
   );
   if (res.status === 400) return null;
@@ -130,7 +206,10 @@ async function fetchYGOData(cardName) {
   if (data.error) return null;
   const card = data.data?.[0];
   if (!card) return null;
+  return shapeYGO(card);
+}
 
+function shapeYGO(card) {
   const p = card.card_prices?.[0] || {};
   const priceLines = [];
   const nonZero = (v) => v && v !== '0.00';

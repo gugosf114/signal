@@ -19,7 +19,13 @@ async function getJSON(url, tries = 3) {
   let last;
   for (let i = 0; i < tries; i++) {
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      const res = await fetch(url, {
+        signal: AbortSignal.timeout(15000),
+        // Scryfall 400s on a default library User-Agent. Browsers forbid
+        // setting this header and drop it silently, so it costs nothing on
+        // device and makes these functions testable from Node.
+        headers: { 'User-Agent': 'SignalTCG/1.0 (card market intelligence)' },
+      });
       if (res.status === 404 || res.status === 400) return null;   // genuine no-match
       if (!res.ok) throw new Error(`${res.status}`);
       return await res.json();
@@ -261,14 +267,23 @@ export async function searchCardsByName(game, query, priceSort = null) {
 
   if (game === 'pokemon') {
     // pokemontcg.io wants wildcards spelled out; quote it so multi-word names work.
+    // Alphabetical, not newest-first, when the user isn't sorting by price:
+    // "Charizard" has far more than one page of printings, and release order
+    // filled that page entirely with "Charizard ex" — the plain card the user
+    // actually typed never appeared. A-Z puts exact names at the top.
+    const order = priceSort ? pokemonOrderBy(priceSort) : 'name';
     const data = await getJSON(
       `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(`name:"*${q}*"`)}` +
-      `&pageSize=${PAGE}&orderBy=${encodeURIComponent(pokemonOrderBy(priceSort))}`
+      `&pageSize=${PAGE}&orderBy=${encodeURIComponent(order)}`
     );
     if (!data) return [];
     return (data.data || []).map((c) => ({
       id: c.id, name: c.name, game: 'pokemon',
-      setName: c.set?.name || '', imageUrl: c.images?.small || null,
+      setName: c.set?.name || '', setId: c.set?.id || null, number: c.number || null,
+      price: c.tcgplayer?.prices
+        ? Object.values(c.tcgplayer.prices).map((v) => v.market).filter(Boolean)[0] || null
+        : null,
+      imageUrl: c.images?.small || null,
       imageLarge: c.images?.large || c.images?.small || null,
     }));
   }
@@ -282,7 +297,8 @@ export async function searchCardsByName(game, query, priceSort = null) {
     if (!data) return [];
     return (data.data || []).slice(0, PAGE).map((c) => ({
       id: c.id, name: c.name, game: 'mtg',
-      setName: c.set_name || '',
+      setName: c.set_name || '', setId: c.set || null, number: c.collector_number || null,
+      price: c.prices?.usd ? Number(c.prices.usd) : null,
       imageUrl: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || null,
       imageLarge: mtgLargeArt(c),
     }));
@@ -308,10 +324,50 @@ export async function searchCardsByName(game, query, priceSort = null) {
       : [...(data.data || [])].sort((a, b) => rank(a) - rank(b));
     return cards.slice(0, PAGE).map((c) => ({
       id: String(c.id), name: c.name, game: 'yugioh',
-      setName: c.type || '', imageUrl: c.card_images?.[0]?.image_url_small || null,
+      setName: c.card_sets?.[0]?.set_name || c.type || '', setId: null, number: null,
+      price: Number(c.card_prices?.[0]?.tcgplayer_price) || null,
+      imageUrl: c.card_images?.[0]?.image_url_small || null,
       imageLarge: c.card_images?.[0]?.image_url || c.card_images?.[0]?.image_url_small || null,
     }));
   }
 
   return [];
+}
+
+
+// ─── Suggestions across all three games ──────────────────────────────────────
+// The dashboard search bar has no game picker, so a typed name could belong to
+// any of the three catalogues. Ask all three at once and merge. Each entry
+// carries its set and printing, which is the point: "Charizard" matches
+// hundreds of cards, and without showing the set the app just silently scans
+// whichever one the API happened to return first.
+export async function suggestCards(query, limit = 8) {
+  const q = (query || '').trim();
+  if (q.length < 2) return [];
+
+  const games = ['pokemon', 'mtg', 'yugioh'];
+  const settled = await Promise.allSettled(
+    games.map((g) => searchCardsByName(g, q, null))
+  );
+
+  const needle = q.toLowerCase();
+  const rank = (c) => {
+    const n = (c.name || '').toLowerCase();
+    if (n === needle) return 0;              // exact name
+    if (n.startsWith(needle)) return 1;      // starts with it
+    if (n.includes(needle)) return 2;        // contains it
+    return 3;                                // matched on card text
+  };
+
+  // Interleave the three lists so one game with many hits can't crowd out the
+  // others — someone typing "dragon" should see all three games represented.
+  const lists = settled.map((r) => (r.status === 'fulfilled' ? r.value : []));
+  const merged = [];
+  for (let i = 0; merged.length < limit * 3 && i < PAGE; i++) {
+    for (const list of lists) if (list[i]) merged.push(list[i]);
+  }
+
+  return merged
+    .sort((a, b) => rank(a) - rank(b))
+    .slice(0, limit);
 }
