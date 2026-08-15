@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { getScoreLabel, GAME_LABELS, SIGNAL_TYPES } from '../config/signals';
+import { getScoreLabel, GAME_LABELS } from '../config/signals';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useWatchedCards } from './WatchedCards';
 import CardImage from './CardImage';
 import CardLightbox from './CardLightbox';
 
-export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, onRetry, signals = [], enPrice, trend, onCardImageLoaded }) {
+export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, onRetry, signals = [], enPrice, onCardImageLoaded }) {
   const { label, color, blurb } = getScoreLabel(score);
   const gameMeta = GAME_LABELS[game];
   const glowColor = gameMeta?.color || '#C44040';
@@ -41,14 +41,6 @@ export default function OverallScore({ score, cardName, game, summary, truncated
       }
     } catch {}
   }, [score, cardName, game]);
-
-  // Find the top signal (highest level) for the lightbox annotation
-  const topSignal = (() => {
-    if (!signals.length) return null;
-    const top = [...signals].sort((a, b) => b.level - a.level)[0];
-    const meta = SIGNAL_TYPES[top?.key];
-    return meta ? { label: meta.label, color: meta.color } : null;
-  })();
 
   return (
     <>
@@ -301,12 +293,6 @@ export default function OverallScore({ score, cardName, game, summary, truncated
         onClose={() => setLightboxOpen(false)}
         imageUrl={cardImageUrl}
         cardName={cardName}
-        score={score}
-        scoreLabel={label}
-        scoreColor={color}
-        enPrice={enPrice}
-        trend={trend}
-        topSignal={topSignal}
       />
     </>
   );

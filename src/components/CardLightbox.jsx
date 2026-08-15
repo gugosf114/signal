@@ -1,238 +1,228 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-function AnnotationChip({ label, value, color, style }) {
-  return (
-    <div style={{
-      position: 'absolute',
-      background: '#0E1014',
-      border: `1px solid ${color || '#2A2D34'}`,
-      borderRadius: 3,
-      padding: '5px 10px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 1,
-      minWidth: 80,
-      pointerEvents: 'none',
-      ...style,
-    }}>
-      <span style={{
-        fontSize: 7,
-        fontFamily: "'Syne', sans-serif",
-        fontWeight: 700,
-        letterSpacing: '0.14em',
-        textTransform: 'uppercase',
-        color: color || '#A8A498',
-        opacity: 0.8,
-      }}>
-        {label}
-      </span>
-      <span style={{
-        fontSize: 12,
-        fontFamily: "'JetBrains Mono', monospace",
-        fontWeight: 600,
-        color: color || '#E8E4DC',
-        letterSpacing: '-0.01em',
-        lineHeight: 1.2,
-      }}>
-        {value}
-      </span>
-    </div>
-  );
-}
+// ─── Card viewer ─────────────────────────────────────────────────────────────
+// Hold the card up to the light: drag to turn it, pinch or double-tap to zoom.
+//
+// The previous version tilted on `onMouseMove` only, so on the phone — the only
+// device this app runs on — the card just appeared slightly larger and sat
+// there. It also carried five absolutely-positioned annotation chips offset at
+// left/right: -10 and -90, numbers chosen against a desktop layout: on a 375px
+// screen the EN-price chip ran off both edges (its value is a sentence, not a
+// number), the 30-day chip sat underneath the top-signal chip, and the close
+// hint read "ESC to close" on a device with no keyboard. All of it is gone; the
+// card is the whole point of opening this.
+//
+// Pointer events rather than touch events, so one code path covers finger,
+// mouse and stylus. `touch-action: none` on the stage stops the browser
+// claiming the drag for a page scroll.
 
-export default function CardLightbox({
-  isOpen,
-  onClose,
-  imageUrl,
-  cardName,
-  score,
-  scoreLabel,
-  scoreColor,
-  enPrice,
-  trend,
-  topSignal,
-}) {
-  const cardRef = useRef(null);
-  const [tilt, setTilt] = useState({ rx: 0, ry: 0, sx: 50, sy: 50 });
+const MIN_SCALE = 0.6;
+const MAX_SCALE = 4;
+const ZOOMED = 2.2;             // double-tap zoom level
+const TILT_LIMIT = 78;          // degrees; past ~90 you'd see a mirrored front
+const DRAG_SENSITIVITY = 0.42;  // degrees per pixel dragged
+const DOUBLE_TAP_MS = 300;
+const TAP_SLOP = 8;             // px of travel still counted as a tap, not a drag
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+export default function CardLightbox({ isOpen, onClose, imageUrl, cardName }) {
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [scale, setScale] = useState(1);
   const [settling, setSettling] = useState(false);
-  const animRef = useRef(null);
+  const [hintVisible, setHintVisible] = useState(true);
+
+  // Live gesture state. Refs, not state — these change on every pointermove and
+  // must not queue a re-render each time.
+  const pointers = useRef(new Map());
+  const dragStart = useRef(null);
+  const pinchStart = useRef(null);
+  const movedFar = useRef(false);
+  const lastTap = useRef(0);
+
+  const reset = useCallback(() => {
+    setSettling(true);
+    setTilt({ x: 0, y: 0 });
+    setScale(1);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
-    const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handleKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', handleKey);
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, onClose]);
-
-  const handleMouseMove = useCallback((e) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    // Fresh gesture state on every open, or the card reappears at whatever
+    // angle it was last left at.
+    setTilt({ x: 0, y: 0 });
+    setScale(1);
     setSettling(false);
-    setTilt({ rx: (y - 0.5) * -22, ry: (x - 0.5) * 22, sx: x * 100, sy: y * 100 });
-  }, []);
+    setHintVisible(true);
+    pointers.current.clear();
+    dragStart.current = null;
+    pinchStart.current = null;
 
-  const handleMouseLeave = useCallback(() => {
-    setSettling(true);
-    setTilt({ rx: 0, ry: 0, sx: 50, sy: 50 });
-  }, []);
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === '0') reset();
+    };
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    const hintTimer = setTimeout(() => setHintVisible(false), 3200);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+      clearTimeout(hintTimer);
+    };
+  }, [isOpen, onClose, reset]);
+
+  const spread = () => {
+    const [a, b] = [...pointers.current.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+
+  const onPointerDown = (e) => {
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    setSettling(false);
+    setHintVisible(false);
+    movedFar.current = false;
+
+    if (pointers.current.size === 2) {
+      pinchStart.current = { dist: spread(), scale };
+      dragStart.current = null;
+    } else {
+      dragStart.current = { x: e.clientX, y: e.clientY, tilt: { ...tilt } };
+    }
+  };
+
+  const onPointerMove = (e) => {
+    if (!pointers.current.has(e.pointerId)) return;
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Two fingers: pinch to zoom, and don't also spin the card.
+    if (pointers.current.size === 2 && pinchStart.current) {
+      const ratio = spread() / (pinchStart.current.dist || 1);
+      setScale(clamp(pinchStart.current.scale * ratio, MIN_SCALE, MAX_SCALE));
+      movedFar.current = true;
+      return;
+    }
+
+    if (!dragStart.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    if (Math.abs(dx) > TAP_SLOP || Math.abs(dy) > TAP_SLOP) movedFar.current = true;
+
+    setTilt({
+      // Drag right and the right edge swings away from you — the card turns
+      // the same way your hand does.
+      y: clamp(dragStart.current.tilt.y + dx * DRAG_SENSITIVITY, -TILT_LIMIT, TILT_LIMIT),
+      x: clamp(dragStart.current.tilt.x - dy * DRAG_SENSITIVITY, -TILT_LIMIT, TILT_LIMIT),
+    });
+  };
+
+  const endPointer = (e) => {
+    pointers.current.delete(e.pointerId);
+    if (pointers.current.size < 2) pinchStart.current = null;
+
+    if (pointers.current.size === 0) {
+      dragStart.current = null;
+      // A tap that never became a drag: double-tap toggles zoom.
+      if (!movedFar.current) {
+        const now = Date.now();
+        if (now - lastTap.current < DOUBLE_TAP_MS) {
+          setSettling(true);
+          setScale((s) => (s > 1.2 ? 1 : ZOOMED));
+          lastTap.current = 0;
+        } else {
+          lastTap.current = now;
+        }
+      }
+    } else {
+      // Second finger lifted mid-pinch — re-anchor the drag so the card
+      // doesn't jump to wherever the remaining finger happens to be.
+      const [p] = [...pointers.current.values()];
+      dragStart.current = { x: p.x, y: p.y, tilt: { ...tilt } };
+    }
+  };
 
   if (!isOpen) return null;
 
-  const tiltTransition = settling
-    ? 'transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)'
-    : 'transform 0.08s ease-out';
+  const transition = settling
+    ? 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)'
+    : 'transform 0.06s linear';
 
-  const iridescenceAngle = tilt.ry * 3;
-  const iridescenceOpacity = (Math.abs(tilt.rx) + Math.abs(tilt.ry)) > 1 ? 0.7 : 0;
-
-  const trendDisplay = (() => {
-    if (!trend) return '—';
-    const t = trend.toLowerCase();
-    if (t.includes('up') || t.includes('rising') || t.includes('increas')) return '▲ ' + trend;
-    if (t.includes('down') || t.includes('falling') || t.includes('decreas')) return '▼ ' + trend;
-    return '► ' + trend;
-  })();
+  // The light stays put while the card turns under it.
+  const shineX = 50 - tilt.y * 0.55;
+  const shineY = 50 + tilt.x * 0.55;
+  const lit = (Math.abs(tilt.x) + Math.abs(tilt.y)) / (TILT_LIMIT * 2);
+  const moved = Math.abs(tilt.x) > 1 || Math.abs(tilt.y) > 1 || Math.abs(scale - 1) > 0.02;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 9999,
-        background: 'rgba(4, 5, 7, 0.94)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backdropFilter: 'blur(8px)',
-      }}
-      onClick={onClose}
-    >
-      {/* Close hint */}
-      <div style={{
-        position: 'absolute',
-        top: 20,
-        right: 24,
-        fontSize: 11,
-        fontFamily: "'JetBrains Mono', monospace",
-        color: '#605C54',
-        letterSpacing: '0.08em',
-        pointerEvents: 'none',
-      }}>
-        ESC to close
-      </div>
+    <div className="cl-backdrop" onClick={onClose}>
+      <button type="button" className="cl-close" onClick={onClose} aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             strokeWidth="2" strokeLinecap="round" aria-hidden>
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
 
-      {/* Card + annotations container — stop click propagation */}
+      {cardName && <div className="cl-name">{cardName}</div>}
+
       <div
-        style={{ position: 'relative', padding: '60px 80px' }}
+        className="cl-stage"
         onClick={(e) => e.stopPropagation()}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endPointer}
+        onPointerCancel={endPointer}
       >
-        {/* 3D tilt card */}
         <div
-          ref={cardRef}
-          style={{ perspective: '900px', cursor: 'grab' }}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
+          className="cl-card"
+          style={{
+            transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(${scale})`,
+            transition,
+          }}
         >
-          <div style={{
-            transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg) scale(1.01)`,
-            transition: tiltTransition,
-            transformStyle: 'preserve-3d',
-            position: 'relative',
-            borderRadius: 12,
-            boxShadow: `0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px #1A1D24`,
-          }}>
-            {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={cardName}
-                style={{
-                  display: 'block',
-                  width: 'min(280px, 55vw)',
-                  height: 'auto',
-                  borderRadius: 12,
-                }}
-                draggable={false}
-              />
-            ) : (
-              <div style={{
-                width: 220,
-                height: 308,
-                borderRadius: 12,
-                background: '#0A0C10',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 32,
-                color: '#1A1D24',
-                fontFamily: "'JetBrains Mono'",
-              }}>?</div>
-            )}
+          {imageUrl ? (
+            <img src={imageUrl} alt={cardName || ''} className="cl-img" draggable={false} />
+          ) : (
+            <div className="cl-placeholder">?</div>
+          )}
 
-            {/* Shine overlay — follows mouse */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: 12,
-              background: `radial-gradient(circle at ${tilt.sx}% ${tilt.sy}%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 45%, transparent 65%)`,
-              pointerEvents: 'none',
-              transform: 'translateZ(1px)',
-            }} />
-
-            {/* Iridescent foil layer — shifts with tilt angle */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: 12,
-              background: `linear-gradient(${iridescenceAngle}deg, rgba(196,64,64,0.1) 0%, rgba(160,144,96,0.08) 40%, rgba(96,136,112,0.1) 80%, rgba(112,128,160,0.08) 100%)`,
-              pointerEvents: 'none',
-              opacity: iridescenceOpacity,
-              transition: 'opacity 0.3s',
-              transform: 'translateZ(2px)',
-              mixBlendMode: 'overlay',
-            }} />
-          </div>
+          {/* Gloss — travels opposite the tilt, so the card reads as catching a
+              light that isn't moving. */}
+          <div
+            className="cl-shine"
+            style={{
+              background:
+                `radial-gradient(circle at ${shineX}% ${shineY}%, rgba(255,255,255,0.28) 0%, ` +
+                `rgba(255,255,255,0.06) 42%, transparent 68%)`,
+            }}
+          />
+          {/* Foil sheen, only once it's off-square. */}
+          <div
+            className="cl-foil"
+            style={{
+              opacity: Math.min(0.85, lit * 1.7),
+              background:
+                `linear-gradient(${tilt.y * 2.2}deg, rgba(196,64,64,0.22) 0%, ` +
+                `rgba(160,144,96,0.18) 35%, rgba(96,136,112,0.2) 68%, rgba(112,128,160,0.2) 100%)`,
+            }}
+          />
         </div>
-
-        {/* Annotation chips — 5 key data points */}
-        {score !== null && score !== undefined && (
-          <AnnotationChip
-            label="Score"
-            value={`${score} ${scoreLabel}`}
-            color={scoreColor}
-            style={{ top: 20, left: -10 }}
-          />
-        )}
-        {enPrice && (
-          <AnnotationChip
-            label="EN Price"
-            value={enPrice}
-            color="#A8A498"
-            style={{ top: 20, right: -10 }}
-          />
-        )}
-        {trend && (
-          <AnnotationChip
-            label="30-Day"
-            value={trendDisplay}
-            color="#608870"
-            style={{ bottom: 20, right: -10 }}
-          />
-        )}
-        {topSignal && (
-          <AnnotationChip
-            label="Top Signal"
-            value={topSignal.label}
-            color={topSignal.color}
-            style={{ bottom: 20, left: -10 }}
-          />
-        )}
       </div>
+
+      <div className={`cl-hint ${hintVisible ? 'cl-hint--on' : ''}`}>
+        Drag to turn · Pinch to zoom · Double-tap to zoom
+      </div>
+
+      {moved && (
+        <button
+          type="button"
+          className="cl-reset"
+          onClick={(e) => { e.stopPropagation(); reset(); }}
+        >
+          Straighten
+        </button>
+      )}
     </div>
   );
 }

@@ -994,3 +994,159 @@
   .lt-log, .lt-grid { display: none; }
   .lt-stage { grid-template-columns: 1fr; }
 }
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CARD VIEWER — drag to turn, pinch to zoom
+   ════════════════════════════════════════════════════════════════════════════ */
+
+@keyframes clFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes clCardIn {
+  from { opacity: 0; transform: scale(0.92) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.cl-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 5, 7, 0.96);
+  backdrop-filter: blur(10px);
+  animation: clFadeIn 0.22s ease-out;
+  overscroll-behavior: contain;
+}
+
+/* The card name, quiet, out of the way at the top. */
+.cl-name {
+  position: absolute;
+  top: 22px;
+  left: 20px;
+  right: 68px;
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.3;
+  color: #A8A498;
+  pointer-events: none;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.cl-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 44px;                 /* real tap target */
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid #2A2D34;
+  border-radius: 50%;
+  color: #7A7368;
+  cursor: pointer;
+  z-index: 2;
+  transition: color 0.15s, border-color 0.15s;
+}
+.cl-close:hover, .cl-close:focus-visible {
+  color: #C44040;
+  border-color: rgba(196, 64, 64, 0.5);
+}
+
+/* touch-action:none is load-bearing — without it the browser eats the drag
+   as a page scroll and the card never turns. */
+.cl-stage {
+  perspective: 1100px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  padding: 24px;
+}
+.cl-stage:active { cursor: grabbing; }
+
+.cl-card {
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+  border-radius: 12px;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.75), 0 0 0 1px #1A1D24;
+  animation: clCardIn 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cl-img {
+  display: block;
+  width: min(300px, 78vw);
+  height: auto;
+  border-radius: 12px;
+  pointer-events: none;        /* the stage owns the gesture */
+}
+
+.cl-placeholder {
+  width: min(220px, 60vw);
+  aspect-ratio: 0.716;
+  border-radius: 12px;
+  background: #0A0C10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 32px;
+  color: #1A1D24;
+}
+
+.cl-shine, .cl-foil {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  pointer-events: none;
+}
+.cl-shine { transform: translateZ(1px); }
+.cl-foil  { transform: translateZ(2px); mix-blend-mode: overlay; transition: opacity 0.2s; }
+
+.cl-hint {
+  position: absolute;
+  bottom: 30px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #605C54;
+  opacity: 0;
+  transition: opacity 0.5s;
+  pointer-events: none;
+  padding: 0 20px;
+}
+.cl-hint--on { opacity: 1; }
+
+.cl-reset {
+  position: absolute;
+  bottom: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 9px 18px;
+  min-height: 38px;
+  background: transparent;
+  border: 1px solid #2A2D34;
+  border-radius: 3px;
+  color: #7A7368;
+  font-family: 'Syne', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.cl-reset:hover, .cl-reset:focus-visible {
+  color: #C44040;
+  border-color: rgba(196, 64, 64, 0.5);
+}

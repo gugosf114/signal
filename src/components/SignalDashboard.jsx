@@ -545,7 +545,6 @@ export default function SignalDashboard() {
               onRetry={() => handleSearch(result.card_name, result.game)}
               signals={result.signals || []}
               enPrice={result.prices?.en_price}
-              trend={result.prices?.trend_30d}
               onCardImageLoaded={setCardImageUrl}
             />
           )}
