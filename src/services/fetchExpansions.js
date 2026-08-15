@@ -15,7 +15,7 @@ const PAGE = 21;
 // and stay empty until you switched games. Scryfall and YGOPRODeck are steadier
 // but get the same treatment for free. Throws after the last attempt so callers
 // can tell "nothing found" from "couldn't reach it".
-async function getJSON(url, tries = 4) {
+async function getJSON(url, tries = 6) {
   let last;
   for (let i = 0; i < tries; i++) {
     try {
@@ -31,7 +31,10 @@ async function getJSON(url, tries = 4) {
       return await res.json();
     } catch (e) {
       last = e;
-      if (i < tries - 1) await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+      // Short, linear backoff: pokemontcg.io fails fast and recovers fast, and
+      // this sits under a typeahead, so the whole retry chain has to fit inside
+      // roughly three seconds to be worth doing at all.
+      if (i < tries - 1) await new Promise((r) => setTimeout(r, 200 * (i + 1)));
     }
   }
   throw last;
