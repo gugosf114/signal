@@ -1,5 +1,6 @@
 import React from 'react';
 import { getScoreLabel, GAME_LABELS, WEIGHTS } from '../config/signals';
+import { printingLabel } from '../services/printing';
 
 // ─── Premium PDF layout ──────────────────────────────────────────────────────
 // Editorial light theme. Cream paper, dark ink, JP-red hairline accents.
@@ -179,7 +180,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
           </div>
           {/* An exported report that names a card but not its printing is a
               report about a price nobody can look up. */}
-          {result.printing && (result.printing.setName || result.printing.number) && (
+          {printingLabel(result.printing) && (
             <div style={{
               fontFamily: "'JetBrains Mono', Menlo, monospace",
               fontSize: 11,
@@ -187,9 +188,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
               marginTop: -8,
               marginBottom: 14,
             }}>
-              {result.printing.setName || 'Unknown set'}
-              {result.printing.number ? ` \u00b7 ${result.printing.number}` : ''}
-              {result.printing.rarity ? ` \u00b7 ${result.printing.rarity}` : ''}
+              {printingLabel(result.printing)}
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>

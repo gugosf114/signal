@@ -7,6 +7,7 @@
 
 import { creatorListForPrompt } from '../config/creators';
 import { fetchCardData, buildCardDataBlock } from './fetchCardData';
+import { toPrinting } from './printing';
 import { fetchCommunity, communityBlock } from './fetchCommunity';
 import { fetchCreators, creatorsBlock } from './fetchCreators';
 import { fetchEbayListings, ebayBlock } from './fetchEbayListings';
@@ -265,22 +266,14 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   // say which one it read. Without it the answer just says "Umbreon ex", and
   // the user has no way to tell whether the card they picked is the card that
   // got scanned.
-  const printingInfo = (pin || cardData)
-    ? {
-        setName: pin?.setName || cardData?.setName || null,
-        setId: pin?.setId || cardData?.setId || null,
-        number: pin?.number || cardData?.number || null,
-        rarity: cardData?.rarity || null,
-        pinned: !!pin,
-      }
-    : null;
+  const printingInfo = toPrinting(game || cardData?.game || pin?.game, pin, cardData);
 
   // Try each text block from last to first — JSON is almost always in the final one
   for (let i = textBlocks.length - 1; i >= 0; i--) {
     const parsed = tryParseSignalJSON(textBlocks[i]);
     if (parsed) {
       const clean = filterHallucinatedSources(parsed, realUrls);
-      if (printingInfo && (printingInfo.setName || printingInfo.number)) clean.printing = printingInfo;
+      if (printingInfo) clean.printing = printingInfo;
       return clean;
     }
   }

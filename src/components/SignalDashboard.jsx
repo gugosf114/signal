@@ -20,7 +20,8 @@ import { SIGNAL_SECTIONS, calculateOverallScore } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { exportReportToPdf, shareReportAsPdf } from '../services/exportReport';
 import { lookupBySetCode, looksLikeSetCode } from '../services/lookupBySetCode';
-import { getCachedScanEntry, setCachedScan, clearCachedScan, refreshCachedPrices } from '../services/scanCache';
+import { getCachedScanEntry, setCachedScan, clearCachedScan, refreshCachedPrices, patchCachedPrinting } from '../services/scanCache';
+import { backfillPrinting } from '../services/backfillPrinting';
 import { refreshPrices } from '../services/refreshPrices';
 import { startScanKeepAlive, stopScanKeepAlive } from '../services/scanKeepAlive';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -78,6 +79,17 @@ export default function SignalDashboard() {
     );
   };
 
+  // A scan cached before the printing line existed shows no identifier under
+  // the name. Ask the free catalogue which printing it was and patch it in —
+  // no Anthropic call, no waiting, no re-scan.
+  const fillPrinting = async (name, game, myToken, pin = null) => {
+    const printing = await backfillPrinting(name, game, pin);
+    if (!printing) return;
+    patchCachedPrinting(name, game, printing, pin);
+    if (myToken !== navTokenRef.current) return;
+    setResult((prev) => (prev && !prev.printing ? { ...prev, printing } : prev));
+  };
+
   const handleSearch = async (query, game = null, opts = {}) => {
     // `pin` is a printing chosen from the search suggestions. It keys the cache
     // and pins the pre-fetch, so two printings of one name stay separate scans.
@@ -99,6 +111,7 @@ export default function SignalDashboard() {
         setResult(fastEntry.data);
         setLastSearched({ name: query, game });
         if (fastEntry.pricesStale) topUpPrices(query, game, ++navTokenRef.current, pin);
+        if (!fastEntry.data.printing) fillPrinting(query, game, navTokenRef.current, pin);
         return;
       }
     }
@@ -126,6 +139,7 @@ export default function SignalDashboard() {
       if (entry) {
         setResult(entry.data);
         if (entry.pricesStale) topUpPrices(resolvedName, resolvedGame, ++navTokenRef.current, pin);
+        if (!entry.data.printing) fillPrinting(resolvedName, resolvedGame, navTokenRef.current, pin);
         return;
       }
     }

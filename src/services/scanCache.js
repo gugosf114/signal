@@ -94,6 +94,19 @@ export function refreshCachedPrices(name, game, prices, pin) {
   saveCache(cache);
 }
 
+// Writes the printing onto an existing entry without touching either clock —
+// this is a fact about the card, not fresh data about the market.
+export function patchCachedPrinting(name, game, printing, pin) {
+  if (!name || !printing) return;
+  const cache = loadCache();
+  const k = keyFor(name, game, pin);
+  const entry = cache[k];
+  if (!entry || !entry.data) return;
+  entry.data = { ...entry.data, printing };
+  cache[k] = entry;
+  saveCache(cache);
+}
+
 export function clearCachedScan(name, game, pin) {
   if (!name) return;
   const cache = loadCache();

@@ -142,6 +142,9 @@ function shapePokemon(card) {
     setName: card.set?.name,
     setId: card.set?.id,
     number: card.number,
+    // The number printed on a Pokémon card is "161/131", not "161". Showing
+    // half of it means the reader still has to go and check.
+    printedTotal: card.set?.printedTotal || card.set?.total || null,
     rarity: card.rarity,
     priceLines: priceLines.length ? priceLines : null,
     euTrend,
@@ -224,6 +227,13 @@ function shapeYGO(card) {
   return {
     game: 'yugioh',
     name: card.name,
+    // Yu-Gi-Oh's identifier is the set code stamped on the card — "LOB-EN005".
+    // This shape returned neither a set nor a number, so Yu-Gi-Oh results could
+    // never show which printing they were about.
+    setName: card.card_sets?.[0]?.set_name || null,
+    setId: card.card_sets?.[0]?.set_code || null,
+    number: card.card_sets?.[0]?.set_code || null,
+    rarity: card.card_sets?.[0]?.set_rarity || null,
     type: card.type,
     race: card.race,
     archetype: card.archetype,

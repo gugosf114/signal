@@ -4,6 +4,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { useWatchedCards } from './WatchedCards';
 import CardImage from './CardImage';
 import CardLightbox from './CardLightbox';
+import { printingLabel } from '../services/printing';
 
 export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null }) {
   const { label, color, blurb } = getScoreLabel(score);
@@ -101,17 +102,16 @@ export default function OverallScore({ score, cardName, game, summary, truncated
             {/* Which printing this is. "Charizard" is hundreds of cards at
                 hundreds of prices; the name alone never said which one the
                 numbers below belong to. */}
-            {printing && (printing.setName || printing.number) && (
+            {printingLabel(printing) && (
               <div style={{
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 11,
                 color: '#7A7368',
                 marginBottom: 10,
                 letterSpacing: '0.02em',
+                lineHeight: 1.4,
               }}>
-                {printing.setName || 'Unknown set'}
-                {printing.number ? ` · ${printing.number}` : ''}
-                {printing.rarity ? ` · ${printing.rarity}` : ''}
+                {printingLabel(printing)}
               </div>
             )}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
