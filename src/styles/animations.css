@@ -1519,3 +1519,17 @@
   border-color: #C44040;
   color: #E8E4DC;
 }
+
+.col-status-x {
+  display: block;
+  margin-top: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-decoration: underline;
+  cursor: pointer;
+}

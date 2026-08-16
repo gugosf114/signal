@@ -48,6 +48,56 @@ function fileToBase64(file) {
   });
 }
 
+// ─── Getting the photo small enough to send ──────────────────────────────────
+// A phone camera hands back a 12-50MP JPEG: 3-12MB on disk, a third bigger
+// again once base64'd. The API takes 5MB per image, and downscales anything
+// over ~1568px on its own end anyway — so a full-size photo is rejected outright
+// or pays for pixels nobody looks at. Resizing here is what makes the camera
+// work on a real phone; it was tested with laptop-sized files and shipped
+// without it.
+const MAX_EDGE = 1568;
+const MAX_BASE64_BYTES = 4.5 * 1024 * 1024;
+
+async function decodeImage(file) {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      return await createImageBitmap(file);
+    } catch {
+      // Fall through to the <img> path — some WebView builds refuse blobs here.
+    }
+  }
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode failed')); };
+    img.src = url;
+  });
+}
+
+async function toSendableBase64(file) {
+  const bmp = await decodeImage(file);
+  const w = bmp.width || bmp.naturalWidth;
+  const h = bmp.height || bmp.naturalHeight;
+  if (!w || !h) throw new Error('decode failed');
+
+  const scale = Math.min(1, MAX_EDGE / Math.max(w, h));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(w * scale));
+  canvas.height = Math.max(1, Math.round(h * scale));
+  canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close?.();
+
+  // Quality steps down only if a card photo somehow still lands over the wire
+  // limit — at 1568px it never should.
+  for (const q of [0.85, 0.7, 0.55]) {
+    const dataUrl = canvas.toDataURL('image/jpeg', q);
+    const b64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+    if (b64.length <= MAX_BASE64_BYTES) return b64;
+  }
+  throw new Error('too big');
+}
+
 function pickMediaType(file) {
   if (!file?.type) return 'image/jpeg';
   if (file.type === 'image/jpeg' || file.type === 'image/png' ||
@@ -62,8 +112,26 @@ export async function scanCardImage(file, opts = {}) {
   }
   if (!file) throw new Error('No image provided.');
 
-  const base64 = await fileToBase64(file);
-  const mediaType = pickMediaType(file);
+  let base64;
+  let mediaType = 'image/jpeg';
+  try {
+    base64 = await toSendableBase64(file);
+  } catch {
+    // Couldn't decode it here. HEIC is the usual reason — Samsung's "High
+    // efficiency" picture format — and the API can't read it either, so say so
+    // rather than letting it come back as an opaque 400.
+    const looksHeic = /heic|heif/i.test(file.type || '') || /\.hei[cf]$/i.test(file.name || '');
+    if (looksHeic) {
+      throw new Error(
+        'That photo is in HEIC format, which can\'t be read. In the camera app: Settings → Picture format → JPEG.'
+      );
+    }
+    base64 = await fileToBase64(file);
+    mediaType = pickMediaType(file);
+    if (base64.length > MAX_BASE64_BYTES) {
+      throw new Error('That photo is too large to send. Try a smaller picture.');
+    }
+  }
 
   const response = await fetch(API_URL, {
     method: 'POST',

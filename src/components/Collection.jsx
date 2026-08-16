@@ -34,9 +34,13 @@ export default function Collection() {
 
   useEffect(() => { setCards(loadCollection()); }, []);
 
+  // Good news clears itself; a failure stays put. A camera error that vanishes
+  // after three seconds is an error nobody can read, let alone report.
   const flash = useCallback((kind, text) => {
     setStatus({ kind, text });
-    setTimeout(() => setStatus((s) => (s && s.text === text ? null : s)), 3500);
+    if (kind !== 'bad') {
+      setTimeout(() => setStatus((s) => (s && s.text === text ? null : s)), 3500);
+    }
   }, []);
 
   // ── Add by photo ───────────────────────────────────────────────────────────
@@ -64,6 +68,8 @@ export default function Collection() {
       setCards(next);
       flash('ok', `Added ${card.name}${card.setName ? ' · ' + card.setName : ''}`);
     } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[signal] collection photo scan failed', err);
       flash('bad', err?.message || 'That photo did not work. Try again in better light.');
     } finally {
       setBusy(false);
@@ -189,6 +195,11 @@ export default function Collection() {
       {status && (
         <div className={`col-status ${status.kind === 'bad' ? 'col-status--bad' : ''}`}>
           {status.text}
+          {status.kind === 'bad' && (
+            <button type="button" className="col-status-x" onClick={() => setStatus(null)}>
+              dismiss
+            </button>
+          )}
         </div>
       )}
 
