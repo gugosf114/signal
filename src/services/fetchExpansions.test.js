@@ -1,0 +1,56 @@
+import { afterEach, describe, test } from 'node:test';
+import assert from 'node:assert/strict';
+
+import { resolvePrinting, ygoPrintingRows } from './fetchExpansions.js';
+
+const originalFetch = globalThis.fetch;
+afterEach(() => { globalThis.fetch = originalFetch; });
+
+const blueEyes = {
+  id: 89631139,
+  name: 'Blue-Eyes White Dragon',
+  card_prices: [{ tcgplayer_price: '7.25' }],
+  card_images: [{ image_url: 'large.jpg', image_url_small: 'small.jpg' }],
+  card_sets: [
+    { set_name: 'Legend of Blue Eyes White Dragon', set_code: 'LOB-EN001', set_rarity: 'Ultra Rare' },
+    { set_name: 'Legendary Decks II', set_code: 'LDK2-ENJ01', set_rarity: 'Common' },
+  ],
+};
+
+describe('Yu-Gi-Oh printing rows', () => {
+  test('one card-level id expands into distinct printing identities', () => {
+    const rows = ygoPrintingRows(blueEyes);
+    assert.equal(rows.length, 2);
+    assert.deepEqual(rows.map((row) => row.printingId), [
+      '89631139:LOB-EN001',
+      '89631139:LDK2-ENJ01',
+    ]);
+    assert.equal(rows[1].rarity, 'Common');
+  });
+
+  test('set browsing keeps only the printing from that set', () => {
+    const rows = ygoPrintingRows(blueEyes, { name: 'Legendary Decks II', code: 'LDK2' });
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].number, 'LDK2-ENJ01');
+  });
+});
+
+describe('camera printing resolution', () => {
+  test('number and set must match the same printing', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      async json() { return { data: [blueEyes] }; },
+    });
+
+    const wrongPair = await resolvePrinting({
+      name: 'Blue-Eyes White Dragon', game: 'yugioh', number: '002', set: 'Legendary Decks II',
+    });
+    assert.equal(wrongPair, null);
+
+    const exact = await resolvePrinting({
+      name: 'Blue-Eyes White Dragon', game: 'yugioh', number: '01', set: 'Legendary Decks II',
+    });
+    assert.equal(exact?.printingId, '89631139:LDK2-ENJ01');
+  });
+});

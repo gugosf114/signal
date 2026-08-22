@@ -1,8 +1,8 @@
 // ─── Creator Directory ───────────────────────────────────────────────────────
 // Curated list of TCG creators worth tracking per game. The Signal prompt
-// uses this as a SEED — Claude is also free to surface emerging creators it
-// finds via web search, but every name on this list must be checked and
-// reported (hit OR explicit silence).
+// uses this as a recognition list. A broad YouTube query does not prove every
+// creator was checked, so the app may report matched names but never invents
+// silence for the rest.
 //
 // Tiers:
 //   T1 — flagship audience or proven price-moving impact

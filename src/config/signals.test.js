@@ -8,7 +8,14 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateOverallScore, sourceDirection, directionMultiplier } from './signals.js';
+import {
+  calculateOverallScore,
+  calculateScoreDetails,
+  sourceDirection,
+  directionMultiplier,
+  SIGNAL_KEYS,
+  SIGNAL_COUNT,
+} from './signals.js';
 
 const src = (...impls) => impls.map((implication) => ({ implication, url: 'https://x.test/a' }));
 
@@ -32,19 +39,12 @@ describe('sourceDirection', () => {
 });
 
 describe('directionMultiplier', () => {
-  test('bullish and neutral are unpenalised', () => {
+  test('maps bearish, neutral, and bullish evidence onto a bounded factor', () => {
     assert.equal(directionMultiplier(src('up', 'up')), 1);
-    assert.equal(directionMultiplier(src('neutral')), 1);
-    assert.equal(directionMultiplier([]), 1);
-  });
-
-  test('fully bearish is halved, not zeroed', () => {
-    assert.equal(directionMultiplier(src('down', 'down')), 0.5);
-  });
-
-  test('partly bearish is damped proportionally', () => {
-    // net = (1 - 3) / 4 = -0.5  →  1 + (-0.5 * 0.5) = 0.75
-    assert.equal(directionMultiplier(src('up', 'down', 'down', 'down')), 0.75);
+    assert.equal(directionMultiplier(src('neutral')), 0.5);
+    assert.equal(directionMultiplier([]), 0.5);
+    assert.equal(directionMultiplier(src('down', 'down')), 0);
+    assert.equal(directionMultiplier(src('up', 'down', 'down', 'down')), 0.25);
   });
 });
 
@@ -52,36 +52,42 @@ describe('calculateOverallScore', () => {
   const maxed = (key, ...impls) => ({ key, level: 5, sources: src(...impls) });
 
   test('all signals maxed and bullish scores 100', () => {
-    const signals = ['creator', 'community', 'ip_momentum', 'editorial',
-                     'competitive', 'scarcity', 'jp_hype', 'jp_release']
-      .map((k) => maxed(k, 'up'));
+    const signals = SIGNAL_KEYS.map((k) => maxed(k, 'up'));
     assert.equal(calculateOverallScore(signals, 'pokemon'), 100);
   });
 
-  test('the same levels on bearish evidence score lower — the Umbreon case', () => {
-    const keys = ['creator', 'community', 'ip_momentum', 'editorial',
-                  'competitive', 'scarcity', 'jp_hype', 'jp_release'];
-    const bullish = keys.map((k) => maxed(k, 'up'));
-    const bearish = keys.map((k) => maxed(k, 'down'));
+  test('the same levels on bearish evidence score as falling — the Umbreon case', () => {
+    const bullish = SIGNAL_KEYS.map((k) => maxed(k, 'up'));
+    const bearish = SIGNAL_KEYS.map((k) => maxed(k, 'down'));
     const hot = calculateOverallScore(bullish, 'pokemon');
     const angry = calculateOverallScore(bearish, 'pokemon');
     assert.equal(hot, 100);
-    assert.equal(angry, 50);           // halved, not zeroed
-    assert.ok(angry < hot, 'bearish evidence must not score like bullish evidence');
+    assert.equal(angry, 0);
   });
 
-  test('one bearish signal drags the total down by its own weight only', () => {
-    const keys = ['creator', 'community', 'ip_momentum', 'editorial',
-                  'competitive', 'scarcity', 'jp_hype', 'jp_release'];
-    const withOneBearish = keys.map((k) => maxed(k, k === 'community' ? 'down' : 'up'));
+  test('one bearish signal moves only its own configured weight', () => {
+    const withOneBearish = SIGNAL_KEYS.map((k) => maxed(k, k === 'community' ? 'down' : 'up'));
     const score = calculateOverallScore(withOneBearish, 'pokemon');
-    // community carries 0.09 of 0.87 total for pokemon; halving it costs ~5 points.
-    assert.ok(score > 90 && score < 100, `expected a small drop, got ${score}`);
+    assert.ok(score >= 89 && score <= 90, `expected about 90, got ${score}`);
   });
 
-  test('missing signals re-share their weight instead of scoring zero', () => {
+  test('missing signals stay neutral instead of making a partial scan perfect', () => {
     const only = [maxed('creator', 'up'), maxed('scarcity', 'up')];
-    assert.equal(calculateOverallScore(only, 'pokemon'), 100);
+    assert.equal(calculateOverallScore(only, 'pokemon'), 74);
+    assert.equal(calculateOverallScore([maxed('creator', 'up')], 'pokemon'), 63);
+    assert.equal(calculateOverallScore([], 'pokemon'), 50);
+  });
+
+  test('model levels are clamped to 0–5 and score never leaves 0–100', () => {
+    assert.equal(calculateOverallScore(SIGNAL_KEYS.map((key) => ({ key, level: 10, sources: src('up') })), 'pokemon'), 100);
+    assert.equal(calculateOverallScore(SIGNAL_KEYS.map((key) => ({ key, level: 10, sources: src('down') })), 'pokemon'), 0);
+    assert.equal(calculateOverallScore(SIGNAL_KEYS.map((key) => ({ key, level: -5, sources: src('up') })), 'pokemon'), 50);
+  });
+
+  test('reports coverage separately from the score', () => {
+    const details = calculateScoreDetails([maxed('creator', 'up')], 'pokemon');
+    assert.deepEqual(details, { score: 63, coveragePct: 25, evidencePct: 25, signalCount: 1 });
+    assert.equal(SIGNAL_COUNT, 8);
   });
 
   test('an unknown game scores zero rather than throwing', () => {

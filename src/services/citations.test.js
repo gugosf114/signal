@@ -44,6 +44,15 @@ describe('urlIsReal — exact matching', () => {
     assert.equal(urlIsReal('', urls), false);
     assert.equal(urlIsReal(null, urls), false);
     assert.equal(urlIsReal('not a url', urls), false);
+    assert.equal(urlIsReal('javascript:alert(1)', urls), false);
+    assert.equal(urlIsReal('data:text/html,bad', urls), false);
+  });
+
+  test('does not let a retrieved path unlock changed claims', () => {
+    const urls = real('https://real.example.com/item/1?q=real');
+    assert.equal(urlIsReal('https://real.example.com/item/1?q=fake', urls), false);
+    assert.equal(urlIsReal('http://real.example.com/item/1?q=real', urls), false);
+    assert.equal(urlIsReal('https://real.example.com/item/1/reviews?q=real', urls), false);
   });
 });
 
@@ -55,9 +64,9 @@ describe('urlIsReal — the path-prefix hole (regression)', () => {
     assert.equal(urlIsReal('https://shop.example.com/products-fake', urls), false);
   });
 
-  test('a genuine deeper sub-path is still accepted', () => {
+  test('a deeper path must have been retrieved itself', () => {
     const urls = real('https://shop.example.com/products/foo');
-    assert.equal(urlIsReal('https://shop.example.com/products/foo/reviews', urls), true);
+    assert.equal(urlIsReal('https://shop.example.com/products/foo/reviews', urls), false);
   });
 
   test('a bare host root vouches for nothing on that host', () => {
@@ -84,6 +93,12 @@ describe('urlIsReal — the YouTube hole (regression)', () => {
   test('rejects a YouTube URL carrying no extractable video ID', () => {
     const urls = real('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
     assert.equal(urlIsReal('https://www.youtube.com/results?search_query=umbreon', urls), false);
+  });
+
+  test('rejects a lookalike host carrying the same video ID', () => {
+    const urls = real('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    assert.equal(urlIsReal('https://notyoutube.com/watch?v=dQw4w9WgXcQ', urls), false);
+    assert.equal(extractYouTubeId('https://notyoutube.com/watch?v=dQw4w9WgXcQ'), null);
   });
 });
 
@@ -175,5 +190,21 @@ describe('filterHallucinatedSources', () => {
     const out = filterHallucinatedSources({}, urls);
     assert.deepEqual(out.signals, []);
     assert.equal(out._truncated, true);
+  });
+
+  test('filters model-returned eBay listings against retrieved item URLs', () => {
+    const ebayUrls = real('https://www.ebay.com/itm/123');
+    const out = filterHallucinatedSources({
+      signals: [],
+      ebay_listings: {
+        buy_it_now: [
+          { title: 'real', url: 'https://www.ebay.com/itm/123' },
+          { title: 'invented', url: 'https://www.ebay.com/itm/999' },
+        ],
+        auction: [],
+      },
+    }, ebayUrls);
+    assert.equal(out.ebay_listings.buy_it_now.length, 1);
+    assert.equal(out._droppedListings, 1);
   });
 });

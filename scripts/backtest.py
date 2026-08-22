@@ -26,7 +26,6 @@ Known limits, stated up front so nobody over-reads the output:
 
 import json
 import os
-import re
 import sys
 import time
 import urllib.parse
@@ -55,37 +54,50 @@ def get(url, tries=6):
     raise last
 
 
-def strip_suffix(name):
-    return re.sub(r"\s+(ex|EX|V|VMAX|VSTAR|GX)\s*$", "", name).strip()
+def price_pokemon(entry):
+    """Price one exact Pokémon catalogue printing."""
+    if entry.get("catalog_id"):
+        payload = get("https://api.pokemontcg.io/v2/cards/" + urllib.parse.quote(str(entry["catalog_id"])))
+        cards = [payload.get("data")] if payload.get("data") else []
+    elif entry.get("set_id") and entry.get("collector_number"):
+        query = f'set.id:{entry["set_id"]} number:{entry["collector_number"]}'
+        cards = get("https://api.pokemontcg.io/v2/cards?q=" + urllib.parse.quote(query) + "&pageSize=2").get("data", [])
+    else:
+        return None
+    if len(cards) != 1 or not cards[0]:
+        return None
+    card = cards[0]
+    variants = (card.get("tcgplayer") or {}).get("prices") or {}
+    wanted = entry.get("price_variant")
+    selected = variants.get(wanted) if wanted else None
+    if selected is None:
+        priced = [value for value in variants.values() if value.get("market") or value.get("mid")]
+        selected = max(priced, key=lambda value: value.get("market") or value.get("mid"), default=None)
+    value = (selected or {}).get("market") or (selected or {}).get("mid")
+    return (float(value), (card.get("set") or {}).get("name")) if value else None
 
 
-def price_pokemon(name, hint=None):
-    """Highest TCGPlayer market price across printings, preferring a set hint."""
-    url = ("https://api.pokemontcg.io/v2/cards?q="
-           + urllib.parse.quote(f'name:"{strip_suffix(name)}"')
-           + "&pageSize=25&orderBy=-set.releaseDate")
-    cards = get(url).get("data", [])
-    if hint:
-        cards = [c for c in cards if hint.lower() in (c.get("set") or {}).get("name", "").lower()] or cards
-    best = None
-    for c in cards:
-        for variant in ((c.get("tcgplayer") or {}).get("prices") or {}).values():
-            v = variant.get("market") or variant.get("mid")
-            if v and (best is None or v > best[0]):
-                best = (v, (c.get("set") or {}).get("name"))
-    return best
-
-
-def price_mtg(name):
-    c = get("https://api.scryfall.com/cards/named?fuzzy=" + urllib.parse.quote(name))
+def price_mtg(entry):
+    if entry.get("catalog_id"):
+        url = "https://api.scryfall.com/cards/" + urllib.parse.quote(str(entry["catalog_id"]))
+    elif entry.get("set_code") and entry.get("collector_number"):
+        url = ("https://api.scryfall.com/cards/"
+               + urllib.parse.quote(str(entry["set_code"])) + "/"
+               + urllib.parse.quote(str(entry["collector_number"])))
+    else:
+        return None
+    c = get(url)
     usd = (c.get("prices") or {}).get("usd")
     return (float(usd), c.get("set_name")) if usd else None
 
 
-def price_ygo(name):
-    d = get("https://db.ygoprodeck.com/api/v7/cardinfo.php?name=" + urllib.parse.quote(name))["data"][0]
-    v = (d.get("card_prices") or [{}])[0].get("tcgplayer_price")
-    return (float(v), "base printing") if v and float(v) > 0 else None
+def price_ygo(entry):
+    code = entry.get("set_code") or entry.get("collector_number")
+    if not code:
+        return None
+    card = get("https://db.ygoprodeck.com/api/v7/cardsetsinfo.php?setcode=" + urllib.parse.quote(str(code)))
+    value = card.get("set_price")
+    return (float(value), card.get("set_name")) if value and float(value) > 0 else None
 
 
 def current_price(entry):
@@ -93,11 +105,11 @@ def current_price(entry):
     name = entry["card"]
     try:
         if game == "pokemon":
-            return price_pokemon(name, entry.get("set_hint"))
+            return price_pokemon(entry)
         if game == "mtg":
-            return price_mtg(name)
+            return price_mtg(entry)
         if game == "yugioh":
-            return price_ygo(name)
+            return price_ygo(entry)
     except Exception as exc:  # noqa: BLE001
         print(f"    ! {name}: {exc}")
     return None
@@ -110,11 +122,64 @@ def load_baseline():
         return json.load(f)
 
 
-def cmd_snapshot():
+def has_exact_identity(entry):
+    game = (entry.get("game") or "").lower()
+    if game in {"pokemon", "mtg"}:
+        return bool(entry.get("catalog_id") or (entry.get("set_id") or entry.get("set_code")) and entry.get("collector_number"))
+    if game == "yugioh":
+        return bool(entry.get("set_code") or entry.get("collector_number"))
+    return False
+
+
+def valid_score(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def build_rows(data, price_lookup=current_price):
+    rows = []
+    skipped = []
+    for entry in data.get("cards", []):
+        if not entry.get("baseline_price"):
+            skipped.append((entry.get("card", "?"), "no baseline price"))
+            continue
+        if not has_exact_identity(entry):
+            skipped.append((entry.get("card", "?"), "no exact printing id"))
+            continue
+        got = price_lookup(entry)
+        if not got:
+            skipped.append((entry.get("card", "?"), "current exact price unavailable"))
+            continue
+        move = (got[0] - entry["baseline_price"]) / entry["baseline_price"] * 100
+        rows.append({
+            "score": entry.get("score"), "card": entry["card"], "then": entry["baseline_price"],
+            "now": got[0], "move": move, "new_set": bool(entry.get("new_set")),
+        })
+    return rows, skipped
+
+
+def split_performance(rows):
+    eligible = [row for row in rows if valid_score(row.get("score")) and not row.get("new_set")]
+    if len(eligible) < 2:
+        return None
+    mid = sum(row["score"] for row in eligible) / len(eligible)
+    high = [row["move"] for row in eligible if row["score"] >= mid]
+    low = [row["move"] for row in eligible if row["score"] < mid]
+    if not high or not low:
+        return None
+    return {"mid": mid, "high": high, "low": low}
+
+
+def cmd_snapshot(replace=False):
     """Freeze today's price next to each recorded score."""
     data = load_baseline()
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     for e in data["cards"]:
+        if not has_exact_identity(e):
+            print(f"  {e['card']:<48} skipped: no exact printing id")
+            continue
+        if e.get("baseline_price") and not replace:
+            print(f"  {e['card']:<48} kept existing baseline (use --replace to overwrite)")
+            continue
         got = current_price(e)
         if got:
             e["baseline_price"] = round(got[0], 2)
@@ -124,7 +189,8 @@ def cmd_snapshot():
         else:
             e["baseline_price"] = None
             print(f"  {e['card']:<48} no price available")
-    data["snapshot_date"] = stamp
+    if not data.get("snapshot_date") or replace:
+        data["snapshot_date"] = stamp
     with open(BASELINE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
         f.write("\n")
@@ -135,32 +201,24 @@ def cmd_check():
     """Re-price and report movement since the baseline, grouped by score."""
     data = load_baseline()
     base_date = data.get("snapshot_date", "?")
-    rows = []
-    for e in data["cards"]:
-        if not e.get("baseline_price"):
-            continue
-        got = current_price(e)
-        if not got:
-            continue
-        move = (got[0] - e["baseline_price"]) / e["baseline_price"] * 100
-        rows.append((e["score"], e["card"], e["baseline_price"], got[0], move, e.get("new_set")))
+    rows, skipped = build_rows(data)
 
     if not rows:
         sys.exit("No comparable rows — every lookup failed or the baseline is empty.")
 
-    print(f"\nBaseline {base_date} → today. {len(rows)} cards.\n")
+    print(f"\nBaseline {base_date} → today. {len(rows)} exact-print cards; {len(skipped)} skipped.\n")
     print(f"{'SCORE':>5}  {'CARD':<44}{'THEN':>10}{'NOW':>10}{'MOVE':>9}")
     print("-" * 80)
-    for score, card, then, now, move, new_set in sorted(rows, reverse=True):
-        flag = "  (new set)" if new_set else ""
-        print(f"{score:>5}  {card[:43]:<44}{then:>10,.2f}{now:>10,.2f}{move:>8.1f}%{flag}")
+    for row in sorted(rows, key=lambda item: item["score"] if valid_score(item["score"]) else -1, reverse=True):
+        score = f'{row["score"]:g}' if valid_score(row["score"]) else "—"
+        flag = "  (new set; excluded from verdict)" if row["new_set"] else ""
+        print(f"{score:>5}  {row['card'][:43]:<44}{row['then']:>10,.2f}{row['now']:>10,.2f}{row['move']:>8.1f}%{flag}")
 
     # The whole question in one number: do high scores outperform low ones?
-    mid = sum(r[0] for r in rows) / len(rows)
-    hi = [r[4] for r in rows if r[0] >= mid]
-    lo = [r[4] for r in rows if r[0] < mid]
+    split = split_performance(rows)
     print("-" * 80)
-    if hi and lo:
+    if split:
+        mid, hi, lo = split["mid"], split["high"], split["low"]
         hi_avg, lo_avg = sum(hi) / len(hi), sum(lo) / len(lo)
         print(f"above {mid:.0f}: {hi_avg:+.1f}% avg   ({len(hi)} cards)")
         print(f"below {mid:.0f}: {lo_avg:+.1f}% avg   ({len(lo)} cards)")
@@ -168,9 +226,17 @@ def cmd_check():
         print(f"\n{verdict}  (spread {hi_avg - lo_avg:+.1f} points)")
         print("\nSmall sample. Treat as a smoke test, not proof.")
     else:
-        print("Not enough spread in scores to split the set.")
+        print("Not enough exact, scored, mature-set rows to test the score yet.")
+
+    if skipped:
+        print("\nSkipped:")
+        for card, reason in skipped:
+            print(f"  - {card}: {reason}")
 
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
-    {"snapshot": cmd_snapshot, "check": cmd_check}.get(cmd, cmd_check)()
+    if cmd == "snapshot":
+        cmd_snapshot(replace="--replace" in sys.argv[2:])
+    else:
+        cmd_check()

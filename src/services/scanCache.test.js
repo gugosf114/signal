@@ -27,6 +27,8 @@ const {
 
 const RICH = { id: 'sv8pt5-161', game: 'pokemon' };
 const CHEAP = { id: 'sv8pt5-60', game: 'pokemon' };
+const YGO_COMMON = { id: '89631139', printingId: '89631139:LDK2-ENJ01', game: 'yugioh' };
+const YGO_ULTRA = { id: '89631139', printingId: '89631139:LOB-EN001', game: 'yugioh' };
 
 describe('scanCache printing keys', () => {
   beforeEach(() => { store = {}; });
@@ -42,6 +44,13 @@ describe('scanCache printing keys', () => {
   test('a pinned scan is not served to an unpinned search', () => {
     setCachedScan('Umbreon ex', 'pokemon', { prices: { en: 1495 } }, RICH);
     assert.equal(getCachedScan('Umbreon ex', 'pokemon'), null);
+  });
+
+  test('Yu-Gi-Oh reprints sharing one card id use different entries', () => {
+    setCachedScan('Blue-Eyes White Dragon', 'yugioh', { printing: 'common' }, YGO_COMMON);
+    setCachedScan('Blue-Eyes White Dragon', 'yugioh', { printing: 'ultra' }, YGO_ULTRA);
+    assert.equal(getCachedScan('Blue-Eyes White Dragon', 'yugioh', YGO_COMMON).printing, 'common');
+    assert.equal(getCachedScan('Blue-Eyes White Dragon', 'yugioh', YGO_ULTRA).printing, 'ultra');
   });
 
   test('unpinned scans still round-trip', () => {
@@ -74,5 +83,10 @@ describe('scanCache printing keys', () => {
     // each get their own cache entry keyed on "undefined".
     setCachedScan('Dark Magician', 'yugioh', { prices: { en: 1 } }, { game: 'yugioh' });
     assert.equal(getCachedScan('Dark Magician', 'yugioh').prices.en, 1);
+  });
+
+  test('partial scans are never cached', () => {
+    setCachedScan('Umbreon ex', 'pokemon', { _truncated: true, prices: { en: 10 } }, RICH);
+    assert.equal(getCachedScan('Umbreon ex', 'pokemon', RICH), null);
   });
 });

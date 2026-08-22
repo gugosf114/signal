@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { getScoreLabel, GAME_LABELS } from '../config/signals';
+import { getScoreLabel, GAME_LABELS, SCORE_VERSION } from '../config/signals';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useWatchedCards } from './WatchedCards';
 import CardImage from './CardImage';
 import CardLightbox from './CardLightbox';
 import { printingLabel } from '../services/printing';
 
-export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null }) {
+export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, expectedSignalCount = 8, coveragePct = 0, evidencePct = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null }) {
   const { label, color, blurb } = getScoreLabel(score);
   const gameMeta = GAME_LABELS[game];
   const glowColor = gameMeta?.color || '#C44040';
@@ -19,35 +19,48 @@ export default function OverallScore({ score, cardName, game, summary, truncated
   const watched = isWatched(cardName, game, pin);
 
   useEffect(() => {
-    if (score === null || score === undefined || !cardName) return;
+    if (score === null || score === undefined || !cardName || truncated) return;
     try {
       const raw = localStorage.getItem('signal_score_history');
-      const history = raw ? JSON.parse(raw) : [];
-      const entry = { score, date: new Date().toISOString(), cardName, game, pin };
-      const deduped = [entry, ...history.filter(h => !(h.cardName === cardName && h.game === game))];
+      const parsedHistory = raw ? JSON.parse(raw) : [];
+      const history = Array.isArray(parsedHistory) ? parsedHistory : [];
+      const identity = pin?.printingId || pin?.id || `${pin?.setId || ''}:${pin?.number || ''}`;
+      const entry = { score, scoreVersion: SCORE_VERSION, date: new Date().toISOString(), cardName, game, pin };
+      const deduped = [entry, ...history.filter((item) => {
+        const otherIdentity = item?.pin?.printingId || item?.pin?.id || `${item?.pin?.setId || ''}:${item?.pin?.number || ''}`;
+        return !(item.cardName === cardName && item.game === game && otherIdentity === identity);
+      })];
       const trimmed = deduped.slice(0, 100);
       localStorage.setItem('signal_score_history', JSON.stringify(trimmed));
       try {
         const recentRaw = localStorage.getItem('signal_recent_scans');
-        const recent = recentRaw ? JSON.parse(recentRaw) : [];
-        const recentEntry = { name: cardName, game, score, scoredAt: entry.date, pin };
-        const recentNew = [recentEntry, ...recent.filter(r => !(r.name === cardName && r.game === game))].slice(0, 8);
+        const parsedRecent = recentRaw ? JSON.parse(recentRaw) : [];
+        const recent = Array.isArray(parsedRecent) ? parsedRecent : [];
+        const recentEntry = { name: cardName, game, score, scoreVersion: SCORE_VERSION, scoredAt: entry.date, pin };
+        const recentNew = [recentEntry, ...recent.filter((item) => {
+          const otherIdentity = item?.pin?.printingId || item?.pin?.id || `${item?.pin?.setId || ''}:${item?.pin?.number || ''}`;
+          return !(item.name === cardName && item.game === game && otherIdentity === identity);
+        })].slice(0, 8);
         localStorage.setItem('signal_recent_scans', JSON.stringify(recentNew));
+        window.dispatchEvent(new Event('signal-history-updated'));
       } catch {}
-      if (trimmed.length >= 5) {
-        const allScores = trimmed.map(h => h.score);
-        const lowerCount = allScores.filter(s => s < score).length;
+      const comparable = trimmed.filter((item) => item.scoreVersion === SCORE_VERSION && Number.isFinite(item.score));
+      if (comparable.length >= 5) {
+        const allScores = comparable.map((item) => item.score);
+        const lowerCount = allScores.filter((value) => value < score).length;
         const topPct = 100 - Math.round((lowerCount / allScores.length) * 100);
-        setPercentileInfo({ topPct, total: trimmed.length });
+        setPercentileInfo({ topPct, total: comparable.length });
+      } else {
+        setPercentileInfo(null);
       }
     } catch {}
-  }, [score, cardName, game, pin]);
+  }, [score, cardName, game, pin, truncated]);
 
   return (
     <>
       <div className="fade-slide-up" style={{
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : '200px 1fr',
+        gridTemplateColumns: isMobile ? '1fr' : '260px 1fr',
         gap: 0,
         background: '#0E1014',
         borderRadius: 3,
@@ -70,7 +83,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
           <CardImage
             cardName={cardName}
             game={game}
-            size={isMobile ? 200 : 360}
+            size={isMobile ? 200 : 320}
             glowColor={glowColor}
             onLoad={(url) => { setCardImageUrl(url); onCardImageLoaded?.(url); }}
             onClick={() => setLightboxOpen(true)}
@@ -114,6 +127,17 @@ export default function OverallScore({ score, cardName, game, summary, truncated
                 {printingLabel(printing)}
               </div>
             )}
+            {!printingLabel(printing) && (
+              <div style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 10,
+                color: '#A09060',
+                marginBottom: 10,
+                letterSpacing: '0.03em',
+              }}>
+                PRINTING NOT PINNED · PRICE MAY VARY BY VERSION
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               {gameMeta && (
                 <span style={{
@@ -143,6 +167,16 @@ export default function OverallScore({ score, cardName, game, summary, truncated
           </div>
 
           <div>
+            <div style={{
+              marginBottom: 5,
+              fontFamily: "'Syne', sans-serif",
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.16em',
+              color: '#7A7368',
+            }}>
+              MARKET PRESSURE
+            </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
               <span className="score-animate" style={{
                 fontSize: 48,
@@ -166,6 +200,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               <button
                 onClick={() => toggleWatch({ name: cardName, game, score, enPrice, pin })}
                 title={watched ? 'Unwatch this card' : 'Watch this card'}
+                aria-label={watched ? `Stop watching ${cardName}` : `Watch ${cardName}`}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -202,6 +237,16 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               lineHeight: 1.4,
             }}>
               {blurb}
+            </div>
+
+            <div style={{
+              marginTop: 7,
+              fontSize: 10,
+              fontFamily: "'JetBrains Mono', monospace",
+              color: evidencePct < 50 ? '#A09060' : '#7A7368',
+              letterSpacing: '0.04em',
+            }}>
+              {signalCount}/{expectedSignalCount} SIGNALS · {evidencePct}% WITH VERIFIED SOURCES
             </div>
 
             {/* A bare "62" is meaningless on its own — the comparison to the
@@ -245,7 +290,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
                 flexWrap: 'wrap',
               }}>
                 <span style={{ fontSize: 14, fontFamily: "'JetBrains Mono', monospace", color: '#A09060', letterSpacing: '0.06em' }}>
-                  PARTIAL · {signalCount} of 9 signals
+                  PARTIAL · {signalCount} of {expectedSignalCount} signals
                 </span>
                 {onRetry && (
                   <button

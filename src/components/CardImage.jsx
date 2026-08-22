@@ -21,6 +21,7 @@ export default function CardImage({ cardName, game, size = 200, glowColor = '#C4
   }, [cardName, game]);
 
   const w = size * 0.72;
+  const Wrapper = onClick ? 'button' : 'div';
 
   if (error || !cardName) {
     return (
@@ -49,11 +50,13 @@ export default function CardImage({ cardName, game, size = 200, glowColor = '#C4
   }
 
   return (
-    <div
+    <Wrapper
+      type={onClick ? 'button' : undefined}
       className="card-image-reveal"
-      style={{ position: 'relative', flexShrink: 0, cursor: onClick ? 'zoom-in' : 'default' }}
+      style={{ position: 'relative', flexShrink: 0, cursor: onClick ? 'zoom-in' : 'default', padding: 0, border: 'none', background: 'transparent' }}
       onClick={onClick}
-      title={onClick ? 'Click to expand' : undefined}
+      title={onClick ? 'Open card viewer' : undefined}
+      aria-label={onClick ? `Open ${cardName} card viewer` : undefined}
     >
       <div style={{
         position: 'absolute',
@@ -85,6 +88,6 @@ export default function CardImage({ cardName, game, size = 200, glowColor = '#C4
           setError(true);
         }}
       />
-    </div>
+    </Wrapper>
   );
 }

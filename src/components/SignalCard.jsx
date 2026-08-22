@@ -91,21 +91,32 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
     <div
       id={`signal-${signal.key}`}
       className={`fade-slide-up fade-slide-up-${animDelay} signal-card-row`}
-      role="button"
-      tabIndex={0}
-      aria-expanded={expanded}
       style={{
         padding: '14px 0',
         borderBottom: `1px solid ${isJapan ? 'rgba(196,64,64,0.06)' : '#14161A'}`,
-        cursor: 'pointer',
         transition: 'background 0.12s',
         '--signal-color': meta.color,
       }}
-      onClick={toggle}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } }}
       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.012)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
     >
+      <button
+        type="button"
+        className="signal-card-toggle"
+        aria-expanded={expanded}
+        aria-controls={`signal-evidence-${signal.key}`}
+        onClick={toggle}
+        style={{
+          display: 'block',
+          width: '100%',
+          padding: 0,
+          border: 'none',
+          background: 'transparent',
+          color: 'inherit',
+          textAlign: 'left',
+          cursor: 'pointer',
+        }}
+      >
       {/* Row: mark + label + heatbar + chevron */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flexShrink: 0, width: 16, display: 'flex', alignItems: 'center' }}>
@@ -183,9 +194,10 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
           {preview}
         </div>
       )}
+      </button>
 
       {/* Expanded evidence */}
-      <div className={`signal-evidence ${expanded ? 'expanded' : ''}`}>
+      <div id={`signal-evidence-${signal.key}`} className={`signal-evidence ${expanded ? 'expanded' : ''}`}>
         <div>
           {expanded && (
             <div style={{
@@ -212,7 +224,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
                   borderTop: '1px solid rgba(26, 29, 36, 0.6)',
                 }}>
                   {/* Source navigation dots — one per source, click to jump */}
-                  <div style={{
+                  {sources.length > 1 && <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
@@ -255,7 +267,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
                     }}>
                       {activeSourceIdx + 1}/{sources.length}
                     </span>
-                  </div>
+                  </div>}
 
                   {/* YouTube citations — 2-up grid on desktop when ≥2 */}
                   {ytSources.length >= 2 ? (

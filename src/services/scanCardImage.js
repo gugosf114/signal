@@ -8,6 +8,8 @@
 // capture (`capture="environment"`), which on Android opens the camera app
 // directly inside the Capacitor WebView.
 
+import { fetchWithTimeout } from './http.js';
+
 const API_URL = 'https://api.anthropic.com/v1/messages';
 // Haiku handles reading a card's name/set/number off a clear photo just as well
 // as Sonnet at ~1/3 the cost — the heavy synthesis stays on Sonnet in analyzeCard.
@@ -34,20 +36,6 @@ Rules:
 - If the image is not a TCG card or is unreadable, return name "" and confidence "low" with a notes sentence explaining what you saw.
 - Do NOT fabricate. If unsure, leave a field null and lower the confidence.`;
 
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      // dataURL like "data:image/jpeg;base64,...." — strip the prefix
-      const dataUrl = String(reader.result || '');
-      const comma = dataUrl.indexOf(',');
-      resolve(comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl);
-    };
-    reader.onerror = () => reject(reader.error || new Error('File read failed'));
-    reader.readAsDataURL(file);
-  });
-}
-
 // ─── Getting the photo small enough to send ──────────────────────────────────
 // A phone camera hands back a 12-50MP JPEG: 3-12MB on disk, a third bigger
 // again once base64'd. The API takes 5MB per image, and downscales anything
@@ -57,6 +45,11 @@ function fileToBase64(file) {
 // without it.
 const MAX_EDGE = 1568;
 const MAX_BASE64_BYTES = 4.5 * 1024 * 1024;
+const MAX_INPUT_BYTES = 25 * 1024 * 1024;
+
+function abortIfNeeded(signal) {
+  if (signal?.aborted) throw new DOMException('Image scan cancelled.', 'AbortError');
+}
 
 async function decodeImage(file) {
   if (typeof createImageBitmap === 'function') {
@@ -75,8 +68,10 @@ async function decodeImage(file) {
   });
 }
 
-async function toSendableBase64(file) {
+async function toSendableBase64(file, signal) {
+  abortIfNeeded(signal);
   const bmp = await decodeImage(file);
+  abortIfNeeded(signal);
   const w = bmp.width || bmp.naturalWidth;
   const h = bmp.height || bmp.naturalHeight;
   if (!w || !h) throw new Error('decode failed');
@@ -87,6 +82,7 @@ async function toSendableBase64(file) {
   canvas.height = Math.max(1, Math.round(h * scale));
   canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
   bmp.close?.();
+  abortIfNeeded(signal);
 
   // Quality steps down only if a card photo somehow still lands over the wire
   // limit — at 1568px it never should.
@@ -98,24 +94,19 @@ async function toSendableBase64(file) {
   throw new Error('too big');
 }
 
-function pickMediaType(file) {
-  if (!file?.type) return 'image/jpeg';
-  if (file.type === 'image/jpeg' || file.type === 'image/png' ||
-      file.type === 'image/webp' || file.type === 'image/gif') return file.type;
-  return 'image/jpeg';
-}
-
 export async function scanCardImage(file, opts = {}) {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error('Missing VITE_ANTHROPIC_API_KEY. Create a .env.local file with your API key.');
   }
   if (!file) throw new Error('No image provided.');
+  if (Number(file.size) > MAX_INPUT_BYTES) throw new Error('That photo is too large to open. Use a smaller picture.');
+  abortIfNeeded(opts.signal);
 
   let base64;
-  let mediaType = 'image/jpeg';
+  const mediaType = 'image/jpeg';
   try {
-    base64 = await toSendableBase64(file);
+    base64 = await toSendableBase64(file, opts.signal);
   } catch {
     // Couldn't decode it here. HEIC is the usual reason — Samsung's "High
     // efficiency" picture format — and the API can't read it either, so say so
@@ -126,14 +117,10 @@ export async function scanCardImage(file, opts = {}) {
         'That photo is in HEIC format, which can\'t be read. In the camera app: Settings → Picture format → JPEG.'
       );
     }
-    base64 = await fileToBase64(file);
-    mediaType = pickMediaType(file);
-    if (base64.length > MAX_BASE64_BYTES) {
-      throw new Error('That photo is too large to send. Try a smaller picture.');
-    }
+    throw new Error('That image could not be safely resized. Use a JPEG or PNG screenshot of the card.');
   }
 
-  const response = await fetch(API_URL, {
+  const response = await fetchWithTimeout(API_URL, {
     method: 'POST',
     signal: opts.signal,
     headers: {
@@ -157,7 +144,7 @@ export async function scanCardImage(file, opts = {}) {
         ],
       }],
     }),
-  });
+  }, 30000);
 
   if (!response.ok) {
     const err = await response.text();
@@ -176,12 +163,31 @@ export async function scanCardImage(file, opts = {}) {
   const parsed = tryParse(text);
   if (!parsed) throw new Error('Could not parse card identification. Try a clearer photo.');
 
-  if (!parsed.name) {
+  const clean = validateCardIdentification(parsed);
+  if (!clean.name) {
     const reason = parsed.notes || 'No card name detected.';
     throw new Error(`Couldn't identify a card — ${reason}`);
   }
 
-  return parsed;
+  if (clean.confidence === 'low') throw new Error(`Couldn't identify the card with enough confidence — ${clean.notes || 'try a clearer photo'}`);
+  return clean;
+}
+
+export function validateCardIdentification(value) {
+  const input = value && typeof value === 'object' ? value : {};
+  const cleanText = (field, max) => typeof field === 'string'
+    ? field.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max)
+    : '';
+  const game = ['pokemon', 'yugioh', 'mtg'].includes(input.game) ? input.game : null;
+  const confidence = ['high', 'medium', 'low'].includes(input.confidence) ? input.confidence : 'low';
+  return {
+    name: cleanText(input.name, 180),
+    game,
+    set: cleanText(input.set, 160) || null,
+    number: cleanText(input.number, 80) || null,
+    confidence,
+    notes: cleanText(input.notes, 240),
+  };
 }
 
 function tryParse(text) {

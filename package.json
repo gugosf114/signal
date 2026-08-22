@@ -8,23 +8,22 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test src/services/citations.test.js src/services/jsonRepair.test.js src/services/fetchCardImage.test.js src/services/scanCache.test.js src/services/collection.test.js src/services/printing.test.js src/config/signals.test.js"
+    "test": "node --test src/services/http.test.js src/services/citations.test.js src/services/jsonRepair.test.js src/services/validateAnalysis.test.js src/services/fetchCardImage.test.js src/services/scanCardImage.test.js src/services/fetchCardData.test.js src/services/fetchExpansions.test.js src/services/lookupBySetCode.test.js src/services/scanCache.test.js src/services/collection.test.js src/services/printing.test.js src/config/signals.test.js && python3 -m unittest scripts/test_backtest.py"
   },
   "dependencies": {
-    "@capacitor/android": "^8.3.4",
-    "@capacitor/core": "^8.3.4",
-    "@capacitor/filesystem": "^8.1.2",
-    "@capgo/capacitor-social-login": "^8.3.22",
-    "@supabase/supabase-js": "^2.106.2",
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/filesystem": "^8.1.3",
+    "@capacitor/share": "^8.0.1",
     "html2pdf.js": "^0.14.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "simple-icons": "^16.19.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.3.4",
+    "@capacitor/cli": "8.4.2",
     "@types/react": "^18.3.12",
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.0"
+    "vite": "^6.4.3"
   }
 }

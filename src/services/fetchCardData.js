@@ -8,6 +8,8 @@
 //   Scryfall         — api.scryfall.com    (MTG prices + legality + EDHREC rank)
 //   YGOPRODeck       — db.ygoprodeck.com   (YGO prices from TCGPlayer/Cardmarket)
 
+import { fetchWithTimeout } from './http.js';
+
 // `pin` is a card picked from the search suggestions: {id, game, ...}. Without
 // it we look the name up and take the first hit, which for "Charizard" is one
 // arbitrary printing out of hundreds — different set, different rarity,
@@ -17,7 +19,11 @@ export async function fetchCardData(cardName, game, pin = null) {
     if (pin?.id) {
       const exact = await fetchPinned(pin);
       if (exact) return exact;
-      // Fall through on a dead id rather than returning nothing.
+      // A chosen catalogue row is a hard identity boundary. Falling back to a
+      // name search can join the pin's set/number to another printing's price,
+      // rarity, and set total. A dead pin is therefore a miss, not permission
+      // to guess.
+      return null;
     }
     if (game === 'pokemon') return await fetchPokemonData(cardName);
     if (game === 'mtg')     return await fetchMTGData(cardName);
@@ -50,7 +56,7 @@ async function retryFetch(url, init, tries = 3) {
   let last;
   for (let i = 0; i < tries; i++) {
     try {
-      const res = await fetch(url, init);
+      const res = await fetchWithTimeout(url, init || {}, 8000);
       if (res.ok || (res.status >= 400 && res.status < 500)) return res;
       last = new Error(String(res.status));
     } catch (e) {
@@ -84,7 +90,7 @@ async function fetchPinned(pin) {
       if (!res.ok) return null;
       const data = await res.json();
       if (data.error) return null;
-      return data.data?.[0] ? shapeYGO(data.data[0]) : null;
+      return data.data?.[0] ? shapeYGO(data.data[0], pin) : null;
     }
   } catch {
     return null;
@@ -97,7 +103,6 @@ async function fetchPinned(pin) {
 async function fetchPokemonData(cardName) {
   const cleanName = cardName
     .replace(/"/g, '')
-    .replace(/\s+(ex|EX|V|VMAX|VSTAR|GX)\s*$/i, '')
     .trim();
 
   const res = await retryFetch(
@@ -138,6 +143,8 @@ function shapePokemon(card) {
 
   return {
     game: 'pokemon',
+    catalogId: card.id || null,
+    printingId: card.id || null,
     name: card.name,
     setName: card.set?.name,
     setId: card.set?.id,
@@ -183,6 +190,8 @@ function shapeMTG(card) {
 
   return {
     game: 'mtg',
+    catalogId: card.id || null,
+    printingId: card.id || null,
     name: card.name,
     setName: card.set_name,
     setId: card.set,
@@ -212,13 +221,26 @@ async function fetchYGOData(cardName) {
   return shapeYGO(card);
 }
 
-function shapeYGO(card) {
+function shapeYGO(card, pin = null) {
   const p = card.card_prices?.[0] || {};
   const priceLines = [];
   const nonZero = (v) => v && v !== '0.00';
-  if (nonZero(p.tcgplayer_price))  priceLines.push(`TCGPlayer: $${p.tcgplayer_price}`);
-  if (nonZero(p.cardmarket_price)) priceLines.push(`Cardmarket: €${p.cardmarket_price}`);
-  if (nonZero(p.ebay_price))       priceLines.push(`eBay avg: $${p.ebay_price}`);
+  if (nonZero(p.tcgplayer_price))  priceLines.push(`TCGPlayer all printings: $${p.tcgplayer_price}`);
+  if (nonZero(p.cardmarket_price)) priceLines.push(`Cardmarket all printings: €${p.cardmarket_price}`);
+  if (nonZero(p.ebay_price))       priceLines.push(`eBay all printings avg: $${p.ebay_price}`);
+
+  const prints = Array.isArray(card.card_sets) ? card.card_sets : [];
+  const wantedCodes = [pin?.number, pin?.setId, pin?.printingId?.split(':').slice(1).join(':')]
+    .filter(Boolean)
+    .map((value) => String(value).trim().toUpperCase());
+  const wantedName = String(pin?.setName || '').trim().toLowerCase();
+  const chosen = pin
+    ? prints.find((entry) => wantedCodes.includes(String(entry.set_code || '').trim().toUpperCase()))
+      || prints.find((entry) => wantedName && String(entry.set_name || '').trim().toLowerCase() === wantedName)
+      || null
+    : (prints[0] || null);
+
+  if (pin && !chosen) return null;
 
   const recentSets = (card.card_sets || [])
     .slice(-3)
@@ -226,18 +248,21 @@ function shapeYGO(card) {
 
   return {
     game: 'yugioh',
+    catalogId: card.id != null ? String(card.id) : null,
+    printingId: chosen?.set_code && card.id != null ? `${card.id}:${chosen.set_code}` : (card.id != null ? String(card.id) : null),
     name: card.name,
     // Yu-Gi-Oh's identifier is the set code stamped on the card — "LOB-EN005".
     // This shape returned neither a set nor a number, so Yu-Gi-Oh results could
     // never show which printing they were about.
-    setName: card.card_sets?.[0]?.set_name || null,
-    setId: card.card_sets?.[0]?.set_code || null,
-    number: card.card_sets?.[0]?.set_code || null,
-    rarity: card.card_sets?.[0]?.set_rarity || null,
+    setName: chosen?.set_name || null,
+    setId: chosen?.set_code || null,
+    number: chosen?.set_code || null,
+    rarity: chosen?.set_rarity || null,
     type: card.type,
     race: card.race,
     archetype: card.archetype,
     priceLines: priceLines.length ? priceLines : null,
+    priceScope: 'card-level across all printings',
     recentSets: recentSets.length ? recentSets : null,
     imageUrl: card.card_images?.[0]?.image_url,
   };
@@ -265,6 +290,7 @@ export function buildCardDataBlock(cardData) {
     lines.push('', `EN PRICES${src}:`);
     cardData.priceLines.forEach(p => lines.push(`  • ${p}`));
   }
+  if (cardData.priceScope) lines.push(`Price scope: ${cardData.priceScope}`);
   if (cardData.euTrend) lines.push(`  • ${cardData.euTrend}`);
   if (cardData.trend30d) lines.push(`30-day trend: ${cardData.trend30d}`);
 

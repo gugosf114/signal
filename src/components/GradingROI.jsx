@@ -22,7 +22,7 @@ const NEGATIVE  = '#C44040';
 const WARM      = '#A09060';
 
 export default function GradingROI({ data }) {
-  if (!data || data.confidence === 'insufficient_data') return null;
+  if (!data || data.confidence === 'insufficient_data' || data.verdict === 'insufficient_data') return null;
 
   const { raw_price_usd, psa10_est_usd, grading_cost_usd, net_roi_usd, net_roi_pct, verdict, confidence, note } = data;
 
@@ -30,6 +30,7 @@ export default function GradingROI({ data }) {
     worth_grading:     { color: POSITIVE, label: 'Worth Grading' },
     marginal:          { color: WARM,     label: 'Marginal' },
     not_worth_grading: { color: NEGATIVE, label: 'Skip Grading' },
+    insufficient_data: { color: INK_MUTE, label: 'No verified comp' },
   }[verdict] || { color: INK_MUTE, label: '—' };
 
   const roiPositive = net_roi_usd > 0;
@@ -110,7 +111,7 @@ export default function GradingROI({ data }) {
           letterSpacing: '0.04em',
           marginTop: 6,
         }}>
-          Low confidence — PSA 10 estimate from model knowledge, not a retrieved sale. Verify on eBay sold.
+          Low confidence · verify the cited graded sale before using this estimate.
         </div>
       )}
     </div>

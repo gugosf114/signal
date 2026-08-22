@@ -6,10 +6,12 @@
 //   YGO   → YGOPRODeck: current TCG/OCG ban status
 //   Pokémon → TCG API: all existing prints (scarcity) + upcoming EN sets
 
+import { fetchWithTimeout } from './http.js';
+
 // ─── MTG / Scryfall ──────────────────────────────────────────────────────────
 
 async function scryfallCard(cardName) {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`
   );
   if (!res.ok) return null;
@@ -43,7 +45,7 @@ async function scryfallCard(cardName) {
 }
 
 async function scryfallUpcomingSets() {
-  const res = await fetch('https://api.scryfall.com/sets');
+  const res = await fetchWithTimeout('https://api.scryfall.com/sets');
   if (!res.ok) return null;
   const j = await res.json();
   const today = new Date().toISOString().slice(0, 10);
@@ -55,7 +57,7 @@ async function scryfallUpcomingSets() {
 
 async function scryfallPrintCount(printsUri) {
   if (!printsUri) return null;
-  const res = await fetch(printsUri + '&unique=prints');
+  const res = await fetchWithTimeout(printsUri + '&unique=prints');
   if (!res.ok) return null;
   const j = await res.json();
   return j.total_cards || null;
@@ -64,7 +66,7 @@ async function scryfallPrintCount(printsUri) {
 // ─── Yu-Gi-Oh! / YGOPRODeck ─────────────────────────────────────────────────
 
 async function ygoBanlist(cardName) {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}&banlist_info=yes`
   );
   if (!res.ok) return null;
@@ -83,7 +85,7 @@ async function ygoBanlist(cardName) {
 
 async function pokemonCardPrints(cardName) {
   const q = `name:"${cardName}"`;
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&select=id,name,set,rarity,number&pageSize=50`
   );
   if (!res.ok) return null;
@@ -100,7 +102,7 @@ async function pokemonCardPrints(cardName) {
 }
 
 async function pokemonUpcomingSets() {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     'https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate&pageSize=20'
   );
   if (!res.ok) return null;
@@ -164,12 +166,12 @@ export function catalystBlock(data) {
   if (data.game === 'mtg' && data.card) {
     const c = data.card;
     lines.push(`Card: ${c.name} | Set: ${c.set} (${c.released}) | Rarity: ${c.rarity}`);
-    if (c.reserved) lines.push('RESERVED LIST: Yes — legally cannot be reprinted. Scarcity is permanent.');
-    else lines.push(`Reprint: ${c.reprint ? 'Yes' : 'No'} | Print count: ${c.print_count ?? 'unknown'}`);
+    if (c.reserved) lines.push('RESERVED LIST: Yes — Wizards of the Coast policy says this card will not be reprinted in a functionally identical form. This is company policy, not law.');
+    else lines.push(`Reprint: ${c.reprint ? 'Yes' : 'No'} | Catalogue printing entries: ${c.print_count ?? 'unknown'} (entry count is not print quantity)`);
     if (c.formats_banned.length) lines.push(`Banned in: ${c.formats_banned.join(', ')}`);
     if (c.formats_restricted.length) lines.push(`Restricted in: ${c.formats_restricted.join(', ')}`);
     if (c.formats_legal.length) lines.push(`Legal in: ${c.formats_legal.join(', ')}`);
-    if (c.edhrec_rank) lines.push(`EDHREC rank: #${c.edhrec_rank} (Commander demand)`);
+    if (c.edhrec_rank) lines.push(`EDHREC rank: #${c.edhrec_rank} (deck-list popularity, not purchase demand)`);
     if (data.upcoming?.length) {
       lines.push('Upcoming MTG sets (EN):');
       for (const s of data.upcoming) lines.push(`  ${s.date} — ${s.name} (${s.type})`);
@@ -182,19 +184,16 @@ export function catalystBlock(data) {
     if (b.archetype) lines.push(`Archetype: ${b.archetype}`);
     const isBanned = b.ban_tcg === 'Banned';
     const isLimited = b.ban_tcg === 'Limited';
-    if (isBanned) lines.push('BANNED (TCG) — zero competitive demand; price driven by collection/nostalgia only.');
-    else if (isLimited) lines.push('LIMITED to 1 — high competitive demand signal; scarcity amplified.');
-    else if (b.ban_tcg === 'Semi-Limited') lines.push('SEMI-LIMITED (max 2) — moderate demand restriction.');
-    else lines.push('Unlimited — competitive demand depends purely on meta usage.');
+    if (isBanned) lines.push('BANNED (TCG) — cannot be used in that ruleset; this does not prove market demand.');
+    else if (isLimited) lines.push('LIMITED to 1 in the TCG ruleset; this does not prove market demand or supply.');
+    else if (b.ban_tcg === 'Semi-Limited') lines.push('SEMI-LIMITED (max 2) in the TCG ruleset.');
+    else lines.push('Unlimited in the TCG ruleset; current play rate was not measured here.');
   }
 
   if (data.game === 'pokemon') {
     if (data.prints) {
       const p = data.prints;
-      lines.push(`Total prints found: ${p.total_prints}`);
-      if (p.total_prints === 1) lines.push('Single print run — high scarcity; reprint risk low until JP re-release announced.');
-      else if (p.total_prints <= 3) lines.push('Limited prints — moderate scarcity.');
-      else lines.push('Multiple prints — lower scarcity; check if current print is still in print.');
+      lines.push(`Catalogue printing entries found: ${p.total_prints}. This counts catalogue rows, not copies printed, supply, or scarcity.`);
       const bySet = p.prints.slice(0, 5).map((c) => `${c.set} (${c.released || '?'})`).join(', ');
       lines.push(`Sets: ${bySet}${p.total_prints > 5 ? ` + ${p.total_prints - 5} more` : ''}`);
     }

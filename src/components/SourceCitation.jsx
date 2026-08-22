@@ -64,8 +64,19 @@ const IMPLICATION_META = {
 };
 
 function tryHostname(url) {
-  try { return new URL(url).hostname.replace(/^www\./, ''); }
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+    return parsed.hostname.replace(/^www\./, '');
+  }
   catch { return null; }
+}
+
+function safeHttpUrl(value) {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : null;
+  } catch { return null; }
 }
 
 function ReachChip({ reach }) {
@@ -115,7 +126,7 @@ function YouTubeEmbed({ videoId, title }) {
       ) : (
         <button
           type="button"
-          onClick={() => setPlaying(true)}
+          onClick={(event) => { event.stopPropagation(); setPlaying(true); }}
           aria-label="Play video"
           style={{
             display: 'block',
@@ -206,6 +217,7 @@ export default function SourceCitation({ source }) {
   // arbitrary text like "limitless options" to the Limitless TCG brand.
   const brand = brandFromUrl(source.url);
   const ytId = extractYouTubeId(source.url);
+  const href = safeHttpUrl(source.url);
 
   return (
     <div style={{
@@ -287,11 +299,12 @@ export default function SourceCitation({ source }) {
         </div>
 
         {/* Title — link */}
-        {source.url ? (
+        {href ? (
           <a
-            href={source.url}
+            href={href}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(event) => event.stopPropagation()}
             style={{
               fontFamily: "'Instrument Serif', serif",
               fontSize: 15,

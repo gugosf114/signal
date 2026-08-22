@@ -9,6 +9,8 @@ import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 
 import androidx.core.app.NotificationCompat;
@@ -23,7 +25,10 @@ import androidx.core.app.NotificationCompat;
 public class ScanForegroundService extends Service {
     private static final String CHANNEL_ID = "signal_scan";
     private static final int NOTIF_ID = 4711;
+    private static final long MAX_RUNTIME_MS = 3 * 60 * 1000L;
     private PowerManager.WakeLock wakeLock;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable stopAfterCap = this::stopSelf;
 
     @Override
     public void onCreate() {
@@ -36,19 +41,11 @@ public class ScanForegroundService extends Service {
         Notification n = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Signal")
                 .setContentText("Analyzing card — you can switch away")
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.drawable.ic_stat_signal)
                 .setOngoing(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build();
 
-        // startForeground() can throw on API 31+ when the app is started from the
-        // background (ForegroundServiceStartNotAllowedException) or on API 34+ for a
-        // type/permission mismatch. A missing POST_NOTIFICATIONS grant does NOT cause
-        // a throw — Android silently drops the notification but still lets the service
-        // promote itself. We catch broadly so that any unexpected restriction degrades
-        // gracefully: the service keeps running (and the WakeLock still fires below)
-        // without a visible notification, which is far better than a crash that leaves
-        // the scan unprotected.
         try {
             if (Build.VERSION.SDK_INT >= 34) {
                 startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
@@ -56,32 +53,45 @@ public class ScanForegroundService extends Service {
                 startForeground(NOTIF_ID, n);
             }
         } catch (Exception e) {
-            android.util.Log.w("ScanForegroundService",
-                    "startForeground failed — continuing without persistent notification: "
-                            + e.getClass().getSimpleName() + ": " + e.getMessage());
+            android.util.Log.e("ScanForegroundService",
+                    "startForeground failed; stopping service: " + e.getClass().getSimpleName(), e);
+            stopSelf(startId);
+            return START_NOT_STICKY;
         }
 
         try {
+            releaseWakeLock();
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
             wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "signal:scan");
             wakeLock.setReferenceCounted(false);
-            wakeLock.acquire(3 * 60 * 1000L); // safety cap; stop() releases it sooner
+            wakeLock.acquire(MAX_RUNTIME_MS);
         } catch (Exception ignored) {}
+
+        handler.removeCallbacks(stopAfterCap);
+        handler.postDelayed(stopAfterCap, MAX_RUNTIME_MS);
 
         return START_NOT_STICKY;
     }
 
     @Override
     public void onDestroy() {
-        try {
-            if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
-        } catch (Exception ignored) {}
+        handler.removeCallbacks(stopAfterCap);
+        releaseWakeLock();
         super.onDestroy();
     }
 
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    private void releaseWakeLock() {
+        try {
+            if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
+        } catch (Exception ignored) {
+        } finally {
+            wakeLock = null;
+        }
     }
 
     private void createChannel() {

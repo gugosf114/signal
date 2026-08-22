@@ -18,7 +18,8 @@ const MAX_ENTRIES = 200;
 // the $35 Obsidian Flames one from cache.
 function keyFor(name, game, pin) {
   const base = `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}`;
-  return pin?.id ? `${base}::${String(pin.id).toLowerCase()}` : base;
+  const printingId = pin?.printingId || pin?.id;
+  return printingId ? `${base}::${String(printingId).toLowerCase()}` : base;
 }
 
 function loadCache() {
@@ -53,7 +54,8 @@ export function getCachedScan(name, game, pin) {
   const cache = loadCache();
   const entry = cache[keyFor(name, game, pin)];
   if (!entry || !entry.data) return null;
-  if (Date.now() - (entry.ts || 0) > CACHE_TTL_MS) return null;
+  const age = Date.now() - (entry.ts || 0);
+  if (age < 0 || age > CACHE_TTL_MS) return null;
   return entry.data;
 }
 
@@ -66,14 +68,14 @@ export function getCachedScanEntry(name, game, pin) {
   const entry = cache[keyFor(name, game, pin)];
   if (!entry || !entry.data) return null;
   const age = Date.now() - (entry.ts || 0);
-  if (age > CACHE_TTL_MS) return null;
+  if (age < 0 || age > CACHE_TTL_MS) return null;
   // priceTs tracks the last price top-up independently of the scan timestamp.
   const priceAge = Date.now() - (entry.priceTs || entry.ts || 0);
   return { data: entry.data, pricesStale: priceAge > PRICE_TTL_MS };
 }
 
 export function setCachedScan(name, game, data, pin) {
-  if (!name || !data) return;
+  if (!name || !data || data._truncated) return;
   const cache = loadCache();
   const now = Date.now();
   cache[keyFor(name, game, pin)] = { ts: now, priceTs: now, data };
@@ -88,7 +90,12 @@ export function refreshCachedPrices(name, game, prices, pin) {
   const k = keyFor(name, game, pin);
   const entry = cache[k];
   if (!entry || !entry.data) return;
-  entry.data = { ...entry.data, prices: { ...entry.data.prices, ...prices } };
+  entry.data = {
+    ...entry.data,
+    prices: { ...entry.data.prices, ...prices },
+    grading_roi: null,
+    _relatedPriceDataStale: true,
+  };
   entry.priceTs = Date.now();
   cache[k] = entry;
   saveCache(cache);

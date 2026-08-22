@@ -8,7 +8,10 @@
 // shareReportAsPdf still routes through navigator.share — that path works in
 // the WebView fine because it hands the PDF off to the system share sheet.
 
-import html2pdf from 'html2pdf.js';
+async function loadHtml2Pdf() {
+  const module = await import('html2pdf.js');
+  return module.default;
+}
 
 function isCapacitor() {
   return typeof window !== 'undefined'
@@ -22,6 +25,7 @@ function baseOpts(el, filename) {
     margin:      [10, 10, 10, 10],
     filename,
     image:       { type: 'jpeg', quality: 0.95 },
+    enableLinks: true,
     html2canvas: {
       scale: 2,
       backgroundColor: '#08090A',
@@ -39,6 +43,7 @@ function safe(filename) {
 }
 
 async function generatePdfBlob(el, filename) {
+  const html2pdf = await loadHtml2Pdf();
   return html2pdf().set(baseOpts(el, filename)).from(el).outputPdf('blob');
 }
 
@@ -51,6 +56,20 @@ async function blobToBase64(blob) {
       resolve(idx >= 0 ? result.slice(idx + 1) : result);
     };
     reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+export async function imageUrlToDataUrl(url) {
+  if (!url) return null;
+  if (String(url).startsWith('data:')) return url;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Card image fetch failed (${response.status}).`);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error || new Error('Card image conversion failed.'));
     reader.readAsDataURL(blob);
   });
 }
@@ -80,6 +99,7 @@ export async function exportReportToPdf({
   }
 
   // Web fallback: regular browser download via <a download>.
+  const html2pdf = await loadHtml2Pdf();
   await html2pdf().set(baseOpts(el, filenameSafe)).from(el).save();
   return { method: 'web', filename: filenameSafe };
 }
@@ -97,6 +117,26 @@ export async function shareReportAsPdf({
   if (!el) throw new Error(`Report capture element #${elementId} not found.`);
   const filenameSafe = safe(filename);
   const pdfBlob = await generatePdfBlob(el, filenameSafe);
+
+  if (isCapacitor()) {
+    const data = await blobToBase64(pdfBlob);
+    const { Filesystem, Directory } = await import('@capacitor/filesystem');
+    const saved = await Filesystem.writeFile({
+      path: filenameSafe,
+      data,
+      directory: Directory.Cache,
+      recursive: true,
+    });
+    const { Share } = await import('@capacitor/share');
+    await Share.share({
+      files: [saved.uri],
+      title,
+      text,
+      dialogTitle: 'Share Signal report',
+    });
+    return { method: 'native-share' };
+  }
+
   const file = new File([pdfBlob], filenameSafe, { type: 'application/pdf' });
 
   if (

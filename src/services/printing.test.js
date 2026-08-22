@@ -50,14 +50,24 @@ describe('printingLabel', () => {
 });
 
 describe('toPrinting', () => {
-  const cardData = { game: 'pokemon', setName: 'Obsidian Flames', setId: 'sv3', number: '223', printedTotal: '197', rarity: 'Illustration Rare' };
+  const cardData = { game: 'pokemon', catalogId: 'sv3-223', printingId: 'sv3-223', setName: 'Obsidian Flames', setId: 'sv3', number: '223', printedTotal: '197', rarity: 'Illustration Rare' };
 
   test('a chosen printing beats whatever the lookup returned', () => {
-    const pin = { setName: 'Prismatic Evolutions', setId: 'sv8pt5', number: '161' };
+    const pin = { id: 'sv8pt5-161', setName: 'Prismatic Evolutions', setId: 'sv8pt5', number: '161' };
     const out = toPrinting('pokemon', pin, cardData);
     assert.equal(out.setName, 'Prismatic Evolutions');
     assert.equal(out.number, '161');
+    assert.equal(out.rarity, null);
+    assert.equal(out.printedTotal, null);
     assert.equal(out.pinned, true);
+  });
+
+  test('a matching exact lookup may enrich the pin with total and rarity', () => {
+    const pin = { id: 'sv3-223', setName: 'Obsidian Flames', setId: 'sv3', number: '223' };
+    const out = toPrinting('pokemon', pin, cardData);
+    assert.equal(out.rarity, 'Illustration Rare');
+    assert.equal(out.printedTotal, '197');
+    assert.equal(out.printingId, 'sv3-223');
   });
 
   test('with no pin it uses the pre-fetch', () => {

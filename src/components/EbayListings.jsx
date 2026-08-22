@@ -5,7 +5,14 @@ import { useIsMobile } from '../hooks/useIsMobile';
 function formatUSD(n) {
   if (n === null || n === undefined || n === '' || Number.isNaN(Number(n))) return '—';
   const num = Number(n);
-  return `$${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function safeHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+  } catch { return null; }
 }
 
 const sectionLabelStyle = {
@@ -72,6 +79,7 @@ const linkStyle = {
 
 function BinCard({ listing }) {
   if (!listing) return null;
+  const href = safeHttpUrl(listing.url);
   return (
     <div style={{
       padding: '14px 14px 12px',
@@ -112,8 +120,8 @@ function BinCard({ listing }) {
           </>
         )}
       </div>
-      {listing.url && (
-        <a href={listing.url} target="_blank" rel="noopener noreferrer" style={linkStyle}>
+      {href && (
+        <a href={href} target="_blank" rel="noopener noreferrer" style={linkStyle}>
           View on eBay →
         </a>
       )}
@@ -123,6 +131,7 @@ function BinCard({ listing }) {
 
 function AuctionCard({ listing, isMobile }) {
   if (!listing) return null;
+  const href = safeHttpUrl(listing.url);
   return (
     <div style={{
       padding: '14px 14px 12px',
@@ -169,8 +178,8 @@ function AuctionCard({ listing, isMobile }) {
           </>
         )}
       </div>
-      {listing.url && (
-        <a href={listing.url} target="_blank" rel="noopener noreferrer" style={linkStyle}>
+      {href && (
+        <a href={href} target="_blank" rel="noopener noreferrer" style={linkStyle}>
           Bid on eBay →
         </a>
       )}
@@ -178,16 +187,19 @@ function AuctionCard({ listing, isMobile }) {
   );
 }
 
-export default function EbayListings({ data }) {
+export default function EbayListings({ data, cachedAt = null, stale = false }) {
   const isMobile = useIsMobile();
   if (!data) return null;
   const bin = Array.isArray(data.buy_it_now) ? data.buy_it_now : [];
   const auction = Array.isArray(data.auction) ? data.auction : [];
   if (bin.length === 0 && auction.length === 0) return null;
+  const captured = cachedAt ? Date.parse(cachedAt) : NaN;
+  const age = Number.isFinite(captured) ? Date.now() - captured : Infinity;
+  if (stale || age < 0 || age > 60 * 60 * 1000) return null;
 
   const cards = [
     ...bin.slice(0, 2).map((l, i) => <BinCard key={`bin-${i}`} listing={l} />),
-    ...auction.slice(0, 1).map((l, i) => <AuctionCard key={`auc-${i}`} listing={l} />),
+    ...auction.slice(0, 1).map((l, i) => <AuctionCard key={`auc-${i}`} listing={l} isMobile={isMobile} />),
   ];
 
   return (
@@ -201,7 +213,7 @@ export default function EbayListings({ data }) {
         gap: 8,
         marginBottom: 12,
       }}>
-        <div style={sectionLabelStyle}>Active Listings</div>
+        <div style={sectionLabelStyle}>Listings captured this scan</div>
         <div style={{
           flex: 1,
           height: 1,
@@ -215,7 +227,7 @@ export default function EbayListings({ data }) {
             color: '#92897C',
             letterSpacing: '0.04em',
           }}>
-            · live
+            · recent
           </span>
         </div>
       </div>

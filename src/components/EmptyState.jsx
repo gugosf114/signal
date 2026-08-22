@@ -21,7 +21,8 @@ const SAMPLE_DATA = {
   creator: {
     headline: 'Leonhart pulls Charizard ex',
     detail: '1.6M-sub channel, 284k views in 48h. Strong pull signal.',
-    bullish: true,
+    implication: 'up',
+    level: 4,
   },
 };
 
@@ -33,7 +34,7 @@ function loadFeaturedScan() {
     if (!Array.isArray(scans) || scans.length === 0) return null;
     const top = scans[0];
     if (!top?.name) return null;
-    const cached = getCachedScan(top.name, top.game);
+    const cached = getCachedScan(top.name, top.game, top.pin || null);
     if (!cached) {
       // Fallback: we know name + game + score from the recents row even if
       // the full scan body isn't in cache anymore. Render minimal real data.
@@ -45,9 +46,7 @@ function loadFeaturedScan() {
         creator: null,
       };
     }
-    const score = typeof top.score === 'number'
-      ? top.score
-      : calculateOverallScore(cached.signals || [], top.game);
+    const score = calculateOverallScore(cached.signals || [], top.game);
     const creatorSignal = (cached.signals || []).find((s) => s.key === 'creator');
     const creatorSrc = creatorSignal?.sources?.[0];
     return {
@@ -59,7 +58,8 @@ function loadFeaturedScan() {
         ? {
             headline: creatorSrc.title || creatorSignal?.detail || 'Creator coverage',
             detail: creatorSignal?.detail || creatorSrc.summary || '',
-            bullish: creatorSrc.implication === 'up',
+            implication: creatorSrc.implication || 'neutral',
+            level: creatorSignal?.level || 0,
           }
         : null,
     };
@@ -95,7 +95,7 @@ const label = {
 
 function ScoreTile({ data, isSample }) {
   const gameMeta = GAME_LABELS[data.game] || GAME_LABELS.pokemon;
-  const scoreMeta = getScoreLabel(data.score || 0);
+  const scoreMeta = getScoreLabel(data.score ?? 50);
 
   return (
     <div style={{
@@ -249,11 +249,10 @@ function SignalTile({ creator }) {
           fontWeight: 500,
           flex: 1,
         }}>Creator Attention</span>
-        <div style={{ display: 'flex', gap: 3 }}>
-          {[1,2,3,4].map(i => (
-            <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#B08060' }} />
+        <div style={{ display: 'flex', gap: 3 }} aria-label={`Creator signal ${creator?.level || 0} of 5`}>
+          {[1,2,3,4,5].map((value) => (
+            <div key={value} style={{ width: 6, height: 6, borderRadius: '50%', background: value <= (creator?.level || 0) ? '#B08060' : '#1A1D24' }} />
           ))}
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#1A1D24' }} />
         </div>
       </div>
       <div style={{ paddingLeft: 12, borderLeft: '1px solid #1A1D24' }}>
@@ -281,18 +280,18 @@ function SignalTile({ creator }) {
             <span style={{
               fontSize: 11,
               fontFamily: "'JetBrains Mono'",
-              color: creator.bullish ? '#608870' : '#C44040',
+              color: creator.implication === 'up' ? '#608870' : creator.implication === 'down' ? '#C44040' : '#A09060',
               fontWeight: 700,
-            }}>{creator.bullish ? '▲' : '▼'}</span>
+            }}>{creator.implication === 'up' ? '▲' : creator.implication === 'down' ? '▼' : '►'}</span>
             <span style={{
               fontSize: 7,
               fontFamily: "'Syne', sans-serif",
               letterSpacing: '0.14em',
-              color: creator.bullish ? '#608870' : '#C44040',
+              color: creator.implication === 'up' ? '#608870' : creator.implication === 'down' ? '#C44040' : '#A09060',
               opacity: 0.7,
               fontWeight: 700,
               textTransform: 'uppercase',
-            }}>{creator.bullish ? 'Bullish' : 'Bearish'}</span>
+            }}>{creator.implication === 'up' ? 'Bullish' : creator.implication === 'down' ? 'Bearish' : 'Neutral'}</span>
           </div>
         )}
       </div>
@@ -326,7 +325,7 @@ export default function EmptyState() {
           marginRight: 'auto',
           letterSpacing: '0.01em',
         }}>
-          Scan any card across 30+ sources — creator buzz, tournament data, Mercari JP, eBay sold listings — in 30 seconds.
+          Compare the exact printing, verified sources, and eight market signals. A full scan can take up to two minutes.
         </p>
       )}
     </div>

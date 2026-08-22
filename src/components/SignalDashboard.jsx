@@ -16,15 +16,25 @@ import NewsStrip from './NewsStrip';
 import PdfReport from './PdfReport';
 import PageTabs from './PageTabs';
 import Collection from './Collection';
-import { SIGNAL_SECTIONS, calculateOverallScore } from '../config/signals';
+import { SIGNAL_SECTIONS, calculateScoreDetails } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
-import { exportReportToPdf, shareReportAsPdf } from '../services/exportReport';
+import { exportReportToPdf, shareReportAsPdf, imageUrlToDataUrl } from '../services/exportReport';
 import { lookupBySetCode, looksLikeSetCode } from '../services/lookupBySetCode';
 import { getCachedScanEntry, setCachedScan, clearCachedScan, refreshCachedPrices, patchCachedPrinting } from '../services/scanCache';
 import { backfillPrinting } from '../services/backfillPrinting';
 import { refreshPrices } from '../services/refreshPrices';
 import { startScanKeepAlive, stopScanKeepAlive } from '../services/scanKeepAlive';
 import { useIsMobile } from '../hooks/useIsMobile';
+
+function reportFilename(cardName) {
+  const safe = String(cardName || 'card')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'card';
+  return `signal-${safe}.pdf`;
+}
 
 export default function SignalDashboard() {
   // Which page is showing. The header and tab strip are shared; everything
@@ -38,6 +48,7 @@ export default function SignalDashboard() {
   const [saveMsg, setSaveMsg] = useState(null);
   const [cardImageUrl, setCardImageUrl] = useState(null);
   const [pdfRendering, setPdfRendering] = useState(false);
+  const [pdfCardImageUrl, setPdfCardImageUrl] = useState(null);
   const isMobile = useIsMobile();
 
   const flashSaveMsg = (msg) => {
@@ -58,10 +69,12 @@ export default function SignalDashboard() {
       abortRef.current = null;
     }
     setResult(null);
+    setCardImageUrl(null);
     setError(null);
     setLoading(false);
     setLastSearched(null);
     setPendingCard(null);
+    setPage('signal');
   };
 
   // Cache hit with a stale price block: the scan itself is still good, only the
@@ -75,7 +88,12 @@ export default function SignalDashboard() {
     // The user may have navigated away while the free API was in flight.
     if (myToken !== navTokenRef.current) return;
     setResult((prev) =>
-      prev ? { ...prev, prices: { ...prev.prices, ...patch } } : prev
+      prev ? {
+        ...prev,
+        prices: { ...prev.prices, ...patch },
+        grading_roi: null,
+        _relatedPriceDataStale: true,
+      } : prev
     );
   };
 
@@ -83,6 +101,7 @@ export default function SignalDashboard() {
   // the name. Ask the free catalogue which printing it was and patch it in —
   // no Anthropic call, no waiting, no re-scan.
   const fillPrinting = async (name, game, myToken, pin = null) => {
+    if (!pin?.id) return;
     const printing = await backfillPrinting(name, game, pin);
     if (!printing) return;
     patchCachedPrinting(name, game, printing, pin);
@@ -94,12 +113,13 @@ export default function SignalDashboard() {
     // `pin` is a printing chosen from the search suggestions. It keys the cache
     // and pins the pre-fetch, so two printings of one name stay separate scans.
     const { force = false, pin = null } = opts;
+    let resolvedPin = pin;
     setError(null);
 
     // Fast-path cache check BEFORE flipping loading state — already-scanned
     // cards must return instantly with zero loading-theater flash.
     if (!force && game) {
-      const fastEntry = getCachedScanEntry(query, game, pin);
+      const fastEntry = getCachedScanEntry(query, game, resolvedPin);
       if (fastEntry) {
         // Invalidate any in-flight scan so it can't overwrite this result
         // when it lands later.
@@ -108,10 +128,11 @@ export default function SignalDashboard() {
           try { abortRef.current.abort(); } catch {}
           abortRef.current = null;
         }
+        setCardImageUrl(null);
         setResult(fastEntry.data);
-        setLastSearched({ name: query, game });
-        if (fastEntry.pricesStale) topUpPrices(query, game, ++navTokenRef.current, pin);
-        if (!fastEntry.data.printing) fillPrinting(query, game, navTokenRef.current, pin);
+        setLastSearched({ name: query, game, pin: resolvedPin });
+        if (fastEntry.pricesStale) topUpPrices(query, game, ++navTokenRef.current, resolvedPin);
+        if (!fastEntry.data.printing) fillPrinting(query, game, navTokenRef.current, resolvedPin);
         return;
       }
     }
@@ -127,19 +148,30 @@ export default function SignalDashboard() {
         if (hit && hit.name) {
           resolvedName = hit.name;
           resolvedGame = hit.game;
+          resolvedPin = {
+            id: hit.id || null,
+            printingId: hit.printingId || hit.id || null,
+            game: hit.game,
+            setName: hit.setName || null,
+            setId: hit.setId || hit.setCode || null,
+            number: hit.number || null,
+            printedTotal: hit.printedTotal || null,
+            rarity: hit.rarity || null,
+          };
         }
       } catch {}
     }
 
-    setLastSearched({ name: resolvedName, game: resolvedGame });
+    setLastSearched({ name: resolvedName, game: resolvedGame, pin: resolvedPin });
 
     // Second cache check now that the set-code resolved (if it did).
     if (!force) {
-      const entry = getCachedScanEntry(resolvedName, resolvedGame, pin);
+      const entry = getCachedScanEntry(resolvedName, resolvedGame, resolvedPin);
       if (entry) {
+        setCardImageUrl(null);
         setResult(entry.data);
-        if (entry.pricesStale) topUpPrices(resolvedName, resolvedGame, ++navTokenRef.current, pin);
-        if (!entry.data.printing) fillPrinting(resolvedName, resolvedGame, navTokenRef.current, pin);
+        if (entry.pricesStale) topUpPrices(resolvedName, resolvedGame, ++navTokenRef.current, resolvedPin);
+        if (!entry.data.printing) fillPrinting(resolvedName, resolvedGame, navTokenRef.current, resolvedPin);
         return;
       }
     }
@@ -147,6 +179,7 @@ export default function SignalDashboard() {
     // Cache miss — now we actually need to scan.
     setLoading(true);
     setResult(null);
+    setCardImageUrl(null);
     setPendingCard({ name: resolvedName, game: resolvedGame });
 
     const controller = new AbortController();
@@ -162,17 +195,17 @@ export default function SignalDashboard() {
     startScanKeepAlive();
 
     try {
-      const raw = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal, pin });
-      const data = pin ? { ...raw, _pin: pin } : raw;
+      const raw = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal, pin: resolvedPin });
+      const data = resolvedPin ? { ...raw, _pin: resolvedPin } : raw;
       // If goHome() bumped the nav token while we were scanning, the user has
       // already left the result page — do NOT yank them back by setting result.
       if (myToken !== navTokenRef.current) return;
       setResult(data);
       // Cache under BOTH the input game and the LLM-detected game so future
       // clicks from any surface hit the cache.
-      setCachedScan(resolvedName, resolvedGame, data, pin);
+      setCachedScan(resolvedName, resolvedGame, data, resolvedPin);
       if (data?.game && data.game !== resolvedGame) {
-        setCachedScan(resolvedName, data.game, data, pin);
+        setCachedScan(resolvedName, data.game, data, resolvedPin);
       }
     } catch (err) {
       if (myToken !== navTokenRef.current) return;
@@ -192,9 +225,10 @@ export default function SignalDashboard() {
     }
   };
 
-  const score = result
-    ? calculateOverallScore(result.signals || [], result.game)
+  const scoreDetails = result
+    ? calculateScoreDetails(result.signals || [], result.game)
     : null;
+  const score = scoreDetails?.score ?? null;
 
   return (
     <div style={{
@@ -264,10 +298,10 @@ export default function SignalDashboard() {
 
       <PageTabs page={page} onChange={setPage} />
 
-      {page === 'collection' && <Collection />}
+      {page === 'collection' && <div id="panel-collection" role="tabpanel" aria-labelledby="tab-collection"><Collection /></div>}
 
       {page === 'signal' && (
-      <>
+      <div id="panel-signal" role="tabpanel" aria-labelledby="tab-signal">
       {/* Search */}
       <div style={{
         display: 'flex',
@@ -320,7 +354,7 @@ export default function SignalDashboard() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <button
-              onClick={() => lastSearched && handleSearch(lastSearched.name, lastSearched.game)}
+              onClick={() => lastSearched && handleSearch(lastSearched.name, lastSearched.game, { force: true, pin: lastSearched.pin || null })}
               style={{
                 background: 'none',
                 border: '1px solid rgba(196, 64, 64, 0.4)',
@@ -370,7 +404,7 @@ export default function SignalDashboard() {
               Save PDF captures the #signal-report-capture wrapper below. */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
             <button
-              onClick={() => { setResult(null); setLastSearched(null); }}
+              onClick={() => { setResult(null); setCardImageUrl(null); setLastSearched(null); }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -409,13 +443,14 @@ export default function SignalDashboard() {
               onClick={async () => {
                 try {
                   setPdfRendering(true);
+                  setPdfCardImageUrl(await imageUrlToDataUrl(cardImageUrl).catch(() => null));
                   // One animation frame to mount PdfReport, then a short pause
                   // so the off-screen card image + fonts settle before capture.
                   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
                   await new Promise((r) => setTimeout(r, 900));
                   const res = await exportReportToPdf({
                     elementId: 'pdf-report-capture',
-                    filename: `signal-${(result.card_name || 'card').toLowerCase().replace(/\s+/g, '-')}.pdf`,
+                    filename: reportFilename(result.card_name),
                   });
                   if (res?.method === 'native') {
                     flashSaveMsg(`Saved to Documents · ${res.filename}`);
@@ -456,6 +491,7 @@ export default function SignalDashboard() {
                 e.currentTarget.style.color = '#A8A498';
               }}
               aria-label="Download report as PDF"
+              disabled={pdfRendering}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -470,14 +506,22 @@ export default function SignalDashboard() {
             <button
               onClick={async () => {
                 try {
+                  setPdfRendering(true);
+                  setPdfCardImageUrl(await imageUrlToDataUrl(cardImageUrl).catch(() => null));
+                  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                  await document.fonts?.ready;
                   await shareReportAsPdf({
-                    filename: `signal-${(result.card_name || 'card').toLowerCase().replace(/\s+/g, '-')}.pdf`,
+                    elementId: 'pdf-report-capture',
+                    filename: reportFilename(result.card_name),
                     title: `Signal: ${result.card_name || 'card'}`,
                     text: `${result.card_name || 'Card'} · ${result.summary?.slice(0, 140) || ''}`,
                   });
                 } catch (err) {
                   // eslint-disable-next-line no-console
                   console.error('[signal] share failed', err);
+                  flashSaveMsg(`Share failed: ${err?.message?.slice(0, 60) || 'unknown error'}`);
+                } finally {
+                  setPdfRendering(false);
                 }
               }}
               style={{
@@ -506,6 +550,7 @@ export default function SignalDashboard() {
                 e.currentTarget.style.color = '#A8A498';
               }}
               aria-label="Share / email report"
+              disabled={pdfRendering}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="18" cy="5" r="3" />
@@ -522,8 +567,9 @@ export default function SignalDashboard() {
             <button
               onClick={() => {
                 if (!result?.card_name) return;
-                clearCachedScan(result.card_name, result.game);
-                handleSearch(result.card_name, result.game, { force: true });
+                const resultPin = result._pin || null;
+                clearCachedScan(result.card_name, result.game, resultPin);
+                handleSearch(result.card_name, result.game, { force: true, pin: resultPin });
               }}
               style={{
                 display: 'inline-flex',
@@ -570,7 +616,10 @@ export default function SignalDashboard() {
               summary={result.summary}
               truncated={result._truncated}
               signalCount={(result.signals || []).length}
-              onRetry={() => handleSearch(result.card_name, result.game, { pin: result._pin || null })}
+              expectedSignalCount={8}
+              coveragePct={scoreDetails?.coveragePct || 0}
+              evidencePct={scoreDetails?.evidencePct || 0}
+              onRetry={() => handleSearch(result.card_name, result.game, { force: true, pin: result._pin || null })}
               signals={result.signals || []}
               enPrice={result.prices?.en_price}
               onCardImageLoaded={setCardImageUrl}
@@ -587,7 +636,7 @@ export default function SignalDashboard() {
             }}
           />
 
-          <EbayListings data={result.ebay_listings} />
+          <EbayListings data={result.ebay_listings} cachedAt={result._scannedAt} stale={result._relatedPriceDataStale} />
 
           <GradingROI data={result.grading_roi} />
 
@@ -627,7 +676,7 @@ export default function SignalDashboard() {
           <CardBrowser onCardSelect={handleSearch} />
         </>
       )}
-      </>
+      </div>
       )}
 
       {/* Off-screen premium PDF report — mounted only during Save PDF flow so
@@ -644,7 +693,7 @@ export default function SignalDashboard() {
           pointerEvents: 'none',
         }}>
           <div id="pdf-report-capture">
-            <PdfReport result={result} score={score} cardImageUrl={cardImageUrl} />
+            <PdfReport result={result} score={score} cardImageUrl={pdfCardImageUrl} />
           </div>
         </div>
       )}

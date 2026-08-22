@@ -313,10 +313,9 @@ export default function CardBrowser({ onCardSelect }) {
           gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
           gap: 8,
         }}>
-          {/* Trim to whole rows of 3 so the last row isn't a partial 1-or-2-card sliver. */}
-          {cards.slice(0, Math.max(3, Math.floor(cards.length / 3) * 3)).map(card => (
+          {cards.map(card => (
             <button
-              key={card.id}
+              key={card.printingId || card.id}
               onClick={() => setViewing(card)}
               title={`${card.name}${card.setName ? ' · ' + card.setName : ''}`}
               style={{
@@ -348,7 +347,7 @@ export default function CardBrowser({ onCardSelect }) {
                   style={{
                     width: '100%',
                     aspectRatio: '0.716',
-                    objectFit: 'cover',
+                    objectFit: 'contain',
                     borderRadius: 4,
                     display: 'block',
                   }}

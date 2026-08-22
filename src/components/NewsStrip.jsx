@@ -6,32 +6,10 @@ const GAP = 14;
 const STEP = CARD_W + GAP;
 const SPEED = 0.35;
 
-// Returns an array of card image URLs (full pool), not a single random pick,
-// so the render layer can assign a distinct card to each article from the
-// same game and we don't end up with 4 identical Pokemon tiles.
-async function fetchGameFallback(game) {
-  try {
-    if (game === 'pokemon') {
-      const r = await fetch('https://api.pokemontcg.io/v2/cards?q=set.id:sv7&pageSize=6&orderBy=-set.releaseDate');
-      const cards = (await r.json()).data || [];
-      return cards.map(c => c?.images?.large).filter(Boolean);
-    }
-    if (game === 'mtg') {
-      const r = await fetch('https://api.scryfall.com/cards/search?q=s:dsk+(rarity:r+or+rarity:m)&order=released&dir=desc');
-      const cards = (await r.json()).data || [];
-      return cards.slice(0, 6).map(c => c?.image_uris?.large || c?.card_faces?.[0]?.image_uris?.large).filter(Boolean);
-    }
-    if (game === 'yugioh') {
-      const r = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php?sort=new&num=6&offset=0');
-      const cards = (await r.json()).data || [];
-      return cards.map(c => c?.card_images?.[0]?.image_url).filter(Boolean);
-    }
-  } catch {}
-  return [];
-}
-
 function timeAgo(d) {
-  const s = (Date.now() - d.getTime()) / 1000;
+  const stamp = d instanceof Date ? d.getTime() : NaN;
+  if (!Number.isFinite(stamp)) return '—';
+  const s = Math.max(0, (Date.now() - stamp) / 1000);
   if (s < 3600)  return `${Math.floor(s / 60)}m`;
   if (s < 86400) return `${Math.floor(s / 3600)}h`;
   return `${Math.floor(s / 86400)}d`;
@@ -40,17 +18,19 @@ function timeAgo(d) {
 // The complete card = image above (sticking out) + pocket below (always visible)
 // On hover: image section rises 28px into the headroom above the strip.
 // The pocket never moves. The gap that appears IS the pocket interior / dark fabric.
-function ArticleCard({ article, fallbackImg }) {
-  // Always prefer the per-game fallback card scan (uniform card-shaped tiles).
-  // Article thumbnails are inconsistent — PkmnCards ships full card scans, SixPrizes
-  // ships wide banner crops that letterbox half-empty inside the portrait sub-frame.
-  // Falling through to the game's own API card means every tile reads as a real card.
-  const imgSrc = fallbackImg || article.imageUrl;
+function ArticleCard({ article }) {
+  const imgSrc = article.imageUrl;
   const c = article.source.color;
+  let href = null;
+  try {
+    const parsed = new URL(article.link);
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') href = parsed.href;
+  } catch {}
+  if (!href) return null;
 
   return (
     <a
-      href={article.link}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       className="npc-outer"
@@ -170,9 +150,9 @@ function ArticleCard({ article, fallbackImg }) {
 export default function NewsStrip() {
   const [articles, setArticles]   = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [fallbacks, setFallbacks] = useState({});
   const [activeIdx, setActiveIdx] = useState(0);
   const [paused, setPaused]       = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   const trackRef       = useRef(null);
   const posRef         = useRef(0);
@@ -182,39 +162,52 @@ export default function NewsStrip() {
   const isDraggingRef  = useRef(false);
   const draggedRef     = useRef(false);
   const resumeTimerRef = useRef(null);
+  const activeRef      = useRef(0);
 
   useEffect(() => { pausedRef.current = paused; }, [paused]);
-
   useEffect(() => {
-    fetchTCGNews().then(all => {
-      setArticles(all);
-      const games = [...new Set(all.map(a => a.source.game).filter(Boolean))];
-      games.forEach(async game => {
-        const urls = await fetchGameFallback(game);
-        if (urls.length) setFallbacks(f => ({ ...f, [game]: urls }));
-      });
-    }).finally(() => setLoading(false));
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReducedMotion(media.matches);
+    update();
+    media.addEventListener?.('change', update);
+    return () => media.removeEventListener?.('change', update);
   }, []);
 
   useEffect(() => {
-    if (!articles.length) return;
+    let cancelled = false;
+    fetchTCGNews()
+      .then((all) => { if (!cancelled) setArticles(Array.isArray(all) ? all : []); })
+      .catch(() => { if (!cancelled) setArticles([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!articles.length || reducedMotion) return;
     const total = articles.length * STEP;
     const tick = () => {
       if (!pausedRef.current) {
         posRef.current = (posRef.current + SPEED) % total;
         if (trackRef.current) {
           trackRef.current.style.transform = `translateX(-${posRef.current}px)`;
-          setActiveIdx(Math.floor(posRef.current / STEP) % articles.length);
+          const nextActive = Math.floor(posRef.current / STEP) % articles.length;
+          if (nextActive !== activeRef.current) {
+            activeRef.current = nextActive;
+            setActiveIdx(nextActive);
+          }
         }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [articles.length]);
+  }, [articles.length, reducedMotion]);
+
+  useEffect(() => () => { if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current); }, []);
 
   const jumpTo = (idx) => {
     posRef.current = idx * STEP;
+    activeRef.current = idx;
     if (trackRef.current) {
       trackRef.current.style.transform = `translateX(-${posRef.current}px)`;
       setActiveIdx(idx);
@@ -246,6 +239,7 @@ export default function NewsStrip() {
     posRef.current = next;
     trackRef.current.style.transform = `translateX(-${next}px)`;
     setActiveIdx(Math.floor(next / STEP) % articles.length);
+    activeRef.current = Math.floor(next / STEP) % articles.length;
   };
 
   const onPointerEnd = (e) => {
@@ -268,7 +262,7 @@ export default function NewsStrip() {
   if (loading) return null;
   if (!articles.length) return null;
 
-  const tripled = [...articles, ...articles, ...articles];
+  const tripled = reducedMotion ? articles : [...articles, ...articles, ...articles];
 
   return (
     <div style={{ marginTop: 40, overflow: 'hidden' }}>
@@ -282,6 +276,7 @@ export default function NewsStrip() {
               style={{ '--dc': a.source.color }}
               onClick={() => jumpTo(i)}
               title={a.title?.slice(0, 60)}
+              aria-label={`Show article ${i + 1}: ${a.title || 'untitled'}`}
             />
           ))}
         </div>
@@ -308,32 +303,7 @@ export default function NewsStrip() {
         <div className="ns-fade-l" />
         <div className="ns-fade-r" />
         <div ref={trackRef} className="ns-track">
-          {(() => {
-            // Assign each unique article a distinct card from its game's fallback
-            // pool (round-robin within game). The tripled copies all reuse the
-            // assignment via origIdx so the same article always renders the
-            // same card, no matter which copy is visible.
-            const articleImg = {};
-            const counters = {};
-            articles.forEach((a, idx) => {
-              const g = a.source.game;
-              const pool = fallbacks[g] || [];
-              if (!pool.length) { articleImg[idx] = null; return; }
-              const k = counters[g] || 0;
-              articleImg[idx] = pool[k % pool.length];
-              counters[g] = k + 1;
-            });
-            return tripled.map((article, i) => {
-              const origIdx = i % articles.length;
-              return (
-                <ArticleCard
-                  key={i}
-                  article={article}
-                  fallbackImg={articleImg[origIdx]}
-                />
-              );
-            });
-          })()}
+          {tripled.map((article, index) => <ArticleCard key={index} article={article} />)}
         </div>
       </div>
     </div>

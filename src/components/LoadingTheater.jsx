@@ -5,88 +5,88 @@ import { SIGNAL_TYPES } from '../config/signals';
 
 // ─── Loading Theater ─────────────────────────────────────────────────────────
 // Tokyo desk at 3am. Solari flip-board × Bloomberg INFO panel × CRT terminal.
-// Eight phases × ~4s, dense layered visual narrative. Theater runs independent
-// of the API call — when results land, the parent unmounts this and renders.
+// A time guide for the real scan lanes. It never claims a source answered or a
+// calculation ran; only the final result may make those claims.
 
 const PHASES = [
   {
-    id: 'tcgplayer',
-    title: 'EN MARKETPLACE / PRIMARY',
-    pip: 'TCGP',
+    id: 'catalogue',
+    title: 'CARD IDENTITY / PRICE',
+    pip: 'CARD',
     color: '#F47A1F',
     jp: false,
     trace: 'sawtooth',
     brands: ['tcgplayer', 'pokemon', 'mtg', 'yugioh'],
     details: [
-      'Sold listings · 30-day window',
-      'Variant pricing · raw + PSA',
-      'Transaction velocity · trend',
+      'Requesting the chosen catalogue printing',
+      'Reading available market-price fields',
+      'Keeping set and collector number attached',
     ],
     log: [
-      'GET tcgplayer.com/products/...',
-      'parsing sold-listing window 30d',
-      'isolating variant SKUs',
-      'computing 30d EMA',
+      'request · card catalogue',
+      'check · exact printing identity',
+      'check · available USD price fields',
+      'wait · live response',
     ],
   },
   {
-    id: 'ebay',
-    title: 'EN MARKETPLACE / SECONDARY',
-    pip: 'EBAY',
+    id: 'community',
+    title: 'COMMUNITY / CREATOR SOURCES',
+    pip: 'SOC',
+    color: '#608870',
+    jp: false,
+    trace: 'wave',
+    brands: ['youtube', 'reddit'],
+    details: [
+      'Requesting recent Reddit posts',
+      'Requesting recent YouTube matches',
+      'Keeping only retrieved links',
+    ],
+    log: [
+      'request · community source',
+      'request · creator source',
+      'check · link receipts',
+      'wait · live responses',
+    ],
+  },
+  {
+    id: 'listings',
+    title: 'OPTIONAL MARKET LISTINGS',
+    pip: 'MKT',
     color: '#E53238',
     jp: false,
     trace: 'sawtooth',
     brands: ['ebay'],
     details: [
-      'Auction completion velocity',
-      'Buy-It-Now standing inventory',
-      'Counterfeit pattern flags',
+      'Checking whether eBay access is configured',
+      'Requesting active items when available',
+      'Rejecting item links not retrieved',
     ],
     log: [
-      'GET ebay.com/sch/i.html?...',
-      'filter LH_Sold=1, LH_Complete=1',
-      'isolating PSA-graded variants',
-      'cross-checking against TCGP delta',
+      'check · optional listing source',
+      'request · active items only',
+      'check · exact item URLs',
+      'wait · source or clean skip',
     ],
   },
   {
-    id: 'creators',
-    title: 'CREATOR CONTENT / EN',
-    pip: 'YT▸',
-    color: '#FF0033',
-    jp: false,
-    trace: 'wave',
-    brands: ['youtube', 'reddit', 'x', 'tiktok', 'twitch'],
-    details: [
-      'Leonhart · 1.6M subs',
-      'PokeRev · 1.2M subs',
-      'Real Break Reviews · 380k',
-    ],
-    log: [
-      'youtube.com search · 30d window',
-      'channel: Leonhart · matched 3',
-      'channel: PokeRev · matched 2',
-      'r/PokemonTCG · top-day cross-ref',
-    ],
-  },
-  {
-    id: 'tournament',
-    title: 'COMPETITIVE INTELLIGENCE',
-    pip: 'CMP◆',
+    id: 'catalysts',
+    title: 'CATALOGUE FACTS / CATALYSTS',
+    pip: 'CAT',
     color: '#7BB661',
     jp: false,
     trace: 'bracket',
     brands: ['limitless', 'mtg', 'yugioh'],
     details: [
-      'Regional Indianapolis · Mar 22',
-      'Regional San Diego · Apr 5',
-      'Limitless · deck-usage rates',
+      'Checking legality and ban-list fields',
+      'Checking known printings and set dates',
+      'Searching tournament data only when needed',
     ],
     log: [
-      'limitlesstcg.com/tournaments',
-      'parsing top-8 deck lists',
-      'usage rate · normalized',
-      'ban-list status · current',
+      'request · structured catalyst data',
+      'check · catalogue facts',
+      'optional · tournament search',
+      'wait · live response',
     ],
   },
   {
@@ -99,35 +99,35 @@ const PHASES = [
     kanji: '株',
     brands: ['youtube', 'google', 'pokemon'],
     details: [
-      'JP creator coverage · region JP',
-      'JP vs US search interest',
-      'JP set release calendar',
+      'Requesting Japanese-language video matches',
+      'Requesting JP and US search-interest data',
+      'Treating region and language as labels, not proof',
     ],
     log: [
-      '> youtube · regionCode=JP',
-      '> relevanceLanguage=ja',
-      '> trends · JP vs US · 3mo',
-      '> jp release calendar · upcoming',
+      'request · region JP video search',
+      'request · search-interest comparison',
+      'check · retrieved links only',
+      'wait · source or clean skip',
     ],
   },
   {
-    id: 'editorial',
-    title: 'EDITORIAL SWEEP',
-    pip: 'NWS▤',
+    id: 'search',
+    title: 'MISSING-EVIDENCE SEARCH',
+    pip: 'WEB',
     color: '#2A75BB',
     jp: false,
     trace: 'columns',
-    brands: ['pokebeach', 'game8', 'tcgfish', 'mtggoldfish', 'bulbapedia'],
+    brands: ['google', 'pokebeach', 'mtggoldfish'],
     details: [
-      'PokeBeach · release calendar',
-      'Game8 · deck guides',
-      'TCGFish · meta watch',
+      'Searching only lanes missing direct data',
+      'Keeping the exact returned URLs',
+      'Leaving unsupported signals neutral',
     ],
     log: [
-      'pokebeach.com · last 30d',
-      'game8.co · meta-tier coverage',
-      'tcgfish.com · price-watch list',
-      'cross-referencing citation density',
+      'check · missing evidence lanes',
+      'request · bounded web search',
+      'record · returned URLs',
+      'wait · model synthesis',
     ],
   },
   {
@@ -139,15 +139,15 @@ const PHASES = [
     trace: 'matrix',
     brands: [],
     details: [
-      'Per-game weighting model',
-      'Normalizing 8 signals',
-      'Computing 0-100 score',
+      'Validating eight unique signal keys',
+      'Clamping levels and checking citations',
+      'Computing bounded market pressure',
     ],
     log: [
-      'WEIGHTS[pokemon] · loaded',
-      'normalizing signal[].level / 5',
-      'Σ (level · weight) / Σ weight',
-      'rendering result · ETA <2s',
+      'check · output schema',
+      'check · source receipts',
+      'check · score bounds',
+      'wait · final result',
     ],
   },
 ];
@@ -205,8 +205,8 @@ export default function LoadingTheater({ cardName, game, onCancel }) {
   // Which show to run, and how fast, both follow the real scan shape.
   const phases = useMemo(() => phasesForGame(game), [game]);
   const phaseMs = NO_SEARCH_GAMES.has((game || '').toLowerCase()) ? FAST_PHASE_MS : SLOW_PHASE_MS;
-  // Progress bar fills linearly to 90% across this window, then eases
-  // asymptotically toward 99% if the scan keeps running.
+  // Estimated progress never reaches the end while work is still running.
+  // The result unmounts this screen; until then 95% is the visible ceiling.
   const nominalScanMs = phases.length * phaseMs;
 
   const elapsed = now - start;
@@ -225,8 +225,8 @@ export default function LoadingTheater({ cardName, game, onCancel }) {
   const detailIdx = Math.min(phase.details.length - 1, Math.floor(inPhase / DETAIL_MS));
 
   const progress = elapsed < nominalScanMs
-    ? Math.min(0.9, (elapsed / nominalScanMs) * 0.9)
-    : 0.9 + 0.09 * (1 - Math.exp(-(elapsed - nominalScanMs) / 18000));
+    ? Math.min(0.88, (elapsed / nominalScanMs) * 0.88)
+    : Math.min(0.95, 0.88 + 0.07 * (1 - Math.exp(-(elapsed - nominalScanMs) / 18000)));
 
   return (
     <div ref={rootRef} className="lt-canvas" data-jp={phase.jp || undefined}>
@@ -235,7 +235,7 @@ export default function LoadingTheater({ cardName, game, onCancel }) {
       <KanjiBackdrop visible={phase.jp} />
 
       <div className="lt-top">
-        <PhasePips phases={phases} activeIdx={rawIdx < phases.length ? rawIdx : phases.length - 1} />
+        <PhasePips phases={phases} activeIdx={phaseIdx} />
         <ScanProgressBar percent={progress * 100} accent={phase.color} />
         <div className="lt-top-row">
           <CardSlate cardName={cardName} game={game} onImageLoad={setCardImageUrl} />
@@ -351,7 +351,7 @@ function ScanProgressBar({ percent, accent }) {
         position: 'relative',
         overflow: 'hidden',
         boxShadow: 'inset 0 0 0 1px #1A1D24',
-      }}>
+      }} role="progressbar" aria-label="Estimated scan progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
         <div style={{
           position: 'absolute',
           top: 0,
@@ -470,7 +470,7 @@ function MarketsBadge() {
   return (
     <div className="lt-markets">
       <span className="lt-markets-dot" />
-      <span className="lt-markets-text">MARKETS · OPEN</span>
+      <span className="lt-markets-text">SOURCE CHECK</span>
     </div>
   );
 }
@@ -489,10 +489,15 @@ function SolariTitle({ text, accentColor, jp }) {
   const [, force] = useState(0);
   useEffect(() => {
     let raf;
-    const tick = () => { force((n) => (n + 1) % 1e9); raf = requestAnimationFrame(tick); };
+    const started = performance.now();
+    const maxDuration = targets.length * 38 + 820;
+    const tick = (time) => {
+      force((n) => (n + 1) % 1e9);
+      if (time - started < maxDuration) raf = requestAnimationFrame(tick);
+    };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [text, targets.length]);
 
   const t0 = useMemo(() => Date.now(), [text]);
   const dt = Date.now() - t0;
@@ -648,14 +653,14 @@ function ScanLog({ phase, phaseStartedAt }) {
   );
 }
 
-// ─── Right rail: 9-signal grid ───────────────────────────────────────────────
+// ─── Right rail: 8-signal grid ───────────────────────────────────────────────
 
 const SIGNAL_LATTICE = [
-  { key: 'creator',     label: 'CRE', phaseId: 'creators' },
-  { key: 'community',   label: 'COM', phaseId: 'creators' },
-  { key: 'ip_momentum', label: 'IPM', phaseId: 'creators' },
-  { key: 'editorial',   label: 'EDT', phaseId: 'editorial' },
-  { key: 'competitive', label: 'CMP', phaseId: 'tournament' },
+  { key: 'creator',     label: 'CRE', phaseId: 'community' },
+  { key: 'community',   label: 'COM', phaseId: 'community' },
+  { key: 'ip_momentum', label: 'IPM', phaseId: 'search' },
+  { key: 'editorial',   label: 'EDT', phaseId: 'search' },
+  { key: 'competitive', label: 'CMP', phaseId: 'catalysts' },
   { key: 'scarcity',    label: 'SCR', phaseId: 'synthesis' },
   { key: 'jp_hype',     label: '熱',  phaseId: 'japan-crossing' },
   { key: 'jp_release',  label: '先',  phaseId: 'japan-crossing' },
@@ -665,7 +670,7 @@ function SignalGrid({ activePhaseId, accent }) {
   return (
     <aside className="lt-grid">
       <div className="lt-grid-header">
-        <span className="lt-grid-title">9 SIGNALS</span>
+        <span className="lt-grid-title">8 SIGNALS</span>
       </div>
       <div className="lt-signal-list">
         {SIGNAL_LATTICE.map((s) => {

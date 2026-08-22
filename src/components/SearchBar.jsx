@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { scanCardImage } from '../services/scanCardImage';
 import { suggestCards, resolvePrinting } from '../services/fetchExpansions';
+import { looksLikeSetCode } from '../services/lookupBySetCode';
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
 // Typing "Charizard" and hitting Enter used to scan whatever printing the API
@@ -52,11 +53,11 @@ export default function SearchBar({ onSearch, loading }) {
         setActive(-1);
         setOpen(hits.length > 0);
       } catch {
-        // pokemontcg.io 500s in bursts that outlast every retry. Emptying the
-        // list on their bad minute makes the feature look broken; the last good
-        // suggestions are still better than nothing, and the next keystroke
-        // tries again.
         if (myToken !== reqToken.current) return;
+        setSuggestions([]);
+        setOpen(false);
+        setActive(-1);
+        setScanError('Card catalogues could not load. Try again.');
       }
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
@@ -90,6 +91,17 @@ export default function SearchBar({ onSearch, loading }) {
       return;
     }
     if (query.trim() && !loading) {
+      if (suggestions.length === 1) {
+        pick(suggestions[0]);
+        return;
+      }
+      if (!looksLikeSetCode(query.trim())) {
+        setScanError(suggestions.length > 1
+          ? 'Choose the exact printing from the list.'
+          : 'Wait for the catalogue, then choose the exact printing.');
+        setOpen(suggestions.length > 0);
+        return;
+      }
       reqToken.current += 1;
       quietFor.current = query.trim();
       setOpen(false);
@@ -128,13 +140,14 @@ export default function SearchBar({ onSearch, loading }) {
       // pinned to the card actually photographed — otherwise a picture of the
       // $1,499 Umbreon ex and a picture of the $7 one produce the same answer.
       const pin = await resolvePrinting(card).catch(() => null);
+      if (!pin) throw new Error('The exact printing could not be matched. Search by set and card number.');
       // The camera already identified one specific card; don't turn its name
       // back into a list of alternatives.
       reqToken.current += 1;
       quietFor.current = card.name;
       setQuery(card.name);
       setOpen(false);
-      onSearch(card.name, pin?.game || card.game || null, pin ? { pin } : {});
+      onSearch(card.name, pin.game || card.game || null, { pin });
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('[signal] card image scan failed', err);
@@ -211,7 +224,7 @@ export default function SearchBar({ onSearch, loading }) {
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { setQuery(e.target.value); setScanError(null); }}
           onKeyDown={handleKeyDown}
           onFocus={() => { setFocused(true); if (suggestions.length) setOpen(true); }}
           onBlur={() => setFocused(false)}
@@ -221,7 +234,9 @@ export default function SearchBar({ onSearch, loading }) {
           role="combobox"
           aria-expanded={open}
           aria-autocomplete="list"
-          placeholder={identifying ? 'Identifying card…' : 'Card name or set number — e.g. LOB-001'}
+          aria-controls="signal-card-suggestions"
+          aria-activedescendant={active >= 0 ? `signal-card-option-${active}` : undefined}
+          placeholder={identifying ? 'Identifying card…' : 'Card name or set number — e.g. LOB-EN001'}
           disabled={busy}
           enterKeyHint="search"
           style={{
@@ -242,11 +257,14 @@ export default function SearchBar({ onSearch, loading }) {
         />
 
         {open && suggestions.length > 0 && (
-          <ul className="sb-list" role="listbox">
+          <ul id="signal-card-suggestions" className="sb-list" role="listbox">
             {suggestions.map((card, i) => (
-              <li key={`${card.game}-${card.id}`} role="option" aria-selected={i === active}>
+              <li key={`${card.game}-${card.printingId || card.id}-${i}`} role="presentation">
                 <button
+                  id={`signal-card-option-${i}`}
                   type="button"
+                  role="option"
+                  aria-selected={i === active}
                   className={`sb-item ${i === active ? 'sb-item--on' : ''}`}
                   onClick={() => pick(card)}
                   onMouseEnter={() => setActive(i)}
@@ -273,6 +291,10 @@ export default function SearchBar({ onSearch, loading }) {
             ))}
           </ul>
         )}
+      </div>
+
+      <div style={{ marginTop: 6, fontSize: 9, color: '#605C54', fontFamily: "'JetBrains Mono', monospace", textAlign: 'left' }}>
+        Camera photos are resized and sent only to identify the card.
       </div>
 
       {scanError && (

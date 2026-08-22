@@ -7,31 +7,44 @@ export function useWatchedCards() {
   const load = () => {
     try {
       const raw = localStorage.getItem('signal_watched_cards');
-      setWatched(raw ? JSON.parse(raw) : []);
+      const parsed = raw ? JSON.parse(raw) : [];
+      setWatched(Array.isArray(parsed) ? parsed : []);
     } catch { setWatched([]); }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    window.addEventListener('signal-watch-updated', load);
+    window.addEventListener('storage', load);
+    return () => {
+      window.removeEventListener('signal-watch-updated', load);
+      window.removeEventListener('storage', load);
+    };
+  }, []);
 
   const toggle = (card) => {
     try {
       const raw = localStorage.getItem('signal_watched_cards');
-      const list = raw ? JSON.parse(raw) : [];
+      const parsed = raw ? JSON.parse(raw) : [];
+      const list = Array.isArray(parsed) ? parsed : [];
+      const identity = (value) => value?.pin?.printingId || value?.pin?.id || null;
       const sameCard = (w) =>
         w.name === card.name && w.game === card.game &&
-        (w.pin?.id || null) === (card.pin?.id || null);
+        identity(w) === identity(card);
       const exists = list.some(sameCard);
       const next = exists
         ? list.filter(w => !sameCard(w))
         : [{ ...card, watchedAt: new Date().toISOString() }, ...list].slice(0, 20);
       localStorage.setItem('signal_watched_cards', JSON.stringify(next));
       setWatched(next);
+      window.dispatchEvent(new Event('signal-watch-updated'));
       return !exists;
     } catch { return false; }
   };
 
   const isWatched = (name, game, pin = null) =>
-    watched.some(w => w.name === name && w.game === game && (w.pin?.id || null) === (pin?.id || null));
+    watched.some((w) => w.name === name && w.game === game
+      && (w.pin?.printingId || w.pin?.id || null) === (pin?.printingId || pin?.id || null));
 
   return { watched, toggle, isWatched, reload: load };
 }
@@ -55,7 +68,7 @@ export default function WatchedCards({ onSelect }) {
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         {watched.map((card, i) => {
-          const { color } = getScoreLabel(card.score || 0);
+          const { color } = getScoreLabel(card.score ?? 50);
           const gameMeta = GAME_LABELS[card.game];
           return (
             <div
@@ -93,17 +106,19 @@ export default function WatchedCards({ onSelect }) {
                   fontWeight: 700,
                   color,
                 }}>
-                  {card.score || '—'}
+                  {card.score ?? '—'}
                 </span>
                 <span style={{ color: '#92897C' }}>{card.name}</span>
               </button>
               <button
                 onClick={() => toggle(card)}
                 title="Unwatch"
+                aria-label={`Stop watching ${card.name}`}
                 style={{
                   background: 'none',
                   border: 'none',
-                  padding: 0,
+                  padding: 10,
+                  margin: -10,
                   cursor: 'pointer',
                   color: '#494640',
                   fontSize: 13,

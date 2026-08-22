@@ -28,18 +28,22 @@ export default function Collection() {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchActive, setSearchActive] = useState(-1);
   const fileRef = useRef(null);
   const searchRef = useRef(null);
   const reqToken = useRef(0);
+  const flashTimer = useRef(null);
 
   useEffect(() => { setCards(loadCollection()); }, []);
+  useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
 
   // Good news clears itself; a failure stays put. A camera error that vanishes
   // after three seconds is an error nobody can read, let alone report.
   const flash = useCallback((kind, text) => {
     setStatus({ kind, text });
     if (kind !== 'bad') {
-      setTimeout(() => setStatus((s) => (s && s.text === text ? null : s)), 3500);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => setStatus((s) => (s && s.text === text ? null : s)), 3500);
     }
   }, []);
 
@@ -52,18 +56,8 @@ export default function Collection() {
     try {
       const read = await scanCardImage(file);
       if (!read?.name) throw new Error('Could not read a card in that photo.');
-      // The catalogue row is what gives us the artwork and the printing. When
-      // the set/number on the card don't resolve, fall back to the best name
-      // match so the card still lands on the shelf — a card with a generic
-      // picture beats a card you have to add by hand.
-      let card = await resolvePrinting(read).catch(() => null);
-      if (!card) {
-        const guesses = await suggestCards(read.name, 3).catch(() => []);
-        card = guesses.find((g) => !read.game || g.game === read.game) || guesses[0] || null;
-      }
-      if (!card) {
-        card = { id: null, game: read.game || null, name: read.name, setName: read.set || null, number: read.number || null };
-      }
+      const card = await resolvePrinting(read).catch(() => null);
+      if (!card) throw new Error('The exact printing could not be matched. Add it by name and choose the set.');
       const next = addToCollection(card);
       setCards(next);
       flash('ok', `Added ${card.name}${card.setName ? ' · ' + card.setName : ''}`);
@@ -87,10 +81,14 @@ export default function Collection() {
         const hits = await suggestCards(q, 8);
         if (myToken !== reqToken.current) return;
         setSuggestions(hits);
+        setSearchActive(-1);
         setSearchOpen(hits.length > 0);
       } catch {
-        // Catalogues down — keep whatever is on screen. Same rule as the
-        // search bar on the Signal page.
+        if (myToken !== reqToken.current) return;
+        setSuggestions([]);
+        setSearchOpen(false);
+        setSearchActive(-1);
+        flash('bad', 'Card catalogues could not load. Try again.');
       }
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
@@ -154,6 +152,9 @@ export default function Collection() {
           </>
         )}
       </button>
+      <div style={{ marginTop: 6, fontSize: 9, color: '#605C54', fontFamily: "'JetBrains Mono', monospace", textAlign: 'center' }}>
+        Camera photos are resized and sent only to identify the card.
+      </div>
 
       {/* Type the name instead — for cards the camera can't read, and for cards
           that aren't in front of you. */}
@@ -162,18 +163,45 @@ export default function Collection() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(event) => {
+            if (!searchOpen || !suggestions.length) return;
+            if (event.key === 'ArrowDown') {
+              event.preventDefault();
+              setSearchActive((value) => (value + 1) % suggestions.length);
+            } else if (event.key === 'ArrowUp') {
+              event.preventDefault();
+              setSearchActive((value) => (value <= 0 ? suggestions.length - 1 : value - 1));
+            } else if (event.key === 'Enter' && searchActive >= 0) {
+              event.preventDefault();
+              addByName(suggestions[searchActive]);
+            } else if (event.key === 'Escape') {
+              setSearchOpen(false);
+            }
+          }}
           onFocus={() => { if (suggestions.length) setSearchOpen(true); }}
           placeholder="…or add by name"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
           className="col-search-input"
+          role="combobox"
+          aria-expanded={searchOpen}
+          aria-controls="collection-card-suggestions"
+          aria-activedescendant={searchActive >= 0 ? `collection-card-option-${searchActive}` : undefined}
         />
         {searchOpen && suggestions.length > 0 && (
-          <ul className="sb-list" role="listbox">
-            {suggestions.map((card) => (
-              <li key={`${card.game}-${card.id}`} role="option" aria-selected={false}>
-                <button type="button" className="sb-item" onClick={() => addByName(card)}>
+          <ul id="collection-card-suggestions" className="sb-list" role="listbox">
+            {suggestions.map((card, index) => (
+              <li key={`${card.game}-${card.printingId || card.id}-${index}`} role="presentation">
+                <button
+                  id={`collection-card-option-${index}`}
+                  type="button"
+                  role="option"
+                  aria-selected={index === searchActive}
+                  className={`sb-item ${index === searchActive ? 'sb-item--on' : ''}`}
+                  onMouseEnter={() => setSearchActive(index)}
+                  onClick={() => addByName(card)}
+                >
                   {card.imageUrl
                     ? <img src={card.imageUrl} alt="" className="sb-thumb" loading="lazy" />
                     : <span className="sb-thumb sb-thumb--empty" />}

@@ -15,8 +15,8 @@ function trendMeta(trend) {
 function alignMeta(val) {
   if (!val) return { color: '#605C54', sym: '—' };
   const v = val.toLowerCase();
-  if (v.includes('agree')) return { color: '#608870', sym: '✓' };
-  if (v.includes('disagree')) return { color: '#C44040', sym: '✗' };
+  if (v === 'disagree' || v.includes('not agree') || v.includes('conflict')) return { color: '#C44040', sym: '✗' };
+  if (v === 'agree' || /\bagree(?:s|d|ment)?\b/.test(v)) return { color: '#608870', sym: '✓' };
   return { color: '#A09060', sym: '~' };
 }
 

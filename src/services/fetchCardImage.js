@@ -13,6 +13,8 @@
 // Only the first two are facts about the card. FAILED is a fact about the
 // server, and must never be remembered as if it were a fact about the card.
 
+import { fetchWithTimeout } from './http.js';
+
 // ─── Image URL cache ─────────────────────────────────────────────────────────
 // The same card's art is requested by up to four components at once —
 // LoadingTheater's CardSlate, OverallScore's CardImage, EmptyState's tile and
@@ -74,7 +76,8 @@ export async function fetchCardImage(cardName, game) {
   const persisted = readImgCache()[key];
   if (persisted) {
     const ttl = persisted.url ? IMG_TTL_MS : NEG_TTL_MS;
-    if (Date.now() - (persisted.ts || 0) < ttl) {
+    const age = Date.now() - (persisted.ts || 0);
+    if (age >= 0 && age < ttl) {
       memCache.set(key, persisted.url ?? null);
       return persisted.url ?? null;
     }
@@ -132,7 +135,7 @@ async function fetchCardImageUncached(cardName, game) {
 async function fetchMTGImage(name) {
   let res;
   try {
-    res = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`);
+    res = await fetchWithTimeout(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`);
   } catch (e) {
     console.warn(`[fetchCardImage] scryfall network error for "${name}":`, e);
     return FAILED;
@@ -158,7 +161,7 @@ async function fetchMTGImage(name) {
 async function fetchYuGiOhImage(name) {
   let res;
   try {
-    res = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(name)}`);
+    res = await fetchWithTimeout(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(name)}`);
   } catch (e) {
     console.warn(`[fetchCardImage] ygoprodeck network error for "${name}":`, e);
     return FAILED;
@@ -187,7 +190,7 @@ async function fetchPokemonImage(name) {
     .trim();
   let res;
   try {
-    res = await fetch(
+    res = await fetchWithTimeout(
       `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(cleanName)}"&pageSize=1&orderBy=-set.releaseDate`
     );
   } catch (e) {

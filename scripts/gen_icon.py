@@ -16,6 +16,7 @@ can't crop it.
 """
 
 import os
+import glob
 from PIL import Image, ImageDraw, ImageFont
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -30,12 +31,17 @@ FONT_CANDIDATES = [
     "C:/Windows/Fonts/meiryob.ttc",       # Meiryo Bold
     "C:/Windows/Fonts/NotoSansCJK-Bold.ttc",
     "C:/Windows/Fonts/SimHei.ttf",
+    "/system/fonts/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+    "/data/data/com.termux/files/usr/var/lib/proot-distro/containers/debian/rootfs/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
 ]
 
 MASTER = 1024
 SAFE_ZONE_PX = int(MASTER * (66 / 108))   # 626
 
 DENSITIES = [
+    ("ldpi",    36,   81),
     ("mdpi",    48,  108),
     ("hdpi",    72,  162),
     ("xhdpi",   96,  216),
@@ -58,7 +64,10 @@ def load_font(size_px):
                 return ImageFont.truetype(path, size_px)
             except Exception:
                 continue
-    return ImageFont.load_default()
+    raise RuntimeError(
+        "No CJK font found. Install Noto Sans CJK or add its exact path to FONT_CANDIDATES; "
+        "refusing to create a tofu-box launcher icon."
+    )
 
 
 def _vertical_gradient_layer(canvas_size, top_rgba, mid_rgba, bot_rgba):
@@ -123,6 +132,15 @@ def render_kanji(canvas_size):
     return img
 
 
+def render_splash(width, height):
+    """Dark launch canvas with one centered, safe-zone-aware 株 mark."""
+    splash = Image.new("RGBA", (width, height), BG_CANVAS_DARK)
+    side = max(64, int(min(width, height) * 0.42))
+    logo = render_kanji(side)
+    splash.alpha_composite(logo, ((width - side) // 2, (height - side) // 2))
+    return splash
+
+
 def main():
     print(f"Output dir: {RES_DIR}")
     if not os.path.isdir(RES_DIR):
@@ -147,12 +165,12 @@ def main():
 
         print(f"  {suffix:8s}  legacy={legacy_px}px  layer={layer_px}px")
 
-    # Also dump a 1024×1024 preview for visual review (not used by Android).
-    preview_path = os.path.join(PROJECT_ROOT, "scripts", "icon_preview.png")
-    preview = Image.new("RGBA", (1024, 1024), BG_CANVAS_DARK)
-    preview.alpha_composite(render_kanji(1024))
-    preview.save(preview_path)
-    print(f"\nPreview: {preview_path}")
+    splash_paths = sorted(glob.glob(os.path.join(RES_DIR, "drawable*", "splash.png")))
+    for splash_path in splash_paths:
+        with Image.open(splash_path) as current:
+            width, height = current.size
+        render_splash(width, height).save(splash_path)
+    print(f"  splash   regenerated {len(splash_paths)} density/orientation files")
 
     print("Done.")
 

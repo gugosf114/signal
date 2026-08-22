@@ -39,6 +39,12 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, onSc
   const pinchStart = useRef(null);
   const movedFar = useRef(false);
   const lastTap = useRef(0);
+  const dialogRef = useRef(null);
+  const closeRef = useRef(null);
+  const priorFocus = useRef(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   const reset = useCallback(() => {
     setSettling(true);
@@ -59,18 +65,30 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, onSc
     pinchStart.current = null;
 
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current?.();
       if (e.key === '0') reset();
+      if (e.key === 'Tab') {
+        const focusable = [...(dialogRef.current?.querySelectorAll('button:not([disabled])') || [])];
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
     };
     window.addEventListener('keydown', onKey);
+    priorFocus.current = document.activeElement;
+    const priorOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => closeRef.current?.focus());
     const hintTimer = setTimeout(() => setHintVisible(false), 3200);
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
+      document.body.style.overflow = priorOverflow;
+      priorFocus.current?.focus?.();
       clearTimeout(hintTimer);
     };
-  }, [isOpen, onClose, reset]);
+  }, [isOpen, reset]);
 
   const spread = () => {
     const [a, b] = [...pointers.current.values()];
@@ -155,8 +173,15 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, onSc
   const moved = Math.abs(tilt.x) > 1 || Math.abs(tilt.y) > 1 || Math.abs(scale - 1) > 0.02;
 
   return (
-    <div className="cl-backdrop" onClick={onClose}>
-      <button type="button" className="cl-close" onClick={onClose} aria-label="Close">
+    <div
+      ref={dialogRef}
+      className="cl-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label={cardName ? `${cardName} card viewer` : 'Card viewer'}
+      onClick={(event) => { if (event.target === event.currentTarget) onCloseRef.current?.(); }}
+    >
+      <button ref={closeRef} type="button" className="cl-close" onClick={(event) => { event.stopPropagation(); onCloseRef.current?.(); }} aria-label="Close card viewer">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              strokeWidth="2" strokeLinecap="round" aria-hidden>
           <line x1="18" y1="6" x2="6" y2="18" />

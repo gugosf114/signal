@@ -4,6 +4,8 @@
 // step and returns real /itm/ URLs. No keys -> returns null and analyzeCard falls
 // back to a web_search for eBay listings.
 
+import { fetchWithTimeout } from './http.js';
+
 let _token = null;
 let _exp = 0;
 
@@ -14,7 +16,7 @@ async function ebayToken() {
   const now = Date.now();
   if (_token && now < _exp - 60000) return _token; // reuse until ~1 min before expiry
   const basic = btoa(`${id}:${secret}`);
-  const res = await fetch('https://api.ebay.com/identity/v1/oauth2/token', {
+  const res = await fetchWithTimeout('https://api.ebay.com/identity/v1/oauth2/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -23,7 +25,7 @@ async function ebayToken() {
     body:
       'grant_type=client_credentials&scope=' +
       encodeURIComponent('https://api.ebay.com/oauth/api_scope'),
-  });
+  }, 8000);
   if (!res.ok) return null;
   const json = await res.json();
   if (!json.access_token) return null;
@@ -32,18 +34,29 @@ async function ebayToken() {
   return _token;
 }
 
-export async function fetchEbayListings(cardName, game = null) {
+function remainingUntil(value) {
+  const end = Date.parse(value);
+  if (!Number.isFinite(end)) return '';
+  const minutes = Math.max(0, Math.floor((end - Date.now()) / 60000));
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
+export async function fetchEbayListings(cardName, game = null, pin = null) {
   try {
     const token = await ebayToken();
     if (!token) return null;
-    const q = encodeURIComponent(`${cardName} ${game || ''} card`.trim());
+    const printing = [pin?.setName, pin?.number].filter(Boolean).join(' ');
+    const q = encodeURIComponent(`${cardName} ${printing} ${game || ''} single card`.trim());
     const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${q}&limit=20`;
-    const res = await fetch(url, {
+    const res = await fetchWithTimeout(url, {
       headers: {
         Authorization: `Bearer ${token}`,
         'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
       },
-    });
+    }, 8000);
     if (!res.ok) return null;
     const json = await res.json();
     const items = json?.itemSummaries || [];
@@ -51,6 +64,8 @@ export async function fetchEbayListings(cardName, game = null) {
     const auction = [];
     for (const it of items) {
       const opts = it.buyingOptions || [];
+      if (it.price?.currency && it.price.currency !== 'USD') continue;
+      if (!String(it.title || '').toLowerCase().includes(String(cardName).toLowerCase())) continue;
       if (opts.includes('FIXED_PRICE') && buy_it_now.length < 2) {
         buy_it_now.push({
           title: it.title,
@@ -73,7 +88,7 @@ export async function fetchEbayListings(cardName, game = null) {
             : 0,
           condition: it.condition || '',
           bid_count: it.bidCount || 0,
-          time_remaining: it.itemEndDate || '',
+          time_remaining: remainingUntil(it.itemEndDate),
           url: it.itemWebUrl || '',
         });
       }

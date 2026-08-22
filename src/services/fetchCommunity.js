@@ -3,13 +3,16 @@
 // the slow sequential LLM "search Reddit" step. Returns null on any failure so
 // analyzeCard cleanly falls back to a web_search.
 
+import { fetchWithTimeout } from './http.js';
+
 export async function fetchCommunity(cardName, game = null) {
   try {
-    const q = encodeURIComponent(cardName);
-    const url = `https://www.reddit.com/search.json?q=${q}&sort=top&t=year&limit=10&raw_json=1`;
-    const res = await fetch(url, {
+    const gameTerm = { pokemon: 'Pokemon TCG', mtg: 'Magic card', yugioh: 'Yu-Gi-Oh card' }[game] || 'trading card';
+    const q = encodeURIComponent(`"${cardName}" ${gameTerm}`);
+    const url = `https://www.reddit.com/search.json?q=${q}&sort=relevance&t=month&limit=10&raw_json=1`;
+    const res = await fetchWithTimeout(url, {
       headers: { 'User-Agent': 'signal-tcg/1.0 (card market intelligence)' },
-    });
+    }, 8000);
     if (!res.ok) return null;
     const json = await res.json();
     const children = json?.data?.children || [];

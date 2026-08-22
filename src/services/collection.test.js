@@ -103,6 +103,24 @@ describe('collection', () => {
     assert.equal(addToCollection(b).length, 2);
   });
 
+  test('Yu-Gi-Oh reprints sharing one card id stay separate', () => {
+    const common = { id: '89631139', printingId: '89631139:LDK2-ENJ01', game: 'yugioh', name: 'Blue-Eyes White Dragon' };
+    const ultra = { id: '89631139', printingId: '89631139:LOB-EN001', game: 'yugioh', name: 'Blue-Eyes White Dragon' };
+    addToCollection(common);
+    const list = addToCollection(ultra);
+    assert.equal(list.length, 2);
+    assert.notEqual(cardKey(common), cardKey(ultra));
+  });
+
+  test('bad stored quantities are repaired before use', () => {
+    store['signal_collection_v1'] = JSON.stringify([{ ...RICH, qty: 'not-a-number' }]);
+    assert.equal(loadCollection()[0].qty, 1);
+    store['signal_collection_v1'] = JSON.stringify([{ ...RICH, qty: -7 }]);
+    assert.equal(loadCollection()[0].qty, 1);
+    store['signal_collection_v1'] = JSON.stringify([{ ...RICH, qty: 100000 }]);
+    assert.equal(loadCollection()[0].qty, 999);
+  });
+
   test('a nameless card is refused', () => {
     addToCollection({ id: 'x', game: 'mtg' });
     assert.deepEqual(loadCollection(), []);

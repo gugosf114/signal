@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import {
   siX,
   siRakuten,
@@ -49,38 +49,35 @@ export const BRAND_REGISTRY = {
 // more specific keys first.
 
 const HOST_HINTS = [
-  ['youtu',           'youtube'],
-  ['x.com',           'x'],
-  ['twitter',         'x'],
-  ['tiktok',          'tiktok'],
-  ['reddit',          'reddit'],
-  ['discord',         'discord'],
-  ['instagram',       'instagram'],
-  ['twitch',          'twitch'],
-  ['ebay',            'ebay'],
-  ['tcgplayer',       'tcgplayer'],
-  ['mercari',         'mercari'],
-  ['rakuten',         'rakuten'],
-  ['yahoo',           'yahoo'],
-  ['pokemon.com',     'pokemon'],
-  ['pokebeach',       'pokebeach'],
-  ['game8',           'game8'],
-  ['tcgfish',         'tcgfish'],
-  ['mtggoldfish',     'mtggoldfish'],
-  ['bulbapedia',      'bulbapedia'],
-  ['limitlesstcg',    'limitless'],
-  ['limitless',       'limitless'],
-  ['google',          'google'],
+  [['youtube.com', 'youtu.be'], 'youtube'],
+  [['x.com', 'twitter.com'], 'x'],
+  [['tiktok.com'], 'tiktok'],
+  [['reddit.com'], 'reddit'],
+  [['discord.com', 'discord.gg'], 'discord'],
+  [['instagram.com'], 'instagram'],
+  [['twitch.tv'], 'twitch'],
+  [['ebay.com'], 'ebay'],
+  [['tcgplayer.com'], 'tcgplayer'],
+  [['mercari.com', 'mercari.jp'], 'mercari'],
+  [['rakuten.com', 'rakuten.co.jp'], 'rakuten'],
+  [['yahoo.com', 'yahoo.co.jp'], 'yahoo'],
+  [['pokemon.com'], 'pokemon'],
+  [['pokebeach.com'], 'pokebeach'],
+  [['game8.co'], 'game8'],
+  [['tcgfish.com'], 'tcgfish'],
+  [['mtggoldfish.com'], 'mtggoldfish'],
+  [['bulbapedia.bulbagarden.net'], 'bulbapedia'],
+  [['limitlesstcg.com'], 'limitless'],
+  [['google.com', 'googleapis.com'], 'google'],
 ];
 
 export function resolveBrand(input) {
   if (!input) return null;
-  const s = String(input).toLowerCase();
-  for (const [hint, brand] of HOST_HINTS) {
-    if (s.includes(hint)) return brand;
-  }
-  for (const k of Object.keys(BRAND_REGISTRY)) {
-    if (s.includes(k)) return k;
+  const s = String(input).trim().toLowerCase();
+  if (BRAND_REGISTRY[s]) return s === 'twitter' ? 'x' : s;
+  const words = new Set(s.split(/[^a-z0-9]+/).filter(Boolean));
+  for (const key of Object.keys(BRAND_REGISTRY)) {
+    if (key.length > 1 && words.has(key)) return key === 'twitter' ? 'x' : key;
   }
   return null;
 }
@@ -89,7 +86,10 @@ export function brandFromUrl(url) {
   if (!url) return null;
   try {
     const host = new URL(url).hostname.toLowerCase();
-    return resolveBrand(host);
+    for (const [domains, brand] of HOST_HINTS) {
+      if (domains.some((domain) => host === domain || host.endsWith(`.${domain}`))) return brand;
+    }
+    return null;
   } catch {
     // URL didn't parse — return null rather than substring-matching the raw
     // string, which would let stray params (e.g. ?ref=youtube.com) attribute
@@ -139,6 +139,7 @@ export function BrandIcon({ brand, size = 16, className, style }) {
 // ─── Custom inline SVG marks ─────────────────────────────────────────────────
 
 function CustomBrandSvg({ kind, color, size, label, className, style }) {
+  const uid = useId().replace(/:/g, '');
   const props = {
     width: size,
     height: size,
@@ -267,39 +268,39 @@ function CustomBrandSvg({ kind, color, size, label, className, style }) {
           aria-label={label}
         >
           <defs>
-            <linearGradient id="ig-a">
+            <linearGradient id={`${uid}-ig-a`}>
               <stop offset="0" stopColor="#fc0" />
               <stop offset=".1242" stopColor="#fc0" />
               <stop offset=".5672" stopColor="#fe4a05" />
               <stop offset=".6942" stopColor="#ff0f3f" />
               <stop offset="1" stopColor="#fe0657" stopOpacity="0" />
             </linearGradient>
-            <linearGradient id="ig-b">
+            <linearGradient id={`${uid}-ig-b`}>
               <stop offset="0" stopColor="#fc0" />
               <stop offset="1" stopColor="#fc0" stopOpacity="0" />
             </linearGradient>
-            <linearGradient id="ig-c">
+            <linearGradient id={`${uid}-ig-c`}>
               <stop offset="0" stopColor="#780cff" />
               <stop stopColor="#820bff" offset="1" stopOpacity="0" />
             </linearGradient>
-            <linearGradient id="ig-d">
+            <linearGradient id={`${uid}-ig-d`}>
               <stop offset="0" stopColor="#ff005f" />
               <stop offset="1" stopColor="#fc01d8" />
             </linearGradient>
             <radialGradient
-              id="ig-f"
+              id={`${uid}-ig-f`}
               cx="158.429"
               cy="578.088"
               r="52.3515"
-              xlinkHref="#ig-a"
+              xlinkHref={`#${uid}-ig-a`}
               gradientUnits="userSpaceOnUse"
               gradientTransform="matrix(0 -4.03418 4.28018 0 -2332.2273 942.2356)"
               fx="158.429"
               fy="578.088"
             />
             <radialGradient
-              xlinkHref="#ig-b"
-              id="ig-g"
+              xlinkHref={`#${uid}-ig-b`}
+              id={`${uid}-ig-g`}
               gradientUnits="userSpaceOnUse"
               gradientTransform="matrix(.67441 -1.16203 1.51283 .87801 -814.3657 -47.8354)"
               cx="172.6149"
@@ -309,8 +310,8 @@ function CustomBrandSvg({ kind, color, size, label, className, style }) {
               r="65"
             />
             <radialGradient
-              xlinkHref="#ig-c"
-              id="ig-h"
+              xlinkHref={`#${uid}-ig-c`}
+              id={`${uid}-ig-h`}
               cx="144.012"
               cy="51.3367"
               fx="144.012"
@@ -320,8 +321,8 @@ function CustomBrandSvg({ kind, color, size, label, className, style }) {
               gradientUnits="userSpaceOnUse"
             />
             <radialGradient
-              xlinkHref="#ig-d"
-              id="ig-e"
+              xlinkHref={`#${uid}-ig-d`}
+              id={`${uid}-ig-e`}
               gradientUnits="userSpaceOnUse"
               gradientTransform="matrix(-3.10797 .87652 -.6315 -2.23914 1345.6503 1374.1983)"
               cx="199.7884"
@@ -335,7 +336,7 @@ function CustomBrandSvg({ kind, color, size, label, className, style }) {
             <path
               key={gradId}
               d="M204.1503 18.1429c-55.2305 0-71.3834.057-74.5232.3175-11.3342.9424-18.387 2.7275-26.0708 6.554-5.9214 2.9413-10.5915 6.3506-15.2005 11.1298-8.3938 8.7157-13.481 19.4383-15.3226 32.1842-.8953 6.1877-1.1558 7.4496-1.2087 39.0558-.0203 10.5354 0 24.4007 0 42.9984 0 55.2008.061 71.3418.3256 74.4764.9157 11.032 2.6453 17.9728 6.3081 25.565 7 14.5329 20.369 25.4428 36.119 29.5137 5.4535 1.4044 11.4767 2.1779 19.2092 2.5442 3.2762.1425 36.6684.2443 70.081.2443 33.4127 0 66.8253-.0407 70.02-.2035 8.9535-.4214 14.1526-1.1195 19.9011-2.6054 15.8517-4.0912 28.9767-14.8383 36.119-29.5748 3.5916-7.409 5.4128-14.6144 6.237-25.0704.179-2.2796.2543-38.6263.2543-74.924 0-36.304-.0814-72.5835-.2605-74.8632-.8343-10.6249-2.6555-17.7692-6.363-25.3207-3.0421-6.1816-6.42-10.798-11.324-15.518-8.752-8.3616-19.4555-13.4502-32.2101-15.2902-6.18-.8936-7.411-1.1582-39.033-1.2131z"
-              fill={`url(#${gradId})`}
+              fill={`url(#${uid}-${gradId})`}
               transform="translate(-71.8155 -18.1429)"
             />
           ))}

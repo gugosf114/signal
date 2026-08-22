@@ -35,7 +35,7 @@ const SIGNAL_ORDER = [
 
 const fmtUsd = (n) => {
   if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
-  return `$${Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  return `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const fmtDate = (d) => d.toLocaleDateString('en-US', {
@@ -47,12 +47,16 @@ export default function PdfReport({ result, score, cardImageUrl }) {
 
   const gameKey   = (result.game || 'pokemon').toLowerCase();
   const gameMeta  = GAME_LABELS[gameKey] || GAME_LABELS.pokemon;
-  const scoreMeta = getScoreLabel(score || 0);
+  const scoreMeta = getScoreLabel(score ?? 50);
   const weights   = WEIGHTS[gameKey] || WEIGHTS.pokemon;
+  const totalWeight = Object.values(weights).reduce((sum, value) => sum + value, 0) || 1;
 
-  const now = new Date();
-  const bin = Array.isArray(result.ebay_listings?.buy_it_now) ? result.ebay_listings.buy_it_now : [];
-  const auc = Array.isArray(result.ebay_listings?.auction)     ? result.ebay_listings.auction     : [];
+  const scannedAt = result._scannedAt ? new Date(result._scannedAt) : null;
+  const reportDate = scannedAt && Number.isFinite(scannedAt.getTime()) ? scannedAt : new Date();
+  const listingAge = scannedAt ? Date.now() - scannedAt.getTime() : Infinity;
+  const listingsFresh = !result._relatedPriceDataStale && listingAge >= 0 && listingAge <= 60 * 60 * 1000;
+  const bin = listingsFresh && Array.isArray(result.ebay_listings?.buy_it_now) ? result.ebay_listings.buy_it_now : [];
+  const auc = listingsFresh && Array.isArray(result.ebay_listings?.auction)     ? result.ebay_listings.auction     : [];
   const listings = [
     ...bin.slice(0, 2).map((l) => ({ ...l, _type: 'BIN' })),
     ...auc.slice(0, 1).map((l) => ({ ...l, _type: 'AUC' })),
@@ -111,7 +115,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
             textTransform: 'uppercase',
             fontWeight: 600,
           }}>
-            {fmtDate(now)}
+            {fmtDate(reportDate)}
           </div>
           <div style={{
             fontFamily: "'JetBrains Mono', Menlo, monospace",
@@ -120,7 +124,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
             marginTop: 3,
             letterSpacing: '0.04em',
           }}>
-            Scan report · {gameMeta.label}
+            Scan report · {gameMeta.label} · scan time
           </div>
         </div>
       </div>
@@ -191,6 +195,14 @@ export default function PdfReport({ result, score, cardImageUrl }) {
               {printingLabel(result.printing)}
             </div>
           )}
+          {!printingLabel(result.printing) && (
+            <div style={{ fontFamily: "'JetBrains Mono', Menlo, monospace", fontSize: 10, color: BRAND_RED, marginTop: -8, marginBottom: 14 }}>
+              PRINTING NOT PINNED · PRICE MAY VARY BY VERSION
+            </div>
+          )}
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.18em', color: INK_MUTE }}>
+            MARKET PRESSURE
+          </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
             <span style={{
               fontFamily: "'JetBrains Mono', Menlo, monospace",
@@ -233,6 +245,12 @@ export default function PdfReport({ result, score, cardImageUrl }) {
         </div>
       )}
 
+      {result._truncated && (
+        <div style={{ marginBottom: 20, padding: '8px 10px', border: `1px solid ${BRAND_RED}`, color: BRAND_RED, fontFamily: "'JetBrains Mono', monospace", fontSize: 10 }}>
+          PARTIAL RESULT · {(result.signals || []).length} OF 8 SIGNALS RETURNED
+        </div>
+      )}
+
       {/* ─── PRICES ───────────────────────────────────────────────────────── */}
       <div style={{
         display: 'grid',
@@ -259,7 +277,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
       {/* ─── EBAY LISTINGS ────────────────────────────────────────────────── */}
       {listings.length > 0 && (
         <div style={{ marginBottom: 28 }}>
-          <SectionHeader>Active Listings · eBay</SectionHeader>
+          <SectionHeader>Listings captured at scan time · eBay</SectionHeader>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {listings.map((l, i) => (
               <ListingRow key={i} listing={l} />
@@ -268,11 +286,11 @@ export default function PdfReport({ result, score, cardImageUrl }) {
         </div>
       )}
 
-      {/* ─── SIGNAL SCORECARD — all 9, fully expanded with citations ──────── */}
+      {/* ─── SIGNAL SCORECARD — returned signals with citations ───────────── */}
       <div style={{ marginBottom: 24 }}>
         <SectionHeader>Signal Scorecard</SectionHeader>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {SIGNAL_ORDER.map((key) => {
+          {SIGNAL_ORDER.filter((key) => (result.signals || []).some((signal) => signal.key === key)).map((key) => {
             const sig = (result.signals || []).find((s) => s.key === key);
             const weight = weights[key] || 0;
             return (
@@ -283,7 +301,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
                 detail={sig?.detail || '—'}
                 sources={sig?.sources || []}
                 dropped={sig?.dropped || 0}
-                weightPct={Math.round(weight * 100)}
+                weightPct={Math.round((weight / totalWeight) * 100)}
               />
             );
           })}
@@ -425,6 +443,11 @@ function ListingRow({ listing }) {
           {isAuction && listing.time_remaining && ` · ${listing.time_remaining}`}
           {listing.seller && ` · ${listing.seller}`}
         </div>
+        {listing.url && (
+          <a href={listing.url} style={{ display: 'block', marginTop: 4, color: INK_MID, fontFamily: "'JetBrains Mono', monospace", fontSize: 8, wordBreak: 'break-all' }}>
+            {listing.url}
+          </a>
+        )}
       </div>
     </div>
   );
@@ -510,7 +533,7 @@ function SignalBlock({ label, level, detail, sources, dropped = 0, weightPct }) 
         }}>
           {dropped > 0
             ? `${dropped} citation${dropped === 1 ? '' : 's'} rejected — URL could not be verified against a retrieval.`
-            : 'No sources surfaced — score reflects absence of signal.'}
+            : 'No verified sources were retrieved for this signal.'}
         </div>
       )}
 
@@ -607,14 +630,14 @@ function SourceLine({ src }) {
         )}
         {/* URL line — tiny mono, for citation provenance */}
         {src.url && (
-          <div style={{
+          <a href={src.url} style={{
             fontFamily: "'JetBrains Mono', Menlo, monospace",
             fontSize: 8,
             color: INK_FAINT,
             marginTop: 3,
             wordBreak: 'break-all',
             letterSpacing: '0.02em',
-          }}>{src.url}</div>
+          }}>{src.url}</a>
         )}
       </div>
     </div>

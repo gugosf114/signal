@@ -3,6 +3,8 @@
 // Replaces the LLM "search YouTube" step. No key -> returns null and analyzeCard
 // falls back to a web_search for creators.
 
+import { fetchWithTimeout } from './http.js';
+
 export async function fetchCreators(cardName, game = null) {
   const key = import.meta.env.VITE_YOUTUBE_API_KEY;
   if (!key) return null;
@@ -11,7 +13,7 @@ export async function fetchCreators(cardName, game = null) {
     const url =
       `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video` +
       `&order=relevance&maxResults=6&q=${q}&key=${key}`;
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url, {}, 8000);
     if (!res.ok) return null;
     const json = await res.json();
     const items = json?.items || [];

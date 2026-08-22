@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { GAME_LABELS } from '../config/signals';
+import { GAME_LABELS, SCORE_VERSION, calculateOverallScore } from '../config/signals';
+import { getCachedScan } from '../services/scanCache';
 
 // Distinct from QuickPicks: this is YOUR trace through the app.
 // Visual cue: hairline divider + label, then log-style rows
@@ -8,10 +9,32 @@ export default function RecentScans({ onSelect, loading }) {
   const [scans, setScans] = useState([]);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('signal_recent_scans');
-      if (raw) setScans(JSON.parse(raw));
-    } catch {}
+    const load = () => {
+      try {
+        const raw = localStorage.getItem('signal_recent_scans');
+        const parsed = raw ? JSON.parse(raw) : [];
+        const list = Array.isArray(parsed) ? parsed : [];
+        const migrated = list.map((item) => {
+          if (item?.scoreVersion === SCORE_VERSION && Number.isFinite(item.score)) return item;
+          const cached = getCachedScan(item?.name, item?.game, item?.pin || null);
+          if (!cached?.signals) return null;
+          return {
+            ...item,
+            score: calculateOverallScore(cached.signals, item.game),
+            scoreVersion: SCORE_VERSION,
+          };
+        }).filter(Boolean).slice(0, 8);
+        setScans(migrated);
+        localStorage.setItem('signal_recent_scans', JSON.stringify(migrated));
+      } catch { setScans([]); }
+    };
+    load();
+    window.addEventListener('signal-history-updated', load);
+    window.addEventListener('storage', load);
+    return () => {
+      window.removeEventListener('signal-history-updated', load);
+      window.removeEventListener('storage', load);
+    };
   }, []);
 
   if (scans.length === 0) return null;
@@ -55,7 +78,7 @@ export default function RecentScans({ onSelect, loading }) {
           const color = gameMeta?.color || '#A8A498';
           return (
             <button
-              key={i}
+              key={`${s.game}:${s.pin?.printingId || s.pin?.id || s.name}:${i}`}
               onClick={() => !loading && onSelect(s.name, s.game, { pin: s.pin || null })}
               disabled={loading}
               style={{

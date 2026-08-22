@@ -15,12 +15,14 @@ const FALLBACK_TRENDING = SAMPLE_CARDS.slice(0, 5);
 
 export default function QuickPicks({ onSelect, loading }) {
   const [trending, setTrending] = useState(FALLBACK_TRENDING);
+  const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     getTopTrending().then((picks) => {
       if (cancelled || !Array.isArray(picks) || !picks.length) return;
       setTrending(picks.slice(0, 5));
+      setIsLive(true);
     }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
@@ -65,7 +67,7 @@ export default function QuickPicks({ onSelect, loading }) {
             fontWeight: 700,
             letterSpacing: 0,
           }}>▲</span>
-          Top Trending · 5
+          {isLive ? 'Top Trending' : 'Card Ideas'} · {trending.length}
         </span>
         <div style={{
           flex: 1,
@@ -85,7 +87,7 @@ export default function QuickPicks({ onSelect, loading }) {
           return (
             <button
               key={`${card.game}-${card.name}-${idx}`}
-              onClick={() => !loading && onSelect(card.name, card.game)}
+              onClick={() => !loading && onSelect(card.name, card.game, { pin: card.id ? card : null })}
               disabled={loading}
               style={{
                 display: 'inline-flex',

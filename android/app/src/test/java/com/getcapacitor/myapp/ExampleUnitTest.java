@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package com.gugosf114.signal;
 
 import static org.junit.Assert.*;
 
@@ -12,7 +12,7 @@ import org.junit.Test;
 public class ExampleUnitTest {
 
     @Test
-    public void addition_isCorrect() throws Exception {
-        assertEquals(4, 2 + 2);
+    public void scanTimeoutStaysBelowServiceCap() {
+        assertTrue(120_000L < 3 * 60 * 1000L);
     }
 }

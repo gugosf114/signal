@@ -6,6 +6,8 @@
 //      Google blocks/rate-limits it, returns null and the scan is unaffected.
 // Returns null only if BOTH fail.
 
+import { fetchWithTimeout } from './http.js';
+
 async function jpHype(cardName) {
   const key = import.meta.env.VITE_YOUTUBE_API_KEY;
   if (!key) return null;
@@ -14,7 +16,7 @@ async function jpHype(cardName) {
     const url =
       `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video` +
       `&order=date&maxResults=5&regionCode=JP&relevanceLanguage=ja&q=${q}&key=${key}`;
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url, {}, 8000);
     if (!res.ok) return null;
     const j = await res.json();
     const vids = (j.items || [])
@@ -37,18 +39,18 @@ async function jpVsUsTrend(term) {
     const time = 'today 3-m';
     const item = (geo) => ({ keyword: term, geo, time });
     const req = { comparisonItem: [item('JP'), item('US')], category: 0, property: '' };
-    const r1 = await fetch(
+    const r1 = await fetchWithTimeout(
       `${base}/explore?hl=en-US&tz=0&req=${encodeURIComponent(JSON.stringify(req))}`
-    );
+    , {}, 8000);
     if (!r1.ok) return null;
     const w = (JSON.parse((await r1.text()).replace(/^\)\]\}',?\s*/, '')).widgets || [])
       .find((x) => x.id === 'TIMESERIES');
     if (!w) return null;
-    const r2 = await fetch(
+    const r2 = await fetchWithTimeout(
       `${base}/widgetdata/multiline?hl=en-US&tz=0&req=${encodeURIComponent(
         JSON.stringify(w.request)
       )}&token=${encodeURIComponent(w.token)}`
-    );
+    , {}, 8000);
     if (!r2.ok) return null;
     const tl = JSON.parse((await r2.text()).replace(/^\)\]\}',?\s*/, '')).default?.timelineData || [];
     if (tl.length < 6) return null;
@@ -82,12 +84,12 @@ export function jpBlock(data) {
     lines.push(
       `Search interest (Google Trends, recent vs 3mo-start): JP ${t.jpNow} (was ${t.jpPrev}, ${dir(t.jpNow, t.jpPrev)}) | US ${t.usNow} (was ${t.usPrev}, ${dir(t.usNow, t.usPrev)}). ` +
       (t.jpNow - t.jpPrev > t.usNow - t.usPrev + 5
-        ? 'JP demand is rising FASTER than US — classic lead signal.'
-        : 'JP not clearly leading US right now.')
+        ? 'JP search interest rose faster than US search interest in this sample.'
+        : 'JP search interest did not clearly rise faster than US in this sample.')
     );
   }
   if (data.jpVideos?.length) {
-    lines.push('Recent JP YouTube:');
+    lines.push('Recent YouTube matches returned with regionCode=JP and Japanese-language relevance. These labels do not prove the channel or audience is Japanese:');
     for (const v of data.jpVideos)
       lines.push(`- ${v.channel}: ${v.title}${v.date ? ' (' + v.date + ')' : ''}  ${v.url}`);
   }

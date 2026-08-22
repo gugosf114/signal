@@ -104,7 +104,8 @@ function readCache() {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const { ts, data } = JSON.parse(raw);
-    if (Date.now() - ts > CACHE_TTL_MS) return null;
+    const age = Date.now() - ts;
+    if (age < 0 || age > CACHE_TTL_MS) return null;
     if (!Array.isArray(data) || !data.length) return null;
     return data;
   } catch {
@@ -138,6 +139,6 @@ export async function getTopTrending() {
   );
 
   const flat = results.flat();
-  if (flat.length) writeCache(flat);
+  if (flat.length === VERTICALS.reduce((sum, vertical) => sum + vertical.target, 0)) writeCache(flat);
   return flat;
 }

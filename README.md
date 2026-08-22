@@ -805,3 +805,82 @@ is gitignored).
   use Node's built-in runner so this holds)
 - No TypeScript
 - Don't break the audit fixes from `893429f`
+
+---
+
+## Session log — 2026-08-22
+
+Full repository read and repair pass. The current tree, all 151 tracked files,
+all Android image and wrapper assets, the divergent audit branch, and all 94
+reachable commits were reviewed before changes.
+
+**Core result truth.** The score is now bounded market pressure: 0 is bearish,
+50 is mixed/neutral or missing evidence, and 100 is bullish. Missing signals no
+longer re-share their weight and turn a partial answer into 100. Model levels
+are clamped, eight unique signal keys are enforced, malformed output is marked
+partial, model-only grading estimates are suppressed, and score-history entries
+carry a score version so old and new math are not compared.
+
+**Exact printing identity.** A dead catalogue pin no longer falls back to a
+different name match. Pokémon suffixes stay in exact-name searches. Yu-Gi-Oh
+reprints now use `card id:set code` printing IDs throughout search, cache, and
+Collection. Set-code lookup uses YGOPRODeck's exact `cardsetsinfo` endpoint.
+Camera resolution requires set and number to match the same printing. Old scans
+without a saved pin are no longer assigned a guessed printing after the fact.
+
+**Evidence and UI repairs.** Citation checks now require exact retrieved URLs,
+reject lookalike YouTube hosts, changed queries, changed schemes, deeper paths,
+unsafe URL schemes, and invented eBay items. External model output is normalized
+before render. Retry and re-scan retain the printing pin and bypass partial cache.
+The alignment `disagree` bug, YouTube click-collapse, stale PDF art state,
+history/watch-list desync, whole-dollar eBay rounding, false `live` listing label,
+stale suggestions, tiny controls, missing camera spinner, reduced-motion gaps,
+dialog focus, tabs, and other phone interaction faults were repaired. Loading
+copy no longer claims work the app did not perform. The percentage counter was
+restored and stops at 95% until a result arrives.
+
+**PDF and native sharing.** Save uses the light report, scan time, exact printing,
+partial marker, normalized weights, exact URLs, and cents. Signal blocks stay
+together across pages. `@capacitor/share` now opens Android's native share sheet
+with a PDF written to the allowed cache folder. Card art is converted to an
+embedded data URL before PDF capture.
+
+**Android.** Version is 2.9 (`versionCode 20`). The foreground service now stops
+if promotion fails, releases an old wake lock before replacing it, and has a
+three-minute full-service cap. Notification permission and a proper monochrome
+small icon were added. Backup is off, FileProvider scope is narrow, keystores and
+Google Services files are ignored, the Gradle wrapper is executable, uses the
+smaller verified 8.14.3 binary distribution, and pins its SHA-256. All launcher
+and adaptive icon densities plus all 26 splash assets were regenerated from one
+CJK-font-checked script. Android CI now runs unit tests and assembles a debug APK.
+
+**Dependencies and proof.** Dead Supabase and social-login packages were removed;
+Capacitor, Vite, and transitive packages were refreshed; `npm audit` reported
+zero known vulnerabilities. The suite reached 96 JavaScript tests plus 3 Python
+backtest tests. The final Vite production build and Android debug build passed,
+the APK installed over the existing app, `LOB-EN001` resolved to Legend of Blue
+Eyes White Dragon / Ultra Rare, PDF save worked, native Share opened, YouTube
+stayed expanded, and the foreground service was observed starting and stopping
+during a background scan.
+
+**Still deliberately unchanged.** The private sideload continues to compile the
+API keys into the APK. A server gate is a separate product decision, not part of
+this commit.
+
+### To-do for the next model
+
+1. Watch the first GitHub Actions run for this commit. Fix only a reproduced CI
+   failure; do not reopen the whole repair pass.
+2. Repeat the background-scan end test with the restored three-minute service
+   cap. Wireless ADB proved the foreground service starts and stops. Capture the
+   final result or error screen after it stops. Do not shorten the cap again.
+3. Test Collection add/remove with two Yu-Gi-Oh printings that share one card ID
+   and confirm they remain separate rows after an app restart.
+4. Save one new PDF and render both pages. Confirm the card image is embedded
+   after the data-URL change and signal blocks do not split across pages.
+5. Publish the verified 2.9 APK to the private `gugosf114/portfolio-assets`
+   release lane, then update the README download link with the final build commit.
+6. Clean the older README state/to-do sections that conflict with this dated log.
+   Preserve the historical session and failure receipts.
+7. Leave the API-key design alone unless George explicitly decides to add a
+   server gate. The private sideload key lane is still intentional.
