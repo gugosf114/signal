@@ -30,32 +30,48 @@ function ArticleCard({ article }) {
   const [fit, setFit] = useState('contain');
   const c = article.source.color;
 
-  // Sources that ship no image of their own get one last chance: whatever card
-  // name the headline carries, looked up against Scryfall / YGOPRODeck / the
-  // Pokemon API. fetchCardImage de-dupes in-flight requests and caches the
-  // answer, so the three copies of each article in the looping track share a
-  // single round trip.
+  // Which picture a tile wants depends on what its source publishes.
+  //
+  //   prefer: 'card'   — the source's own image is a marketing banner, so the
+  //                      real card named in the headline is the better tile.
+  //                      TCGplayer's Pokemon deck guides are all of this shape.
+  //   prefer: 'source' — the source already publishes card art (MTG Rocks,
+  //                      Draftsim) or art for a card too new to exist in any
+  //                      database yet (YGOrganization spoilers). A lookup here
+  //                      would replace a right picture with a worse one.
+  //
+  // Either way the card lookup is the fallback when the preferred path is
+  // empty, and fetchCardImage de-dupes and caches, so the three copies of each
+  // article in the looping track share one round trip.
   useEffect(() => {
-    if (article.imageUrl) {
-      setImgSrc(article.imageUrl);
+    const { game, prefer } = article.source;
+    const sourceImage = article.imageUrl || null;
+
+    if (prefer !== 'card' && sourceImage) {
+      setImgSrc(sourceImage);
       return undefined;
     }
-    const names = extractCardNames(article.title, article.source.game);
-    if (!names.length) return undefined;
+
+    const names = extractCardNames(article.title, game);
+    if (!names.length) {
+      setImgSrc(sourceImage);
+      return undefined;
+    }
 
     let cancelled = false;
     (async () => {
       for (const name of names) {
-        const url = await fetchCardImage(name, article.source.game).catch(() => null);
+        const url = await fetchCardImage(name, game).catch(() => null);
         if (cancelled) return;
         if (url) {
           setImgSrc(url);
           return;
         }
       }
+      if (!cancelled) setImgSrc(sourceImage);
     })();
     return () => { cancelled = true; };
-  }, [article.imageUrl, article.title, article.source.game]);
+  }, [article.imageUrl, article.title, article.source.game, article.source.prefer]);
   let href = null;
   try {
     const parsed = new URL(article.link);
