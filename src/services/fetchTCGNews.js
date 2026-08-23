@@ -1,27 +1,33 @@
 // ─── TCG News Feed ────────────────────────────────────────────────────────────
 // Aggregates current TCG articles from a mix of sources:
 //   - TCGplayer Infinite (JSON API, used for Pokemon)
-//   - WordPress REST API  (used for YGO + one MTG source)
-//   - RSS via rss2json    (used for MTGGoldfish, which has no public JSON API)
+//   - WordPress REST API  (used for YGO and both MTG sources)
 //
 // EVERY tile needs a picture. That is the whole reason the source list looks
 // the way it does. Measured 2026-08-23 against the live feeds:
 //
 //   TCGplayer Infinite  — the articles response already carries `imageURL`.
-//                         An earlier version threw it away and set null.
+//                         An earlier version threw it away and set null. It is
+//                         a wide marketing banner, so this source prefers the
+//                         real card when the headline names one.
 //   WordPress REST      — `?_embed=wp:featuredmedia` returns the article's
 //                         featured image, and both hosts below reflect the
 //                         request Origin, so the browser calls them directly
 //                         with no proxy.
-//   rss2json            — returns NO image for these feeds. Not thumbnail,
-//                         not enclosure, not an <img> in the body: all three
-//                         are empty on every item. Anything on this path
-//                         depends on the card-name fallback in NewsStrip.
+//   rss2json            — kept for any future feed, but no source uses it now.
+//                         MTGGoldfish was dropped on 2026-08-23: it returns no
+//                         thumbnail, no enclosure and no body <img> on any item,
+//                         and its headlines are column names ("Single Scoop",
+//                         "Much Abrew") rather than cards, so nothing downstream
+//                         could recover a picture for it. MTG Rocks and Draftsim
+//                         replace it and both publish card art as the featured
+//                         image.
 //
 // CORS, all verified by response header, not by assumption:
 //   infinite-api.tcgplayer.com  reflects Origin
 //   ygorganization.com          reflects Origin
-//   hipstersofthecoast.com      reflects Origin
+//   mtgrocks.com                reflects Origin
+//   draftsim.com                reflects Origin
 //
 // Pokemon RSS sources (PkmnCards, SixPrizes) were retired here because their
 // feeds went dormant — PkmnCards stopped publishing in 2012, SixPrizes paused
@@ -38,24 +44,29 @@ const SOURCES = [
     type: 'tcgp',
     vertical: 'pokemon',
     rows: 4,
+    // TCGplayer's own image is a wide marketing banner. When the headline
+    // names a deck — "Alakazam Deck Guide" — the real card beats the banner.
+    prefer: 'card',
   },
   {
-    id: 'mtggoldfish',
-    label: 'MTGGoldfish',
+    id: 'mtgrocks',
+    label: 'MTG Rocks',
     color: '#FFB74D',
     game: 'mtg',
-    type: 'rss',
-    rss: 'https://www.mtggoldfish.com/feed',
+    type: 'wp',
+    base: 'https://mtgrocks.com',
     count: 2,
+    prefer: 'source',
   },
   {
-    id: 'hipsters',
-    label: 'Hipsters',
-    color: '#B08BD8',
+    id: 'draftsim',
+    label: 'Draftsim',
+    color: '#7FB6D8',
     game: 'mtg',
     type: 'wp',
-    base: 'https://www.hipstersofthecoast.com',
+    base: 'https://draftsim.com',
     count: 2,
+    prefer: 'source',
   },
   {
     id: 'ygorganization',
@@ -65,6 +76,10 @@ const SOURCES = [
     type: 'wp',
     base: 'https://ygorganization.com',
     count: 3,
+    // YGOrganization reports cards before release, so the database has no art
+    // for them — but the article's own featured image IS the card. Trust it
+    // over a lookup that is guaranteed to miss.
+    prefer: 'source',
   },
 ];
 
