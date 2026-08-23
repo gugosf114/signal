@@ -17,6 +17,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - run: npm ci
+        working-directory: backend/signal-gateway
+      - run: npm test
+        working-directory: backend/signal-gateway
       - run: npx vite build
 
   android:

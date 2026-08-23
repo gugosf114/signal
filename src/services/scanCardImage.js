@@ -3,14 +3,11 @@
 // to Anthropic's vision endpoint, and get back the card's name + game so we
 // can feed the existing analyzeCard pipeline.
 //
-// Uses the same VITE_ANTHROPIC_API_KEY already wired for text scans — no
-// extra credentials, no new plugin. The browser's file input handles camera
+// The Google Cloud gateway owns the Anthropic key. The browser's file input handles camera
 // capture (`capture="environment"`), which on Android opens the camera app
 // directly inside the Capacitor WebView.
 
-import { fetchWithTimeout } from './http.js';
-
-const API_URL = 'https://api.anthropic.com/v1/messages';
+import { identifyCardViaGateway } from './signalGateway.js';
 // Haiku handles reading a card's name/set/number off a clear photo just as well
 // as Sonnet at ~1/3 the cost — the heavy synthesis stays on Sonnet in analyzeCard.
 const MODEL = 'claude-haiku-4-5';
@@ -95,10 +92,6 @@ async function toSendableBase64(file, signal) {
 }
 
 export async function scanCardImage(file, opts = {}) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error('Missing VITE_ANTHROPIC_API_KEY. Create a .env.local file with your API key.');
-  }
   if (!file) throw new Error('No image provided.');
   if (Number(file.size) > MAX_INPUT_BYTES) throw new Error('That photo is too large to open. Use a smaller picture.');
   abortIfNeeded(opts.signal);
@@ -120,16 +113,9 @@ export async function scanCardImage(file, opts = {}) {
     throw new Error('That image could not be safely resized. Use a JPEG or PNG screenshot of the card.');
   }
 
-  const response = await fetchWithTimeout(API_URL, {
-    method: 'POST',
-    signal: opts.signal,
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
+  let result;
+  try {
+    const payload = await identifyCardViaGateway({
       model: MODEL,
       max_tokens: 600,
       system: SYSTEM,
@@ -143,15 +129,11 @@ export async function scanCardImage(file, opts = {}) {
           { type: 'text', text: 'Identify this trading card.' },
         ],
       }],
-    }),
-  }, 30000);
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Vision API error ${response.status}: ${err.slice(0, 200)}`);
+    }, opts.signal);
+    result = payload.result;
+  } catch (error) {
+    throw new Error(`Vision API error: ${error?.message || 'gateway failed'}`);
   }
-
-  const result = await response.json();
   const text = (result.content || [])
     .filter(b => b.type === 'text')
     .map(b => b.text)

@@ -6,6 +6,7 @@
 // the actual web_search tool results — Claude cannot hallucinate sources.
 
 import { creatorListForPrompt } from '../config/creators';
+import { calculateOverallScore, SCORE_VERSION } from '../config/signals';
 import { fetchCardData, buildCardDataBlock } from './fetchCardData';
 import { toPrinting } from './printing';
 import { fetchCommunity, communityBlock } from './fetchCommunity';
@@ -20,8 +21,7 @@ import {
 } from './citations';
 import { tryParseSignalJSON } from './jsonRepair';
 import { normalizeAnalysis } from './validateAnalysis';
-
-const API_URL = 'https://api.anthropic.com/v1/messages';
+import { recordSignalMeasurement, sharedAnalyze } from './signalGateway';
 
 // Two-tier model selection. When the pre-fetch has already answered everything
 // (MTG resolves with 0 web_searches), the model is only judging supplied facts
@@ -30,6 +30,19 @@ const API_URL = 'https://api.anthropic.com/v1/messages';
 // Flip FAST_MODEL to SMART_MODEL to disable the tiering in one edit.
 const SMART_MODEL = 'claude-sonnet-4-6';
 const FAST_MODEL = 'claude-haiku-4-5';
+
+function sharedCacheKey(cardName, game, pin) {
+  const identity = pin?.printingId || pin?.id || '';
+  return [SCORE_VERSION, game || 'auto', String(cardName || '').trim().toLowerCase(), identity].join('::');
+}
+
+function firstMarketPrice(priceLines) {
+  for (const line of priceLines || []) {
+    const match = String(line).match(/\$\s?([\d,]+(?:\.\d{1,2})?)/);
+    if (match) return Number(match[1].replace(/,/g, ''));
+  }
+  return null;
+}
 
 function buildSystemPrompt(game) {
   // Curated creator directory injected into the prompt so the model
@@ -93,12 +106,7 @@ GRADING ROI:
 
 export async function analyzeCard(cardName, game = null, opts = {}) {
   const pin = opts.pin || null;
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      'Missing VITE_ANTHROPIC_API_KEY. Create a .env.local file with your API key.'
-    );
-  }
+  const cacheKey = sharedCacheKey(cardName, game, pin);
 
   // Pre-fetch structured data in PARALLEL — direct APIs instead of slow, sequential
   // LLM web_search. Free always: card identity + EN price (pokemontcg.io /
@@ -182,16 +190,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       ].join('\n')
     : baseMessage;
 
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    signal: opts.signal,
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
+  const modelRequest = {
       model,
       // Sonnet runs adaptive thinking, so it needs headroom above the ~4k of
       // JSON the schema produces. The Haiku path does no thinking and only has
@@ -220,15 +219,19 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
         ? { tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: maxSearches }] }
         : {}),
       messages: [{ role: 'user', content: userMessage }],
-    }),
+  };
+
+  const shared = await sharedAnalyze({
+    cacheKey,
+    card: {
+      name: cardData?.name || cardName,
+      game: resolvedGame || game,
+      id: pin?.printingId || pin?.id || cardData?.printingId || cardData?.catalogId || null,
+    },
+    modelRequest,
+    signal: opts.signal,
   });
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`API error ${response.status}: ${err}`);
-  }
-
-  const result = await response.json();
+  const result = shared.result;
 
   // Build the set of URLs that provably exist: everything Claude retrieved via
   // web_search, PLUS everything we handed it in a pre-fetch block (those came
@@ -281,6 +284,25 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       });
       const clean = filterHallucinatedSources(normalized, realUrls);
       if (printingInfo) clean.printing = printingInfo;
+      const currentPrice = firstMarketPrice(cardData?.priceLines);
+      if (currentPrice !== null) clean.prices.en_price = `$${currentPrice.toFixed(2)}`;
+      const score = calculateOverallScore(clean.signals, clean.game);
+      clean._signalScore = score;
+      clean._sharedCache = Boolean(shared.cached);
+      clean._sharedCacheCreatedAt = shared.createdAt || null;
+      await recordSignalMeasurement({
+        cacheKey,
+        measurement: {
+          cardName: clean.card_name,
+          game: clean.game,
+          cardId: pin?.printingId || pin?.id || cardData?.printingId || cardData?.catalogId || null,
+          score,
+          scoreVersion: SCORE_VERSION,
+          direction: score >= 56 ? 'up' : score < 45 ? 'down' : 'mixed',
+          price: currentPrice,
+          cached: Boolean(shared.cached),
+        },
+      }).catch((error) => console.warn('[signal] measurement record failed:', error?.message || error));
       return clean;
     }
   }

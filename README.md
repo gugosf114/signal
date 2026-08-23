@@ -923,7 +923,41 @@ shows the new Collection copy, market total, backup/export controls, and no
 Collection camera. Matching 390×844 rendered checks covered empty Collection,
 the details sheet, and a two-card holding worth $506.68.
 
-**Still open.** A public paid build needs the separately discussed Google Cloud
-Function gate and shared server cache. No backend, billing, or shared-user data
-was added in this pass. eBay completed-sale data is also still unproven; current
-eBay code reads active listings only.
+**Still open.** Billing is not wired. eBay completed-sale data is also still
+unproven; current eBay code reads active listings only.
+
+---
+
+## Session log — 2026-08-23 gateway deadline
+
+**LIVE: `signal-gateway-v1`.** A Node 22 second-generation Google Cloud
+Function now runs in `bakers-agent`, `us-central1`. The Anthropic key is mounted
+from Secret Manager as `ANTHROPIC_API_KEY`; neither camera identification nor
+full Signal analysis reads `VITE_ANTHROPIC_API_KEY` anymore.
+
+**Shared report cache.** The function hashes game + card identity + score
+version into Firestore collection `signal_shared_reports_v1`. The first user
+pays for the model call. The same card returns the saved raw model response for
+seven days. The app still fetches the free card/source data on each phone, so
+price and citation checks remain current around the shared response.
+
+**Private self-measurement.** Every completed result writes score, direction,
+score version, card identity, market price, cache status, and server timestamp
+to private Firestore collection `signal_score_measurements_v1`. Repeated scans
+create later observations for correlation work without showing this ledger to
+users.
+
+**Spend guard.** The public function accepts only Signal's Haiku/Sonnet models,
+caps output at 24,000 tokens, permits only the web-search tool with at most two
+uses, rejects oversized requests, and limits each install/IP to 100 paid model
+calls per UTC day. Photos pass through for identification and are never written
+to Firestore.
+
+**Production proof.** Live health returned `signal-gateway-v1`. A real Haiku
+request returned `cached:false`; the identical second request returned
+`cached:true` with the same message ID from Firestore. The measurement endpoint
+accepted an `80/100`, upward, `$12.34` smoke observation. Backend unit tests pin
+model limits and stable hashed cache IDs.
+
+Function URL:
+`https://us-central1-bakers-agent.cloudfunctions.net/signal-gateway-v1`
