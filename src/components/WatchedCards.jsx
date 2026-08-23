@@ -106,7 +106,7 @@ export default function WatchedCards({ onSelect }) {
                   fontWeight: 700,
                   color,
                 }}>
-                  {card.score ?? '—'}
+                  {card.score == null ? '—' : `${card.score}/100`}
                 </span>
                 <span style={{ color: '#92897C' }}>{card.name}</span>
               </button>

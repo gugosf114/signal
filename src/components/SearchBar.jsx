@@ -236,7 +236,7 @@ export default function SearchBar({ onSearch, loading }) {
           aria-autocomplete="list"
           aria-controls="signal-card-suggestions"
           aria-activedescendant={active >= 0 ? `signal-card-option-${active}` : undefined}
-          placeholder={identifying ? 'Identifying card…' : 'Card name or set number — e.g. LOB-EN001'}
+          placeholder={identifying ? 'Identifying card…' : 'Card name, number, or name + last digits'}
           disabled={busy}
           enterKeyHint="search"
           style={{
@@ -294,7 +294,7 @@ export default function SearchBar({ onSearch, loading }) {
       </div>
 
       <div style={{ marginTop: 6, fontSize: 9, color: '#605C54', fontFamily: "'JetBrains Mono', monospace", textAlign: 'left' }}>
-        Camera photos are resized and sent only to identify the card.
+        Scan a card, or type a name, number, or name + last digits.
       </div>
 
       {scanError && (

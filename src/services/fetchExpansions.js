@@ -5,12 +5,21 @@
 //   Magic:   scryfall       (/sets, filtered to expansion sets)
 //   YGO:     YGOPRODeck     (/v7/cardsets.php, sorted by tcg_date)
 
+import { looksLikeSetCode, lookupBySetCode } from './lookupBySetCode.js';
+
 const CACHE_KEY = 'signal_expansions_v1';
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const COUNT = 6;
 const PAGE = 21;
 
 function pokemonRow(c, fallbackSetName = '') {
+  const variants = c.tcgplayer?.prices || {};
+  const market = (value) => Number.isFinite(value?.market) ? value.market : null;
+  const normalPrice = market(variants.normal)
+    ?? market(variants.holofoil)
+    ?? market(variants['1stEditionHolofoil'])
+    ?? market(variants.unlimitedHolofoil);
+  const reversePrice = market(variants.reverseHolofoil);
   return {
     id: c.id,
     printingId: c.id,
@@ -21,15 +30,16 @@ function pokemonRow(c, fallbackSetName = '') {
     number: c.number || null,
     printedTotal: c.set?.printedTotal || c.set?.total || null,
     rarity: c.rarity || null,
-    price: c.tcgplayer?.prices
-      ? Object.values(c.tcgplayer.prices).map((v) => v?.market).filter(Number.isFinite)[0] || null
-      : null,
+    price: normalPrice ?? reversePrice,
+    marketPrices: { normal: normalPrice, reverse: reversePrice },
     imageUrl: c.images?.small || null,
     imageLarge: c.images?.large || c.images?.small || null,
   };
 }
 
 function mtgRow(c, fallbackSetName = '') {
+  const normalPrice = c.prices?.usd ? Number(c.prices.usd) : null;
+  const reversePrice = c.prices?.usd_foil ? Number(c.prices.usd_foil) : null;
   return {
     id: c.id,
     printingId: c.id,
@@ -39,7 +49,8 @@ function mtgRow(c, fallbackSetName = '') {
     setId: c.set || null,
     number: c.collector_number || null,
     rarity: c.rarity || null,
-    price: c.prices?.usd ? Number(c.prices.usd) : null,
+    price: normalPrice ?? reversePrice,
+    marketPrices: { normal: normalPrice, reverse: reversePrice },
     imageUrl: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || null,
     imageLarge: mtgLargeArt(c),
   };
@@ -62,7 +73,13 @@ export function ygoPrintingRows(card, wantedSet = null) {
       })
     : prints;
   const rows = selected.length ? selected : (wantedSet ? [] : [null]);
-  return rows.map((entry) => ({
+  return rows.map((entry) => {
+    const exactPrice = Number(entry?.set_price);
+    const broadPrice = Number(card?.card_prices?.[0]?.tcgplayer_price);
+    const price = Number.isFinite(exactPrice) && exactPrice > 0
+      ? exactPrice
+      : (Number.isFinite(broadPrice) && broadPrice > 0 ? broadPrice : null);
+    return {
     id: card?.id != null ? String(card.id) : null,
     printingId: entry?.set_code && card?.id != null ? `${card.id}:${entry.set_code}` : (card?.id != null ? String(card.id) : null),
     name: card?.name || '',
@@ -71,11 +88,40 @@ export function ygoPrintingRows(card, wantedSet = null) {
     setId: entry?.set_code || null,
     number: entry?.set_code || null,
     rarity: entry?.set_rarity || null,
-    price: Number(card?.card_prices?.[0]?.tcgplayer_price) || null,
-    priceScope: 'card-level across all printings',
+    price,
+    marketPrices: { normal: price, reverse: null },
+    priceScope: Number.isFinite(exactPrice) && exactPrice > 0
+      ? 'set-code printing'
+      : 'card-level across all printings',
     imageUrl: card?.card_images?.[0]?.image_url_small || null,
     imageLarge: card?.card_images?.[0]?.image_url || card?.card_images?.[0]?.image_url_small || null,
-  }));
+    };
+  });
+}
+
+// "Captain 123" means: search the name Captain, then keep cards whose printed
+// number ends in 123. This mirrors how a person reads a card in their hand — a
+// memorable first word plus the few digits they can see at the bottom.
+export function parseCardLookupQuery(query) {
+  const raw = String(query || '').trim().replace(/\s+/g, ' ');
+  if (!raw) return { name: '', numberSuffix: null };
+  if (/^\d{1,4}[A-Za-z]?$/i.test(raw)) return { name: '', numberSuffix: raw.toLowerCase() };
+  const combined = raw.match(/^(.+?[A-Za-z][^#]*?)\s+#?(\d{1,4}[A-Za-z]?)$/i);
+  if (!combined) return { name: raw, numberSuffix: null };
+  return { name: combined[1].trim(), numberSuffix: combined[2].toLowerCase() };
+}
+
+export function cardNumberEndsWith(value, suffix) {
+  if (!suffix) return true;
+  const wanted = String(suffix).trim().toLowerCase();
+  const printed = String(value || '').trim().toLowerCase();
+  const tail = printed.match(/(\d{1,4}[a-z]?)$/i)?.[1];
+  if (!tail) return false;
+  if (tail === wanted || tail.endsWith(wanted)) return true;
+  if (/^0/.test(wanted)) {
+    return /^\d+$/.test(printed) && Number(tail) === Number(wanted);
+  }
+  return (tail.replace(/^0+/, '') || '0') === (wanted.replace(/^0+/, '') || '0');
 }
 
 // pokemontcg.io returns 500/502 intermittently — often enough that a single
@@ -322,6 +368,19 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
 export async function searchCardsByName(game, query, priceSort = null) {
   const q = (query || '').trim();
   if (q.length < 2) return [];
+  if (looksLikeSetCode(q)) {
+    const hit = await lookupBySetCode(q);
+    if (!hit || hit.game !== game) return [];
+    return [{
+      ...hit,
+      setId: hit.setId || hit.setCode || null,
+    }];
+  }
+  const { name: nameQuery, numberSuffix } = parseCardLookupQuery(q);
+  const pageSize = numberSuffix ? 100 : (priceSort ? 100 : PAGE);
+  const keepNumber = (cards) => numberSuffix
+    ? cards.filter((card) => cardNumberEndsWith(card.number, numberSuffix))
+    : cards;
 
   if (game === 'pokemon') {
     // pokemontcg.io wants wildcards spelled out; quote it so multi-word names work.
@@ -330,22 +389,27 @@ export async function searchCardsByName(game, query, priceSort = null) {
     // filled that page entirely with "Charizard ex" — the plain card the user
     // actually typed never appeared. A-Z puts exact names at the top.
       const order = priceSort ? '-set.releaseDate' : 'name';
+      const pokemonQuery = nameQuery
+        ? `name:"*${nameQuery}*"`
+        : `number:${numberSuffix.replace(/^0+/, '') || '0'}`;
       const data = await getJSON(
-        `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(`name:"*${q}*"`)}` +
-      `&pageSize=${priceSort ? 100 : PAGE}&orderBy=${encodeURIComponent(order)}`
+        `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(pokemonQuery)}` +
+      `&pageSize=${pageSize}&orderBy=${encodeURIComponent(order)}`
       );
       if (!data) return [];
-    return sortPokemonByPrice(data.data || [], priceSort).slice(0, PAGE).map((c) => pokemonRow(c));
+    const rows = sortPokemonByPrice(data.data || [], priceSort).map((c) => pokemonRow(c));
+    return keepNumber(rows).slice(0, PAGE);
   }
 
   if (game === 'mtg') {
     // Scryfall answers a no-match with 404, which getJSON maps to null.
+    const mtgQuery = nameQuery ? `${nameQuery} game:paper` : `cn:${numberSuffix} game:paper`;
     const data = await getJSON(
-      `https://api.scryfall.com/cards/search?q=${encodeURIComponent(q + ' game:paper')}` +
+      `https://api.scryfall.com/cards/search?q=${encodeURIComponent(mtgQuery)}` +
       `&${mtgOrder(priceSort)}&unique=prints`
     );
     if (!data) return [];
-    return (data.data || []).slice(0, PAGE).map((c) => mtgRow(c));
+    return keepNumber((data.data || []).map((c) => mtgRow(c))).slice(0, PAGE);
   }
 
   if (game === 'yugioh') {
@@ -353,12 +417,13 @@ export async function searchCardsByName(game, query, priceSort = null) {
     // card TEXT, so searching "reinforcement" returns Charge Into a Dark World
     // ahead of Reinforcement of the Army in the API's alphabetical order. Pull
     // name matches to the front, earliest position first, before any price sort.
-    const fetchSize = priceSort ? 60 : PAGE * 3;
+    if (!nameQuery) return [];
+    const fetchSize = numberSuffix ? 100 : (priceSort ? 60 : PAGE * 3);
     const data = await getJSON(
-      `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(q)}&num=${fetchSize}&offset=0`
+      `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(nameQuery)}&num=${fetchSize}&offset=0`
     );
     if (!data || data.error) return [];
-    const needle = q.toLowerCase();
+    const needle = nameQuery.toLowerCase();
     const rank = (c) => {
       const i = (c.name || '').toLowerCase().indexOf(needle);
       return i < 0 ? Number.MAX_SAFE_INTEGER : i;
@@ -366,7 +431,7 @@ export async function searchCardsByName(game, query, priceSort = null) {
     const cards = priceSort
       ? sortYugiohByPrice(data.data || [], priceSort)
       : [...(data.data || [])].sort((a, b) => rank(a) - rank(b));
-    return cards.flatMap((card) => ygoPrintingRows(card)).slice(0, PAGE);
+    return keepNumber(cards.flatMap((card) => ygoPrintingRows(card))).slice(0, PAGE);
   }
 
   return [];
@@ -382,13 +447,18 @@ export async function searchCardsByName(game, query, priceSort = null) {
 export async function suggestCards(query, limit = 8) {
   const q = (query || '').trim();
   if (q.length < 2) return [];
+  if (looksLikeSetCode(q)) {
+    const hit = await lookupBySetCode(q);
+    return hit ? [{ ...hit, setId: hit.setId || hit.setCode || null }] : [];
+  }
+  const parsed = parseCardLookupQuery(q);
 
   const games = ['pokemon', 'mtg', 'yugioh'];
   const settled = await Promise.allSettled(
     games.map((g) => searchCardsByName(g, q, null))
   );
 
-  const needle = q.toLowerCase();
+  const needle = parsed.name.toLowerCase();
   const rank = (c) => {
     const n = (c.name || '').toLowerCase();
     if (n === needle) return 0;              // exact name

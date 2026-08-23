@@ -1,80 +1,68 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { scanCardImage } from '../services/scanCardImage';
-import { suggestCards, resolvePrinting } from '../services/fetchExpansions';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { suggestCards } from '../services/fetchExpansions';
 import {
-  loadCollection, addToCollection, removeOne, removeAll, countCards, cardKey,
+  loadCollection, importCollection, removeOne, removeAll,
+  countCards, collectionValue, cardKey,
 } from '../services/collection';
+import {
+  parseCollectionBackup, saveCollectionBackup, saveCollectionCsv,
+} from '../services/collectionFiles';
 import CardLightbox from './CardLightbox';
 
-// ─── Collection ──────────────────────────────────────────────────────────────
-// Point the camera at a card, it lands on the shelf. That is the whole feature.
-//
-// Deliberately NOT a portfolio: no prices, no totals, no "your collection is
-// worth". Signal already does valuation on its own page and does it properly,
-// with sources. A number here would be a number without a source, and the
-// person this page is for wants to show someone their cards.
-//
-// Adding a card costs one Haiku vision call — a fraction of a cent — and never
-// touches the expensive analysis scan.
-
 const GAME_LABEL = { pokemon: 'PKM', mtg: 'MTG', yugioh: 'YGO' };
+const CONDITION_LABEL = {
+  near_mint: 'Near mint',
+  lightly_played: 'Lightly played',
+  moderately_played: 'Moderately played',
+  heavily_played: 'Heavily played',
+  damaged: 'Damaged',
+};
 const DEBOUNCE_MS = 250;
 
-export default function Collection() {
-  const [cards, setCards] = useState([]);
-  const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState(null);   // { kind: 'ok' | 'bad', text }
+function money(value) {
+  return Number.isFinite(Number(value)) ? `$${Number(value).toFixed(2)}` : '—';
+}
+
+export default function Collection({ onLookup }) {
+  const [cards, setCards] = useState(() => loadCollection());
+  const [status, setStatus] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchActive, setSearchActive] = useState(-1);
-  const fileRef = useRef(null);
   const searchRef = useRef(null);
+  const importRef = useRef(null);
   const reqToken = useRef(0);
   const flashTimer = useRef(null);
 
-  useEffect(() => { setCards(loadCollection()); }, []);
+  const reload = useCallback(() => setCards(loadCollection()), []);
+
+  useEffect(() => {
+    reload();
+    window.addEventListener('signal-collection-updated', reload);
+    window.addEventListener('storage', reload);
+    return () => {
+      window.removeEventListener('signal-collection-updated', reload);
+      window.removeEventListener('storage', reload);
+    };
+  }, [reload]);
+
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
 
-  // Good news clears itself; a failure stays put. A camera error that vanishes
-  // after three seconds is an error nobody can read, let alone report.
   const flash = useCallback((kind, text) => {
     setStatus({ kind, text });
-    if (kind !== 'bad') {
-      if (flashTimer.current) clearTimeout(flashTimer.current);
-      flashTimer.current = setTimeout(() => setStatus((s) => (s && s.text === text ? null : s)), 3500);
-    }
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setStatus((value) => value?.text === text ? null : value), 4200);
   }, []);
 
-  // ── Add by photo ───────────────────────────────────────────────────────────
-  const handlePhoto = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setBusy(true);
-    setStatus(null);
-    try {
-      const read = await scanCardImage(file);
-      if (!read?.name) throw new Error('Could not read a card in that photo.');
-      const card = await resolvePrinting(read).catch(() => null);
-      if (!card) throw new Error('The exact printing could not be matched. Add it by name and choose the set.');
-      const next = addToCollection(card);
-      setCards(next);
-      flash('ok', `Added ${card.name}${card.setName ? ' · ' + card.setName : ''}`);
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('[signal] collection photo scan failed', err);
-      flash('bad', err?.message || 'That photo did not work. Try again in better light.');
-    } finally {
-      setBusy(false);
-      if (e.target) e.target.value = '';
-    }
-  };
-
-  // ── Add by name ────────────────────────────────────────────────────────────
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 2) { setSuggestions([]); setSearchOpen(false); return; }
+    if (q.length < 2) {
+      setSuggestions([]);
+      setSearchOpen(false);
+      return;
+    }
     const myToken = ++reqToken.current;
     const timer = setTimeout(async () => {
       try {
@@ -87,82 +75,88 @@ export default function Collection() {
         if (myToken !== reqToken.current) return;
         setSuggestions([]);
         setSearchOpen(false);
-        setSearchActive(-1);
         flash('bad', 'Card catalogues could not load. Try again.');
       }
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, flash]);
 
   useEffect(() => {
     if (!searchOpen) return;
-    const onDocDown = (e) => {
-      if (!searchRef.current?.contains(e.target)) setSearchOpen(false);
+    const onDocDown = (event) => {
+      if (!searchRef.current?.contains(event.target)) setSearchOpen(false);
     };
     document.addEventListener('pointerdown', onDocDown);
     return () => document.removeEventListener('pointerdown', onDocDown);
   }, [searchOpen]);
 
-  const addByName = (card) => {
+  const openLookup = (card) => {
+    if (!card) return;
     reqToken.current += 1;
     setQuery('');
     setSuggestions([]);
     setSearchOpen(false);
-    setCards(addToCollection(card));
-    flash('ok', `Added ${card.name}${card.setName ? ' · ' + card.setName : ''}`);
+    onLookup?.(card.name, card.game, { pin: card });
+  };
+
+  const submitLookup = (event) => {
+    event.preventDefault();
+    if (searchActive >= 0 && suggestions[searchActive]) {
+      openLookup(suggestions[searchActive]);
+      return;
+    }
+    if (suggestions.length === 1) {
+      openLookup(suggestions[0]);
+      return;
+    }
+    if (suggestions.length > 1) {
+      setSearchOpen(true);
+      flash('bad', 'Choose the card you mean from the list.');
+      return;
+    }
+    if (query.trim().length >= 2) flash('bad', 'No card matched that search yet.');
+  };
+
+  const restoreBackup = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const imported = parseCollectionBackup(await file.text());
+      const next = importCollection(imported);
+      setCards(next);
+      flash('ok', `Restored ${imported.length} collection row${imported.length === 1 ? '' : 's'}.`);
+    } catch (error) {
+      flash('bad', error?.message || 'That backup could not be read.');
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  const saveFile = async (kind) => {
+    try {
+      const result = kind === 'backup'
+        ? await saveCollectionBackup(cards)
+        : await saveCollectionCsv(cards);
+      flash('ok', `${kind === 'backup' ? 'Backup' : 'CSV'} saved · ${result.filename}`);
+    } catch (error) {
+      flash('bad', error?.message || 'The collection file could not be saved.');
+    }
   };
 
   const total = countCards(cards);
+  const marketTotal = collectionValue(cards);
 
   return (
     <div>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        style={{ display: 'none' }}
-        onChange={handlePhoto}
-      />
-
-      {/* Scan button — the primary action, so it gets the whole width. */}
-      <button
-        type="button"
-        className="col-scan"
-        onClick={() => fileRef.current?.click()}
-        disabled={busy}
-      >
-        {busy ? (
-          <>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 strokeWidth="2.5" strokeLinecap="round" className="cam-spin" aria-hidden>
-              <circle cx="12" cy="12" r="9" opacity="0.25" />
-              <path d="M21 12a9 9 0 0 0-9-9" />
-            </svg>
-            Reading the card…
-          </>
-        ) : (
-          <>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
-            </svg>
-            Scan a card
-          </>
-        )}
-      </button>
-      <div style={{ marginTop: 6, fontSize: 9, color: '#605C54', fontFamily: "'JetBrains Mono', monospace", textAlign: 'center' }}>
-        Camera photos are resized and sent only to identify the card.
+      <div className="col-intro">
+        Look up the card first. Its market price and Signal report open together. Then tap Add to collection.
       </div>
 
-      {/* Type the name instead — for cards the camera can't read, and for cards
-          that aren't in front of you. */}
-      <div className="col-search" ref={searchRef}>
+      <form className="col-search" ref={searchRef} onSubmit={submitLookup}>
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
             if (!searchOpen || !suggestions.length) return;
             if (event.key === 'ArrowDown') {
@@ -170,19 +164,18 @@ export default function Collection() {
               setSearchActive((value) => (value + 1) % suggestions.length);
             } else if (event.key === 'ArrowUp') {
               event.preventDefault();
-              setSearchActive((value) => (value <= 0 ? suggestions.length - 1 : value - 1));
+              setSearchActive((value) => value <= 0 ? suggestions.length - 1 : value - 1);
             } else if (event.key === 'Enter' && searchActive >= 0) {
               event.preventDefault();
-              addByName(suggestions[searchActive]);
-            } else if (event.key === 'Escape') {
-              setSearchOpen(false);
-            }
+              openLookup(suggestions[searchActive]);
+            } else if (event.key === 'Escape') setSearchOpen(false);
           }}
           onFocus={() => { if (suggestions.length) setSearchOpen(true); }}
-          placeholder="…or add by name"
+          placeholder="Card name, number, or name + last digits"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
+          enterKeyHint="search"
           className="col-search-input"
           role="combobox"
           aria-expanded={searchOpen}
@@ -200,7 +193,7 @@ export default function Collection() {
                   aria-selected={index === searchActive}
                   className={`sb-item ${index === searchActive ? 'sb-item--on' : ''}`}
                   onMouseEnter={() => setSearchActive(index)}
-                  onClick={() => addByName(card)}
+                  onClick={() => openLookup(card)}
                 >
                   {card.imageUrl
                     ? <img src={card.imageUrl} alt="" className="sb-thumb" loading="lazy" />
@@ -209,38 +202,43 @@ export default function Collection() {
                     <span className="sb-name">{card.name}</span>
                     <span className="sb-meta">
                       <span className="sb-game">{GAME_LABEL[card.game] || card.game}</span>
-                      {card.setName || 'Unknown set'}
-                      {card.number ? ` · ${card.number}` : ''}
+                      {card.setName || 'Set not listed'}{card.number ? ` · ${card.number}` : ''}
                     </span>
                   </span>
+                  {card.price != null && <span className="sb-price">{money(card.price)}</span>}
                 </button>
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </form>
 
       {status && (
-        <div className={`col-status ${status.kind === 'bad' ? 'col-status--bad' : ''}`}>
-          {status.text}
-          {status.kind === 'bad' && (
-            <button type="button" className="col-status-x" onClick={() => setStatus(null)}>
-              dismiss
-            </button>
-          )}
-        </div>
+        <div className={`col-status ${status.kind === 'bad' ? 'col-status--bad' : ''}`}>{status.text}</div>
       )}
 
-      <div className="col-count">
-        {total === 0 ? 'No cards yet' : `${total} card${total === 1 ? '' : 's'}`}
-        {cards.length !== total && ` · ${cards.length} different`}
+      <input ref={importRef} type="file" accept="application/json,.json" onChange={restoreBackup} hidden />
+
+      <div className="col-summary">
+        <div>
+          <span className="col-summary-label">Cards</span>
+          <strong>{total}</strong>
+        </div>
+        <div>
+          <span className="col-summary-label">Market total</span>
+          <strong>{money(marketTotal)}</strong>
+        </div>
+      </div>
+
+      <div className="col-tools">
+        <button type="button" onClick={() => saveFile('backup')} disabled={!cards.length}>Backup</button>
+        <button type="button" onClick={() => saveFile('csv')} disabled={!cards.length}>Export CSV</button>
+        <button type="button" onClick={() => importRef.current?.click()}>Restore</button>
       </div>
 
       {cards.length === 0 ? (
         <div className="col-empty">
-          Point the camera at a card and it lands here.
-          <br />
-          No prices, no totals — just the cards.
+          Clean catalogue images appear here after you add a card.
         </div>
       ) : (
         <div className="col-grid">
@@ -250,27 +248,25 @@ export default function Collection() {
                 type="button"
                 className="col-card"
                 onClick={() => setViewing(card)}
-                title={`${card.name}${card.setName ? ' · ' + card.setName : ''}`}
+                title={`${card.name}${card.setName ? ` · ${card.setName}` : ''}`}
               >
                 {card.imageUrl || card.imageLarge ? (
                   <img src={card.imageUrl || card.imageLarge} alt={card.name} loading="lazy" />
-                ) : (
-                  <span className="col-noart">{card.name}</span>
-                )}
-                {(card.qty || 1) > 1 && <span className="col-qty">×{card.qty}</span>}
+                ) : <span className="col-noart">{card.name}</span>}
+                {card.qty > 1 && <span className="col-qty">×{card.qty}</span>}
               </button>
               <button
                 type="button"
                 className="col-remove"
                 aria-label={`Remove one ${card.name}`}
                 onClick={() => setCards(removeOne(card))}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     strokeWidth="2.5" strokeLinecap="round" aria-hidden>
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-              </button>
+              >−</button>
               <div className="col-name">{card.name}</div>
+              <div className="col-card-meta">
+                <strong>{money(card.marketPrice)}</strong>
+                <span>{CONDITION_LABEL[card.condition] || 'Near mint'} · {card.form === 'reverse' ? 'Reverse' : 'Normal'}</span>
+                {card.paidPerCard != null && <span>Paid {money(card.paidPerCard)}</span>}
+              </div>
             </div>
           ))}
         </div>
@@ -281,10 +277,16 @@ export default function Collection() {
         onClose={() => setViewing(null)}
         imageUrl={viewing?.imageLarge || viewing?.imageUrl}
         cardName={viewing?.name}
-        onRemove={viewing ? () => {
-          const c = viewing;
+        scanLabel="Open Signal"
+        onScan={viewing && onLookup ? () => {
+          const card = viewing;
           setViewing(null);
-          setCards(removeAll(c));
+          onLookup(card.name, card.game, { pin: card });
+        } : null}
+        onRemove={viewing ? () => {
+          const card = viewing;
+          setViewing(null);
+          setCards(removeAll(card));
         } : null}
       />
     </div>

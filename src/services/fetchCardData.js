@@ -223,12 +223,6 @@ async function fetchYGOData(cardName) {
 
 function shapeYGO(card, pin = null) {
   const p = card.card_prices?.[0] || {};
-  const priceLines = [];
-  const nonZero = (v) => v && v !== '0.00';
-  if (nonZero(p.tcgplayer_price))  priceLines.push(`TCGPlayer all printings: $${p.tcgplayer_price}`);
-  if (nonZero(p.cardmarket_price)) priceLines.push(`Cardmarket all printings: €${p.cardmarket_price}`);
-  if (nonZero(p.ebay_price))       priceLines.push(`eBay all printings avg: $${p.ebay_price}`);
-
   const prints = Array.isArray(card.card_sets) ? card.card_sets : [];
   const wantedCodes = [pin?.number, pin?.setId, pin?.printingId?.split(':').slice(1).join(':')]
     .filter(Boolean)
@@ -241,6 +235,14 @@ function shapeYGO(card, pin = null) {
     : (prints[0] || null);
 
   if (pin && !chosen) return null;
+
+  const priceLines = [];
+  const exactSetPrice = Number(chosen?.set_price);
+  const hasExactSetPrice = Number.isFinite(exactSetPrice) && exactSetPrice > 0;
+  const nonZero = (v) => v && v !== '0.00';
+  if (hasExactSetPrice) priceLines.push(`Market price: $${exactSetPrice.toFixed(2)}`);
+  else if (nonZero(p.tcgplayer_price)) priceLines.push(`Market price across printings: $${p.tcgplayer_price}`);
+  if (!hasExactSetPrice && nonZero(p.cardmarket_price)) priceLines.push(`Cardmarket across printings: €${p.cardmarket_price}`);
 
   const recentSets = (card.card_sets || [])
     .slice(-3)
@@ -262,7 +264,7 @@ function shapeYGO(card, pin = null) {
     race: card.race,
     archetype: card.archetype,
     priceLines: priceLines.length ? priceLines : null,
-    priceScope: 'card-level across all printings',
+    priceScope: hasExactSetPrice ? 'set-code printing' : 'card-level across all printings',
     recentSets: recentSets.length ? recentSets : null,
     imageUrl: card.card_images?.[0]?.image_url,
   };

@@ -16,6 +16,7 @@ import NewsStrip from './NewsStrip';
 import PdfReport from './PdfReport';
 import PageTabs from './PageTabs';
 import Collection from './Collection';
+import AddToCollectionDialog from './AddToCollectionDialog';
 import { SIGNAL_SECTIONS, calculateScoreDetails } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { exportReportToPdf, shareReportAsPdf, imageUrlToDataUrl } from '../services/exportReport';
@@ -36,6 +37,11 @@ function reportFilename(cardName) {
   return `signal-${safe}.pdf`;
 }
 
+function firstDollar(value) {
+  const match = String(value || '').match(/\$\s?([\d,]+(?:\.\d{1,2})?)/);
+  return match ? Number(match[1].replace(/,/g, '')) : null;
+}
+
 export default function SignalDashboard() {
   // Which page is showing. The header and tab strip are shared; everything
   // below them belongs to one page or the other.
@@ -49,6 +55,7 @@ export default function SignalDashboard() {
   const [cardImageUrl, setCardImageUrl] = useState(null);
   const [pdfRendering, setPdfRendering] = useState(false);
   const [pdfCardImageUrl, setPdfCardImageUrl] = useState(null);
+  const [addCard, setAddCard] = useState(null);
   const isMobile = useIsMobile();
 
   const flashSaveMsg = (msg) => {
@@ -298,7 +305,14 @@ export default function SignalDashboard() {
 
       <PageTabs page={page} onChange={setPage} />
 
-      {page === 'collection' && <div id="panel-collection" role="tabpanel" aria-labelledby="tab-collection"><Collection /></div>}
+      {page === 'collection' && (
+        <div id="panel-collection" role="tabpanel" aria-labelledby="tab-collection">
+          <Collection onLookup={(name, game, opts) => {
+            setPage('signal');
+            handleSearch(name, game, opts);
+          }} />
+        </div>
+      )}
 
       {page === 'signal' && (
       <div id="panel-signal" role="tabpanel" aria-labelledby="tab-signal">
@@ -437,6 +451,31 @@ export default function SignalDashboard() {
                 <polyline points="12 19 5 12 12 5" />
               </svg>
               Back
+            </button>
+
+            <button
+              onClick={() => {
+                const pin = result._pin || {};
+                setAddCard({
+                  ...pin,
+                  id: pin.id || result.printing?.catalogId || null,
+                  printingId: pin.printingId || pin.id || null,
+                  name: result.card_name,
+                  game: result.game,
+                  setName: pin.setName || result.printing?.setName || null,
+                  setId: pin.setId || result.printing?.setId || null,
+                  number: pin.number || result.printing?.number || null,
+                  imageUrl: pin.imageUrl || cardImageUrl,
+                  imageLarge: pin.imageLarge || cardImageUrl,
+                  price: pin.price ?? firstDollar(result.prices?.en_price),
+                  marketPrices: pin.marketPrices || null,
+                });
+              }}
+              className="result-add-button"
+              aria-label={`Add ${result.card_name || 'card'} to collection`}
+            >
+              <span aria-hidden>＋</span>
+              Add to collection
             </button>
 
             <button
@@ -724,6 +763,15 @@ export default function SignalDashboard() {
           {saveMsg}
         </div>
       )}
+
+      <AddToCollectionDialog
+        card={addCard}
+        isOpen={!!addCard}
+        onClose={() => setAddCard(null)}
+        onAdded={(_list, details) => {
+          flashSaveMsg(`${details.quantity} added to collection`);
+        }}
+      />
     </div>
   );
 }

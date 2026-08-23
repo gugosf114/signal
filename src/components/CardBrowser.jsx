@@ -161,7 +161,7 @@ export default function CardBrowser({ onCardSelect }) {
           className="cb-search-input"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={`Find a ${activeTab.label} card by name`}
+          placeholder={`Find ${activeTab.label} by name or name + last digits`}
           enterKeyHint="search"
           autoComplete="off"
           spellCheck="false"

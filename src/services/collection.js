@@ -1,14 +1,12 @@
 // ─── The collection ──────────────────────────────────────────────────────────
-// A list of cards you own. Not a portfolio: no prices, no totals, no valuation.
-// The point is to have the shelf somewhere you can show it to someone.
-//
-// Stored in localStorage like the rest of this app's state. One entry per
-// printing — the $1,499 Umbreon ex and the $7 one are two different cards and
-// two different rows, which is the same rule the scan cache follows.
+// The catalogue supplies the clean card image and market price. The user adds
+// only the facts that belong to their copy: quantity, condition, form, and an
+// optional amount paid.
 
 const KEY = 'signal_collection_v1';
 const MAX_ENTRIES = 2000;
 const MAX_QTY = 999;
+const CONDITIONS = new Set(['near_mint', 'lightly_played', 'moderately_played', 'heavily_played', 'damaged']);
 
 function cleanQty(value) {
   const qty = Number(value);
@@ -16,10 +14,21 @@ function cleanQty(value) {
   return Math.max(1, Math.min(MAX_QTY, Math.floor(qty)));
 }
 
-// Identity is the catalogue id, because that is what makes a printing a
-// printing. Cards added before an id was available fall back to name + set,
-// which is coarser but never merges two different names.
-export function cardKey(card) {
+function cleanMoney(value) {
+  if (value === '' || value === null || value === undefined) return null;
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount >= 0 ? Math.round(amount * 100) / 100 : null;
+}
+
+function cleanCondition(value) {
+  return CONDITIONS.has(value) ? value : 'near_mint';
+}
+
+function cleanForm(value) {
+  return value === 'reverse' ? 'reverse' : 'normal';
+}
+
+function baseCardKey(card) {
   if (!card) return '';
   const game = (card.game || 'unknown').toLowerCase();
   const printingId = card.printingId || card.id;
@@ -30,84 +39,148 @@ export function cardKey(card) {
   return `${game}::${name}::${set}::${num}`;
 }
 
+// The same catalogue card in two conditions or forms stays as two holdings.
+// This does not change lookup. It only keeps the user's own notes apart.
+export function cardKey(card) {
+  return `${baseCardKey(card)}::${cleanForm(card?.form)}::${cleanCondition(card?.condition)}`;
+}
+
+export function marketPriceFor(card, form = card?.form) {
+  const selectedForm = cleanForm(form);
+  const variants = card?.marketPrices && typeof card.marketPrices === 'object'
+    ? card.marketPrices
+    : {};
+  const picked = selectedForm === 'reverse'
+    ? (variants.reverse ?? variants.normal)
+    : (variants.normal ?? variants.reverse);
+  return cleanMoney(picked ?? card?.marketPrice ?? card?.price);
+}
+
+function normalizeEntry(card) {
+  if (!card || !card.name) return null;
+  const qty = cleanQty(card.qty);
+  const paidPerCard = cleanMoney(card.paidPerCard);
+  return {
+    id: card.id || null,
+    printingId: card.printingId || card.id || null,
+    game: card.game || null,
+    name: String(card.name).trim(),
+    setName: card.setName || null,
+    setId: card.setId || null,
+    number: card.number || null,
+    rarity: card.rarity || null,
+    imageUrl: card.imageUrl || card.imageLarge || null,
+    imageLarge: card.imageLarge || card.imageUrl || null,
+    form: cleanForm(card.form),
+    condition: cleanCondition(card.condition),
+    qty,
+    marketPrice: marketPriceFor(card),
+    marketPrices: card.marketPrices && typeof card.marketPrices === 'object'
+      ? { normal: cleanMoney(card.marketPrices.normal), reverse: cleanMoney(card.marketPrices.reverse) }
+      : null,
+    paidPerCard,
+    paidKnownQty: paidPerCard === null ? 0 : Math.max(1, Math.min(qty, cleanQty(card.paidKnownQty || qty))),
+    addedAt: card.addedAt || new Date().toISOString(),
+  };
+}
+
 export function loadCollection() {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? parsed.filter((card) => card && card.name).map((card) => ({ ...card, qty: cleanQty(card.qty) }))
-      : [];
+    return Array.isArray(parsed) ? parsed.map(normalizeEntry).filter(Boolean) : [];
   } catch {
     return [];
   }
 }
 
-function save(list) {
-  const trimmed = list.slice(0, MAX_ENTRIES);
-  try {
-    localStorage.setItem(KEY, JSON.stringify(trimmed));
-  } catch {
-    // Storage full or disabled. Nothing useful to do here — the in-memory list
-    // the caller already holds stays correct for this session.
-  }
-  return trimmed;
+export function saveCollection(list) {
+  const clean = (Array.isArray(list) ? list : []).map(normalizeEntry).filter(Boolean).slice(0, MAX_ENTRIES);
+  try { localStorage.setItem(KEY, JSON.stringify(clean)); } catch {}
+  return clean;
 }
 
-// Adding a card you already own bumps its count rather than growing a second
-// row: three copies of the same printing is a fact about the card, not three
-// cards. Returns the new list.
-export function addToCollection(card, at) {
-  if (!card || !card.name) return loadCollection();
-  const list = loadCollection();
-  const key = cardKey(card);
-  const existing = list.findIndex((c) => cardKey(c) === key);
-  const stamp = at || new Date().toISOString();
+function mergeEntry(list, entry) {
+  const candidate = normalizeEntry(entry);
+  if (!candidate) return list;
+  const index = list.findIndex((item) => cardKey(item) === cardKey(candidate));
+  if (index < 0) return [candidate, ...list].slice(0, MAX_ENTRIES);
 
-  if (existing >= 0) {
-    const next = [...list];
-    next[existing] = { ...next[existing], qty: Math.min(MAX_QTY, cleanQty(next[existing].qty) + 1), addedAt: stamp };
-    // Bumping a count moves the card to the front, same as adding a new one —
-    // the thing you just touched is the thing you're looking at.
-    const [moved] = next.splice(existing, 1);
-    return save([moved, ...next]);
-  }
-
-  const entry = {
-    id: card.id || null,
-    printingId: card.printingId || card.id || null,
-    game: card.game || null,
-    name: card.name,
-    setName: card.setName || null,
-    number: card.number || null,
-    imageUrl: card.imageUrl || null,
-    imageLarge: card.imageLarge || card.imageUrl || null,
-    qty: 1,
-    addedAt: stamp,
+  const prior = normalizeEntry(list[index]);
+  const nextQty = Math.min(MAX_QTY, prior.qty + candidate.qty);
+  const priorKnown = Math.min(prior.qty, Number(prior.paidKnownQty) || 0);
+  const addedKnown = Math.min(candidate.qty, Number(candidate.paidKnownQty) || 0);
+  const knownQty = priorKnown + addedKnown;
+  const paidTotal = (prior.paidPerCard || 0) * priorKnown
+    + (candidate.paidPerCard || 0) * addedKnown;
+  const merged = {
+    ...prior,
+    ...candidate,
+    qty: nextQty,
+    paidKnownQty: Math.min(nextQty, knownQty),
+    paidPerCard: knownQty ? Math.round((paidTotal / knownQty) * 100) / 100 : null,
+    marketPrice: candidate.marketPrice ?? prior.marketPrice,
+    addedAt: candidate.addedAt,
   };
-  return save([entry, ...list]);
+  const next = [...list];
+  next.splice(index, 1);
+  return [merged, ...next].slice(0, MAX_ENTRIES);
 }
 
-// Removing takes one copy off. The row disappears when the last one goes.
+export function addToCollection(card, details = {}, at = null) {
+  // Backward compatibility for the old addToCollection(card, timestamp) call.
+  if (typeof details === 'string') {
+    at = details;
+    details = {};
+  }
+  if (!card || !card.name) return loadCollection();
+  const form = cleanForm(details.form);
+  const quantity = cleanQty(details.quantity);
+  const paidPerCard = cleanMoney(details.paidPerCard);
+  const entry = {
+    ...card,
+    form,
+    condition: cleanCondition(details.condition),
+    qty: quantity,
+    marketPrice: marketPriceFor(card, form),
+    paidPerCard,
+    paidKnownQty: paidPerCard === null ? 0 : quantity,
+    addedAt: at || new Date().toISOString(),
+  };
+  return saveCollection(mergeEntry(loadCollection(), entry));
+}
+
+export function importCollection(entries) {
+  let merged = loadCollection();
+  for (const entry of Array.isArray(entries) ? entries : []) merged = mergeEntry(merged, entry);
+  return saveCollection(merged);
+}
+
 export function removeOne(card) {
   const list = loadCollection();
   const key = cardKey(card);
-  const i = list.findIndex((c) => cardKey(c) === key);
-  if (i < 0) return list;
+  const index = list.findIndex((item) => cardKey(item) === key);
+  if (index < 0) return list;
   const next = [...list];
-  const qty = cleanQty(next[i].qty) - 1;
-  if (qty <= 0) next.splice(i, 1);
-  else next[i] = { ...next[i], qty };
-  return save(next);
+  const qty = next[index].qty - 1;
+  if (qty <= 0) next.splice(index, 1);
+  else next[index] = { ...next[index], qty, paidKnownQty: Math.min(qty, next[index].paidKnownQty || 0) };
+  return saveCollection(next);
 }
 
-// Removing the whole row, however many copies.
 export function removeAll(card) {
   const key = cardKey(card);
-  return save(loadCollection().filter((c) => cardKey(c) !== key));
+  return saveCollection(loadCollection().filter((item) => cardKey(item) !== key));
 }
 
-// Total cards held, counting duplicates — "48 cards", not "31 rows".
 export function countCards(list) {
-  return (Array.isArray(list) ? list : []).reduce((n, c) => n + cleanQty(c?.qty), 0);
+  return (Array.isArray(list) ? list : []).reduce((total, card) => total + cleanQty(card?.qty), 0);
+}
+
+export function collectionValue(list) {
+  return Math.round((Array.isArray(list) ? list : []).reduce((total, card) => {
+    const price = cleanMoney(card?.marketPrice);
+    return total + (price === null ? 0 : price * cleanQty(card?.qty));
+  }, 0) * 100) / 100;
 }

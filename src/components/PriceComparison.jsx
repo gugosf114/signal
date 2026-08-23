@@ -1,5 +1,4 @@
 import React from 'react';
-import { BrandIcon } from '../config/brandIcons';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 function trendMeta(trend) {
@@ -42,8 +41,8 @@ export default function PriceComparison({ data }) {
   const trend = trendMeta(data.trend_30d);
   const align = alignMeta(data.signal_vs_market);
 
-  // Three cells since the yen price was removed: EN price, 30-day trend,
-  // alignment. On mobile EN takes the full first row and the two narrow cells
+  // Three cells since the yen price was removed: market price, 30-day trend,
+  // alignment. On mobile price takes the full first row and the two narrow cells
   // split the second, so the price never competes for width with a symbol.
   const outerStyle = isMobile ? {
     display: 'grid',
@@ -62,21 +61,15 @@ export default function PriceComparison({ data }) {
 
   return (
     <div className="fade-slide-up" style={outerStyle}>
-      {/* EN */}
+      {/* Market price. The provider varies by game, so this row does not stamp
+          a marketplace logo onto a number that may have come from elsewhere. */}
       <div style={{
         ...(isMobile ? { gridColumn: '1 / 3' } : { flex: '1.4' }),
         padding: isMobile ? '12px 14px' : '14px 16px',
       }}>
-        <div style={{ ...labelStyle, color: '#7A7368' }}>EN Price</div>
+        <div style={{ ...labelStyle, color: '#7A7368' }}>Market Price</div>
         <div style={{ ...valStyle, fontSize: 16, color: '#E8E4DC' }}>
           {data.en_price || '—'}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
-          <BrandIcon brand="tcgplayer" size={11} />
-          <span style={{ fontSize: 9, color: '#605C54', fontFamily: "'JetBrains Mono', monospace" }}>TCGPlayer</span>
-          <span style={{ width: 2, height: 2, borderRadius: '50%', background: '#494640' }} />
-          <BrandIcon brand="ebay" size={11} />
-          <span style={{ fontSize: 9, color: '#605C54', fontFamily: "'JetBrains Mono', monospace" }}>eBay</span>
         </div>
       </div>
 

@@ -40,6 +40,10 @@ async function lookupPokemon({ setCode, number }) {
   const data = await res.json();
   const card = data.data?.[0];
   if (!card) return null;
+  const variants = card.tcgplayer?.prices || {};
+  const market = (value) => Number.isFinite(value?.market) ? value.market : null;
+  const normalPrice = market(variants.normal) ?? market(variants.holofoil);
+  const reversePrice = market(variants.reverseHolofoil);
   return {
     name: card.name,
     game: 'pokemon',
@@ -50,6 +54,10 @@ async function lookupPokemon({ setCode, number }) {
     number: card.number,
     printedTotal: card.set?.printedTotal || card.set?.total || null,
     rarity: card.rarity || null,
+    price: normalPrice ?? reversePrice,
+    marketPrices: { normal: normalPrice, reverse: reversePrice },
+    imageUrl: card.images?.small || null,
+    imageLarge: card.images?.large || card.images?.small || null,
     source: 'pokemontcg.io',
   };
 }
@@ -63,6 +71,8 @@ async function lookupMtg({ setCode, number }) {
   if (res.status === 404 || !res.ok) return null;
   const card = await res.json();
   if (card.object === 'error') return null;
+  const normalPrice = card.prices?.usd ? Number(card.prices.usd) : null;
+  const reversePrice = card.prices?.usd_foil ? Number(card.prices.usd_foil) : null;
   return {
     name: card.name,
     game: 'mtg',
@@ -72,6 +82,10 @@ async function lookupMtg({ setCode, number }) {
     setName: card.set_name,
     number: card.collector_number,
     rarity: card.rarity || null,
+    price: normalPrice ?? reversePrice,
+    marketPrices: { normal: normalPrice, reverse: reversePrice },
+    imageUrl: card.image_uris?.small || card.card_faces?.[0]?.image_uris?.small || null,
+    imageLarge: card.image_uris?.large || card.card_faces?.[0]?.image_uris?.large || null,
     source: 'scryfall',
   };
 }
@@ -87,6 +101,8 @@ async function lookupYgo({ rawCode }) {
   if (!card || card.error || !card.name || !card.set_code) return null;
   const id = card.id != null ? String(card.id) : null;
   const code = String(card.set_code).toUpperCase();
+  const setPrice = Number(card.set_price);
+  const price = Number.isFinite(setPrice) && setPrice > 0 ? setPrice : null;
   return {
     id,
     printingId: id ? `${id}:${code}` : code,
@@ -97,6 +113,8 @@ async function lookupYgo({ rawCode }) {
     setName: card.set_name,
     number: code,
     rarity: card.set_rarity || null,
+    price,
+    marketPrices: { normal: price, reverse: null },
     source: 'ygoprodeck',
   };
 }

@@ -115,7 +115,7 @@ export default function RecentScans({ onSelect, loading }) {
                 textAlign: 'right',
                 letterSpacing: '0.02em',
               }}>
-                {s.score}
+                {s.score}/100
               </span>
               <span style={{
                 fontFamily: "'Instrument Serif', serif",

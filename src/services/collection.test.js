@@ -1,8 +1,7 @@
 // Tests for the collection store.
 //
-// The rule this pins: a collection is a list of PRINTINGS, not names. Two
-// Umbreon ex cards from the same set are two different cards, and scanning the
-// same card twice is one card you own two of — not two rows.
+// The rule this pins: catalogue identity keeps different cards apart. The
+// user's condition and form keep different holdings apart.
 //
 // localStorage is stubbed before the module is imported.
 
@@ -17,10 +16,15 @@ globalThis.localStorage = {
 };
 
 const {
-  loadCollection, addToCollection, removeOne, removeAll, countCards, cardKey,
+  loadCollection, addToCollection, importCollection, removeOne, removeAll,
+  countCards, collectionValue, cardKey, marketPriceFor,
 } = await import('./collection.js');
 
-const RICH = { id: 'sv8pt5-161', game: 'pokemon', name: 'Umbreon ex', setName: 'Prismatic Evolutions', number: '161' };
+const RICH = {
+  id: 'sv8pt5-161', game: 'pokemon', name: 'Umbreon ex',
+  setName: 'Prismatic Evolutions', number: '161',
+  marketPrices: { normal: 100, reverse: 140 }, price: 100,
+};
 const CHEAP = { id: 'sv8pt5-60', game: 'pokemon', name: 'Umbreon ex', setName: 'Prismatic Evolutions', number: '60' };
 
 describe('collection', () => {
@@ -47,6 +51,34 @@ describe('collection', () => {
     assert.equal(list.length, 1);
     assert.equal(list[0].qty, 2);
     assert.equal(countCards(list), 2);
+  });
+
+  test('one add can carry quantity, condition, form, and paid amount', () => {
+    const list = addToCollection(RICH, {
+      quantity: 3,
+      condition: 'lightly_played',
+      form: 'reverse',
+      paidPerCard: '75.50',
+    });
+    assert.equal(list[0].qty, 3);
+    assert.equal(list[0].condition, 'lightly_played');
+    assert.equal(list[0].form, 'reverse');
+    assert.equal(list[0].marketPrice, 140);
+    assert.equal(list[0].paidPerCard, 75.5);
+  });
+
+  test('different conditions and forms stay as separate holdings', () => {
+    addToCollection(RICH, { condition: 'near_mint', form: 'normal' });
+    addToCollection(RICH, { condition: 'damaged', form: 'normal' });
+    const list = addToCollection(RICH, { condition: 'near_mint', form: 'reverse' });
+    assert.equal(list.length, 3);
+  });
+
+  test('paid amounts merge as a per-card average', () => {
+    addToCollection(RICH, { quantity: 2, paidPerCard: 50 });
+    const list = addToCollection(RICH, { quantity: 1, paidPerCard: 80 });
+    assert.equal(list[0].qty, 3);
+    assert.equal(list[0].paidPerCard, 60);
   });
 
   test('the card you just touched goes to the front', () => {
@@ -137,5 +169,18 @@ describe('collection', () => {
       cardKey({ id: '1', game: 'pokemon', name: 'X' }),
       cardKey({ id: '1', game: 'mtg', name: 'X' }),
     );
+  });
+
+  test('market total uses quantity and the selected form', () => {
+    const normal = addToCollection(RICH, { quantity: 2, form: 'normal' });
+    assert.equal(collectionValue(normal), 200);
+    assert.equal(marketPriceFor(RICH, 'reverse'), 140);
+  });
+
+  test('a backup import merges instead of deleting existing cards', () => {
+    addToCollection(RICH);
+    const list = importCollection([{ ...CHEAP, qty: 2, condition: 'damaged' }]);
+    assert.equal(list.length, 2);
+    assert.equal(countCards(list), 3);
   });
 });

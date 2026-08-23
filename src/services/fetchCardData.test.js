@@ -43,7 +43,7 @@ describe('fetchCardData exact-print contract', () => {
         card_images: [{ image_url: 'https://img.example.com/blue-eyes.jpg' }],
         card_sets: [
           { set_name: 'Legend of Blue Eyes White Dragon', set_code: 'LOB-EN001', set_rarity: 'Ultra Rare' },
-          { set_name: 'Legendary Decks II', set_code: 'LDK2-ENJ01', set_rarity: 'Common' },
+          { set_name: 'Legendary Decks II', set_code: 'LDK2-ENJ01', set_rarity: 'Common', set_price: '8.40' },
         ],
       }],
     });
@@ -57,7 +57,8 @@ describe('fetchCardData exact-print contract', () => {
     assert.equal(result.number, 'LDK2-ENJ01');
     assert.equal(result.rarity, 'Common');
     assert.equal(result.printingId, '89631139:LDK2-ENJ01');
-    assert.match(result.priceLines[0], /all printings/i);
+    assert.equal(result.priceLines[0], 'Market price: $8.40');
+    assert.equal(result.priceScope, 'set-code printing');
   });
 
   test('Pokemon suffixes remain part of an unpinned exact-name lookup', async () => {

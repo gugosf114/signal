@@ -29,14 +29,13 @@ Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
 
 ---
 
-## Current state — 2026-08-14
+## Current state — 2026-08-23
 
 - Stack: Vite 6 + React 18, `simple-icons` NPM, html2pdf.js,
   `@capacitor/filesystem`, Capacitor 8 (Android wrapper), no TypeScript
 - Dev server: `npm run dev` → http://localhost:3000
 - Tests: `npm test` → Node's built-in runner. No test framework, no new
-  dependency. 34 tests covering the citation filter and the truncated-JSON
-  recovery path. Test files are listed explicitly in the `test` script rather
+  dependency. 107 JavaScript tests plus 3 Python backtest tests. Test files are listed explicitly in the `test` script rather
   than passed as a directory — Node 20 globs a directory argument, Node 22
   (what CI runs) tries to load it as a module. Add new test files to that list.
 - Android: `cd android && ./gradlew assembleDebug` → APK at
@@ -742,6 +741,7 @@ src/
     QuickPicks.jsx          — sample card chips with game brand logos
     LoadingTheater.jsx      — 8-phase loading UI (Solari + tickers + grid)
     OverallScore.jsx        — score readout, PARTIAL chip, summary
+    AddToCollectionDialog.jsx — post-result collection details sheet
     PriceComparison.jsx     — EN/JP/Arb/Trend/Alignment strip
     SignalSection.jsx       — section grouping (short-term/structural/JP)
     SignalCard.jsx          — expandable signal row with citations
@@ -757,6 +757,8 @@ src/
     citations.js            — URL verification (web_search + pre-fetch); tested
     jsonRepair.js           — truncated-response recovery; tested
     scanCache.js            — 7d scan cache / 24h price cache
+    collection.js           — local holdings, quantity, condition, form, cost
+    collectionFiles.js      — JSON backup/restore + CSV export
     refreshPrices.js        — price-only top-up from the free TCG APIs
     fetchCardImage.js       — Scryfall/YGOPRODeck/PokemonTCG wrappers + URL cache
   styles/
@@ -884,3 +886,44 @@ this commit.
    Preserve the historical session and failure receipts.
 7. Leave the API-key design alone unless George explicitly decides to add a
    server gate. The private sideload key lane is still intentional.
+
+---
+
+## Session log — 2026-08-23
+
+**One lookup flow.** The Collection camera was removed. Camera capture remains
+on the Signal page, where it belongs: identify the card, open market price and
+the full Signal report, then let the user decide whether to add it. Main search,
+the bottom card browser, and Collection search now share the same catalogue
+lookup. Inputs accept a name, a full card/set number, or a short name plus the
+last visible digits (`Captain 123`). Regression coverage prevents `001` from
+also matching a code ending in `01`.
+
+**Add after the result.** Every result now has **Add to collection**. The sheet
+asks for only four facts: quantity, condition, Normal/Reverse form, and optional
+paid amount. The saved card uses the clean catalogue image. Holdings with a
+different condition or form stay separate; repeat additions merge quantities
+and preserve an average paid amount.
+
+**Collection became useful.** It now shows each card's market price, market
+total, quantity, condition, form, and optional paid amount. JSON backup/restore
+and CSV export are built in. A held card opens its Signal report. Score displays
+use the `80/100` form.
+
+**Price correction.** Pokémon and Magic already return price data on their card
+records. Yu-Gi-Oh's broad `card_prices` value spans versions; the app now uses
+the chosen set code's free `card_sets[].set_price` when available. The result
+label is **Market Price**. The old row that stamped both TCGPlayer and eBay logos
+onto every price was removed because the provider varies by game.
+
+**Proof.** 107 JavaScript tests and 3 Python tests pass on Node 22. The Vite
+production build, Capacitor sync, Android unit tests, and debug APK build pass.
+The updated APK installed over version 2.9 on the phone. The installed WebView
+shows the new Collection copy, market total, backup/export controls, and no
+Collection camera. Matching 390×844 rendered checks covered empty Collection,
+the details sheet, and a two-card holding worth $506.68.
+
+**Still open.** A public paid build needs the separately discussed Google Cloud
+Function gate and shared server cache. No backend, billing, or shared-user data
+was added in this pass. eBay completed-sale data is also still unproven; current
+eBay code reads active listings only.

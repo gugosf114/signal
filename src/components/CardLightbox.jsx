@@ -26,7 +26,7 @@ const TAP_SLOP = 8;             // px of travel still counted as a tap, not a dr
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, onScan, onRemove }) {
+export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, onScan, scanLabel = 'Scan this card', onRemove }) {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [settling, setSettling] = useState(false);
@@ -257,7 +257,7 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, onSc
             className="cl-btn cl-btn--go"
             onClick={(e) => { e.stopPropagation(); onScan(); }}
           >
-            Scan this card
+            {scanLabel}
           </button>
         )}
         {/* Collection view: take the card off the shelf, all copies. */}
