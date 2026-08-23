@@ -228,8 +228,11 @@ function shapeYGO(card, pin = null) {
     .filter(Boolean)
     .map((value) => String(value).trim().toUpperCase());
   const wantedName = String(pin?.setName || '').trim().toLowerCase();
+  const wantedRarity = String(pin?.rarity || '').trim().toLowerCase();
   const chosen = pin
-    ? prints.find((entry) => wantedCodes.includes(String(entry.set_code || '').trim().toUpperCase()))
+    ? prints.find((entry) => wantedCodes.includes(String(entry.set_code || '').trim().toUpperCase())
+        && wantedRarity && String(entry.set_rarity || '').trim().toLowerCase() === wantedRarity)
+      || prints.find((entry) => wantedCodes.includes(String(entry.set_code || '').trim().toUpperCase()))
       || prints.find((entry) => wantedName && String(entry.set_name || '').trim().toLowerCase() === wantedName)
       || null
     : (prints[0] || null);

@@ -43,6 +43,7 @@ describe('fetchCardData exact-print contract', () => {
         card_images: [{ image_url: 'https://img.example.com/blue-eyes.jpg' }],
         card_sets: [
           { set_name: 'Legend of Blue Eyes White Dragon', set_code: 'LOB-EN001', set_rarity: 'Ultra Rare' },
+          { set_name: 'Legendary Decks II', set_code: 'LDK2-ENJ01', set_rarity: 'Secret Rare', set_price: '18.00' },
           { set_name: 'Legendary Decks II', set_code: 'LDK2-ENJ01', set_rarity: 'Common', set_price: '8.40' },
         ],
       }],
@@ -50,7 +51,7 @@ describe('fetchCardData exact-print contract', () => {
 
     const result = await fetchCardData('Blue-Eyes White Dragon', 'yugioh', {
       id: '89631139', game: 'yugioh', setName: 'Legendary Decks II',
-      setId: 'LDK2-ENJ01', number: 'LDK2-ENJ01',
+      setId: 'LDK2-ENJ01', number: 'LDK2-ENJ01', rarity: 'Common',
     });
 
     assert.equal(result.setName, 'Legendary Decks II');

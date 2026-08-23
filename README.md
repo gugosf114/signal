@@ -803,8 +803,9 @@ is gitignored).
 - No analytics, telemetry, or tracking
 - No security/privacy/confidentiality claims in UI text
 - No monetization scaffolding
-- No new dependencies beyond Vite, React, `simple-icons` (tests deliberately
-  use Node's built-in runner so this holds)
+- No new non-Capacitor runtime dependencies beyond Vite, React, and
+  `simple-icons`. Official Capacitor plugins are allowed when Android needs a
+  real native feature; tests still use Node's built-in runner.
 - No TypeScript
 - Don't break the audit fixes from `893429f`
 
@@ -964,3 +965,32 @@ model limits and stable hashed cache IDs.
 
 Function URL:
 `https://us-central1-bakers-agent.cloudfunctions.net/signal-gateway-v1`
+
+---
+
+## Session log — 2026-08-23 live camera + new-card repair
+
+**Camera now means camera.** Samsung's WebView ignored the HTML
+`capture="environment"` hint and opened an upload picker. The main camera icon
+now calls the official Capacitor 8 Camera plugin's native `takePhoto`, which
+launches Samsung Camera with `android.media.action.IMAGE_CAPTURE`. Gallery
+upload remains only as the web fallback.
+
+**The catalogue was not stale.** George's photographed Reinforcement of the
+Army is already live in YGOPRODeck as `L26D-ENS08`, Legendary Modern Decks
+2026, Starlight Rare. Signal's set-code parser allowed `EN001` but rejected the
+newer `ENS08` shape. The parser now accepts a letter before the digits and a
+regression test pins that exact card. A second card, A.I. Connect
+`ALIN-EN054`, also resolves live.
+
+**Same-code rarity repair.** Yu-Gi-Oh can publish Common, Secret Rare, and
+Starlight Rare under the same set code. When the camera/catalogue supplies a
+rarity, the price-data lookup now chooses that matching row before falling back
+to the first row with the code.
+
+**Proof.** 114 JavaScript tests plus 3 Python tests passed on Node 22. Vite,
+Capacitor sync, Android unit tests, and APK assembly passed with
+`@capacitor/camera@8.2.3`. The installed APK contains the Camera plugin and no
+Anthropic key. On George's phone the Signal camera button opened Samsung Camera
+as an image-capture activity. Both photographed card codes return catalogue
+records from the live app lookup.

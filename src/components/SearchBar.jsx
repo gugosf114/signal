@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { scanCardImage } from '../services/scanCardImage';
 import { suggestCards, resolvePrinting } from '../services/fetchExpansions';
 import { looksLikeSetCode } from '../services/lookupBySetCode';
@@ -123,17 +124,7 @@ export default function SearchBar({ onSearch, loading }) {
     }
   };
 
-  const openCamera = () => {
-    setScanError(null);
-    fileInputRef.current?.click();
-  };
-
-  const handleFile = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIdentifying(true);
-    setScanError(null);
-    try {
+  const identifyFile = async (file) => {
       const card = await scanCardImage(file);
       // The photo showed one specific printing and the scanner read its set and
       // number off the card. Turn that into a catalogue row so the scan is
@@ -148,6 +139,42 @@ export default function SearchBar({ onSearch, loading }) {
       setQuery(card.name);
       setOpen(false);
       onSearch(card.name, pin.game || card.game || null, { pin });
+  };
+
+  const openCamera = async () => {
+    setScanError(null);
+    if (!Capacitor.isNativePlatform()) {
+      fileInputRef.current?.click();
+      return;
+    }
+    setIdentifying(true);
+    try {
+      const { Camera } = await import('@capacitor/camera');
+      const photo = await Camera.takePhoto({ quality: 90, includeMetadata: false });
+      const path = photo.webPath || (photo.uri ? Capacitor.convertFileSrc(photo.uri) : null);
+      if (!path) throw new Error('The camera returned no photo.');
+      const response = await fetch(path);
+      if (!response.ok) throw new Error(`The camera photo could not be opened (${response.status}).`);
+      const blob = await response.blob();
+      const file = new File([blob], 'signal-card.jpg', { type: blob.type || 'image/jpeg' });
+      await identifyFile(file);
+    } catch (err) {
+      if (/cancel/i.test(err?.message || '') || err?.code === 'OS-PLUG-CAMR-0002') return;
+      // eslint-disable-next-line no-console
+      console.error('[signal] card image scan failed', err);
+      setScanError(err?.message || 'Card identification failed.');
+    } finally {
+      setIdentifying(false);
+    }
+  };
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIdentifying(true);
+    setScanError(null);
+    try {
+      await identifyFile(file);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('[signal] card image scan failed', err);

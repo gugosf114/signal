@@ -10,7 +10,7 @@ import { fetchWithTimeout } from './http.js';
 // Looser-than-strict set code regex — anything resembling [A-Z0-9]{2,5}
 // followed by an optional locale tag and a 1–4 digit number.
 const SET_CODE_RE =
-  /^([A-Za-z0-9]{2,6})[\s\-_/]+(?:(EN|JP|DE|FR|IT|PT|SP|KR|CH|SS|GR)[\s\-_/]*)?(\d{1,4}[A-Za-z]?)$/i;
+  /^([A-Za-z0-9]{2,6})[\s\-_/]+(?:(EN|JP|DE|FR|IT|PT|SP|KR|CH|SS|GR)[\s\-_/]*)?([A-Za-z]?\d{1,4}[A-Za-z]?)$/i;
 
 export function looksLikeSetCode(input) {
   if (!input) return false;

@@ -14,7 +14,11 @@ describe('set-code parsing', () => {
     assert.deepEqual(parseSetCode('MOM-123a'), {
       rawCode: 'MOM-123A', setCode: 'mom', locale: null, number: '123a',
     });
+    assert.deepEqual(parseSetCode('L26D-ENS08'), {
+      rawCode: 'L26D-ENS08', setCode: 'l26d', locale: 'en', number: 's08',
+    });
     assert.equal(looksLikeSetCode('MOM-123a'), true);
+    assert.equal(looksLikeSetCode('L26D-ENS08'), true);
   });
 });
 
