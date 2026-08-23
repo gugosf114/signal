@@ -75,7 +75,7 @@ function canvasBase64(canvas) {
   throw new Error('too big');
 }
 
-async function toSendableImages(file, signal) {
+async function toSendableImages(file, signal, framed = false) {
   abortIfNeeded(signal);
   const bmp = await decodeImage(file);
   abortIfNeeded(signal);
@@ -92,10 +92,10 @@ async function toSendableImages(file, signal) {
   // Card numbers are tiny in a full phone photo, especially under foil glare.
   // Send a second close crop of the lower-right code area so ENS08 does not
   // collapse into "unreadable" after the full image is resized.
-  const sx = Math.round(w * 0.38);
-  const sy = Math.round(h * 0.44);
+  const sx = framed ? 0 : Math.round(w * 0.38);
+  const sy = Math.round(h * (framed ? 0.50 : 0.44));
   const sw = Math.max(1, w - sx);
-  const sh = Math.max(1, Math.round(h * 0.40));
+  const sh = Math.max(1, Math.round(h * (framed ? 0.50 : 0.40)));
   const detailScale = Math.min(1, MAX_EDGE / Math.max(sw, sh));
   const detail = document.createElement('canvas');
   detail.width = Math.max(1, Math.round(sw * detailScale));
@@ -114,7 +114,7 @@ export async function scanCardImage(file, opts = {}) {
   let images;
   const mediaType = 'image/jpeg';
   try {
-    images = await toSendableImages(file, opts.signal);
+    images = await toSendableImages(file, opts.signal, Boolean(opts.framed));
   } catch {
     // Couldn't decode it here. HEIC is the usual reason — Samsung's "High
     // efficiency" picture format — and the API can't read it either, so say so

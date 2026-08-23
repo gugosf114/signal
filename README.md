@@ -1053,3 +1053,26 @@ URL travels into Collection when the user adds the card.
 request and `cached:true` on the second. The installed phone result then rendered
 that exact official `cid=5328&ciid=3` URL. Three backend tests and 119 JavaScript
 tests passed; the full JSX graph compiled cleanly, and the Android build passed.
+
+---
+
+## Session log — 2026-08-23 framed live scanner
+
+The Scan action now stays inside Signal instead of handing framing to Samsung
+Camera. A full-screen rear-camera preview draws a real trading-card outline,
+four red corner marks, a large lower **CARD NUMBER / SET CODE** guide, plain
+framing instructions, Cancel, and a one-handed shutter. Upload remains a
+separate saved-image path.
+
+Capture math maps the visible object-fit-cover frame back to the camera's source
+pixels, crops only the card inside the outline, then sends the full card plus
+its lower number strip to identification. Empty or invalid frames are refused.
+The old external Camera plugin was removed; Capacitor's WebView permission
+bridge handles the declared Android CAMERA permission and `getUserMedia` rear
+camera stream directly.
+
+Two crop regression tests and the full 121-test JavaScript suite passed. Mobile
+390×844 and wide 800×900 rendered checks passed. On George's phone the installed
+scanner opened a live 1080×1920 rear-camera stream with no error; the measured
+card frame was 300×418, the correct 0.716 card ratio, with the number guide and
+shutter visible in the real Android screenshot.

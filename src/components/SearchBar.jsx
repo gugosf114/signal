@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Capacitor } from '@capacitor/core';
 import { scanCardImage } from '../services/scanCardImage';
 import { suggestCards, resolvePrinting } from '../services/fetchExpansions';
 import { looksLikeSetCode } from '../services/lookupBySetCode';
+import CardScanner from './CardScanner';
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
 // Typing "Charizard" and hitting Enter used to scan whatever printing the API
@@ -24,11 +24,11 @@ export default function SearchBar({ onSearch, loading }) {
   const [identifying, setIdentifying] = useState(false);
   const [scanError, setScanError] = useState(null);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
   const photoMenuRef = useRef(null);
   const formRef = useRef(null);
   // Bumped on every keystroke and every pick, so a slow catalogue reply that
@@ -141,8 +141,8 @@ export default function SearchBar({ onSearch, loading }) {
     }
   };
 
-  const identifyFile = async (file) => {
-      const card = await scanCardImage(file);
+  const identifyFile = async (file, framed = false) => {
+      const card = await scanCardImage(file, { framed });
       // The photo showed one specific printing and the scanner read its set and
       // number off the card. Turn that into a catalogue row so the scan is
       // pinned to the card actually photographed — otherwise a picture of the
@@ -164,26 +164,18 @@ export default function SearchBar({ onSearch, loading }) {
     setPhotoMenuOpen((value) => !value);
   };
 
-  const takePhoto = async () => {
+  const takePhoto = () => {
     setPhotoMenuOpen(false);
     setScanError(null);
-    if (!Capacitor.isNativePlatform()) {
-      cameraInputRef.current?.click();
-      return;
-    }
+    setScannerOpen(true);
+  };
+
+  const handleScannerCapture = async (file) => {
+    setScannerOpen(false);
     setIdentifying(true);
     try {
-      const { Camera } = await import('@capacitor/camera');
-      const photo = await Camera.takePhoto({ quality: 90, includeMetadata: false });
-      const path = photo.webPath || (photo.uri ? Capacitor.convertFileSrc(photo.uri) : null);
-      if (!path) throw new Error('The camera returned no photo.');
-      const response = await fetch(path);
-      if (!response.ok) throw new Error(`The camera photo could not be opened (${response.status}).`);
-      const blob = await response.blob();
-      const file = new File([blob], 'signal-card.jpg', { type: blob.type || 'image/jpeg' });
-      await identifyFile(file);
+      await identifyFile(file, true);
     } catch (err) {
-      if (/cancel/i.test(err?.message || '') || err?.code === 'OS-PLUG-CAMR-0002') return;
       // eslint-disable-next-line no-console
       console.error('[signal] card image scan failed', err);
       setScanError(err?.message || 'Card identification failed.');
@@ -229,15 +221,6 @@ export default function SearchBar({ onSearch, loading }) {
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleFile}
-        />
-        {/* Browser-only camera fallback. Android uses the real Camera plugin. */}
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
           style={{ display: 'none' }}
           onChange={handleFile}
         />
@@ -392,6 +375,12 @@ export default function SearchBar({ onSearch, loading }) {
           {scanError}
         </div>
       )}
+
+      <CardScanner
+        open={scannerOpen}
+        onCancel={() => setScannerOpen(false)}
+        onCapture={handleScannerCapture}
+      />
     </form>
   );
 }
