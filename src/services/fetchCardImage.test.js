@@ -109,4 +109,29 @@ describe('fetchCardImage cache', () => {
     assert.equal(requestBody.setCode, 'L26D-ENS08');
     assert.equal(requestBody.rarity, 'Starlight Rare');
   });
+
+  test('an exact Magic result fetches its selected Scryfall card id', async () => {
+    let requested = '';
+    let headers = null;
+    responder = (url, init) => {
+      requested = String(url);
+      headers = init.headers;
+      return { ok: true, status: 200, json: async () => ({ image_uris: { large: 'badgermole-326.jpg' } }) };
+    };
+    const image = await fetchCardImage('Badgermole Cub', 'mtg', { id: 'be16c053-99e1-4921-8530-5135c989149d' });
+    assert.equal(image, 'badgermole-326.jpg');
+    assert.match(requested, /cards\/be16c053-99e1-4921-8530-5135c989149d$/);
+    assert.equal(headers['User-Agent'], 'SignalTCG/1.0');
+  });
+
+  test('an exact Pokémon result fetches its selected catalogue id', async () => {
+    let requested = '';
+    responder = (url) => {
+      requested = String(url);
+      return { ok: true, status: 200, json: async () => ({ data: { images: { large: 'exact-pokemon.png' } } }) };
+    };
+    const image = await fetchCardImage('Charizard', 'pokemon', { id: 'swsh4-25' });
+    assert.equal(image, 'exact-pokemon.png');
+    assert.match(requested, /cards\/swsh4-25$/);
+  });
 });

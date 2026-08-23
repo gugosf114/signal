@@ -1076,3 +1076,13 @@ Two crop regression tests and the full 121-test JavaScript suite passed. Mobile
 scanner opened a live 1080×1920 rear-camera stream with no error; the measured
 card frame was 300×418, the correct 0.716 card ratio, with the number guide and
 shutter visible in the real Android screenshot.
+
+**Badgermole Cub cross-game proof.** Scryfall already had three live versions:
+promo `167s`, alternate `326`, and standard `167`. An unframed scan that missed
+the tiny number left three valid matches, so Signal correctly refused to guess
+but could not help the user. The frame and number strip now supply that missing
+identifier. Once selected, Magic and Pokémon artwork fetches now use the exact
+catalogue ID instead of searching by name. Scryfall's required Signal-specific
+User-Agent was also added; the former generic Node request returned HTTP 400.
+All three Badgermole IDs now return distinct live Scryfall images. The suite is
+now 123 JavaScript tests plus 3 Python tests.

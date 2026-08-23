@@ -108,9 +108,9 @@ export async function fetchCardImage(cardName, game, pin = null) {
 
 async function fetchCardImageUncached(cardName, game, pin) {
   try {
-    if (game === 'mtg') return await fetchMTGImage(cardName);
+    if (game === 'mtg') return await fetchMTGImage(cardName, pin);
     if (game === 'yugioh') return await fetchYuGiOhImage(cardName, pin);
-    if (game === 'pokemon') return await fetchPokemonImage(cardName);
+    if (game === 'pokemon') return await fetchPokemonImage(cardName, pin);
 
     // Unknown game — try all three. A URL from any of them wins. Otherwise the
     // result is only a genuine "no such card" if at least one API actually
@@ -135,10 +135,15 @@ async function fetchCardImageUncached(cardName, game, pin) {
   }
 }
 
-async function fetchMTGImage(name) {
+async function fetchMTGImage(name, pin = null) {
   let res;
   try {
-    res = await fetchWithTimeout(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`);
+    const id = pin?.printingId || pin?.id;
+    res = await fetchWithTimeout(
+      id ? `https://api.scryfall.com/cards/${encodeURIComponent(id)}`
+        : `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`,
+      { headers: { 'User-Agent': 'SignalTCG/1.0', Accept: 'application/json' } }
+    );
   } catch (e) {
     console.warn(`[fetchCardImage] scryfall network error for "${name}":`, e);
     return FAILED;
@@ -192,7 +197,7 @@ async function fetchYuGiOhImage(name, pin = null) {
   }
 }
 
-async function fetchPokemonImage(name) {
+async function fetchPokemonImage(name, pin = null) {
   // Strip suffixes like "ex", "V", "VMAX" for better search matching.
   // Also strip embedded quotes — encodeURIComponent doesn't escape them and
   // they break the name:"..." Pokémon API query syntax.
@@ -202,9 +207,10 @@ async function fetchPokemonImage(name) {
     .trim();
   let res;
   try {
-    res = await fetchWithTimeout(
-      `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(cleanName)}"&pageSize=1&orderBy=-set.releaseDate`
-    );
+    const id = pin?.printingId || pin?.id;
+    res = await fetchWithTimeout(id
+      ? `https://api.pokemontcg.io/v2/cards/${encodeURIComponent(id)}`
+      : `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(cleanName)}"&pageSize=1&orderBy=-set.releaseDate`);
   } catch (e) {
     console.warn(`[fetchCardImage] pokemontcg network error for "${cleanName}":`, e);
     return FAILED;
@@ -217,7 +223,8 @@ async function fetchPokemonImage(name) {
   }
   try {
     const data = await res.json();
-    return data.data?.[0]?.images?.large || data.data?.[0]?.images?.small || null;
+    const card = Array.isArray(data.data) ? data.data[0] : data.data;
+    return card?.images?.large || card?.images?.small || null;
   } catch {
     return FAILED;
   }
