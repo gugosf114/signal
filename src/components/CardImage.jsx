@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCardImage } from '../services/fetchCardImage';
 
-export default function CardImage({ cardName, game, size = 200, glowColor = '#C44040', onLoad, onClick }) {
+export default function CardImage({ cardName, game, pin = null, size = 200, glowColor = '#C44040', onLoad, onClick }) {
   const [imageUrl, setImageUrl] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const pinKey = pin?.printingId || pin?.number || pin?.setId || pin?.id || '';
 
   useEffect(() => {
     if (!cardName) return;
@@ -12,13 +13,13 @@ export default function CardImage({ cardName, game, size = 200, glowColor = '#C4
     setLoaded(false);
     setError(false);
     setImageUrl(null);
-    fetchCardImage(cardName, game).then((url) => {
+    fetchCardImage(cardName, game, pin).then((url) => {
       if (cancelled) return;
       if (url) { setImageUrl(url); onLoad?.(url); }
       else setError(true);
     });
     return () => { cancelled = true; };
-  }, [cardName, game]);
+  }, [cardName, game, pinKey]);
 
   const w = size * 0.72;
   const Wrapper = onClick ? 'button' : 'div';

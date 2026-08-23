@@ -83,6 +83,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
           <CardImage
             cardName={cardName}
             game={game}
+            pin={pin}
             size={isMobile ? 200 : 320}
             glowColor={glowColor}
             onLoad={(url) => { setCardImageUrl(url); onCardImageLoaded?.(url); }}

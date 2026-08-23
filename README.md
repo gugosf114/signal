@@ -1025,3 +1025,31 @@ confirmed both actions and their helper text. The Android build passed and the
 updated APK installed over 2.9. The real installed WebView returned both menu
 actions. The in-flight Reinforcement scan then completed as `L26D-ENS08`,
 Starlight Rare, `72/100`, with 8/8 signals and 73% verified-source coverage.
+
+---
+
+## Session log — 2026-08-23 exact official Yu-Gi-Oh artwork
+
+**The remaining wrong-card bug was the picture.** The result carried the right
+name, `L26D-ENS08`, and Starlight Rare, but `CardImage` ignored the selected
+card and searched YGOPRODeck by name only. YGOPRODeck has all three L26D rarity
+rows but only the original Reinforcement art, so the UI displayed a different
+card face while the text described George's card.
+
+**Official live resolver.** `signal-gateway-v1` now resolves the exact row
+through Konami's Yu-Gi-Oh Neuron database: exact name → official card ID →
+set-code/rarity row → set page → that row's official artwork ID. For
+`L26D-ENS08` Starlight Rare, the official row maps to `cid=5328`, `ciid=3`, the
+same Sky Striker artwork in George's photograph. The mapping is cached privately
+in Firestore for 30 days.
+
+**Result and Collection keep the exact art.** `CardImage` now keys its cache by
+card identity and rarity, asks the gateway for official art when a Yu-Gi-Oh
+set code is present, and falls back to YGOPRODeck only when the official route
+has no answer. The selected pin now reaches the result image, and that clean
+URL travels into Collection when the user adds the card.
+
+**Proof.** The live gateway returned the `ciid=3` official image on the first
+request and `cached:true` on the second. The installed phone result then rendered
+that exact official `cid=5328&ciid=3` URL. Three backend tests and 119 JavaScript
+tests passed; the full JSX graph compiled cleanly, and the Android build passed.

@@ -41,4 +41,8 @@ export function recordSignalMeasurement({ cacheKey, measurement }) {
   return gateway({ action: 'observe', cacheKey, measurement });
 }
 
+export function getOfficialYugiohArt({ cardName, setCode, rarity }) {
+  return gateway({ action: 'yugiohArt', cardName, setCode, rarity });
+}
+
 export { GATEWAY_URL };

@@ -21,7 +21,7 @@ globalThis.localStorage = {
 
 let responder = () => ({ ok: true, status: 200, json: async () => ({}) });
 let callCount = 0;
-globalThis.fetch = async (url) => { callCount++; return responder(url); };
+globalThis.fetch = async (url, init) => { callCount++; return responder(url, init); };
 
 const okPokemon = (imgUrl) => () => ({
   ok: true,
@@ -93,5 +93,20 @@ describe('fetchCardImage cache', () => {
     responder = okPokemon('https://img.example.com/x.png');
     assert.equal(await fetchCardImage('', 'pokemon'), null);
     assert.equal(callCount, 0);
+  });
+
+  test('an exact Yu-Gi-Oh result asks the gateway for official set artwork', async () => {
+    let requestBody = null;
+    responder = (_url, init) => {
+      requestBody = JSON.parse(init.body);
+      return { ok: true, status: 200, json: async () => ({ imageUrl: 'https://official.example/alternate.png' }) };
+    };
+    const image = await fetchCardImage('Reinforcement Official Test', 'yugioh', {
+      printingId: '32807846:L26D-ENS08', number: 'L26D-ENS08', rarity: 'Starlight Rare',
+    });
+    assert.equal(image, 'https://official.example/alternate.png');
+    assert.equal(requestBody.action, 'yugiohArt');
+    assert.equal(requestBody.setCode, 'L26D-ENS08');
+    assert.equal(requestBody.rarity, 'Starlight Rare');
   });
 });

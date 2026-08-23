@@ -14,6 +14,7 @@
 // server, and must never be remembered as if it were a fact about the card.
 
 import { fetchWithTimeout } from './http.js';
+import { getOfficialYugiohArt } from './signalGateway.js';
 
 // ─── Image URL cache ─────────────────────────────────────────────────────────
 // The same card's art is requested by up to four components at once —
@@ -38,8 +39,10 @@ const FAILED = Symbol('fetch-failed');
 const memCache = new Map();     // key -> URL string, or null for a known miss
 const inFlight = new Map();     // key -> Promise, so four callers share one fetch
 
-function imgKey(name, game) {
-  return `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}`;
+function imgKey(name, game, pin) {
+  const identity = pin?.printingId || pin?.number || pin?.setId || pin?.id || '';
+  const rarity = pin?.rarity || '';
+  return `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}::${identity}::${rarity}`;
 }
 
 function readImgCache() {
@@ -66,9 +69,9 @@ function writeImgCache(cache) {
   }
 }
 
-export async function fetchCardImage(cardName, game) {
+export async function fetchCardImage(cardName, game, pin = null) {
   if (!cardName) return null;
-  const key = imgKey(cardName, game);
+  const key = imgKey(cardName, game, pin);
 
   if (memCache.has(key)) return memCache.get(key);
   if (inFlight.has(key)) return inFlight.get(key);
@@ -83,7 +86,7 @@ export async function fetchCardImage(cardName, game) {
     }
   }
 
-  const promise = fetchCardImageUncached(cardName, game)
+  const promise = fetchCardImageUncached(cardName, game, pin)
     .then((result) => {
       if (result === FAILED) {
         // The API misbehaved. Remember nothing — the next render should try
@@ -103,10 +106,10 @@ export async function fetchCardImage(cardName, game) {
   return promise;
 }
 
-async function fetchCardImageUncached(cardName, game) {
+async function fetchCardImageUncached(cardName, game, pin) {
   try {
     if (game === 'mtg') return await fetchMTGImage(cardName);
-    if (game === 'yugioh') return await fetchYuGiOhImage(cardName);
+    if (game === 'yugioh') return await fetchYuGiOhImage(cardName, pin);
     if (game === 'pokemon') return await fetchPokemonImage(cardName);
 
     // Unknown game — try all three. A URL from any of them wins. Otherwise the
@@ -158,7 +161,16 @@ async function fetchMTGImage(name) {
   }
 }
 
-async function fetchYuGiOhImage(name) {
+async function fetchYuGiOhImage(name, pin = null) {
+  const setCode = pin?.number || pin?.setId || null;
+  if (setCode) {
+    try {
+      const official = await getOfficialYugiohArt({ cardName: name, setCode, rarity: pin?.rarity || '' });
+      if (official?.imageUrl) return official.imageUrl;
+    } catch (error) {
+      console.warn(`[fetchCardImage] official Yu-Gi-Oh art failed for "${name}"/${setCode}:`, error?.message || error);
+    }
+  }
   let res;
   try {
     res = await fetchWithTimeout(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(name)}`);

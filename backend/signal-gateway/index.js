@@ -6,6 +6,7 @@ const db = new Firestore();
 const REPORTS = 'signal_shared_reports_v1';
 const MEASUREMENTS = 'signal_score_measurements_v1';
 const LIMITS = 'signal_gateway_limits_v1';
+const YUGIOH_ART = 'signal_yugioh_official_art_v1';
 const REPORT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DAILY_MODEL_CALLS = 100;
 const ALLOWED_MODELS = new Set(['claude-haiku-4-5', 'claude-sonnet-4-6']);
@@ -28,6 +29,87 @@ function finite(value) {
 
 function safeText(value, max = 300) {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
+}
+
+function decodeHtml(value) {
+  return String(value || '')
+    .replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+}
+
+function rows(html) {
+  return String(html || '').split(/<div class="t_row[^>]*>/i).slice(1);
+}
+
+function officialCardCid(html, cardName) {
+  const wanted = String(cardName || '').trim().toLowerCase();
+  for (const row of rows(html)) {
+    const name = decodeHtml(row.match(/class="cnm"\s+value='([^']*)'/i)?.[1]).trim().toLowerCase();
+    const cid = row.match(/class="link_value"\s+value="[^"]*cid=(\d+)/i)?.[1];
+    if (name === wanted && cid) return cid;
+  }
+  return null;
+}
+
+function officialSetPid(html, setCode, rarity) {
+  const wantedCode = String(setCode || '').trim().toUpperCase();
+  const wantedRarity = String(rarity || '').trim().toLowerCase();
+  let codeFallback = null;
+  for (const row of rows(html)) {
+    const text = decodeHtml(row.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+    if (!text.toUpperCase().includes(wantedCode)) continue;
+    const pid = row.match(/pid=(\d+)/i)?.[1];
+    if (!pid) continue;
+    codeFallback ||= pid;
+    if (wantedRarity && text.toLowerCase().includes(wantedRarity)) return pid;
+  }
+  return codeFallback;
+}
+
+function officialSetImage(html, cardName, cid) {
+  const wanted = String(cardName || '').trim().toLowerCase();
+  let imageId = null;
+  for (const row of rows(html)) {
+    const name = decodeHtml(row.match(/class="card_name"[^>]*>\s*([^<]+)/i)?.[1]).trim().toLowerCase();
+    const match = row.match(/id="card_image_(\d+)_(\d+)"/i);
+    if (name === wanted && match) { imageId = { index: match[1], ciid: match[2] }; break; }
+  }
+  if (!imageId) return null;
+  const escaped = `card_image_${imageId.index}_${imageId.ciid}`.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const line = String(html).match(new RegExp(`${escaped}[^\\n]*get_image\\.action\\?([^']+)`, 'i'))?.[1];
+  if (!line || !String(line).includes(`cid=${cid}`)) return null;
+  const query = decodeHtml(line).replace(/^type=1&/, 'type=2&');
+  return `https://www.db.yugioh-card.com/yugiohdb/get_image.action?${query}`;
+}
+
+async function fetchOfficialHtml(url) {
+  const response = await fetch(url, { headers: { 'user-agent': 'SignalTCG/1.0' } });
+  if (!response.ok) throw new Error(`Official Yu-Gi-Oh database returned ${response.status}.`);
+  return response.text();
+}
+
+async function yugiohArt(body) {
+  const cardName = safeText(body.cardName, 180);
+  const setCode = safeText(body.setCode, 80).toUpperCase();
+  const rarity = safeText(body.rarity, 80);
+  if (!cardName || !setCode) throw new Error('Card name and set code are required.');
+  const key = hash(`${cardName.toLowerCase()}::${setCode}::${rarity.toLowerCase()}`);
+  const ref = db.collection(YUGIOH_ART).doc(key);
+  const saved = (await ref.get()).data();
+  if (saved?.imageUrl && saved?.expiresAt?.toMillis?.() > Date.now()) return { cached: true, imageUrl: saved.imageUrl };
+
+  const root = 'https://www.db.yugioh-card.com/yugiohdb';
+  const search = await fetchOfficialHtml(`${root}/card_search.action?keyword=${encodeURIComponent(cardName)}&ope=1&request_locale=en`);
+  const cid = officialCardCid(search, cardName);
+  if (!cid) return { cached: false, imageUrl: null };
+  const detail = await fetchOfficialHtml(`${root}/card_search.action?cid=${cid}&ope=2&request_locale=en`);
+  const pid = officialSetPid(detail, setCode, rarity);
+  if (!pid) return { cached: false, imageUrl: null };
+  const setPage = await fetchOfficialHtml(`${root}/card_search.action?ope=1&sess=1&pid=${pid}&rp=99999&request_locale=en`);
+  const imageUrl = officialSetImage(setPage, cardName, cid);
+  if (imageUrl) await ref.set({ cardName, setCode, rarity, cid, pid, imageUrl,
+    createdAt: FieldValue.serverTimestamp(), expiresAt: Timestamp.fromMillis(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+  return { cached: false, imageUrl };
 }
 
 function validateModelBody(body) {
@@ -142,6 +224,7 @@ async function handler(req, res) {
   try {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     if (body.action === 'health') return res.json({ ok: true, service: 'signal-gateway-v1' });
+    if (body.action === 'yugiohArt') return res.json(await yugiohArt(body));
     if (body.action === 'vision') {
       const result = await callAnthropic(req, body.modelRequest);
       return res.json({ cached: false, result });
@@ -157,4 +240,7 @@ async function handler(req, res) {
 
 functions.http('signalGateway', handler);
 
-module.exports = { handler, hash, validateModelBody };
+module.exports = {
+  handler, hash, validateModelBody,
+  officialCardCid, officialSetPid, officialSetImage,
+};
