@@ -933,7 +933,10 @@ unproven; current eBay code reads active listings only.
 **LIVE: `signal-gateway-v1`.** A Node 22 second-generation Google Cloud
 Function now runs in `bakers-agent`, `us-central1`. The Anthropic key is mounted
 from Secret Manager as `ANTHROPIC_API_KEY`; neither camera identification nor
-full Signal analysis reads `VITE_ANTHROPIC_API_KEY` anymore.
+full Signal analysis reads `VITE_ANTHROPIC_API_KEY` anymore. That line was
+removed from the laptop's `.env.local`; Secret Manager is now the only Signal
+copy. Every private release build must still be unzipped and checked for
+`sk-ant-` before publishing.
 
 **Shared report cache.** The function hashes game + card identity + score
 version into Firestore collection `signal_shared_reports_v1`. The first user
