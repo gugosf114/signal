@@ -29,6 +29,7 @@ Rules:
 - game: pokemon if a Pokémon energy symbol or Pokéball is visible; yugioh if a Yu-Gi-Oh card frame (eye-of-Wadjet back, Synchro/Xyz/Link frames); mtg if Magic mana costs or planeswalker icons. null if you can't tell.
 - set: the printed set name or set code (e.g. "Prismatic Evolutions", "PRE", "MOM", "LOB").
 - number: the collector number printed on the card (e.g. "199/198" or "EN001").
+- Inspect the lower-right edge above the text box for the printed code. A second image is a close crop of that area. Preserve letters before digits, such as L26D-ENS08.
 - confidence: high only if you can read the card name clearly. medium if name is partially obscured but inferable. low otherwise.
 - If the image is not a TCG card or is unreadable, return name "" and confidence "low" with a notes sentence explaining what you saw.
 - Do NOT fabricate. If unsure, leave a field null and lower the confidence.`;
@@ -65,7 +66,16 @@ async function decodeImage(file) {
   });
 }
 
-async function toSendableBase64(file, signal) {
+function canvasBase64(canvas) {
+  for (const quality of [0.85, 0.7, 0.55]) {
+    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+    const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+    if (base64.length <= MAX_BASE64_BYTES) return base64;
+  }
+  throw new Error('too big');
+}
+
+async function toSendableImages(file, signal) {
   abortIfNeeded(signal);
   const bmp = await decodeImage(file);
   abortIfNeeded(signal);
@@ -78,17 +88,22 @@ async function toSendableBase64(file, signal) {
   canvas.width = Math.max(1, Math.round(w * scale));
   canvas.height = Math.max(1, Math.round(h * scale));
   canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+
+  // Card numbers are tiny in a full phone photo, especially under foil glare.
+  // Send a second close crop of the lower-right code area so ENS08 does not
+  // collapse into "unreadable" after the full image is resized.
+  const sx = Math.round(w * 0.38);
+  const sy = Math.round(h * 0.44);
+  const sw = Math.max(1, w - sx);
+  const sh = Math.max(1, Math.round(h * 0.40));
+  const detailScale = Math.min(1, MAX_EDGE / Math.max(sw, sh));
+  const detail = document.createElement('canvas');
+  detail.width = Math.max(1, Math.round(sw * detailScale));
+  detail.height = Math.max(1, Math.round(sh * detailScale));
+  detail.getContext('2d').drawImage(bmp, sx, sy, sw, sh, 0, 0, detail.width, detail.height);
   bmp.close?.();
   abortIfNeeded(signal);
-
-  // Quality steps down only if a card photo somehow still lands over the wire
-  // limit — at 1568px it never should.
-  for (const q of [0.85, 0.7, 0.55]) {
-    const dataUrl = canvas.toDataURL('image/jpeg', q);
-    const b64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
-    if (b64.length <= MAX_BASE64_BYTES) return b64;
-  }
-  throw new Error('too big');
+  return { full: canvasBase64(canvas), detail: canvasBase64(detail) };
 }
 
 export async function scanCardImage(file, opts = {}) {
@@ -96,10 +111,10 @@ export async function scanCardImage(file, opts = {}) {
   if (Number(file.size) > MAX_INPUT_BYTES) throw new Error('That photo is too large to open. Use a smaller picture.');
   abortIfNeeded(opts.signal);
 
-  let base64;
+  let images;
   const mediaType = 'image/jpeg';
   try {
-    base64 = await toSendableBase64(file, opts.signal);
+    images = await toSendableImages(file, opts.signal);
   } catch {
     // Couldn't decode it here. HEIC is the usual reason — Samsung's "High
     // efficiency" picture format — and the API can't read it either, so say so
@@ -124,9 +139,14 @@ export async function scanCardImage(file, opts = {}) {
         content: [
           {
             type: 'image',
-            source: { type: 'base64', media_type: mediaType, data: base64 },
+            source: { type: 'base64', media_type: mediaType, data: images.full },
           },
-          { type: 'text', text: 'Identify this trading card.' },
+          { type: 'text', text: 'Full card photo.' },
+          {
+            type: 'image',
+            source: { type: 'base64', media_type: mediaType, data: images.detail },
+          },
+          { type: 'text', text: 'Close crop of the printed code area. Identify the card and copy the code exactly.' },
         ],
       }],
     }, opts.signal);
@@ -160,13 +180,25 @@ export function validateCardIdentification(value) {
   const cleanText = (field, max) => typeof field === 'string'
     ? field.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max)
     : '';
-  const game = ['pokemon', 'yugioh', 'mtg'].includes(input.game) ? input.game : null;
-  const confidence = ['high', 'medium', 'low'].includes(input.confidence) ? input.confidence : 'low';
+  const rawGame = String(input.game || '').toLowerCase().replace(/[^a-z]/g, '');
+  const game = rawGame.includes('pokemon') ? 'pokemon'
+    : rawGame.includes('yugioh') ? 'yugioh'
+      : rawGame === 'mtg' || rawGame.includes('magic') ? 'mtg' : null;
+  const rawConfidence = typeof input.confidence === 'number'
+    ? (input.confidence >= 0.8 ? 'high' : input.confidence >= 0.5 ? 'medium' : 'low')
+    : String(input.confidence || '').toLowerCase();
+  const confidence = ['high', 'medium', 'low'].includes(rawConfidence) ? rawConfidence : 'low';
+  const statedNumber = cleanText(input.number, 80);
+  const unknownNumber = !statedNumber || /unknown|unable|unreadable|not (?:clear|visible)/i.test(statedNumber);
+  const codePool = [input.code, input.number, input.set, input.notes]
+    .filter((item) => typeof item === 'string')
+    .join(' ');
+  const recoveredCode = codePool.match(/\b[A-Z0-9]{2,6}-(?:EN|JP|DE|FR|IT|PT|SP|KR|CH|SS|GR)?[A-Z]?\d{1,4}[A-Z]?\b/i)?.[0] || null;
   return {
     name: cleanText(input.name, 180),
     game,
     set: cleanText(input.set, 160) || null,
-    number: cleanText(input.number, 80) || null,
+    number: unknownNumber ? recoveredCode : statedNumber,
     confidence,
     notes: cleanText(input.notes, 240),
   };

@@ -7,9 +7,9 @@
 
 import { looksLikeSetCode, lookupBySetCode } from './lookupBySetCode.js';
 
-const CACHE_KEY = 'signal_expansions_v1';
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const COUNT = 6;
+const CACHE_KEY = 'signal_expansions_v2';
+const CACHE_TTL_MS = 60 * 60 * 1000;
+const COUNT = 12;
 const PAGE = 21;
 
 function pokemonRow(c, fallbackSetName = '') {
@@ -190,6 +190,20 @@ async function fetchMtgSets() {
   } catch { return []; }
 }
 
+export function selectRecentYugiohSets(data, today, limit = COUNT) {
+  return (Array.isArray(data) ? data : [])
+    .filter((set) => set.tcg_date && set.tcg_date <= today && set.set_name && (set.num_of_cards || 0) > 0)
+    .sort((a, b) => b.tcg_date.localeCompare(a.tcg_date))
+    .slice(0, limit)
+    .map((set) => ({
+      id: set.set_code || set.set_name,
+      name: set.set_name,
+      code: set.set_code || '',
+      releaseDate: set.tcg_date || '',
+      game: 'yugioh',
+    }));
+}
+
 async function fetchYugiohSets() {
   try {
     const data = await getJSON('https://db.ygoprodeck.com/api/v7/cardsets.php');
@@ -197,16 +211,7 @@ async function fetchYugiohSets() {
     // The API returns an array of {set_name, set_code, num_of_cards, tcg_date}.
     // Filter to entries with a real TCG release date and sort desc.
     const today = new Date().toISOString().slice(0, 10);
-    const sets = (Array.isArray(data) ? data : [])
-      .filter((s) => s.tcg_date && s.tcg_date <= today && s.set_name && (s.num_of_cards || 0) > 20)
-      .sort((a, b) => b.tcg_date.localeCompare(a.tcg_date));
-    return sets.slice(0, COUNT).map((s) => ({
-      id: s.set_code || s.set_name,
-      name: s.set_name,
-      code: s.set_code || '',
-      releaseDate: s.tcg_date || '',
-      game: 'yugioh',
-    }));
+    return selectRecentYugiohSets(data, today);
   } catch { return []; }
 }
 
@@ -228,8 +233,8 @@ function writeCache(data) {
   } catch {}
 }
 
-export async function getExpansions() {
-  const cached = readCache();
+export async function getExpansions({ force = false } = {}) {
+  const cached = force ? null : readCache();
   if (cached) return cached;
   const [pokemon, mtg, yugioh] = await Promise.all([
     fetchPokemonSets(),
@@ -499,10 +504,19 @@ export async function resolvePrinting({ name, game, number, set } = {}) {
   const n = (name || '').trim();
   if (n.length < 2) return null;
 
+  // A full printed set code is already the strongest possible lookup. Use the
+  // direct live endpoint before a name search can trim a 47-printing card down
+  // to its first page and hide the new release.
+  if (number && looksLikeSetCode(String(number))) {
+    const direct = await lookupBySetCode(String(number)).catch(() => null);
+    if (direct && (!game || direct.game === game)
+      && String(direct.name || '').trim().toLowerCase() === n.toLowerCase()) return direct;
+  }
+
   // "199/198" is printed on the card; catalogues store "199".
   const num = number ? String(number).split('/')[0].trim().toLowerCase() : null;
-  const setText = (set || '').trim().toLowerCase();
-  if (!num && !setText) return null;
+  const rawSetText = (set || '').trim().toLowerCase();
+  const setText = /unknown|unable|unreadable|not (?:clear|visible)/i.test(rawSetText) ? '' : rawSetText;
 
   const games = game ? [game] : ['pokemon', 'mtg', 'yugioh'];
   const settled = await Promise.allSettled(
@@ -513,6 +527,13 @@ export async function resolvePrinting({ name, game, number, set } = {}) {
 
   const exactName = hits.filter((c) => (c.name || '').toLowerCase() === n.toLowerCase());
   const pool = exactName.length ? exactName : hits;
+
+  // If the photo cannot expose a tiny code but the live catalogue has exactly
+  // one card with that exact name, there is no ambiguity to ask the user about.
+  if (!num && (!setText || /unknown|unable|unreadable/i.test(setText))) {
+    const unique = [...new Map(pool.map((card) => [card.printingId || card.id || card.number, card])).values()];
+    return unique.length === 1 ? unique[0] : null;
+  }
 
   const numberMatches = (card) => {
     const stored = String(card.number || '').trim().toLowerCase();

@@ -988,7 +988,21 @@ Starlight Rare under the same set code. When the camera/catalogue supplies a
 rarity, the price-data lookup now chooses that matching row before falling back
 to the first row with the code.
 
-**Proof.** 114 JavaScript tests plus 3 Python tests passed on Node 22. Vite,
+**Foil-glare repair.** The full phone photo shrank the tiny lower-right code
+until Haiku returned it only in a stray `code` or notes field. Signal now sends
+a second close crop of that code area, recovers a valid set code from any model
+field, ignores `set: Unknown`, and sends full codes straight to the direct live
+endpoint before a long name search can trim away new printings. A unique card
+name such as A.I. Connect also resolves when glare hides its code.
+
+**Bottom browser is live.** The separate expansion shelf cached six sets for
+seven days. Legendary Modern Decks 2026 was the eighth newest set, so it was
+working in the API while invisible in Signal. The shelf now fetches live on
+each open, caches for one hour only, and shows twelve recent expansions for all
+three games. The cache key was bumped so every installed phone drops the old
+six-set list immediately.
+
+**Proof.** 118 JavaScript tests plus 3 Python tests passed on Node 22. Vite,
 Capacitor sync, Android unit tests, and APK assembly passed with
 `@capacitor/camera@8.2.3`. The installed APK contains the Camera plugin and no
 Anthropic key. On George's phone the Signal camera button opened Samsung Camera

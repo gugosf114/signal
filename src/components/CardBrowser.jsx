@@ -36,7 +36,7 @@ export default function CardBrowser({ onCardSelect }) {
   // One-shot expansion fetch on mount; cached 7d.
   useEffect(() => {
     let cancelled = false;
-    getExpansions().then((data) => {
+    getExpansions({ force: true }).then((data) => {
       if (cancelled) return;
       setExpansions(data);
     }).catch(() => {});

@@ -14,4 +14,15 @@ describe('vision result validation', () => {
       confidence: 'low', notes: 'blurry',
     });
   });
+
+  test('recovers a modern set code from the model notes', () => {
+    const out = validateCardIdentification({
+      name: 'Reinforcement of the Army', game: 'Yu-Gi-Oh!', set: 'Unknown',
+      number: 'Unable to read clearly', code: 'L26D-ENS08', confidence: 0.9,
+      notes: 'Code visible as L26D-ENS08.',
+    });
+    assert.equal(out.game, 'yugioh');
+    assert.equal(out.number, 'L26D-ENS08');
+    assert.equal(out.confidence, 'high');
+  });
 });

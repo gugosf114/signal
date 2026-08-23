@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   cardNumberEndsWith, parseCardLookupQuery, resolvePrinting,
-  searchCardsByName, ygoPrintingRows,
+  searchCardsByName, selectRecentYugiohSets, ygoPrintingRows,
 } from './fetchExpansions.js';
 
 const originalFetch = globalThis.fetch;
@@ -68,6 +68,24 @@ describe('short name + last digits lookup', () => {
   });
 });
 
+describe('live expansion shelf', () => {
+  test('keeps twelve recent sets so a month-old release is not pushed off the shelf', () => {
+    const data = Array.from({ length: 11 }, (_, index) => ({
+      set_name: `Newer ${index}`,
+      set_code: `N${index}`,
+      num_of_cards: 50,
+      tcg_date: `2026-${String(8 - Math.floor(index / 4)).padStart(2, '0')}-${String(22 - index).padStart(2, '0')}`,
+    }));
+    data.push({
+      set_name: 'Legendary Modern Decks 2026', set_code: 'L26D',
+      num_of_cards: 111, tcg_date: '2026-04-23',
+    });
+    const sets = selectRecentYugiohSets(data, '2026-08-23');
+    assert.equal(sets.length, 12);
+    assert.equal(sets.some((set) => set.code === 'L26D'), true);
+  });
+});
+
 describe('camera printing resolution', () => {
   test('number and set must match the same printing', async () => {
     globalThis.fetch = async () => ({
@@ -85,5 +103,36 @@ describe('camera printing resolution', () => {
       name: 'Blue-Eyes White Dragon', game: 'yugioh', number: '01', set: 'Legendary Decks II',
     });
     assert.equal(exact?.printingId, '89631139:LDK2-ENJ01');
+  });
+
+  test('a unique exact-name card resolves even when glare hides its code', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      async json() {
+        return { data: [{
+          id: 79015062,
+          name: 'A.I. Connect',
+          card_prices: [{ tcgplayer_price: '0.00' }],
+          card_images: [{ image_url: 'ai.jpg', image_url_small: 'ai-small.jpg' }],
+          card_sets: [{ set_name: 'Alliance Insight', set_code: 'ALIN-EN054', set_rarity: 'Super Rare' }],
+        }] };
+      },
+    });
+    const hit = await resolvePrinting({ name: 'A.I. Connect', game: 'yugioh', set: 'Unknown', number: null });
+    assert.equal(hit?.number, 'ALIN-EN054');
+  });
+
+  test('a recovered full code wins even when the model calls the set unknown', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      async json() { return { data: [blueEyes] }; },
+    });
+    const hit = await resolvePrinting({
+      name: 'Blue-Eyes White Dragon', game: 'yugioh',
+      set: 'Unknown', number: 'LOB-EN001',
+    });
+    assert.equal(hit?.number, 'LOB-EN001');
   });
 });
