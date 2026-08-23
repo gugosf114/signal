@@ -1,10 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchTCGNews } from '../services/fetchTCGNews';
+import { fetchCardImage } from '../services/fetchCardImage';
+import { extractCardNames } from '../services/articleCardName';
 
 const CARD_W = 178;
 const GAP = 14;
 const STEP = CARD_W + GAP;
 const SPEED = 0.35;
+// The sub-frame every tile image lives in — a trading card's proportions.
+const FRAME_ASPECT = 0.716;
+// Anything meaningfully wider than that is a banner, not a card, and should
+// fill the frame rather than sit in letterbox bars.
+const BANNER_RATIO = FRAME_ASPECT * 1.1;
 
 function timeAgo(d) {
   const stamp = d instanceof Date ? d.getTime() : NaN;
@@ -19,8 +26,36 @@ function timeAgo(d) {
 // On hover: image section rises 28px into the headroom above the strip.
 // The pocket never moves. The gap that appears IS the pocket interior / dark fabric.
 function ArticleCard({ article }) {
-  const imgSrc = article.imageUrl;
+  const [imgSrc, setImgSrc] = useState(article.imageUrl || null);
+  const [fit, setFit] = useState('contain');
   const c = article.source.color;
+
+  // Sources that ship no image of their own get one last chance: whatever card
+  // name the headline carries, looked up against Scryfall / YGOPRODeck / the
+  // Pokemon API. fetchCardImage de-dupes in-flight requests and caches the
+  // answer, so the three copies of each article in the looping track share a
+  // single round trip.
+  useEffect(() => {
+    if (article.imageUrl) {
+      setImgSrc(article.imageUrl);
+      return undefined;
+    }
+    const names = extractCardNames(article.title, article.source.game);
+    if (!names.length) return undefined;
+
+    let cancelled = false;
+    (async () => {
+      for (const name of names) {
+        const url = await fetchCardImage(name, article.source.game).catch(() => null);
+        if (cancelled) return;
+        if (url) {
+          setImgSrc(url);
+          return;
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [article.imageUrl, article.title, article.source.game]);
   let href = null;
   try {
     const parsed = new URL(article.link);
@@ -47,12 +82,12 @@ function ArticleCard({ article }) {
             top: 0,
             transform: 'translateX(-50%)',
             height: '100%',
-            aspectRatio: '0.716',
+            aspectRatio: String(FRAME_ASPECT),
             overflow: 'hidden',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: 6,
+            padding: fit === 'cover' ? 0 : 6,
             boxSizing: 'border-box',
           }}>
             <img
@@ -61,12 +96,16 @@ function ArticleCard({ article }) {
               loading="lazy"
               referrerPolicy="no-referrer"
               style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain',
+                width: '100%',
+                height: '100%',
+                objectFit: fit,
                 objectPosition: 'center',
                 background: 'transparent',
                 display: 'block',
+              }}
+              onLoad={e => {
+                const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+                if (w && h && w / h > BANNER_RATIO) setFit('cover');
               }}
               onError={e => { e.currentTarget.style.display = 'none'; }}
             />
