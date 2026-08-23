@@ -23,10 +23,13 @@ export default function SearchBar({ onSearch, loading }) {
   const [focused, setFocused] = useState(false);
   const [identifying, setIdentifying] = useState(false);
   const [scanError, setScanError] = useState(null);
+  const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const photoMenuRef = useRef(null);
   const formRef = useRef(null);
   // Bumped on every keystroke and every pick, so a slow catalogue reply that
   // lands after the user moved on can't repopulate the list.
@@ -72,6 +75,20 @@ export default function SearchBar({ onSearch, loading }) {
     document.addEventListener('pointerdown', onDocDown);
     return () => document.removeEventListener('pointerdown', onDocDown);
   }, [open]);
+
+  useEffect(() => {
+    if (!photoMenuOpen) return;
+    const close = (event) => {
+      if (!photoMenuRef.current?.contains(event.target)) setPhotoMenuOpen(false);
+    };
+    const escape = (event) => { if (event.key === 'Escape') setPhotoMenuOpen(false); };
+    document.addEventListener('pointerdown', close);
+    window.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      window.removeEventListener('keydown', escape);
+    };
+  }, [photoMenuOpen]);
 
   const pick = (card) => {
     reqToken.current += 1;
@@ -141,10 +158,17 @@ export default function SearchBar({ onSearch, loading }) {
       onSearch(card.name, pin.game || card.game || null, { pin });
   };
 
-  const openCamera = async () => {
+  const openPhotoMenu = () => {
+    setScanError(null);
+    setOpen(false);
+    setPhotoMenuOpen((value) => !value);
+  };
+
+  const takePhoto = async () => {
+    setPhotoMenuOpen(false);
     setScanError(null);
     if (!Capacitor.isNativePlatform()) {
-      fileInputRef.current?.click();
+      cameraInputRef.current?.click();
       return;
     }
     setIdentifying(true);
@@ -166,6 +190,12 @@ export default function SearchBar({ onSearch, loading }) {
     } finally {
       setIdentifying(false);
     }
+  };
+
+  const uploadPhoto = () => {
+    setPhotoMenuOpen(false);
+    setScanError(null);
+    fileInputRef.current?.click();
   };
 
   const handleFile = async (e) => {
@@ -194,9 +224,17 @@ export default function SearchBar({ onSearch, loading }) {
       maxWidth: 580,
     }}>
       <div style={{ position: 'relative', width: '100%' }}>
-        {/* Hidden file input — capture="environment" hints the rear camera on mobile */}
+        {/* Upload input never carries `capture`, so Upload always means gallery/files. */}
         <input
           ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFile}
+        />
+        {/* Browser-only camera fallback. Android uses the real Camera plugin. */}
+        <input
+          ref={cameraInputRef}
           type="file"
           accept="image/*"
           capture="environment"
@@ -207,10 +245,12 @@ export default function SearchBar({ onSearch, loading }) {
         {/* Camera button — left side of the input */}
         <button
           type="button"
-          onClick={openCamera}
+          onClick={openPhotoMenu}
           disabled={busy}
-          aria-label="Scan a card with the camera"
-          title="Scan a card with the camera"
+          aria-label="Choose scan or upload"
+          aria-expanded={photoMenuOpen}
+          aria-haspopup="menu"
+          title="Scan or upload a card photo"
           style={{
             position: 'absolute',
             left: 6,
@@ -243,6 +283,19 @@ export default function SearchBar({ onSearch, loading }) {
             </svg>
           )}
         </button>
+
+        {photoMenuOpen && !busy && (
+          <div ref={photoMenuRef} className="photo-choice-menu" role="menu" aria-label="Card photo source">
+            <button type="button" role="menuitem" onClick={takePhoto}>
+              <span className="photo-choice-icon" aria-hidden>◎</span>
+              <span><strong>Scan card</strong><small>Open the camera</small></span>
+            </button>
+            <button type="button" role="menuitem" onClick={uploadPhoto}>
+              <span className="photo-choice-icon" aria-hidden>↑</span>
+              <span><strong>Upload photo</strong><small>Use a saved image</small></span>
+            </button>
+          </div>
+        )}
 
         {/* No explicit submit button — camera icon on the left handles image scans,
             Enter key on the keyboard submits a typed card name. The previous

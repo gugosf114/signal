@@ -1008,3 +1008,20 @@ Capacitor sync, Android unit tests, and APK assembly passed with
 Anthropic key. On George's phone the Signal camera button opened Samsung Camera
 as an image-capture activity. Both photographed card codes return catalogue
 records from the live app lookup.
+
+---
+
+## Session log — 2026-08-23 photo source chooser
+
+The main photo icon now opens two explicit actions: **Scan card** and
+**Upload photo**. Scan keeps the native Samsung Camera path. Upload uses a
+separate file input with no `capture` hint, so a saved image remains usable
+after the physical card has disappeared under a mattress. The browser-only
+camera fallback keeps its own captured input.
+
+The chooser uses two 58px touch rows, closes on outside tap or Escape, and
+keeps Scan and Upload as separate words everywhere. A 390×844 rendered check
+confirmed both actions and their helper text. The Android build passed and the
+updated APK installed over 2.9. The real installed WebView returned both menu
+actions. The in-flight Reinforcement scan then completed as `L26D-ENS08`,
+Starlight Rare, `72/100`, with 8/8 signals and 73% verified-source coverage.
