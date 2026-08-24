@@ -1,13 +1,13 @@
 # 株 Signal
 
-### ⬇ [Download the latest APK — 2.8 (versionCode 19)](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v2.8/signal-2.8.apk)
+### ⬇ [Download the latest APK — 2.9 (versionCode 20)](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v2.9/signal-2.9.apk)
 
 Tap that on the phone, then open the downloaded file to install. It's signed
 with the debug key, the same one every previous sideload used, so it installs
 straight over the existing app as an update and keeps your scan history. To
 start clean instead, uninstall Signal first and then open the file.
 
-Built from `5401155`. All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio-assets/releases).
+Built from `94f74bb`. All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio-assets/releases).
 
 The APK lives on the private `portfolio-assets` repo rather than here, because
 the build compiles `VITE_ANTHROPIC_API_KEY` into the bundle — a public download
@@ -35,7 +35,7 @@ Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
   `@capacitor/filesystem`, Capacitor 8 (Android wrapper), no TypeScript
 - Dev server: `npm run dev` → http://localhost:3000
 - Tests: `npm test` → Node's built-in runner. No test framework, no new
-  dependency. 107 JavaScript tests plus 3 Python backtest tests. Test files are listed explicitly in the `test` script rather
+  dependency. 155 JavaScript tests plus 3 Python backtest tests. Test files are listed explicitly in the `test` script rather
   than passed as a directory — Node 20 globs a directory argument, Node 22
   (what CI runs) tries to load it as a module. Add new test files to that list.
 - Android: `cd android && ./gradlew assembleDebug` → APK at
@@ -1130,3 +1130,36 @@ The empty shelf is now a complete state with a clear route back to Signal.
 Removing every copy from the full card viewer requires a second confirmation.
 Two Yu-Gi-Oh! printings sharing one card ID remain separate after reload. The
 Dossier tab was left unchanged during this pass.
+
+---
+
+## Session log — 2026-08-24 final phone closure
+
+The first two tabs are now closed on the real phone. Dossier stayed untouched.
+
+**Signal.** The progress line moves at one constant rate, learns from real
+uncached scan times, and reaches 100 only when the answer exists. A foreground
+service kept a 78-second scan alive after Signal left the screen. The completed
+answer survived Android activity changes and reopened at the top; it remains
+saved until the owner deliberately leaves it. Search/history furniture is no
+longer left above a loading or result page.
+
+The live rear camera opened at 1080×1920. George's real Reinforcement of the
+Army photo completed the full vision → catalogue → exact-report path as
+`32807846:L26D-ENS08`, Starlight Rare. Konami's public image endpoint was the
+source of the visible `SAMPLE` watermark. Signal no longer displays those
+images: standard Yu-Gi-Oh! cards use clean YGOPRODeck art, and an exact
+alternate-art scan keeps a small private copy of the owner's own card inside
+Signal. The ROTA image remained clean after an app restart and after reopening
+the cached result.
+
+**Collection.** The exact ROTA copy added with a blank price, Starlight rarity,
+near-mint condition, and its local clean image. Card count, unpriced subtotal,
+JSON backup, CSV export, app-restart persistence, card viewer, two-step Remove
+All, and return to the empty state all passed on-device. The test holding and
+its temporary export files were removed afterward.
+
+**Proof.** 155 JavaScript tests plus 3 Python tests pass. GitHub's web and
+Android jobs passed for `94f74bb`. The APK was checked for embedded Anthropic
+keys (zero), signed with the existing phone key, installed over 2.9, and
+published privately as `signal-v2.9`.
