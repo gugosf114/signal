@@ -20,6 +20,19 @@ const blueEyes = {
   ],
 };
 
+const reinforcement = {
+  id: 32807846,
+  name: 'Reinforcement of the Army',
+  card_prices: [{ tcgplayer_price: '0.13' }],
+  card_images: [{ image_url: 'rota.jpg', image_url_small: 'rota-small.jpg' }],
+  card_sets: ['Common', 'Secret Rare', 'Starlight Rare'].map((set_rarity) => ({
+    set_name: 'Legendary Modern Decks 2026',
+    set_code: 'L26D-ENS08',
+    set_rarity,
+    set_price: '0',
+  })),
+};
+
 describe('Yu-Gi-Oh printing rows', () => {
   test('one card-level id expands into distinct printing identities', () => {
     const rows = ygoPrintingRows(blueEyes);
@@ -87,6 +100,78 @@ describe('live expansion shelf', () => {
 });
 
 describe('camera printing resolution', () => {
+  test('repairs one I/L OCR error through one exact-name catalogue match', async () => {
+    const requested = [];
+    globalThis.fetch = async (url) => {
+      requested.push(String(url));
+      if (String(url).includes('setcode=I26D-ENS08')) {
+        return { ok: false, status: 400, async json() { return {}; } };
+      }
+      if (String(url).includes('setcode=L26D-ENS08')) {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              id: reinforcement.id,
+              name: reinforcement.name,
+              set_name: 'Legendary Modern Decks 2026',
+              set_code: 'L26D-ENS08',
+              set_rarity: 'Starlight Rare',
+              set_price: '0',
+            };
+          },
+        };
+      }
+      if (String(url).includes('cardinfo.php?name=')) {
+        return { ok: true, status: 200, async json() { return { data: [reinforcement] }; } };
+      }
+      return { ok: false, status: 400, async json() { return {}; } };
+    };
+
+    const hit = await resolvePrinting({
+      name: 'Reinforcement of the Army', game: 'yugioh',
+      set: null, number: 'I26D-ENS08',
+    });
+
+    assert.equal(hit?.number, 'L26D-ENS08');
+    assert.equal(hit?.rarity, 'Starlight Rare');
+    assert.equal(requested.some((url) => url.includes('cardinfo.php?name=')), true);
+  });
+
+  test('refuses a wider set-code guess after the direct lookup misses', async () => {
+    globalThis.fetch = async (url) => {
+      if (String(url).includes('cardsetsinfo.php')) {
+        return { ok: false, status: 400, async json() { return {}; } };
+      }
+      if (String(url).includes('cardinfo.php?name=')) {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              data: [{
+                ...reinforcement,
+                card_sets: [{
+                  ...reinforcement.card_sets[0],
+                  set_code: 'P26D-ENS08',
+                }],
+              }],
+            };
+          },
+        };
+      }
+      return { ok: false, status: 400, async json() { return {}; } };
+    };
+
+    const hit = await resolvePrinting({
+      name: 'Reinforcement of the Army', game: 'yugioh',
+      set: null, number: 'I26D-ENS08',
+    });
+
+    assert.equal(hit, null);
+  });
+
   test('number and set must match the same printing', async () => {
     globalThis.fetch = async () => ({
       ok: true,

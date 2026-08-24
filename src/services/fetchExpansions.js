@@ -60,6 +60,21 @@ function normalizeYgoCode(value) {
   return String(value || '').trim().toUpperCase();
 }
 
+function differsOnlyByIl(left, right) {
+  const scanned = normalizeYgoCode(left);
+  const catalogued = normalizeYgoCode(right);
+  if (!looksLikeSetCode(scanned) || !looksLikeSetCode(catalogued)
+    || scanned.length !== catalogued.length) return false;
+  let mismatches = 0;
+  for (let index = 0; index < scanned.length; index++) {
+    if (scanned[index] === catalogued[index]) continue;
+    mismatches += 1;
+    const pair = `${scanned[index]}${catalogued[index]}`;
+    if (mismatches > 1 || (pair !== 'IL' && pair !== 'LI')) return false;
+  }
+  return mismatches === 1;
+}
+
 export function ygoPrintingRows(card, wantedSet = null) {
   const prints = Array.isArray(card?.card_sets) ? card.card_sets : [];
   const wantedCode = normalizeYgoCode(wantedSet?.code || wantedSet?.id);
@@ -511,6 +526,25 @@ export async function resolvePrinting({ name, game, number, set } = {}) {
     const direct = await lookupBySetCode(String(number)).catch(() => null);
     if (direct && (!game || direct.game === game)
       && String(direct.name || '').trim().toLowerCase() === n.toLowerCase()) return direct;
+    // Foil glare can make a printed L look like I. Recover only that one glyph,
+    // only for Yu-Gi-Oh, and only when the exact card name leaves one catalogue
+    // code. Any wider or ambiguous mismatch must still stop instead of guessing.
+    if (!direct && (!game || game === 'yugioh')) {
+      const data = await getJSON(
+        `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(n)}`
+      ).catch(() => null);
+      const exactCards = (data?.data || [])
+        .filter((card) => String(card?.name || '').trim().toLowerCase() === n.toLowerCase());
+      const candidates = exactCards
+        .flatMap((card) => ygoPrintingRows(card))
+        .filter((card) => differsOnlyByIl(number, card.number));
+      const correctedCodes = [...new Set(candidates.map((card) => normalizeYgoCode(card.number)))];
+      if (correctedCodes.length === 1) {
+        const corrected = await lookupBySetCode(correctedCodes[0]).catch(() => null);
+        if (corrected && corrected.game === 'yugioh'
+          && String(corrected.name || '').trim().toLowerCase() === n.toLowerCase()) return corrected;
+      }
+    }
   }
 
   // "199/198" is printed on the card; catalogues store "199".
