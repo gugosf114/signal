@@ -191,7 +191,12 @@ export default function SignalDashboard() {
         setPendingCard(null);
         setScanComplete(false);
         scanStartedAtRef.current = null;
-        clearScanSession();
+        saveCompletedScanSession({
+          name: query,
+          game,
+          pin: resolvedPin,
+          result: cachedData,
+        });
         setLastSearched({ name: query, game, pin: resolvedPin });
         if (fastEntry.pricesStale) topUpPrices(query, game, ++navTokenRef.current, resolvedPin);
         if (!cachedData.printing) fillPrinting(query, game, navTokenRef.current, resolvedPin);
@@ -238,7 +243,12 @@ export default function SignalDashboard() {
         setPendingCard(null);
         setScanComplete(false);
         scanStartedAtRef.current = null;
-        clearScanSession();
+        saveCompletedScanSession({
+          name: resolvedName,
+          game: resolvedGame,
+          pin: resolvedPin,
+          result: cachedData,
+        });
         if (entry.pricesStale) topUpPrices(resolvedName, resolvedGame, ++navTokenRef.current, resolvedPin);
         if (!cachedData.printing) fillPrinting(resolvedName, resolvedGame, navTokenRef.current, resolvedPin);
         scrollResultFirst();
