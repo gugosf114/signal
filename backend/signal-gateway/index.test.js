@@ -1,13 +1,21 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
-  hash, validateModelBody, officialCardCid, officialSetPid, officialSetImage,
+  hash, finite, validateModelBody, officialCardCid, officialSetPid, officialSetImage,
 } = require('./index');
 
 test('cache ids are stable and hide card text', () => {
   assert.equal(hash('pokemon::Umbreon'), hash('pokemon::Umbreon'));
   assert.equal(hash('pokemon::Umbreon').length, 64);
   assert.ok(!hash('pokemon::Umbreon').includes('Umbreon'));
+});
+
+test('a missing market price stays missing instead of becoming zero', () => {
+  assert.equal(finite(null), null);
+  assert.equal(finite(undefined), null);
+  assert.equal(finite(''), null);
+  assert.equal(finite('0'), 0);
+  assert.equal(finite('12.34'), 12.34);
 });
 
 test('official Yu-Gi-Oh pages map an exact set row to its artwork', () => {

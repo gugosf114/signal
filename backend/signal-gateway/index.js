@@ -23,6 +23,7 @@ function cors(req, res) {
 }
 
 function finite(value) {
+  if (value === null || value === undefined || value === '') return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
@@ -241,6 +242,6 @@ async function handler(req, res) {
 functions.http('signalGateway', handler);
 
 module.exports = {
-  handler, hash, validateModelBody,
+  handler, hash, finite, validateModelBody,
   officialCardCid, officialSetPid, officialSetImage,
 };
