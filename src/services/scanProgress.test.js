@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   expectedScanDurationMs,
   linearScanProgress,
+  recordScanDuration,
   RUNNING_CEILING,
 } from './scanProgress.js';
 
@@ -25,5 +26,17 @@ describe('scan progress', () => {
   test('search-heavy Pokemon scans get more time than no-search scans', () => {
     assert.ok(expectedScanDurationMs('pokemon') > expectedScanDurationMs('mtg'));
     assert.ok(expectedScanDurationMs('pokemon') > expectedScanDurationMs('yugioh'));
+  });
+
+  test('a real uncached run teaches the next progress line', () => {
+    const values = new Map();
+    const storage = {
+      getItem: (key) => values.get(key) || null,
+      setItem: (key, value) => values.set(key, value),
+    };
+    assert.equal(recordScanDuration('yugioh', 78000, { storage }), 78000);
+    assert.equal(expectedScanDurationMs('yugioh', storage), 78000);
+    assert.equal(recordScanDuration('yugioh', 3000, { sharedCache: true, storage }), null);
+    assert.equal(expectedScanDurationMs('yugioh', storage), 78000);
   });
 });

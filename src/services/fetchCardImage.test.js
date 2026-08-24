@@ -1,6 +1,6 @@
 // Tests for the card-image cache.
 //
-// The bug this pins: v1 of the cache stored every null for 7 days, including
+// The bug this pins: old cache versions stored bad nulls and watermarked art,
 // the nulls produced by a transient pokemontcg.io 500. One bad minute on their
 // end blanked a card's artwork for a week, and no amount of re-scanning would
 // bring it back. A failure to reach the server is a fact about the server, not
@@ -31,7 +31,7 @@ const okPokemon = (imgUrl) => () => ({
 const status = (code) => () => ({ ok: false, status: code, json: async () => ({}) });
 const notFound = () => ({ ok: false, status: 404, json: async () => ({}) });
 
-const { fetchCardImage } = await import('./fetchCardImage.js');
+const { fetchCardImage, officialArtNumber } = await import('./fetchCardImage.js');
 
 describe('fetchCardImage cache', () => {
   beforeEach(() => {
@@ -43,7 +43,7 @@ describe('fetchCardImage cache', () => {
     responder = okPokemon('https://img.example.com/pikachu.png');
     const a = await fetchCardImage('Pikachu Test A', 'pokemon');
     assert.equal(a, 'https://img.example.com/pikachu.png');
-    assert.ok(store['signal_card_image_cache_v2'], 'wrote to the v2 cache key');
+    assert.ok(store['signal_card_image_cache_v3'], 'wrote to the v3 cache key');
   });
 
   test('a server error is NOT cached, so the next call retries', async () => {
@@ -51,7 +51,7 @@ describe('fetchCardImage cache', () => {
     const first = await fetchCardImage('Slowbro Test B', 'pokemon');
     assert.equal(first, null, 'returns null to the caller');
 
-    const cache = JSON.parse(store['signal_card_image_cache_v2'] || '{}');
+    const cache = JSON.parse(store['signal_card_image_cache_v3'] || '{}');
     assert.equal(Object.keys(cache).length, 0, 'nothing written to the cache');
 
     // The API recovers; the very next call must reach it rather than serve a
@@ -64,7 +64,7 @@ describe('fetchCardImage cache', () => {
   test('a rate-limit is treated the same as any other server error', async () => {
     responder = status(429);
     await fetchCardImage('Ratelimited Test C', 'pokemon');
-    const cache = JSON.parse(store['signal_card_image_cache_v2'] || '{}');
+    const cache = JSON.parse(store['signal_card_image_cache_v3'] || '{}');
     assert.equal(Object.keys(cache).length, 0);
   });
 
@@ -72,7 +72,7 @@ describe('fetchCardImage cache', () => {
     responder = notFound;
     const r = await fetchCardImage('Nonexistent Test D', 'pokemon');
     assert.equal(r, null);
-    const cache = JSON.parse(store['signal_card_image_cache_v2'] || '{}');
+    const cache = JSON.parse(store['signal_card_image_cache_v3'] || '{}');
     assert.equal(Object.keys(cache).length, 1, 'the genuine miss was remembered');
     assert.equal(Object.values(cache)[0].url, null);
   });
@@ -95,19 +95,37 @@ describe('fetchCardImage cache', () => {
     assert.equal(callCount, 0);
   });
 
-  test('an exact Yu-Gi-Oh result asks the gateway for official set artwork', async () => {
+  test('watermarked alternate art is refused when there is no saved scan', async () => {
     let requestBody = null;
-    responder = (_url, init) => {
-      requestBody = JSON.parse(init.body);
-      return { ok: true, status: 200, json: async () => ({ imageUrl: 'https://official.example/alternate.png' }) };
+    responder = (url, init) => {
+      if (String(url).includes('signal-gateway')) {
+        requestBody = JSON.parse(init.body);
+        return { ok: true, status: 200, json: async () => ({ imageUrl: 'https://official.example/card.png?cid=5328&ciid=3' }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ data: [{ card_images: [{ image_url: 'wrong-original.png' }] }] }) };
     };
     const image = await fetchCardImage('Reinforcement Official Test', 'yugioh', {
-      printingId: '32807846:L26D-ENS08', number: 'L26D-ENS08', rarity: 'Starlight Rare',
+      game: 'yugioh', printingId: '32807846:L26D-ENS08', number: 'L26D-ENS08', rarity: 'Starlight Rare',
     });
-    assert.equal(image, 'https://official.example/alternate.png');
+    assert.equal(image, null);
     assert.equal(requestBody.action, 'yugiohArt');
     assert.equal(requestBody.setCode, 'L26D-ENS08');
     assert.equal(requestBody.rarity, 'Starlight Rare');
+  });
+
+  test('standard Yu-Gi-Oh art uses the clean catalogue image', async () => {
+    responder = (url) => String(url).includes('signal-gateway')
+      ? { ok: true, status: 200, json: async () => ({ imageUrl: 'https://official.example/card.png?cid=21191&ciid=1' }) }
+      : { ok: true, status: 200, json: async () => ({ data: [{ card_images: [{ image_url: 'ai-connect-clean.png' }] }] }) };
+    const image = await fetchCardImage('A.I. Connect Clean Test', 'yugioh', {
+      game: 'yugioh', printingId: '79015062:ALIN-EN054', number: 'ALIN-EN054', rarity: 'Super Rare',
+    });
+    assert.equal(image, 'ai-connect-clean.png');
+  });
+
+  test('reads the official alternate-art number', () => {
+    assert.equal(officialArtNumber('https://official.example/card.png?cid=5328&ciid=3'), 3);
+    assert.equal(officialArtNumber('https://official.example/card.png?cid=5328'), null);
   });
 
   test('an exact Magic result fetches its selected Scryfall card id', async () => {

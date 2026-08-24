@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { scanCardImage } from '../services/scanCardImage';
 import { suggestCards, resolvePrinting } from '../services/fetchExpansions';
 import { looksLikeSetCode } from '../services/lookupBySetCode';
+import { saveScannedCardImage } from '../services/scannedCardImage';
 import CardScanner from './CardScanner';
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
@@ -149,13 +150,18 @@ export default function SearchBar({ onSearch, loading }) {
       // $1,499 Umbreon ex and a picture of the $7 one produce the same answer.
       const pin = await resolvePrinting(card).catch(() => null);
       if (!pin) throw new Error('The exact printing could not be matched. Search by set and card number.');
+      // Keep one small local copy of the photographed card. Konami's official
+      // alternate-art images carry a permanent SAMPLE watermark; the owner's
+      // own scan is both exact and clean, and survives app restarts.
+      const scanImagePath = await saveScannedCardImage(file, pin).catch(() => null);
+      const exactPin = scanImagePath ? { ...pin, scanImagePath } : pin;
       // The camera already identified one specific card; don't turn its name
       // back into a list of alternatives.
       reqToken.current += 1;
       quietFor.current = card.name;
       setQuery(card.name);
       setOpen(false);
-      onSearch(card.name, pin.game || card.game || null, { pin });
+      onSearch(card.name, exactPin.game || card.game || null, { pin: exactPin });
   };
 
   const openPhotoMenu = () => {

@@ -206,6 +206,7 @@ export default function LoadingTheater({ cardName, game, onCancel, startedAt = n
   // Which show to run, and how fast, both follow the real scan shape.
   const phases = useMemo(() => phasesForGame(game), [game]);
   const phaseMs = NO_SEARCH_GAMES.has((game || '').toLowerCase()) ? FAST_PHASE_MS : SLOW_PHASE_MS;
+  const expectedMs = useMemo(() => expectedScanDurationMs(game), [game]);
   const elapsed = now - start;
   const rawIdx = Math.floor(elapsed / phaseMs);
   let phaseIdx;
@@ -221,7 +222,7 @@ export default function LoadingTheater({ cardName, game, onCancel, startedAt = n
   const inPhase = elapsed - rawIdx * phaseMs;
   const detailIdx = Math.min(phase.details.length - 1, Math.floor(inPhase / DETAIL_MS));
 
-  const progress = linearScanProgress(elapsed, expectedScanDurationMs(game), complete);
+  const progress = linearScanProgress(elapsed, expectedMs, complete);
 
   return (
     <div ref={rootRef} className="lt-canvas" data-jp={phase.jp || undefined}>

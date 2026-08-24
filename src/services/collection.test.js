@@ -160,8 +160,14 @@ describe('collection', () => {
   });
 
   test('entries carry artwork and a timestamp', () => {
-    const list = addToCollection({ ...RICH, imageUrl: 'small.png', imageLarge: 'big.png' }, '2026-08-15T00:00:00.000Z');
+    const list = addToCollection({
+      ...RICH,
+      imageUrl: 'small.png',
+      imageLarge: 'big.png',
+      scanImagePath: 'signal-scan-art/sv8pt5-161.jpg',
+    }, '2026-08-15T00:00:00.000Z');
     assert.equal(list[0].imageLarge, 'big.png');
+    assert.equal(list[0].scanImagePath, 'signal-scan-art/sv8pt5-161.jpg');
     assert.equal(list[0].addedAt, '2026-08-15T00:00:00.000Z');
   });
 

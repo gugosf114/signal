@@ -15,6 +15,7 @@
 
 import { fetchWithTimeout } from './http.js';
 import { getOfficialYugiohArt } from './signalGateway.js';
+import { loadScannedCardImage } from './scannedCardImage.js';
 
 // ─── Image URL cache ─────────────────────────────────────────────────────────
 // The same card's art is requested by up to four components at once —
@@ -24,11 +25,15 @@ import { getOfficialYugiohArt } from './signalGateway.js';
 // session (also de-duping concurrent in-flight requests) and in localStorage
 // across launches.
 //
+// v3: Konami's exact-art endpoint burns SAMPLE into every returned image. v2
+// cached those images for a week. Standard art now uses the clean catalogue;
+// alternate art uses the owner's saved scan, so the key is bumped again.
+//
 // v2: v1 cached every null for 7 days, including the nulls produced by a
 // transient pokemontcg.io 500. One bad minute on their end blanked a card's art
 // for a week. Negatives now expire in an hour, and outright failures aren't
 // cached at all. The key was bumped so poisoned v1 entries are simply dropped.
-const IMG_CACHE_KEY = 'signal_card_image_cache_v2';
+const IMG_CACHE_KEY = 'signal_card_image_cache_v3';
 const IMG_TTL_MS = 7 * 24 * 60 * 60 * 1000;   // found an image
 const NEG_TTL_MS = 60 * 60 * 1000;            // genuinely no image for this card
 const IMG_MAX_ENTRIES = 300;
@@ -42,7 +47,8 @@ const inFlight = new Map();     // key -> Promise, so four callers share one fet
 function imgKey(name, game, pin) {
   const identity = pin?.printingId || pin?.number || pin?.setId || pin?.id || '';
   const rarity = pin?.rarity || '';
-  return `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}::${identity}::${rarity}`;
+  const scan = pin?.scanImagePath ? 'scan' : '';
+  return `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}::${identity}::${rarity}::${scan}`;
 }
 
 function readImgCache() {
@@ -168,14 +174,36 @@ async function fetchMTGImage(name, pin = null) {
 
 async function fetchYuGiOhImage(name, pin = null) {
   const setCode = pin?.number || pin?.setId || null;
+  const catalogue = await fetchYuGiOhCatalogueImage(name, pin);
   if (setCode) {
     try {
       const official = await getOfficialYugiohArt({ cardName: name, setCode, rarity: pin?.rarity || '' });
-      if (official?.imageUrl) return official.imageUrl;
+      const art = officialArtNumber(official?.imageUrl);
+      if (art > 1) {
+        // The official source is the only source that knows which alternate
+        // art this printing uses, but every image it returns says SAMPLE. A
+        // saved scan is exact and clean. With no scan, show no image rather
+        // than a watermarked image or the wrong art.
+        return await loadScannedCardImage(pin?.scanImagePath) || null;
+      }
     } catch (error) {
       console.warn(`[fetchCardImage] official Yu-Gi-Oh art failed for "${name}"/${setCode}:`, error?.message || error);
     }
   }
+  return catalogue;
+}
+
+export function officialArtNumber(imageUrl) {
+  try {
+    const value = Number(new URL(imageUrl).searchParams.get('ciid'));
+    return Number.isInteger(value) && value > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchYuGiOhCatalogueImage(name, pin = null) {
+  if (pin?.imageLarge || pin?.imageUrl) return pin.imageLarge || pin.imageUrl;
   let res;
   try {
     res = await fetchWithTimeout(`https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(name)}`);

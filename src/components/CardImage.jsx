@@ -5,7 +5,7 @@ export default function CardImage({ cardName, game, pin = null, size = 200, glow
   const [imageUrl, setImageUrl] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const pinKey = pin?.printingId || pin?.number || pin?.setId || pin?.id || '';
+  const pinKey = [pin?.printingId || pin?.number || pin?.setId || pin?.id || '', pin?.scanImagePath || ''].join(':');
 
   useEffect(() => {
     if (!cardName) return;

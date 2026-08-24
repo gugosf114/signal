@@ -96,6 +96,7 @@ function normalizeEntry(card) {
     setId: card.setId || null,
     number: card.number || null,
     rarity: card.rarity || null,
+    scanImagePath: card.scanImagePath || null,
     imageUrl: card.imageUrl || card.imageLarge || null,
     imageLarge: card.imageLarge || card.imageUrl || null,
     form: cleanFormForGame(card.game, card.form),

@@ -27,6 +27,7 @@ import { backfillPrinting } from '../services/backfillPrinting';
 import { refreshPrices } from '../services/refreshPrices';
 import { startScanKeepAlive, stopScanKeepAlive } from '../services/scanKeepAlive';
 import { hasPrintingPin, nameClaimsExactPrinting } from '../services/recentScans';
+import { recordScanDuration } from '../services/scanProgress';
 import {
   clearScanSession,
   loadRecoverableScanSession,
@@ -284,6 +285,9 @@ export default function SignalDashboard() {
       if (data?.game && data.game !== resolvedGame) {
         setCachedScan(resolvedName, data.game, data, resolvedPin);
       }
+      recordScanDuration(data?.game || resolvedGame, Date.now() - startedAt, {
+        sharedCache: Boolean(data?._sharedCache),
+      });
       // Save the answer before touching the screen. If Android rebuilds the
       // activity at this exact moment, the next WebView opens on the answer.
       saveCompletedScanSession({
@@ -462,18 +466,22 @@ export default function SignalDashboard() {
 
       {page === 'signal' && (
       <div id="panel-signal" role="tabpanel" aria-labelledby="tab-signal">
-      {/* Search */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 14,
-        marginBottom: 40,
-      }}>
-        <SearchBar onSearch={handleSearch} loading={loading} />
-        <QuickPicks onSelect={handleSearch} loading={loading} />
-        <RecentScans onSelect={handleSearch} loading={loading} />
-      </div>
+      {/* Search is the dashboard, not result-page furniture. Hiding it during
+          work and after completion makes the scan/result the first thing seen
+          without depending on a fragile saved scroll position. */}
+      {!result && !loading && (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 14,
+          marginBottom: 40,
+        }}>
+          <SearchBar onSearch={handleSearch} loading={loading} />
+          <QuickPicks onSelect={handleSearch} loading={loading} />
+          <RecentScans onSelect={handleSearch} loading={loading} />
+        </div>
+      )}
 
       {/* Error */}
       {error && (
