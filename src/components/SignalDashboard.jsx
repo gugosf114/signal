@@ -298,7 +298,6 @@ export default function SignalDashboard() {
       if (myToken !== navTokenRef.current) return;
       setResult(data);
       if (document.visibilityState === 'visible') {
-        clearScanSession();
         scrollResultFirst();
       }
     } catch (err) {
@@ -336,7 +335,6 @@ export default function SignalDashboard() {
       setPendingCard(null);
       setScanComplete(false);
       scanStartedAtRef.current = null;
-      clearScanSession();
       scrollResultFirst();
     };
 
@@ -352,7 +350,6 @@ export default function SignalDashboard() {
     recoveryStartedRef.current = true;
 
     if (initialScanSession.status === 'complete') {
-      clearScanSession();
       scrollResultFirst();
       return;
     }
@@ -368,6 +365,14 @@ export default function SignalDashboard() {
     ? calculateScoreDetails(result.signals || [], result.game)
     : null;
   const score = scoreDetails?.score ?? null;
+
+  const changePage = (nextPage) => {
+    // A saved answer remains the first thing on the next app opening until the
+    // user deliberately leaves that answer. Do not erase it merely because
+    // Android briefly called the activity visible.
+    if (nextPage !== 'signal' && result && !loading) clearScanSession();
+    setPage(nextPage);
+  };
 
   return (
     <div style={{
@@ -435,7 +440,7 @@ export default function SignalDashboard() {
         </div>
       </div>
 
-      <PageTabs page={page} onChange={setPage} />
+      <PageTabs page={page} onChange={changePage} />
 
       {page === 'dossier' && (
         <div id="panel-dossier" role="tabpanel" aria-labelledby="tab-dossier">

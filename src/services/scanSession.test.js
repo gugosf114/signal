@@ -43,6 +43,7 @@ describe('scan session recovery', () => {
     const result = { card_name: 'Black Lotus', game: 'mtg' };
     saveCompletedScanSession({ name: 'Black Lotus', game: 'mtg', result, completedAt: 5000 }, storage);
     assert.deepEqual(loadRecoverableScanSession(storage, 6000)?.result, result);
+    assert.deepEqual(loadRecoverableScanSession(storage, 7000)?.result, result);
   });
 
   test('drops a stale pending scan', () => {
