@@ -31,6 +31,7 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, onSc
   const [scale, setScale] = useState(1);
   const [settling, setSettling] = useState(false);
   const [hintVisible, setHintVisible] = useState(true);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   // Live gesture state. Refs, not state — these change on every pointermove and
   // must not queue a re-render each time.
@@ -41,6 +42,7 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, onSc
   const lastTap = useRef(0);
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
+  const removeConfirmRef = useRef(null);
   const priorFocus = useRef(null);
   const onCloseRef = useRef(onClose);
 
@@ -60,6 +62,7 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, onSc
     setScale(1);
     setSettling(false);
     setHintVisible(true);
+    setConfirmRemove(false);
     pointers.current.clear();
     dragStart.current = null;
     pinchStart.current = null;
@@ -89,6 +92,10 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, onSc
       clearTimeout(hintTimer);
     };
   }, [isOpen, reset]);
+
+  useEffect(() => {
+    if (confirmRemove) requestAnimationFrame(() => removeConfirmRef.current?.focus());
+  }, [confirmRemove]);
 
   const spread = () => {
     const [a, b] = [...pointers.current.values()];
@@ -261,14 +268,34 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, onSc
           </button>
         )}
         {/* Collection view: take the card off the shelf, all copies. */}
-        {onRemove && (
+        {onRemove && !confirmRemove && (
           <button
             type="button"
             className="cl-btn cl-btn--drop"
-            onClick={(e) => { e.stopPropagation(); onRemove(); }}
+            onClick={(e) => { e.stopPropagation(); setConfirmRemove(true); }}
           >
             Remove
           </button>
+        )}
+        {onRemove && confirmRemove && (
+          <div className="cl-confirm" role="group" aria-label="Confirm removal">
+            <span>Remove all copies?</span>
+            <button
+              ref={removeConfirmRef}
+              type="button"
+              className="cl-btn"
+              onClick={(event) => { event.stopPropagation(); setConfirmRemove(false); }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="cl-btn cl-btn--drop"
+              onClick={(event) => { event.stopPropagation(); onRemove(); }}
+            >
+              Remove all
+            </button>
+          </div>
         )}
       </div>
     </div>

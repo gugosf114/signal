@@ -1,7 +1,11 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { applyTrustedMarketPrice, fetchCardData } from './fetchCardData.js';
+import {
+  applyTrustedMarketPrice,
+  applyTrustedPriceNarrative,
+  fetchCardData,
+} from './fetchCardData.js';
 
 const originalFetch = globalThis.fetch;
 
@@ -88,6 +92,13 @@ describe('fetchCardData exact-print contract', () => {
     assert.equal(result.priceLines, null);
     assert.equal(result.priceScope, 'exact-print price unavailable');
     assert.equal(applyTrustedMarketPrice({ en_price: '$0.13' }, result, null).en_price, '');
+    const cleaned = applyTrustedPriceNarrative({
+      summary: 'Strong scarcity, though the all-printing market price of $0.13 is misleading.',
+      signals: [{ detail: 'The market price is $0.13.', sources: [] }],
+    }, result);
+    assert.doesNotMatch(cleaned.summary, /\$0\.13/);
+    assert.match(cleaned.summary, /broad card-level pricing/i);
+    assert.doesNotMatch(cleaned.signals[0].detail, /\$0\.13/);
   });
 
   test('Pokemon suffixes remain part of an unpinned exact-name lookup', async () => {

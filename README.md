@@ -1109,3 +1109,24 @@ inference and unknowns, and leaves the exact market price blank instead of
 substituting the ordinary card's broad price. The PDF generator lives at
 `scripts/generate_dossier_sample.py`; the app copy lives under
 `public/samples/`.
+
+---
+
+## Session log — 2026-08-24 Signal + Collection finalization
+
+The first two tabs were closed out before further Dossier work. Signal cache
+hits now scrub stale broad card-level dollar figures from exact-print prose, so
+the old `$0.13` Reinforcement number cannot return inside a summary after the
+headline price is correctly blanked. Long recent-scan names also stay inside
+their row without widening the phone page.
+
+Collection no longer converts a missing price into `$0.00`. Exact-price gaps
+show `—`; mixed collections show a known subtotal with `+` and the number of
+unpriced copies. Finish choices now follow the game: Pokémon uses
+Normal/Reverse, Magic uses Non-foil/Foil, and Yu-Gi-Oh! exact printings do not
+receive a synthetic finish switch. Yu-Gi-Oh! rows show their actual rarity.
+
+The empty shelf is now a complete state with a clear route back to Signal.
+Removing every copy from the full card viewer requires a second confirmation.
+Two Yu-Gi-Oh! printings sharing one card ID remain separate after reload. The
+Dossier tab was left unchanged during this pass.

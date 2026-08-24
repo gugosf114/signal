@@ -7,7 +7,12 @@
 
 import { creatorListForPrompt } from '../config/creators';
 import { calculateOverallScore, SCORE_VERSION } from '../config/signals';
-import { applyTrustedMarketPrice, fetchCardData, buildCardDataBlock } from './fetchCardData';
+import {
+  applyTrustedMarketPrice,
+  applyTrustedPriceNarrative,
+  fetchCardData,
+  buildCardDataBlock,
+} from './fetchCardData';
 import { toPrinting } from './printing';
 import { fetchCommunity, communityBlock } from './fetchCommunity';
 import { fetchCreators, creatorsBlock } from './fetchCreators';
@@ -270,7 +275,10 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
         cardName: cardData?.name || cardName,
         game: resolvedGame || parsed.game,
       });
-      const clean = filterHallucinatedSources(normalized, realUrls);
+      const clean = applyTrustedPriceNarrative(
+        filterHallucinatedSources(normalized, realUrls),
+        cardData,
+      );
       if (printingInfo) clean.printing = printingInfo;
       const currentPrice = firstMarketPrice(cardData?.priceLines);
       clean.prices = applyTrustedMarketPrice(clean.prices, cardData, currentPrice);

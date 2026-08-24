@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { addToCollection, marketPriceFor } from '../services/collection';
+import {
+  addToCollection,
+  collectionFormOptions,
+  formatCollectionMoney,
+  marketPriceFor,
+} from '../services/collection';
 
 const CONDITIONS = [
   ['near_mint', 'Near mint'],
@@ -8,10 +13,6 @@ const CONDITIONS = [
   ['heavily_played', 'Heavily played'],
   ['damaged', 'Damaged'],
 ];
-
-function money(value) {
-  return Number.isFinite(Number(value)) ? `$${Number(value).toFixed(2)}` : '—';
-}
 
 export default function AddToCollectionDialog({ card, isOpen, onClose, onAdded }) {
   const [condition, setCondition] = useState('near_mint');
@@ -57,6 +58,7 @@ export default function AddToCollectionDialog({ card, isOpen, onClose, onAdded }
   if (!isOpen || !card) return null;
 
   const marketPrice = marketPriceFor(card, form);
+  const formOptions = collectionFormOptions(card.game);
   const submit = (event) => {
     event.preventDefault();
     const list = addToCollection(card, {
@@ -98,7 +100,8 @@ export default function AddToCollectionDialog({ card, isOpen, onClose, onAdded }
             </div>
             <div className="ac-market">
               <span>Market price</span>
-              <strong>{money(marketPrice)}</strong>
+              <strong>{formatCollectionMoney(marketPrice)}</strong>
+              {marketPrice == null && <em>Exact price unavailable</em>}
             </div>
           </div>
         </div>
@@ -111,10 +114,11 @@ export default function AddToCollectionDialog({ card, isOpen, onClose, onAdded }
             </select>
           </label>
 
-          <fieldset className="ac-field ac-field--wide">
-            <legend>Form</legend>
-            <div className="ac-segments">
-              {[['normal', 'Normal'], ['reverse', 'Reverse']].map(([value, label]) => (
+          {formOptions.length > 0 && (
+            <fieldset className="ac-field ac-field--wide">
+              <legend>Finish</legend>
+              <div className="ac-segments">
+                {formOptions.map(({ value, label }) => (
                 <button
                   key={value}
                   type="button"
@@ -125,8 +129,9 @@ export default function AddToCollectionDialog({ card, isOpen, onClose, onAdded }
                   {label}
                 </button>
               ))}
-            </div>
-          </fieldset>
+              </div>
+            </fieldset>
+          )}
 
           <label className="ac-field">
             <span>Quantity</span>

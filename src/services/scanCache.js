@@ -3,6 +3,8 @@
 // instead of burning another 60-90 seconds of Anthropic web_search budget.
 // Re-scan button on the result page forces a fresh fetch when needed.
 
+import { sanitizeCachedPriceNarrative } from './fetchCardData.js';
+
 const CACHE_KEY = 'signal_scan_cache_v1';
 // Two clocks, because the two halves of a scan go stale at very different rates.
 // Signals (creator buzz, scarcity, ban status, JP release timing) move over
@@ -56,7 +58,7 @@ export function getCachedScan(name, game, pin) {
   if (!entry || !entry.data) return null;
   const age = Date.now() - (entry.ts || 0);
   if (age < 0 || age > CACHE_TTL_MS) return null;
-  return entry.data;
+  return sanitizeCachedPriceNarrative(entry.data);
 }
 
 // Same lookup, but also reports whether the PRICE half has aged out. The caller
@@ -71,14 +73,14 @@ export function getCachedScanEntry(name, game, pin) {
   if (age < 0 || age > CACHE_TTL_MS) return null;
   // priceTs tracks the last price top-up independently of the scan timestamp.
   const priceAge = Date.now() - (entry.priceTs || entry.ts || 0);
-  return { data: entry.data, pricesStale: priceAge > PRICE_TTL_MS };
+  return { data: sanitizeCachedPriceNarrative(entry.data), pricesStale: priceAge > PRICE_TTL_MS };
 }
 
 export function setCachedScan(name, game, data, pin) {
   if (!name || !data || data._truncated) return;
   const cache = loadCache();
   const now = Date.now();
-  cache[keyFor(name, game, pin)] = { ts: now, priceTs: now, data };
+  cache[keyFor(name, game, pin)] = { ts: now, priceTs: now, data: sanitizeCachedPriceNarrative(data) };
   saveCache(cache);
 }
 
@@ -90,12 +92,12 @@ export function refreshCachedPrices(name, game, prices, pin) {
   const k = keyFor(name, game, pin);
   const entry = cache[k];
   if (!entry || !entry.data) return;
-  entry.data = {
+  entry.data = sanitizeCachedPriceNarrative({
     ...entry.data,
     prices: { ...entry.data.prices, ...prices },
     grading_roi: null,
     _relatedPriceDataStale: true,
-  };
+  });
   entry.priceTs = Date.now();
   cache[k] = entry;
   saveCache(cache);

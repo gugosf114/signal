@@ -79,6 +79,7 @@ export default function RecentScans({ onSelect, loading }) {
           return (
             <button
               key={`${s.game}:${s.pin?.printingId || s.pin?.id || s.name}:${i}`}
+              title={s.name}
               onClick={() => !loading && onSelect(s.name, s.game, { pin: s.pin || null })}
               disabled={loading}
               style={{
@@ -94,6 +95,7 @@ export default function RecentScans({ onSelect, loading }) {
                 opacity: loading ? 0.3 : 1,
                 transition: 'all 0.15s',
                 whiteSpace: 'nowrap',
+                maxWidth: '100%',
               }}
               onMouseEnter={(e) => {
                 if (!loading) {
@@ -122,6 +124,8 @@ export default function RecentScans({ onSelect, loading }) {
                 fontStyle: 'italic',
                 fontSize: 15,
                 lineHeight: 1,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}>
                 {s.name}
               </span>

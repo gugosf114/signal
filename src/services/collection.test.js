@@ -17,7 +17,8 @@ globalThis.localStorage = {
 
 const {
   loadCollection, addToCollection, importCollection, removeOne, removeAll,
-  countCards, collectionValue, cardKey, marketPriceFor,
+  countCards, collectionValue, collectionValueSummary, cardKey, marketPriceFor,
+  formatCollectionMoney, collectionFormLabel, collectionFormOptions,
 } = await import('./collection.js');
 
 const RICH = {
@@ -175,6 +176,42 @@ describe('collection', () => {
     const normal = addToCollection(RICH, { quantity: 2, form: 'normal' });
     assert.equal(collectionValue(normal), 200);
     assert.equal(marketPriceFor(RICH, 'reverse'), 140);
+  });
+
+  test('missing prices stay missing instead of becoming zero', () => {
+    assert.equal(formatCollectionMoney(null), '—');
+    assert.equal(formatCollectionMoney(''), '—');
+    assert.equal(formatCollectionMoney(0), '$0.00');
+    const list = [
+      { ...RICH, qty: 1, marketPrice: 100 },
+      { ...CHEAP, qty: 2, marketPrice: null },
+    ];
+    assert.deepEqual(collectionValueSummary(list), {
+      total: 100,
+      pricedQty: 1,
+      unpricedQty: 2,
+    });
+  });
+
+  test('form labels follow the game instead of calling every finish reverse', () => {
+    assert.equal(collectionFormLabel('pokemon', 'reverse'), 'Reverse');
+    assert.equal(collectionFormLabel('mtg', 'normal'), 'Non-foil');
+    assert.equal(collectionFormLabel('mtg', 'reverse'), 'Foil');
+    assert.equal(collectionFormLabel('yugioh', 'normal'), '');
+    assert.deepEqual(collectionFormOptions('mtg').map((option) => option.label), ['Non-foil', 'Foil']);
+    assert.deepEqual(collectionFormOptions('yugioh'), []);
+  });
+
+  test('Yu-Gi-Oh exact printings ignore a synthetic reverse form', () => {
+    const rota = {
+      id: '32807846', printingId: '32807846:L26D-ENS08', game: 'yugioh',
+      name: 'Reinforcement of the Army', rarity: 'Starlight Rare',
+    };
+    addToCollection(rota, { form: 'normal' });
+    const list = addToCollection(rota, { form: 'reverse' });
+    assert.equal(list.length, 1);
+    assert.equal(list[0].qty, 2);
+    assert.equal(list[0].form, 'normal');
   });
 
   test('a backup import merges instead of deleting existing cards', () => {

@@ -89,4 +89,19 @@ describe('scanCache printing keys', () => {
     setCachedScan('Umbreon ex', 'pokemon', { _truncated: true, prices: { en: 10 } }, RICH);
     assert.equal(getCachedScan('Umbreon ex', 'pokemon', RICH), null);
   });
+
+  test('old exact-print cache hits cannot revive a broad card price in prose', () => {
+    const pin = {
+      id: '32807846', printingId: '32807846:L26D-ENS08', game: 'yugioh',
+    };
+    setCachedScan('Reinforcement of the Army', 'yugioh', {
+      _pin: pin,
+      prices: { en_price: '' },
+      summary: 'The all-printing market price of $0.13 is misleading.',
+      signals: [],
+    }, pin);
+    const hit = getCachedScan('Reinforcement of the Army', 'yugioh', pin);
+    assert.doesNotMatch(hit.summary, /\$0\.13/);
+    assert.match(hit.summary, /broad card-level pricing/i);
+  });
 });

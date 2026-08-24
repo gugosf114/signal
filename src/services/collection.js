@@ -28,6 +28,33 @@ function cleanForm(value) {
   return value === 'reverse' ? 'reverse' : 'normal';
 }
 
+function cleanFormForGame(game, value) {
+  return String(game || '').toLowerCase() === 'yugioh' ? 'normal' : cleanForm(value);
+}
+
+export function formatCollectionMoney(value) {
+  const amount = cleanMoney(value);
+  return amount === null ? '—' : `$${amount.toFixed(2)}`;
+}
+
+export function collectionFormOptions(game) {
+  if (game === 'yugioh') return [];
+  if (game === 'mtg') return [
+    { value: 'normal', label: 'Non-foil' },
+    { value: 'reverse', label: 'Foil' },
+  ];
+  return [
+    { value: 'normal', label: 'Normal' },
+    { value: 'reverse', label: 'Reverse' },
+  ];
+}
+
+export function collectionFormLabel(game, form) {
+  if (game === 'yugioh') return '';
+  if (game === 'mtg') return cleanForm(form) === 'reverse' ? 'Foil' : 'Non-foil';
+  return cleanForm(form) === 'reverse' ? 'Reverse' : 'Normal';
+}
+
 function baseCardKey(card) {
   if (!card) return '';
   const game = (card.game || 'unknown').toLowerCase();
@@ -42,11 +69,11 @@ function baseCardKey(card) {
 // The same catalogue card in two conditions or forms stays as two holdings.
 // This does not change lookup. It only keeps the user's own notes apart.
 export function cardKey(card) {
-  return `${baseCardKey(card)}::${cleanForm(card?.form)}::${cleanCondition(card?.condition)}`;
+  return `${baseCardKey(card)}::${cleanFormForGame(card?.game, card?.form)}::${cleanCondition(card?.condition)}`;
 }
 
 export function marketPriceFor(card, form = card?.form) {
-  const selectedForm = cleanForm(form);
+  const selectedForm = cleanFormForGame(card?.game, form);
   const variants = card?.marketPrices && typeof card.marketPrices === 'object'
     ? card.marketPrices
     : {};
@@ -71,7 +98,7 @@ function normalizeEntry(card) {
     rarity: card.rarity || null,
     imageUrl: card.imageUrl || card.imageLarge || null,
     imageLarge: card.imageLarge || card.imageUrl || null,
-    form: cleanForm(card.form),
+    form: cleanFormForGame(card.game, card.form),
     condition: cleanCondition(card.condition),
     qty,
     marketPrice: marketPriceFor(card),
@@ -135,7 +162,7 @@ export function addToCollection(card, details = {}, at = null) {
     details = {};
   }
   if (!card || !card.name) return loadCollection();
-  const form = cleanForm(details.form);
+  const form = cleanFormForGame(card.game, details.form);
   const quantity = cleanQty(details.quantity);
   const paidPerCard = cleanMoney(details.paidPerCard);
   const entry = {
@@ -179,8 +206,20 @@ export function countCards(list) {
 }
 
 export function collectionValue(list) {
-  return Math.round((Array.isArray(list) ? list : []).reduce((total, card) => {
+  return collectionValueSummary(list).total;
+}
+
+export function collectionValueSummary(list) {
+  const summary = (Array.isArray(list) ? list : []).reduce((result, card) => {
+    const qty = cleanQty(card?.qty);
     const price = cleanMoney(card?.marketPrice);
-    return total + (price === null ? 0 : price * cleanQty(card?.qty));
-  }, 0) * 100) / 100;
+    if (price === null) result.unpricedQty += qty;
+    else {
+      result.total += price * qty;
+      result.pricedQty += qty;
+    }
+    return result;
+  }, { total: 0, pricedQty: 0, unpricedQty: 0 });
+  summary.total = Math.round(summary.total * 100) / 100;
+  return summary;
 }

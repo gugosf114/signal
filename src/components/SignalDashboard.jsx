@@ -314,10 +314,13 @@ export default function SignalDashboard() {
 
       {page === 'collection' && (
         <div id="panel-collection" role="tabpanel" aria-labelledby="tab-collection">
-          <Collection onLookup={(name, game, opts) => {
-            setPage('signal');
-            handleSearch(name, game, opts);
-          }} />
+          <Collection
+            onGoToSignal={() => { setPage('signal'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            onLookup={(name, game, opts) => {
+              setPage('signal');
+              handleSearch(name, game, opts);
+            }}
+          />
         </div>
       )}
 

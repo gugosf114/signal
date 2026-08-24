@@ -285,6 +285,38 @@ export function applyTrustedMarketPrice(prices, cardData, currentPrice) {
   return clean;
 }
 
+function scrubBroadPriceText(value) {
+  if (typeof value !== 'string') return value;
+  return value
+    .replace(/(?:the\s+)?all[- ]printing market price of\s*\$\s?[\d,.]+/gi, 'broad card-level pricing')
+    .replace(/\$\s?[\d,.]+/g, 'an unverified broad-card figure');
+}
+
+export function applyTrustedPriceNarrative(analysis, cardData) {
+  if (!analysis || cardData?.priceScope !== 'exact-print price unavailable') return analysis;
+  return {
+    ...analysis,
+    _exactPriceUnavailable: true,
+    summary: scrubBroadPriceText(analysis.summary),
+    signals: (analysis.signals || []).map((signal) => ({
+      ...signal,
+      detail: scrubBroadPriceText(signal.detail),
+      sources: (signal.sources || []).map((source) => ({
+        ...source,
+        summary: scrubBroadPriceText(source.summary),
+      })),
+    })),
+  };
+}
+
+export function sanitizeCachedPriceNarrative(data) {
+  const exactPriceUnavailable = data?._exactPriceUnavailable
+    || (data?._pin?.game === 'yugioh' && data?.prices?.en_price === '');
+  return exactPriceUnavailable
+    ? applyTrustedPriceNarrative(data, { priceScope: 'exact-print price unavailable' })
+    : data;
+}
+
 // ─── Prompt injection helper ──────────────────────────────────────────────────
 // Formats fetched card data as a compact block for the LLM user message.
 

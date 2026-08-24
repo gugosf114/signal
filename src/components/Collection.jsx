@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { suggestCards } from '../services/fetchExpansions';
 import {
   loadCollection, importCollection, removeOne, removeAll,
-  countCards, collectionValue, cardKey,
+  countCards, collectionValueSummary, cardKey,
+  collectionFormLabel, formatCollectionMoney,
 } from '../services/collection';
 import {
   parseCollectionBackup, saveCollectionBackup, saveCollectionCsv,
@@ -19,11 +20,7 @@ const CONDITION_LABEL = {
 };
 const DEBOUNCE_MS = 250;
 
-function money(value) {
-  return Number.isFinite(Number(value)) ? `$${Number(value).toFixed(2)}` : '—';
-}
-
-export default function Collection({ onLookup }) {
+export default function Collection({ onLookup, onGoToSignal }) {
   const [cards, setCards] = useState(() => loadCollection());
   const [status, setStatus] = useState(null);
   const [viewing, setViewing] = useState(null);
@@ -144,12 +141,23 @@ export default function Collection({ onLookup }) {
   };
 
   const total = countCards(cards);
-  const marketTotal = collectionValue(cards);
+  const market = collectionValueSummary(cards);
+  const marketDisplay = market.pricedQty > 0
+    ? `${formatCollectionMoney(market.total)}${market.unpricedQty > 0 ? '+' : ''}`
+    : (market.unpricedQty > 0 ? '—' : '$0.00');
+  const holdingMeta = (card) => {
+    const details = [];
+    if (card.game === 'yugioh' && card.rarity) details.push(card.rarity);
+    details.push(CONDITION_LABEL[card.condition] || 'Near mint');
+    const formLabel = collectionFormLabel(card.game, card.form);
+    if (formLabel) details.push(formLabel);
+    return details.join(' · ');
+  };
 
   return (
     <div>
       <div className="col-intro">
-        Look up the card first. Its market price and Signal report open together. Then tap Add to collection.
+        Search an exact printing. Open its Signal report, then add your copy here.
       </div>
 
       <form className="col-search" ref={searchRef} onSubmit={submitLookup}>
@@ -226,7 +234,10 @@ export default function Collection({ onLookup }) {
         </div>
         <div>
           <span className="col-summary-label">Market total</span>
-          <strong>{money(marketTotal)}</strong>
+          <strong>{marketDisplay}</strong>
+          {market.unpricedQty > 0 && (
+            <small className="col-summary-note">{market.unpricedQty} unpriced</small>
+          )}
         </div>
       </div>
 
@@ -238,7 +249,10 @@ export default function Collection({ onLookup }) {
 
       {cards.length === 0 ? (
         <div className="col-empty">
-          Clean catalogue images appear here after you add a card.
+          <div className="col-empty-mark" aria-hidden="true"><span /><span /></div>
+          <strong>No cards saved yet</strong>
+          <p>Open an exact printing in Signal, then tap Add to collection.</p>
+          <button type="button" onClick={() => onGoToSignal?.()}>Find a card in Signal</button>
         </div>
       ) : (
         <div className="col-grid">
@@ -263,9 +277,9 @@ export default function Collection({ onLookup }) {
               >−</button>
               <div className="col-name">{card.name}</div>
               <div className="col-card-meta">
-                <strong>{money(card.marketPrice)}</strong>
-                <span>{CONDITION_LABEL[card.condition] || 'Near mint'} · {card.form === 'reverse' ? 'Reverse' : 'Normal'}</span>
-                {card.paidPerCard != null && <span>Paid {money(card.paidPerCard)}</span>}
+                <strong>{formatCollectionMoney(card.marketPrice)}</strong>
+                <span>{holdingMeta(card)}</span>
+                {card.paidPerCard != null && <span>Paid {formatCollectionMoney(card.paidPerCard)}</span>}
               </div>
             </div>
           ))}
