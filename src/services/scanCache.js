@@ -14,6 +14,10 @@ const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;       // whole scan — 7 days
 const PRICE_TTL_MS = 24 * 60 * 60 * 1000;           // price block — 1 day
 const MAX_ENTRIES = 200;
 
+export function attachScanPin(data, pin) {
+  return data && pin ? { ...data, _pin: pin } : data;
+}
+
 // `pin` is a specific printing chosen from the search suggestions. Two
 // printings of the same card share a name but not a price, so they must not
 // share a cache entry — scanning the $1,495 Prismatic Umbreon must not serve

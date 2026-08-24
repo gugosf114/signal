@@ -22,7 +22,7 @@ import { SIGNAL_SECTIONS, calculateScoreDetails } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { exportReportToPdf, shareReportAsPdf, imageUrlToDataUrl } from '../services/exportReport';
 import { lookupBySetCode, looksLikeSetCode } from '../services/lookupBySetCode';
-import { getCachedScanEntry, setCachedScan, clearCachedScan, refreshCachedPrices, patchCachedPrinting } from '../services/scanCache';
+import { attachScanPin, getCachedScanEntry, setCachedScan, clearCachedScan, refreshCachedPrices, patchCachedPrinting } from '../services/scanCache';
 import { backfillPrinting } from '../services/backfillPrinting';
 import { refreshPrices } from '../services/refreshPrices';
 import { startScanKeepAlive, stopScanKeepAlive } from '../services/scanKeepAlive';
@@ -177,6 +177,7 @@ export default function SignalDashboard() {
     if (!force && game) {
       const fastEntry = getCachedScanEntry(query, game, resolvedPin);
       if (fastEntry) {
+        const cachedData = attachScanPin(fastEntry.data, resolvedPin);
         // Invalidate any in-flight scan so it can't overwrite this result
         // when it lands later.
         navTokenRef.current += 1;
@@ -185,7 +186,7 @@ export default function SignalDashboard() {
           abortRef.current = null;
         }
         setCardImageUrl(null);
-        setResult(fastEntry.data);
+        setResult(cachedData);
         setLoading(false);
         setPendingCard(null);
         setScanComplete(false);
@@ -193,7 +194,7 @@ export default function SignalDashboard() {
         clearScanSession();
         setLastSearched({ name: query, game, pin: resolvedPin });
         if (fastEntry.pricesStale) topUpPrices(query, game, ++navTokenRef.current, resolvedPin);
-        if (!fastEntry.data.printing) fillPrinting(query, game, navTokenRef.current, resolvedPin);
+        if (!cachedData.printing) fillPrinting(query, game, navTokenRef.current, resolvedPin);
         scrollResultFirst();
         return;
       }
@@ -230,15 +231,16 @@ export default function SignalDashboard() {
     if (!force) {
       const entry = getCachedScanEntry(resolvedName, resolvedGame, resolvedPin);
       if (entry) {
+        const cachedData = attachScanPin(entry.data, resolvedPin);
         setCardImageUrl(null);
-        setResult(entry.data);
+        setResult(cachedData);
         setLoading(false);
         setPendingCard(null);
         setScanComplete(false);
         scanStartedAtRef.current = null;
         clearScanSession();
         if (entry.pricesStale) topUpPrices(resolvedName, resolvedGame, ++navTokenRef.current, resolvedPin);
-        if (!entry.data.printing) fillPrinting(resolvedName, resolvedGame, navTokenRef.current, resolvedPin);
+        if (!cachedData.printing) fillPrinting(resolvedName, resolvedGame, navTokenRef.current, resolvedPin);
         scrollResultFirst();
         return;
       }

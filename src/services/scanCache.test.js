@@ -23,6 +23,7 @@ const {
   setCachedScan,
   clearCachedScan,
   refreshCachedPrices,
+  attachScanPin,
 } = await import('./scanCache.js');
 
 const RICH = { id: 'sv8pt5-161', game: 'pokemon' };
@@ -103,5 +104,11 @@ describe('scanCache printing keys', () => {
     const hit = getCachedScan('Reinforcement of the Army', 'yugioh', pin);
     assert.doesNotMatch(hit.summary, /\$0\.13/);
     assert.match(hit.summary, /broad card-level pricing/i);
+  });
+
+  test('the printing chosen now replaces an older cached pin', () => {
+    const current = { ...RICH, scanImagePath: 'signal-scan-art/sv8pt5-161.jpg' };
+    const data = attachScanPin({ card_name: 'Umbreon ex', _pin: RICH }, current);
+    assert.equal(data._pin.scanImagePath, 'signal-scan-art/sv8pt5-161.jpg');
   });
 });
