@@ -1086,3 +1086,26 @@ catalogue ID instead of searching by name. Scryfall's required Signal-specific
 User-Agent was also added; the former generic Node request returned HTTP 400.
 All three Badgermole IDs now return distinct live Scryfall images. The suite is
 now 123 JavaScript tests plus 3 Python tests.
+
+---
+
+## Session log — 2026-08-24 Dossier tab
+
+Signal now has a third top-level page beside **Signal** and **Collection**:
+**Dossier**. This first version is a premium research-service page, not an
+instant automated order flow. It stays inside Signal's supported Pokémon,
+Yu-Gi-Oh!, and Magic lanes.
+
+The page explains five parts of the work: exact-print identification, source
+research, full context, a retain/reallocate pressure test, and human review.
+Grading-population evidence belongs in ordinary research when it can be tied to
+the exact printing. Manual collector-ownership concentration research is
+deliberately outside this version.
+
+One real three-page sample ships with the app and can be previewed or downloaded
+as a PDF: Reinforcement of the Army, `L26D-ENS08`, Starlight Rare. It uses
+official Konami product and card records, separates verified facts from
+inference and unknowns, and leaves the exact market price blank instead of
+substituting the ordinary card's broad price. The PDF generator lives at
+`scripts/generate_dossier_sample.py`; the app copy lives under
+`public/samples/`.

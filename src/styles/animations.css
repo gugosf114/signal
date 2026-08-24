@@ -1530,13 +1530,17 @@
 
 /* ─── Page tabs ───────────────────────────────────────────────────────────── */
 .pt-strip {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 430px);
+  gap: 3px;
   margin: -18px 0 28px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .pt-tab {
-  padding: 7px 18px;
+  min-height: 40px;
+  padding: 8px 8px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 3px;
@@ -1554,6 +1558,218 @@
   color: #E8E4DC;
   border-color: #2A2D34;
   background: #0E1014;
+}
+
+/* ─── Dossier ─────────────────────────────────────────────────────────────── */
+.dos-page {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  color: #C8C4BC;
+}
+.dos-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 30px 24px 26px;
+  border: 1px solid #22252C;
+  border-top-color: #7A3030;
+  border-radius: 4px;
+  background:
+    linear-gradient(140deg, rgba(196,64,64,0.08), transparent 40%),
+    radial-gradient(circle at 88% 8%, rgba(196,64,64,0.13), transparent 34%),
+    #0B0D11;
+}
+.dos-hero::after {
+  content: 'DOSSIER';
+  position: absolute;
+  right: -8px;
+  bottom: -22px;
+  color: rgba(232,228,220,0.025);
+  font: 800 64px/1 'Syne', sans-serif;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+.dos-eyebrow,
+.dos-section-heading > span,
+.dos-sample-label {
+  color: #C96A62;
+  font: 600 9px/1.4 'JetBrains Mono', monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.dos-hero h1 {
+  position: relative;
+  z-index: 1;
+  margin: 13px 0 10px;
+  color: #F0ECE4;
+  font: italic 36px/1.02 'Instrument Serif', serif;
+  letter-spacing: -0.02em;
+}
+.dos-hero > p {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+  margin: 0;
+  color: #9A968E;
+  font: 13px/1.65 'Syne', sans-serif;
+}
+.dos-rule {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 22px;
+  color: #77736B;
+  font: 600 9px 'JetBrains Mono', monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.dos-rule i { width: 16px; height: 1px; background: #3A2525; }
+.dos-method { margin-top: 34px; }
+.dos-section-heading { margin-bottom: 12px; }
+.dos-section-heading h2 {
+  margin: 5px 0 0;
+  color: #E8E4DC;
+  font: 700 18px/1.3 'Syne', sans-serif;
+}
+.dos-method ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid #1A1D24;
+  border-radius: 4px;
+  background: #0B0D11;
+}
+.dos-method li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px 19px;
+}
+.dos-method li + li { border-top: 1px solid #1A1D24; }
+.dos-number {
+  padding-top: 2px;
+  color: #B44B49;
+  font: 600 11px 'JetBrains Mono', monospace;
+  letter-spacing: 0.08em;
+}
+.dos-method h3 {
+  margin: 0 0 5px;
+  color: #DCD8D0;
+  font: 700 12px 'Syne', sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dos-method p {
+  margin: 0;
+  color: #817D76;
+  font: 12px/1.6 'Syne', sans-serif;
+}
+.dos-sample {
+  margin-top: 34px;
+  padding: 22px;
+  border: 1px solid #322426;
+  border-left: 3px solid #C44040;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #0D0E12, #0A0C10);
+}
+.dos-sample-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-top: 13px;
+}
+.dos-sample h2 {
+  margin: 0;
+  color: #EEEAE2;
+  font: italic 26px/1.08 'Instrument Serif', serif;
+}
+.dos-sample-top p {
+  margin: 7px 0 4px;
+  color: #8F8A82;
+  font: 11px/1.5 'Syne', sans-serif;
+}
+.dos-sample code {
+  color: #B6B0A6;
+  font: 9px/1.5 'JetBrains Mono', monospace;
+}
+.dos-sample-mark {
+  width: 56px;
+  height: 68px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  position: relative;
+  border: 1px solid #4A2A2C;
+  border-radius: 3px;
+  background: #111318;
+}
+.dos-sample-mark span { position: absolute; top: 7px; left: 8px; color: #C44040; font: 800 13px 'Noto Sans JP', sans-serif; }
+.dos-sample-mark b { color: #E8E4DC; font: 700 25px 'Syne', sans-serif; }
+.dos-finding {
+  margin: 18px 0 0;
+  color: #C5BFB5;
+  font: italic 16px/1.5 'Instrument Serif', serif;
+}
+.dos-actions { display: flex; gap: 9px; margin-top: 19px; }
+.dos-button {
+  min-height: 48px;
+  padding: 11px 16px;
+  border-radius: 3px;
+  font: 700 10px 'Syne', sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dos-button--quiet { color: #B8B2A8; border: 1px solid #2A2D34; background: transparent; }
+.dos-button--primary { color: #F1EDE5; border: 1px solid #A13A3A; background: #8F3032; }
+.dos-button:hover { filter: brightness(1.12); }
+.dos-button:focus-visible { outline: 2px solid #D06A62; outline-offset: 2px; }
+.dos-button:disabled { cursor: wait; opacity: 0.65; }
+.dos-preview {
+  display: grid;
+  gap: 10px;
+  margin-top: 17px;
+  padding-top: 16px;
+  border-top: 1px solid #24272D;
+}
+.dos-preview > div { display: grid; grid-template-columns: 82px minmax(0,1fr); gap: 10px; }
+.dos-preview span { color: #C96A62; font: 600 8px 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; }
+.dos-preview p { margin: 0; color: #918C84; font: 11px/1.55 'Syne', sans-serif; }
+.dos-status {
+  margin-top: 13px;
+  padding: 9px 11px;
+  border: 1px solid rgba(120,160,120,0.25);
+  border-radius: 2px;
+  color: #9CB49C;
+  background: rgba(120,160,120,0.06);
+  font: 10px/1.5 'JetBrains Mono', monospace;
+}
+.dos-status--bad {
+  color: #D06A62;
+  border-color: rgba(196,64,64,0.35);
+  background: rgba(196,64,64,0.07);
+}
+.dos-footnote {
+  margin: 18px 0 0;
+  color: #5D5952;
+  text-align: center;
+  font: 9px/1.5 'JetBrains Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 480px) {
+  .pt-tab { padding: 8px 4px; font-size: 9px; letter-spacing: 0.14em; }
+  .dos-hero { padding: 24px 19px 21px; }
+  .dos-hero h1 { font-size: 31px; }
+  .dos-method li { grid-template-columns: 38px minmax(0, 1fr); padding: 16px 15px; gap: 10px; }
+  .dos-sample { padding: 18px 16px; }
+  .dos-sample h2 { font-size: 23px; }
+  .dos-actions { flex-direction: column; }
+  .dos-button { width: 100%; }
+  .dos-preview > div { grid-template-columns: 1fr; gap: 4px; }
 }
 
 /* ─── Collection ──────────────────────────────────────────────────────────── */

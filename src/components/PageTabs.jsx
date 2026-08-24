@@ -1,12 +1,12 @@
 import React from 'react';
 
-// Two pages, one strip. Signal is the analysis side; Collection is the shelf.
-// Every card reaches the same result before it can be added, so lookup, market
-// price, and Signal never split into competing flows.
+// Three pages, one strip. Signal is the live analysis side, Collection is the
+// shelf, and Dossier explains the human-reviewed research service.
 
 const TABS = [
   { key: 'signal', label: 'Signal' },
   { key: 'collection', label: 'Collection' },
+  { key: 'dossier', label: 'Dossier' },
 ];
 
 export default function PageTabs({ page, onChange }) {

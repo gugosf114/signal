@@ -16,6 +16,7 @@ import NewsStrip from './NewsStrip';
 import PdfReport from './PdfReport';
 import PageTabs from './PageTabs';
 import Collection from './Collection';
+import Dossier from './Dossier';
 import AddToCollectionDialog from './AddToCollectionDialog';
 import { SIGNAL_SECTIONS, calculateScoreDetails } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
@@ -304,6 +305,12 @@ export default function SignalDashboard() {
       </div>
 
       <PageTabs page={page} onChange={setPage} />
+
+      {page === 'dossier' && (
+        <div id="panel-dossier" role="tabpanel" aria-labelledby="tab-dossier">
+          <Dossier />
+        </div>
+      )}
 
       {page === 'collection' && (
         <div id="panel-collection" role="tabpanel" aria-labelledby="tab-collection">
