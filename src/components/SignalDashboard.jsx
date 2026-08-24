@@ -26,6 +26,7 @@ import { getCachedScanEntry, setCachedScan, clearCachedScan, refreshCachedPrices
 import { backfillPrinting } from '../services/backfillPrinting';
 import { refreshPrices } from '../services/refreshPrices';
 import { startScanKeepAlive, stopScanKeepAlive } from '../services/scanKeepAlive';
+import { hasPrintingPin, nameClaimsExactPrinting } from '../services/recentScans';
 import {
   clearScanSession,
   loadRecoverableScanSession,
@@ -158,6 +159,17 @@ export default function SignalDashboard() {
     let resolvedPin = pin;
     setError(null);
     setPage('signal');
+
+    // A name can claim "Starlight Rare" while carrying no catalogue identity.
+    // That is how an exact-looking recent row launched a broad ROTA scan. Make
+    // the user choose the physical printing before any cache or API work runs.
+    if (!hasPrintingPin(resolvedPin) && nameClaimsExactPrinting(query)) {
+      setLoading(false);
+      setPendingCard(null);
+      clearScanSession();
+      setError('Pick this exact printing from the card list so Signal keeps its set code.');
+      return;
+    }
 
     // Fast-path cache check BEFORE flipping loading state — already-scanned
     // cards must return instantly with zero loading-theater flash.

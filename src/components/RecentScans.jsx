@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GAME_LABELS, SCORE_VERSION, calculateOverallScore } from '../config/signals';
 import { getCachedScan } from '../services/scanCache';
+import { recentPrintingLine, sanitizeRecentScans } from '../services/recentScans';
 
 // Distinct from QuickPicks: this is YOUR trace through the app.
 // Visual cue: hairline divider + label, then log-style rows
@@ -13,7 +14,7 @@ export default function RecentScans({ onSelect, loading }) {
       try {
         const raw = localStorage.getItem('signal_recent_scans');
         const parsed = raw ? JSON.parse(raw) : [];
-        const list = Array.isArray(parsed) ? parsed : [];
+        const list = sanitizeRecentScans(parsed);
         const migrated = list.map((item) => {
           if (item?.scoreVersion === SCORE_VERSION && Number.isFinite(item.score)) return item;
           const cached = getCachedScan(item?.name, item?.game, item?.pin || null);
@@ -76,10 +77,12 @@ export default function RecentScans({ onSelect, loading }) {
         {scans.map((s, i) => {
           const gameMeta = GAME_LABELS[s.game];
           const color = gameMeta?.color || '#A8A498';
+          const printing = recentPrintingLine(s);
           return (
             <button
               key={`${s.game}:${s.pin?.printingId || s.pin?.id || s.name}:${i}`}
-              title={s.name}
+              title={[s.name, printing].filter(Boolean).join(' — ')}
+              aria-label={`Open recent scan: ${[s.name, printing].filter(Boolean).join(' — ')}`}
               onClick={() => !loading && onSelect(s.name, s.game, { pin: s.pin || null })}
               disabled={loading}
               style={{
@@ -94,7 +97,6 @@ export default function RecentScans({ onSelect, loading }) {
                 cursor: loading ? 'not-allowed' : 'pointer',
                 opacity: loading ? 0.3 : 1,
                 transition: 'all 0.15s',
-                whiteSpace: 'nowrap',
                 maxWidth: '100%',
               }}
               onMouseEnter={(e) => {
@@ -120,14 +122,38 @@ export default function RecentScans({ onSelect, loading }) {
                 {s.score}/100
               </span>
               <span style={{
-                fontFamily: "'Instrument Serif', serif",
-                fontStyle: 'italic',
-                fontSize: 15,
-                lineHeight: 1,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                minWidth: 0,
               }}>
-                {s.name}
+                <span style={{
+                  fontFamily: "'Instrument Serif', serif",
+                  fontStyle: 'italic',
+                  fontSize: 15,
+                  lineHeight: 1,
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {s.name}
+                </span>
+                {printing && (
+                  <span style={{
+                    marginTop: 3,
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    color: '#706C64',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 8,
+                    letterSpacing: '0.02em',
+                  }}>
+                    {printing}
+                  </span>
+                )}
               </span>
             </button>
           );

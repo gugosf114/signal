@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test src/services/http.test.js src/services/citations.test.js src/services/jsonRepair.test.js src/services/validateAnalysis.test.js src/services/fetchCardImage.test.js src/services/articleCardName.test.js src/services/scanCardImage.test.js src/services/scannerCrop.test.js src/services/fetchCardData.test.js src/services/fetchExpansions.test.js src/services/lookupBySetCode.test.js src/services/searchBudget.test.js src/services/refreshPrices.test.js src/services/scanCache.test.js src/services/scanProgress.test.js src/services/scanSession.test.js src/services/collection.test.js src/services/collectionFiles.test.js src/services/printing.test.js src/config/signals.test.js src/config/dossier.test.js && python3 -m unittest scripts/test_backtest.py"
+    "test": "node --test src/services/http.test.js src/services/citations.test.js src/services/jsonRepair.test.js src/services/validateAnalysis.test.js src/services/fetchCardImage.test.js src/services/articleCardName.test.js src/services/scanCardImage.test.js src/services/scannerCrop.test.js src/services/fetchCardData.test.js src/services/fetchExpansions.test.js src/services/lookupBySetCode.test.js src/services/searchBudget.test.js src/services/refreshPrices.test.js src/services/scanCache.test.js src/services/scanProgress.test.js src/services/scanSession.test.js src/services/recentScans.test.js src/services/collection.test.js src/services/collectionFiles.test.js src/services/printing.test.js src/config/signals.test.js src/config/dossier.test.js && python3 -m unittest scripts/test_backtest.py"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
