@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import SearchBar from './SearchBar';
 import QuickPicks from './QuickPicks';
 import RecentScans from './RecentScans';
@@ -26,6 +26,12 @@ import { getCachedScanEntry, setCachedScan, clearCachedScan, refreshCachedPrices
 import { backfillPrinting } from '../services/backfillPrinting';
 import { refreshPrices } from '../services/refreshPrices';
 import { startScanKeepAlive, stopScanKeepAlive } from '../services/scanKeepAlive';
+import {
+  clearScanSession,
+  loadRecoverableScanSession,
+  saveCompletedScanSession,
+  savePendingScanSession,
+} from '../services/scanSession';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 function reportFilename(cardName) {
@@ -44,14 +50,26 @@ function firstDollar(value) {
 }
 
 export default function SignalDashboard() {
+  const [initialScanSession] = useState(() => loadRecoverableScanSession());
   // Which page is showing. The header and tab strip are shared; everything
   // below them belongs to one page or the other.
   const [page, setPage] = useState('signal');
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(() =>
+    initialScanSession?.status === 'complete' ? initialScanSession.result : null
+  );
+  const [loading, setLoading] = useState(initialScanSession?.status === 'pending');
   const [error, setError] = useState(null);
-  const [pendingCard, setPendingCard] = useState(null);
-  const [lastSearched, setLastSearched] = useState(null);
+  const [pendingCard, setPendingCard] = useState(() =>
+    initialScanSession?.status === 'pending'
+      ? { name: initialScanSession.name, game: initialScanSession.game }
+      : null
+  );
+  const [lastSearched, setLastSearched] = useState(() =>
+    initialScanSession
+      ? { name: initialScanSession.name, game: initialScanSession.game, pin: initialScanSession.pin || null }
+      : null
+  );
+  const [scanComplete, setScanComplete] = useState(false);
   const [saveMsg, setSaveMsg] = useState(null);
   const [cardImageUrl, setCardImageUrl] = useState(null);
   const [pdfRendering, setPdfRendering] = useState(false);
@@ -69,6 +87,19 @@ export default function SignalDashboard() {
   // home page if the user navigates away mid-scan.
   const abortRef = useRef(null);
   const navTokenRef = useRef(0);
+  const scanStartedAtRef = useRef(
+    initialScanSession?.status === 'pending' ? initialScanSession.startedAt : null
+  );
+  const resultTopRef = useRef(null);
+  const recoveryStartedRef = useRef(false);
+
+  const scrollResultFirst = () => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        resultTopRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+      });
+    });
+  };
 
   const goHome = () => {
     navTokenRef.current += 1;
@@ -82,6 +113,9 @@ export default function SignalDashboard() {
     setLoading(false);
     setLastSearched(null);
     setPendingCard(null);
+    setScanComplete(false);
+    scanStartedAtRef.current = null;
+    clearScanSession();
     setPage('signal');
   };
 
@@ -120,9 +154,10 @@ export default function SignalDashboard() {
   const handleSearch = async (query, game = null, opts = {}) => {
     // `pin` is a printing chosen from the search suggestions. It keys the cache
     // and pins the pre-fetch, so two printings of one name stay separate scans.
-    const { force = false, pin = null } = opts;
+    const { force = false, pin = null, resumeStartedAt = null } = opts;
     let resolvedPin = pin;
     setError(null);
+    setPage('signal');
 
     // Fast-path cache check BEFORE flipping loading state — already-scanned
     // cards must return instantly with zero loading-theater flash.
@@ -138,9 +173,15 @@ export default function SignalDashboard() {
         }
         setCardImageUrl(null);
         setResult(fastEntry.data);
+        setLoading(false);
+        setPendingCard(null);
+        setScanComplete(false);
+        scanStartedAtRef.current = null;
+        clearScanSession();
         setLastSearched({ name: query, game, pin: resolvedPin });
         if (fastEntry.pricesStale) topUpPrices(query, game, ++navTokenRef.current, resolvedPin);
         if (!fastEntry.data.printing) fillPrinting(query, game, navTokenRef.current, resolvedPin);
+        scrollResultFirst();
         return;
       }
     }
@@ -178,8 +219,14 @@ export default function SignalDashboard() {
       if (entry) {
         setCardImageUrl(null);
         setResult(entry.data);
+        setLoading(false);
+        setPendingCard(null);
+        setScanComplete(false);
+        scanStartedAtRef.current = null;
+        clearScanSession();
         if (entry.pricesStale) topUpPrices(resolvedName, resolvedGame, ++navTokenRef.current, resolvedPin);
         if (!entry.data.printing) fillPrinting(resolvedName, resolvedGame, navTokenRef.current, resolvedPin);
+        scrollResultFirst();
         return;
       }
     }
@@ -189,6 +236,17 @@ export default function SignalDashboard() {
     setResult(null);
     setCardImageUrl(null);
     setPendingCard({ name: resolvedName, game: resolvedGame });
+    setScanComplete(false);
+
+    const startedAt = Number(resumeStartedAt) || Date.now();
+    scanStartedAtRef.current = startedAt;
+    savePendingScanSession({
+      name: resolvedName,
+      game: resolvedGame,
+      pin: resolvedPin,
+      force,
+      startedAt,
+    });
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -200,7 +258,7 @@ export default function SignalDashboard() {
 
     // Foreground service keeps the request alive if the user minimizes the app
     // mid-scan (Android/Samsung otherwise freezes the app and aborts the fetch).
-    startScanKeepAlive();
+    await startScanKeepAlive();
 
     try {
       const raw = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal, pin: resolvedPin });
@@ -208,15 +266,32 @@ export default function SignalDashboard() {
       // If goHome() bumped the nav token while we were scanning, the user has
       // already left the result page — do NOT yank them back by setting result.
       if (myToken !== navTokenRef.current) return;
-      setResult(data);
       // Cache under BOTH the input game and the LLM-detected game so future
       // clicks from any surface hit the cache.
       setCachedScan(resolvedName, resolvedGame, data, resolvedPin);
       if (data?.game && data.game !== resolvedGame) {
         setCachedScan(resolvedName, data.game, data, resolvedPin);
       }
+      // Save the answer before touching the screen. If Android rebuilds the
+      // activity at this exact moment, the next WebView opens on the answer.
+      saveCompletedScanSession({
+        name: resolvedName,
+        game: resolvedGame,
+        pin: resolvedPin,
+        result: data,
+      });
+      setScanComplete(true);
+      // Let the steady bar visibly land on 100 before replacing it.
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      if (myToken !== navTokenRef.current) return;
+      setResult(data);
+      if (document.visibilityState === 'visible') {
+        clearScanSession();
+        scrollResultFirst();
+      }
     } catch (err) {
       if (myToken !== navTokenRef.current) return;
+      clearScanSession();
       if (err.name === 'AbortError') {
         setError('Scan exceeded 120 seconds. Network or model congestion — retry.');
       } else {
@@ -229,9 +304,53 @@ export default function SignalDashboard() {
       if (myToken === navTokenRef.current) {
         setLoading(false);
         setPendingCard(null);
+        setScanComplete(false);
+        scanStartedAtRef.current = null;
       }
     }
   };
+
+  // A finished scan may land while another app is on screen. On return, put
+  // Signal on the result and move that result to the top of the viewport.
+  useEffect(() => {
+    const showFinishedScan = () => {
+      if (document.visibilityState !== 'visible') return;
+      const session = loadRecoverableScanSession();
+      if (session?.status !== 'complete') return;
+      setPage('signal');
+      setResult(session.result);
+      setLastSearched({ name: session.name, game: session.game, pin: session.pin || null });
+      setLoading(false);
+      setPendingCard(null);
+      setScanComplete(false);
+      scanStartedAtRef.current = null;
+      clearScanSession();
+      scrollResultFirst();
+    };
+
+    document.addEventListener('visibilitychange', showFinishedScan);
+    return () => document.removeEventListener('visibilitychange', showFinishedScan);
+  }, []);
+
+  // If Android rebuilt the activity, either show the saved answer at once or
+  // reconnect the pending request. The gateway cache makes a finished server
+  // job return quickly even if the old WebView died before recording it.
+  useEffect(() => {
+    if (!initialScanSession || recoveryStartedRef.current) return;
+    recoveryStartedRef.current = true;
+
+    if (initialScanSession.status === 'complete') {
+      clearScanSession();
+      scrollResultFirst();
+      return;
+    }
+
+    handleSearch(initialScanSession.name, initialScanSession.game, {
+      force: initialScanSession.force,
+      pin: initialScanSession.pin || null,
+      resumeStartedAt: initialScanSession.startedAt,
+    });
+  }, []);
 
   const scoreDetails = result
     ? calculateScoreDetails(result.signals || [], result.game)
@@ -417,6 +536,8 @@ export default function SignalDashboard() {
             cardName={pendingCard?.name}
             game={pendingCard?.game}
             onCancel={goHome}
+            startedAt={scanStartedAtRef.current}
+            complete={scanComplete}
           />
         </div>
       )}
@@ -426,9 +547,14 @@ export default function SignalDashboard() {
         <>
           {/* Result-page actions: back to dashboard + save as PDF.
               Save PDF captures the #signal-report-capture wrapper below. */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+          <div ref={resultTopRef} style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
             <button
-              onClick={() => { setResult(null); setCardImageUrl(null); setLastSearched(null); }}
+              onClick={() => {
+                clearScanSession();
+                setResult(null);
+                setCardImageUrl(null);
+                setLastSearched(null);
+              }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

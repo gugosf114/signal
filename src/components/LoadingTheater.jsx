@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { fetchCardImage } from '../services/fetchCardImage';
 import { BrandIcon } from '../config/brandIcons';
 import { SIGNAL_TYPES } from '../config/signals';
+import { expectedScanDurationMs, linearScanProgress } from '../services/scanProgress';
 
 // ─── Loading Theater ─────────────────────────────────────────────────────────
 // Tokyo desk at 3am. Solari flip-board × Bloomberg INFO panel × CRT terminal.
@@ -181,8 +182,8 @@ const SOLARI_GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789▲▼◆▸▤▦株
 const TICKER_EN = '▲ TCGPLAYER ▼ EBAY ◆ LIMITLESS ▸ POKEBEACH ▲ GAME8 ▼ MTGGOLDFISH ◆ TCGFISH ▸ ';
 const TICKER_JP = '株 渡日 ⛩ ポケビーチ 株 発売日 ⛩ 注目 株 渡日 ⛩ ポケビーチ 株 発売日 ⛩ 注目 ';
 
-export default function LoadingTheater({ cardName, game, onCancel }) {
-  const [start] = useState(() => Date.now());
+export default function LoadingTheater({ cardName, game, onCancel, startedAt = null, complete = false }) {
+  const [start] = useState(() => Number(startedAt) || Date.now());
   const [now, setNow] = useState(Date.now());
   const [cardImageUrl, setCardImageUrl] = useState(null);
   const rootRef = useRef(null);
@@ -205,10 +206,6 @@ export default function LoadingTheater({ cardName, game, onCancel }) {
   // Which show to run, and how fast, both follow the real scan shape.
   const phases = useMemo(() => phasesForGame(game), [game]);
   const phaseMs = NO_SEARCH_GAMES.has((game || '').toLowerCase()) ? FAST_PHASE_MS : SLOW_PHASE_MS;
-  // Estimated progress never reaches the end while work is still running.
-  // The result unmounts this screen; until then 95% is the visible ceiling.
-  const nominalScanMs = phases.length * phaseMs;
-
   const elapsed = now - start;
   const rawIdx = Math.floor(elapsed / phaseMs);
   let phaseIdx;
@@ -224,9 +221,7 @@ export default function LoadingTheater({ cardName, game, onCancel }) {
   const inPhase = elapsed - rawIdx * phaseMs;
   const detailIdx = Math.min(phase.details.length - 1, Math.floor(inPhase / DETAIL_MS));
 
-  const progress = elapsed < nominalScanMs
-    ? Math.min(0.88, (elapsed / nominalScanMs) * 0.88)
-    : Math.min(0.95, 0.88 + 0.07 * (1 - Math.exp(-(elapsed - nominalScanMs) / 18000)));
+  const progress = linearScanProgress(elapsed, expectedScanDurationMs(game), complete);
 
   return (
     <div ref={rootRef} className="lt-canvas" data-jp={phase.jp || undefined}>
@@ -236,7 +231,7 @@ export default function LoadingTheater({ cardName, game, onCancel }) {
 
       <div className="lt-top">
         <PhasePips phases={phases} activeIdx={phaseIdx} />
-        <ScanProgressBar percent={progress * 100} accent={phase.color} />
+        <ScanProgressBar percent={progress} accent={phase.color} />
         <div className="lt-top-row">
           <CardSlate cardName={cardName} game={game} onImageLoad={setCardImageUrl} />
           <div className="lt-top-right">
@@ -360,7 +355,7 @@ function ScanProgressBar({ percent, accent }) {
           width: `${pct}%`,
           background: `linear-gradient(90deg, ${accent}77 0%, ${accent} 100%)`,
           boxShadow: `0 0 10px ${accent}88, 0 0 2px ${accent}`,
-          transition: 'width 0.18s ease-out',
+          transition: 'width 0.25s linear',
           borderRadius: 1,
         }} />
         {/* Leading edge — a hair brighter than the fill, suggests motion */}
