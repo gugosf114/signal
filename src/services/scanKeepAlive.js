@@ -24,3 +24,18 @@ export async function stopScanKeepAlive() {
     console.warn('[signal] stopScanKeepAlive failed (non-fatal):', e?.message ?? e);
   }
 }
+
+// Own one uninterrupted foreground-service lease across a multi-step scan.
+// Camera scans identify the photo, resolve its catalogue printing, and only
+// then enter analyzeCard. Without this wrapper Android can freeze the WebView
+// during those first seconds, before SignalDashboard starts its own lease.
+export async function withScanKeepAlive(work, controls = {}) {
+  const start = controls.start || startScanKeepAlive;
+  const stop = controls.stop || stopScanKeepAlive;
+  await start();
+  try {
+    return await work();
+  } finally {
+    await stop();
+  }
+}

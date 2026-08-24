@@ -3,6 +3,7 @@ import { scanCardImage } from '../services/scanCardImage';
 import { suggestCards, resolvePrinting } from '../services/fetchExpansions';
 import { looksLikeSetCode } from '../services/lookupBySetCode';
 import { saveScannedCardImage } from '../services/scannedCardImage';
+import { withScanKeepAlive } from '../services/scanKeepAlive';
 import CardScanner from './CardScanner';
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
@@ -142,7 +143,7 @@ export default function SearchBar({ onSearch, loading }) {
     }
   };
 
-  const identifyFile = async (file, framed = false) => {
+  const identifyFile = (file, framed = false) => withScanKeepAlive(async () => {
       const card = await scanCardImage(file, { framed });
       // The photo showed one specific printing and the scanner read its set and
       // number off the card. Turn that into a catalogue row so the scan is
@@ -161,8 +162,8 @@ export default function SearchBar({ onSearch, loading }) {
       quietFor.current = card.name;
       setQuery(card.name);
       setOpen(false);
-      onSearch(card.name, exactPin.game || card.game || null, { pin: exactPin });
-  };
+      await onSearch(card.name, exactPin.game || card.game || null, { pin: exactPin });
+  });
 
   const openPhotoMenu = () => {
     setScanError(null);
