@@ -1468,7 +1468,11 @@
   border: 1px solid rgba(245, 241, 232, 0.72);
   border-radius: 8px;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.58);
+  cursor: crosshair;
+  touch-action: manipulation;
+  outline: none;
 }
+.live-card-frame:focus-visible { border-color: #F5F1E8; }
 .live-card-frame .corner { position: absolute; width: 34px; height: 34px; border-color: #E96565; border-style: solid; }
 .live-card-frame .corner-tl { left: -3px; top: -3px; border-width: 3px 0 0 3px; border-radius: 8px 0 0; }
 .live-card-frame .corner-tr { right: -3px; top: -3px; border-width: 3px 3px 0 0; border-radius: 0 8px 0 0; }
@@ -1490,6 +1494,23 @@
   font: 700 8px 'JetBrains Mono', monospace;
   letter-spacing: 0.1em;
   text-shadow: 0 1px 5px #000;
+  pointer-events: none;
+}
+.live-focus-ring {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  border: 2px solid #FFE5A0;
+  border-radius: 8px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.45), 0 0 12px rgba(255,229,160,0.35);
+  pointer-events: none;
+  animation: liveFocus 0.72s ease-out both;
+}
+@keyframes liveFocus {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.45); }
+  28% { opacity: 1; }
+  100% { opacity: 0.72; transform: translate(-50%, -50%) scale(1); }
 }
 .live-scanner-bottom {
   position: absolute;
@@ -1517,7 +1538,16 @@
   background: rgba(0,0,0,0.28);
   cursor: pointer;
 }
-.live-shutter span { display: block; width: 100%; height: 100%; border-radius: 50%; background: #C44040; }
+.live-shutter span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #C44040;
+}
+.live-shutter svg { width: 30px; height: 30px; fill: none; stroke: #FFF; stroke-width: 1.8; stroke-linejoin: round; }
 .live-shutter:disabled { opacity: 0.38; cursor: default; }
 .live-scanner-error {
   position: absolute;
