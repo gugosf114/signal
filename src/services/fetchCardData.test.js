@@ -1,7 +1,7 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { fetchCardData } from './fetchCardData.js';
+import { applyTrustedMarketPrice, fetchCardData } from './fetchCardData.js';
 
 const originalFetch = globalThis.fetch;
 
@@ -60,6 +60,34 @@ describe('fetchCardData exact-print contract', () => {
     assert.equal(result.printingId, '89631139:LDK2-ENJ01');
     assert.equal(result.priceLines[0], 'Market price: $8.40');
     assert.equal(result.priceScope, 'set-code printing');
+  });
+
+  test('an exact Yu-Gi-Oh printing never inherits the cheap card-wide price', async () => {
+    globalThis.fetch = async () => response(200, {
+      data: [{
+        id: 32807846,
+        name: 'Reinforcement of the Army',
+        card_prices: [{ tcgplayer_price: '0.13', cardmarket_price: '0.09' }],
+        card_images: [{ image_url: 'https://img.example.com/rota.jpg' }],
+        card_sets: [
+          {
+            set_name: 'Legendary Modern Decks 2026',
+            set_code: 'L26D-ENS08',
+            set_rarity: 'Starlight Rare',
+            set_price: '0',
+          },
+        ],
+      }],
+    });
+
+    const result = await fetchCardData('Reinforcement of the Army', 'yugioh', {
+      id: '32807846', game: 'yugioh', setName: 'Legendary Modern Decks 2026',
+      setId: 'L26D-ENS08', number: 'L26D-ENS08', rarity: 'Starlight Rare',
+    });
+
+    assert.equal(result.priceLines, null);
+    assert.equal(result.priceScope, 'exact-print price unavailable');
+    assert.equal(applyTrustedMarketPrice({ en_price: '$0.13' }, result, null).en_price, '');
   });
 
   test('Pokemon suffixes remain part of an unpinned exact-name lookup', async () => {

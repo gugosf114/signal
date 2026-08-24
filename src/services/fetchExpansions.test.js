@@ -51,6 +51,14 @@ describe('Yu-Gi-Oh printing rows', () => {
     assert.equal(rows.length, 1);
     assert.equal(rows[0].number, 'LDK2-ENJ01');
   });
+
+  test('an exact row with no exact price does not inherit the broad card price', () => {
+    const rows = ygoPrintingRows(reinforcement);
+    assert.equal(rows[2].number, 'L26D-ENS08');
+    assert.equal(rows[2].rarity, 'Starlight Rare');
+    assert.equal(rows[2].price, null);
+    assert.equal(rows[2].priceScope, 'exact-print price unavailable');
+  });
 });
 
 describe('short name + last digits lookup', () => {

@@ -91,9 +91,10 @@ export function ygoPrintingRows(card, wantedSet = null) {
   return rows.map((entry) => {
     const exactPrice = Number(entry?.set_price);
     const broadPrice = Number(card?.card_prices?.[0]?.tcgplayer_price);
+    const exactPrinting = Boolean(entry?.set_code);
     const price = Number.isFinite(exactPrice) && exactPrice > 0
       ? exactPrice
-      : (Number.isFinite(broadPrice) && broadPrice > 0 ? broadPrice : null);
+      : (!exactPrinting && Number.isFinite(broadPrice) && broadPrice > 0 ? broadPrice : null);
     return {
     id: card?.id != null ? String(card.id) : null,
     printingId: entry?.set_code && card?.id != null ? `${card.id}:${entry.set_code}` : (card?.id != null ? String(card.id) : null),
@@ -107,7 +108,7 @@ export function ygoPrintingRows(card, wantedSet = null) {
     marketPrices: { normal: price, reverse: null },
     priceScope: Number.isFinite(exactPrice) && exactPrice > 0
       ? 'set-code printing'
-      : 'card-level across all printings',
+      : (exactPrinting ? 'exact-print price unavailable' : 'card-level across all printings'),
     imageUrl: card?.card_images?.[0]?.image_url_small || null,
     imageLarge: card?.card_images?.[0]?.image_url || card?.card_images?.[0]?.image_url_small || null,
     };

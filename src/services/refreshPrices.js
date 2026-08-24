@@ -5,10 +5,11 @@
 // scan pre-fetch already uses. Pull it directly and patch the cached result.
 //
 // Returns a `prices`-shaped patch ({ en_price }) or null if nothing usable came
-// back. Never throws: a failed top-up leaves the cached price in place, which
-// is strictly better than blanking it.
+// back. Never throws. A failed top-up keeps the cached price, except when the
+// exact-print source explicitly says no exact price exists; that clears an old
+// broad card-level number instead of preserving a known wrong price.
 
-import { fetchCardData } from './fetchCardData';
+import { fetchCardData } from './fetchCardData.js';
 
 // priceLines come back per game as:
 //   pokemon  "Holofoil: $12.34 market / $10.00 low / $15.00 high"
@@ -30,11 +31,15 @@ function headlinePrice(priceLines) {
 export async function refreshPrices(cardName, game, pin = null) {
   try {
     const data = await fetchCardData(cardName, game, pin);
-    if (!data) return null;
-    const en = headlinePrice(data.priceLines);
-    if (!en) return null;
-    return { en_price: en };
+    return pricePatchFromCardData(data);
   } catch {
     return null;
   }
+}
+
+export function pricePatchFromCardData(data) {
+  if (!data) return null;
+  if (data.priceScope === 'exact-print price unavailable') return { en_price: '' };
+  const en = headlinePrice(data.priceLines);
+  return en ? { en_price: en } : null;
 }

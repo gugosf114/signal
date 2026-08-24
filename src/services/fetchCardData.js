@@ -242,10 +242,13 @@ function shapeYGO(card, pin = null) {
   const priceLines = [];
   const exactSetPrice = Number(chosen?.set_price);
   const hasExactSetPrice = Number.isFinite(exactSetPrice) && exactSetPrice > 0;
+  const exactPrintingRequested = Boolean(pin && chosen?.set_code);
   const nonZero = (v) => v && v !== '0.00';
   if (hasExactSetPrice) priceLines.push(`Market price: $${exactSetPrice.toFixed(2)}`);
-  else if (nonZero(p.tcgplayer_price)) priceLines.push(`Market price across printings: $${p.tcgplayer_price}`);
-  if (!hasExactSetPrice && nonZero(p.cardmarket_price)) priceLines.push(`Cardmarket across printings: €${p.cardmarket_price}`);
+  else if (!exactPrintingRequested && nonZero(p.tcgplayer_price)) priceLines.push(`Market price across printings: $${p.tcgplayer_price}`);
+  if (!hasExactSetPrice && !exactPrintingRequested && nonZero(p.cardmarket_price)) {
+    priceLines.push(`Cardmarket across printings: €${p.cardmarket_price}`);
+  }
 
   const recentSets = (card.card_sets || [])
     .slice(-3)
@@ -267,10 +270,19 @@ function shapeYGO(card, pin = null) {
     race: card.race,
     archetype: card.archetype,
     priceLines: priceLines.length ? priceLines : null,
-    priceScope: hasExactSetPrice ? 'set-code printing' : 'card-level across all printings',
+    priceScope: hasExactSetPrice
+      ? 'set-code printing'
+      : (exactPrintingRequested ? 'exact-print price unavailable' : 'card-level across all printings'),
     recentSets: recentSets.length ? recentSets : null,
     imageUrl: card.card_images?.[0]?.image_url,
   };
+}
+
+export function applyTrustedMarketPrice(prices, cardData, currentPrice) {
+  const clean = { ...(prices || {}) };
+  if (currentPrice !== null) clean.en_price = `$${currentPrice.toFixed(2)}`;
+  else if (cardData?.priceScope === 'exact-print price unavailable') clean.en_price = '';
+  return clean;
 }
 
 // ─── Prompt injection helper ──────────────────────────────────────────────────

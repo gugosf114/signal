@@ -7,7 +7,7 @@
 
 import { creatorListForPrompt } from '../config/creators';
 import { calculateOverallScore, SCORE_VERSION } from '../config/signals';
-import { fetchCardData, buildCardDataBlock } from './fetchCardData';
+import { applyTrustedMarketPrice, fetchCardData, buildCardDataBlock } from './fetchCardData';
 import { toPrinting } from './printing';
 import { fetchCommunity, communityBlock } from './fetchCommunity';
 import { fetchCreators, creatorsBlock } from './fetchCreators';
@@ -22,6 +22,7 @@ import {
 import { tryParseSignalJSON } from './jsonRepair';
 import { normalizeAnalysis } from './validateAnalysis';
 import { recordSignalMeasurement, sharedAnalyze } from './signalGateway';
+import { selectSearchTargets } from './searchBudget';
 
 // Two-tier model selection. When the pre-fetch has already answered everything
 // (MTG resolves with 0 web_searches), the model is only judging supplied facts
@@ -147,24 +148,11 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   // search for what the parallel pre-fetch can't cover, and gate by game so we
   // never pay for irrelevant searches (e.g. JP/tournament for an MTG card).
   const resolvedGame = (game || cardData?.game || '').toLowerCase();
-  const searchTargets = [];
-  // The JP yen price is no longer scored or displayed. It was the only part of
-  // the Japan angle that required a live web_search — Mercari JP and Yahoo
-  // Auctions JP have no free API — and it frequently came back N/A because the
-  // card has no direct OCG printing. JP buzz (YouTube, region JP) and JP release
-  // timing still come from the free pre-fetch, so the Japan section keeps its two
-  // leading indicators at zero search cost.
-  // Tournament/competitive: only search if we don't already have structured data.
-  // YGO banlist and MTG legality come from catalyst pre-fetch. Pokémon needs Limitless.
-  if (resolvedGame === 'pokemon')
-    searchTargets.push('Tournament — Limitless usage / ban list');
-  else if ((resolvedGame === 'yugioh' || resolvedGame === 'mtg') && !catalysts)
-    searchTargets.push('Tournament / competitive usage + ban status');
-  if (!community) searchTargets.push('Recent community coverage — Reddit');
-  if (!creators) searchTargets.push('Recent creator coverage — YouTube');
-  // eBay is no longer searched — it comes only from the eBay Browse pre-fetch (keyed).
-
-  const maxSearches = searchTargets.length; // 0 for MTG and Yu-Gi-Oh, 1 for Pokémon
+  // The gateway permits two searches. When several free pre-fetches fail at
+  // once, keep the two highest-priority gaps instead of sending a request the
+  // gateway must reject before analysis begins.
+  const searchTargets = selectSearchTargets(resolvedGame, { catalysts, community, creators });
+  const maxSearches = searchTargets.length;
 
   // Every URL handed to the model in a pre-fetch block is REAL — it came from a
   // live API call we made ourselves. The citation filter below must know about
@@ -285,7 +273,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       const clean = filterHallucinatedSources(normalized, realUrls);
       if (printingInfo) clean.printing = printingInfo;
       const currentPrice = firstMarketPrice(cardData?.priceLines);
-      if (currentPrice !== null) clean.prices.en_price = `$${currentPrice.toFixed(2)}`;
+      clean.prices = applyTrustedMarketPrice(clean.prices, cardData, currentPrice);
       const score = calculateOverallScore(clean.signals, clean.game);
       clean._signalScore = score;
       clean._sharedCache = Boolean(shared.cached);
