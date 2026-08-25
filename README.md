@@ -7,7 +7,7 @@ with the debug key, the same one every previous sideload used, so it installs
 straight over the existing app as an update and keeps your scan history. To
 start clean instead, uninstall Signal first and then open the file.
 
-Built from `ef5d56f`. All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio-assets/releases).
+Built from `f63840b`. All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio-assets/releases).
 
 The APK lives on the private `portfolio-assets` repo rather than here, because
 the build compiles `VITE_ANTHROPIC_API_KEY` into the bundle — a public download
@@ -35,7 +35,7 @@ Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
   `@capacitor/filesystem`, Capacitor 8 (Android wrapper), no TypeScript
 - Dev server: `npm run dev` → http://localhost:3000
 - Tests: `npm test` → Node's built-in runner. No test framework, no new
-  dependency. 158 JavaScript tests plus 3 Python backtest tests. Test files are listed explicitly in the `test` script rather
+  dependency. 162 JavaScript tests plus 3 Python backtest tests. Test files are listed explicitly in the `test` script rather
   than passed as a directory — Node 20 globs a directory argument, Node 22
   (what CI runs) tries to load it as a module. Add new test files to that list.
 - Android: `cd android && ./gradlew assembleDebug` → APK at
@@ -1159,13 +1159,25 @@ seconds; the service stayed alive through identification, exact-print lookup,
 local-art save, and cached report retrieval. After a forced activity restart,
 Signal reopened directly on the completed exact ROTA answer.
 
+**Live focus repair.** Samsung had been free to select an auxiliary rear lens,
+and Signal never requested a focus mode. The scanner now requires a rear
+camera, prefers the main lens over ultra-wide/tele/macro devices, fixes logical
+camera zoom at 1×, requests continuous autofocus, supports tap-to-focus, and
+runs one final center focus before capture. The shutter resets on every open
+and carries a camera icon instead of an empty video-like control. While the
+scanner is open, Android hides third-party floating bubbles so no round overlay
+can be mistaken for the shutter or cover the card. On the phone, the camera
+reported Auto focus on, a frame tap reported Focused, the photo button was
+enabled, the WiM bubble disappeared inside the scanner, and it returned after
+Cancel.
+
 **Collection.** The exact ROTA copy added with a blank price, Starlight rarity,
 near-mint condition, and its local clean image. Card count, unpriced subtotal,
 JSON backup, CSV export, app-restart persistence, card viewer, two-step Remove
 All, and return to the empty state all passed on-device. The test holding and
 its temporary export files were removed afterward.
 
-**Proof.** 158 JavaScript tests plus 3 Python tests pass. GitHub's web and
-Android jobs passed for `ef5d56f`. The APK was checked for embedded Anthropic
+**Proof.** 162 JavaScript tests plus 3 Python tests pass. GitHub's web and
+Android jobs passed for `f63840b`. The APK was checked for embedded Anthropic
 keys (zero), signed with the existing phone key, installed over 2.9, and
 published privately as `signal-v2.9`.
