@@ -3,6 +3,7 @@ import { fetchCardImage } from '../services/fetchCardImage';
 import { BrandIcon } from '../config/brandIcons';
 import { SIGNAL_TYPES } from '../config/signals';
 import { expectedScanDurationMs, linearScanProgress } from '../services/scanProgress';
+import { printingLabel } from '../services/printing';
 
 // ─── Loading Theater ─────────────────────────────────────────────────────────
 // Tokyo desk at 3am. Solari flip-board × Bloomberg INFO panel × CRT terminal.
@@ -182,7 +183,7 @@ const SOLARI_GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789▲▼◆▸▤▦株
 const TICKER_EN = '▲ TCGPLAYER ▼ EBAY ◆ LIMITLESS ▸ POKEBEACH ▲ GAME8 ▼ MTGGOLDFISH ◆ TCGFISH ▸ ';
 const TICKER_JP = '株 渡日 ⛩ ポケビーチ 株 発売日 ⛩ 注目 株 渡日 ⛩ ポケビーチ 株 発売日 ⛩ 注目 ';
 
-export default function LoadingTheater({ cardName, game, onCancel, startedAt = null, complete = false }) {
+export default function LoadingTheater({ cardName, game, pin = null, onCancel, startedAt = null, complete = false }) {
   const [start] = useState(() => Number(startedAt) || Date.now());
   const [now, setNow] = useState(Date.now());
   const [cardImageUrl, setCardImageUrl] = useState(null);
@@ -234,7 +235,7 @@ export default function LoadingTheater({ cardName, game, onCancel, startedAt = n
         <PhasePips phases={phases} activeIdx={phaseIdx} />
         <ScanProgressBar percent={progress} accent={phase.color} />
         <div className="lt-top-row">
-          <CardSlate cardName={cardName} game={game} onImageLoad={setCardImageUrl} />
+          <CardSlate cardName={cardName} game={game} pin={pin} onImageLoad={setCardImageUrl} />
           <div className="lt-top-right">
             <LiveClock />
             <MarketsBadge />
@@ -409,22 +410,25 @@ function PhasePips({ phases, activeIdx }) {
   );
 }
 
-function CardSlate({ cardName, game, onImageLoad }) {
+function CardSlate({ cardName, game, pin, onImageLoad }) {
   const [imgUrl, setImgUrl] = useState(null);
+  const pinKey = [pin?.printingId || pin?.id || '', pin?.scanImagePath || ''].join(':');
+  const exactPrinting = printingLabel(pin);
   useEffect(() => {
     let cancelled = false;
     if (!cardName) return;
-    fetchCardImage(cardName, game).then((url) => {
+    setImgUrl(null);
+    fetchCardImage(cardName, game, pin).then((url) => {
       if (!cancelled && url) {
         setImgUrl(url);
         onImageLoad?.(url);
       }
     });
     return () => { cancelled = true; };
-  }, [cardName, game]);
+  }, [cardName, game, pinKey]);
 
   return (
-    <div className="lt-cardslate">
+    <div className="lt-cardslate" data-printing-id={pin?.printingId || pin?.id || undefined}>
       <div className="lt-cardslate-thumb" aria-hidden>
         {imgUrl ? (
           <img src={imgUrl} alt="" className="lt-cardslate-img" />
@@ -435,6 +439,7 @@ function CardSlate({ cardName, game, onImageLoad }) {
       <div className="lt-cardslate-meta">
         <div className="lt-cardslate-label">SCANNING</div>
         <div className="lt-cardslate-name">{cardName || '—'}</div>
+        {exactPrinting && <div className="lt-cardslate-printing">{exactPrinting}</div>}
       </div>
     </div>
   );

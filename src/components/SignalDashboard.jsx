@@ -28,6 +28,7 @@ import { refreshPrices } from '../services/refreshPrices';
 import { startScanKeepAlive, stopScanKeepAlive } from '../services/scanKeepAlive';
 import { hasPrintingPin, nameClaimsExactPrinting } from '../services/recentScans';
 import { recordScanDuration } from '../services/scanProgress';
+import { pendingScanCard } from '../services/pendingScan';
 import {
   clearScanSession,
   loadRecoverableScanSession,
@@ -63,7 +64,7 @@ export default function SignalDashboard() {
   const [error, setError] = useState(null);
   const [pendingCard, setPendingCard] = useState(() =>
     initialScanSession?.status === 'pending'
-      ? { name: initialScanSession.name, game: initialScanSession.game }
+      ? pendingScanCard(initialScanSession.name, initialScanSession.game, initialScanSession.pin || null)
       : null
   );
   const [lastSearched, setLastSearched] = useState(() =>
@@ -260,7 +261,7 @@ export default function SignalDashboard() {
     setLoading(true);
     setResult(null);
     setCardImageUrl(null);
-    setPendingCard({ name: resolvedName, game: resolvedGame });
+    setPendingCard(pendingScanCard(resolvedName, resolvedGame, resolvedPin));
     setScanComplete(false);
 
     const startedAt = Number(resumeStartedAt) || Date.now();
@@ -572,6 +573,7 @@ export default function SignalDashboard() {
           <LoadingTheater
             cardName={pendingCard?.name}
             game={pendingCard?.game}
+            pin={pendingCard?.pin}
             onCancel={goHome}
             startedAt={scanStartedAtRef.current}
             complete={scanComplete}

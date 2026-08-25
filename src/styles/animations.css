@@ -295,6 +295,15 @@
   text-overflow: ellipsis;
   max-width: 280px;
 }
+.lt-cardslate-printing {
+  max-width: 280px;
+  overflow: hidden;
+  color: #7A7368;
+  font: 700 8px/1.35 'JetBrains Mono', monospace;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Top-right cluster */
 .lt-top-right {
@@ -856,6 +865,7 @@
     max-width: 160px;
     font-size: 14px;
   }
+  .lt-cardslate-printing { max-width: 160px; }
   .lt-top-row {
     gap: 8px;
   }
