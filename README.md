@@ -7,7 +7,7 @@ with the debug key, the same one every previous sideload used, so it installs
 straight over the existing app as an update and keeps your scan history. To
 start clean instead, uninstall Signal first and then open the file.
 
-Built from `f63840b`. All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio-assets/releases).
+Built from `e17d7ea`. All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio-assets/releases).
 
 The APK lives on the private `portfolio-assets` repo rather than here, because
 the build compiles `VITE_ANTHROPIC_API_KEY` into the bundle — a public download
@@ -35,7 +35,7 @@ Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
   `@capacitor/filesystem`, Capacitor 8 (Android wrapper), no TypeScript
 - Dev server: `npm run dev` → http://localhost:3000
 - Tests: `npm test` → Node's built-in runner. No test framework, no new
-  dependency. 162 JavaScript tests plus 3 Python backtest tests. Test files are listed explicitly in the `test` script rather
+  dependency. 165 JavaScript tests plus 3 Python backtest tests. Test files are listed explicitly in the `test` script rather
   than passed as a directory — Node 20 globs a directory argument, Node 22
   (what CI runs) tries to load it as a module. Add new test files to that list.
 - Android: `cd android && ./gradlew assembleDebug` → APK at
@@ -1171,13 +1171,23 @@ reported Auto focus on, a frame tap reported Focused, the photo button was
 enabled, the WiM bubble disappeared inside the scanner, and it returned after
 Cancel.
 
+**Exact loading art.** The loading theater used to throw away the selected
+catalogue row and search by name again. A full-art card could therefore show a
+cheaper or older image while its exact report was correctly running. Pending
+scan state now keeps the same printing pin chosen in search or resolved from a
+camera/upload. The loading card slate uses that exact image and prints the set,
+collector number, and rarity beneath the name. A Captain America full-art
+check resolved suggestion ID `7ffdca9d-3ee4-4572-b1ad-4f03523968fd` in both
+the loading image path and the final result instead of the generic-name image
+`33631d6c-c584-42ff-afe5-2647b5fb321f`.
+
 **Collection.** The exact ROTA copy added with a blank price, Starlight rarity,
 near-mint condition, and its local clean image. Card count, unpriced subtotal,
 JSON backup, CSV export, app-restart persistence, card viewer, two-step Remove
 All, and return to the empty state all passed on-device. The test holding and
 its temporary export files were removed afterward.
 
-**Proof.** 162 JavaScript tests plus 3 Python tests pass. GitHub's web and
-Android jobs passed for `f63840b`. The APK was checked for embedded Anthropic
+**Proof.** 165 JavaScript tests plus 3 Python tests pass. GitHub's web and
+Android jobs passed for `e17d7ea`. The APK was checked for embedded Anthropic
 keys (zero), signed with the existing phone key, installed over 2.9, and
 published privately as `signal-v2.9`.
