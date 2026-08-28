@@ -21,13 +21,20 @@ export function selectTcgplayerPrice(details, printing) {
   const wantedRarity = key(printing?.rarity);
 
   const matches = (Array.isArray(details) ? details : []).filter((item) => {
-    const productName = key(item?.productName).replace(/ starlight rare$| secret rare$| ultra rare$/g, '').trim();
+    const productName = key(item?.productName);
+    // TCGplayer appends the printing label in parentheses for many Yu-Gi-Oh
+    // products: "Card (Platinum Secret Rare)", "Card (QCSR)", "Card (PCR)".
+    // Compare the exact title first, then the same title without one trailing
+    // parenthetical. The set code and rarity checks below still guard identity.
+    const baseProductName = key(String(item?.productName || '').replace(/\s*\([^)]*\)\s*$/, ''));
     const number = key(item?.customAttributes?.number);
     const rarity = key(item?.rarityName || item?.customAttributes?.rarityDbName);
-    return productName === wantedName
+    const rarityWithoutPrismatic = rarity.replace(/^prismatic /, '');
+    const wantedWithoutPrismatic = wantedRarity.replace(/^prismatic /, '');
+    return (productName === wantedName || baseProductName === wantedName)
       && (!wantedSet || key(item?.setName) === wantedSet)
       && (!wantedNumber || number === wantedNumber)
-      && (!wantedRarity || rarity === wantedRarity);
+      && (!wantedRarity || rarity === wantedRarity || rarityWithoutPrismatic === wantedWithoutPrismatic);
   });
 
   if (matches.length !== 1) return null;

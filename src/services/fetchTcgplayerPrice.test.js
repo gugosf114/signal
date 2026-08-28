@@ -34,6 +34,24 @@ const starlight = {
   customAttributes: { number: 'BLZD-EN024' },
 };
 
+const platinum = {
+  productId: 524687,
+  productName: 'Reinforcement of the Army (Platinum Secret Rare)',
+  setName: '25th Anniversary Rarity Collection',
+  rarityName: 'Platinum Secret Rare',
+  marketPrice: 5.08,
+  customAttributes: { number: 'RA01-EN051' },
+};
+
+const collector = {
+  productId: 524691,
+  productName: 'Reinforcement of the Army (PCR)',
+  setName: '25th Anniversary Rarity Collection',
+  rarityName: "Prismatic Collector's Rare",
+  marketPrice: 1.25,
+  customAttributes: { number: 'RA01-EN051' },
+};
+
 describe('TCGplayer exact-print price', () => {
   test('chooses the matching rarity instead of the cheaper same-code card', () => {
     const result = selectTcgplayerPrice([secret, starlight], printing);
@@ -72,5 +90,29 @@ describe('TCGplayer exact-print price', () => {
     assert.equal(result.price, 175.54);
     assert.equal(result.priceSource, 'TCGplayer');
     assert.equal(result.tcgplayerProductId, 692267);
+  });
+
+  test('reads parenthetical rarity products from Rarity Collection', () => {
+    const result = selectTcgplayerPrice([platinum], {
+      name: 'Reinforcement of the Army',
+      game: 'yugioh',
+      setName: '25th Anniversary Rarity Collection',
+      number: 'RA01-EN051',
+      rarity: 'Platinum Secret Rare',
+    });
+    assert.equal(result?.price, 5.08);
+    assert.equal(result?.productId, 524687);
+  });
+
+  test("matches YGOPRODeck Collector's Rare to TCGplayer's Prismatic name", () => {
+    const result = selectTcgplayerPrice([collector], {
+      name: 'Reinforcement of the Army',
+      game: 'yugioh',
+      setName: '25th Anniversary Rarity Collection',
+      number: 'RA01-EN051',
+      rarity: "Collector's Rare",
+    });
+    assert.equal(result?.price, 1.25);
+    assert.equal(result?.productId, 524691);
   });
 });
