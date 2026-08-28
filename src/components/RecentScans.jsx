@@ -115,7 +115,7 @@ export default function RecentScans({ onSelect, loading }) {
               disabled={loading}
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1.25fr) minmax(0, 0.75fr) 72px',
+                gridTemplateColumns: '72px minmax(0, 1.25fr) minmax(0, 0.75fr)',
                 alignItems: 'center',
                 gap: 9,
                 width: '100%',
@@ -124,30 +124,41 @@ export default function RecentScans({ onSelect, loading }) {
                 padding: '5px 10px 5px 12px',
                 background: 'transparent',
                 border: 'none',
-                borderRight: `2px solid ${color}40`,
+                borderLeft: `2px solid ${color}40`,
                 color: '#A8A498',
                 cursor: loading ? 'not-allowed' : 'pointer',
                 opacity: loading ? 0.3 : 1,
                 transition: 'all 0.15s',
-                textAlign: 'right',
+                textAlign: 'left',
               }}
               onMouseEnter={(e) => {
                 if (!loading) {
-                  e.currentTarget.style.borderRightColor = color;
+                  e.currentTarget.style.borderLeftColor = color;
                   e.currentTarget.style.color = '#C8C4BC';
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderRightColor = color + '40';
+                e.currentTarget.style.borderLeftColor = color + '40';
                 e.currentTarget.style.color = '#A8A498';
               }}
             >
+              <span style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 14,
+                fontWeight: 700,
+                color: color,
+                textAlign: 'left',
+                letterSpacing: '0.02em',
+                whiteSpace: 'nowrap',
+              }}>
+                {s.score}/100
+              </span>
               <span style={{
                 minWidth: 0,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                textAlign: 'right',
+                textAlign: 'left',
                 fontFamily: "'Instrument Serif', serif",
                 fontStyle: 'italic',
                 fontSize: 15,
@@ -167,17 +178,6 @@ export default function RecentScans({ onSelect, loading }) {
                 letterSpacing: '0.02em',
                 textAlign: 'left',
               }}>{printing ? `· ${printing}` : ''}</small>
-              <span style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 14,
-                fontWeight: 700,
-                color: color,
-                textAlign: 'right',
-                letterSpacing: '0.02em',
-                whiteSpace: 'nowrap',
-              }}>
-                {s.score}/100
-              </span>
             </button>
           );
           })}
