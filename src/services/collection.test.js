@@ -18,7 +18,7 @@ globalThis.localStorage = {
 const {
   loadCollection, addToCollection, importCollection, removeOne, removeAll,
   countCards, collectionValue, collectionValueSummary, cardKey, marketPriceFor,
-  formatCollectionMoney, collectionFormLabel, collectionFormOptions,
+  formatCollectionMoney, collectionFormLabel, collectionFormOptions, collectionView,
 } = await import('./collection.js');
 
 const RICH = {
@@ -225,5 +225,30 @@ describe('collection', () => {
     const list = importCollection([{ ...CHEAP, qty: 2, condition: 'damaged' }]);
     assert.equal(list.length, 2);
     assert.equal(countCards(list), 3);
+  });
+
+  test('binders split the three games while All keeps them combined', () => {
+    const mixed = [
+      { ...RICH, addedAt: '2026-08-01T00:00:00.000Z' },
+      { id: 'mtg-1', game: 'mtg', name: 'Black Lotus', marketPrice: 1000, addedAt: '2026-08-03T00:00:00.000Z' },
+      { id: 'ygo-1', game: 'yugioh', name: 'Dark Magician', marketPrice: 50, addedAt: '2026-08-02T00:00:00.000Z' },
+    ];
+    assert.deepEqual(collectionView(mixed, 'all').map((card) => card.name), ['Black Lotus', 'Dark Magician', 'Umbreon ex']);
+    assert.deepEqual(collectionView(mixed, 'pokemon').map((card) => card.name), ['Umbreon ex']);
+    assert.deepEqual(collectionView(mixed, 'mtg').map((card) => card.name), ['Black Lotus']);
+    assert.deepEqual(collectionView(mixed, 'yugioh').map((card) => card.name), ['Dark Magician']);
+  });
+
+  test('collection views sort by date and price without moving unpriced cards to the top', () => {
+    const mixed = [
+      { id: 'p', game: 'pokemon', name: 'Priced high', marketPrice: 100, addedAt: '2026-08-01T00:00:00.000Z' },
+      { id: 'm', game: 'mtg', name: 'Priced low', marketPrice: 10, addedAt: '2026-08-03T00:00:00.000Z' },
+      { id: 'y', game: 'yugioh', name: 'Unpriced', marketPrice: null, addedAt: '2026-08-02T00:00:00.000Z' },
+    ];
+    assert.deepEqual(collectionView(mixed, 'all', 'newest').map((card) => card.name), ['Priced low', 'Unpriced', 'Priced high']);
+    assert.deepEqual(collectionView(mixed, 'all', 'oldest').map((card) => card.name), ['Priced high', 'Unpriced', 'Priced low']);
+    assert.deepEqual(collectionView(mixed, 'all', 'price_high').map((card) => card.name), ['Priced high', 'Priced low', 'Unpriced']);
+    assert.deepEqual(collectionView(mixed, 'all', 'price_low').map((card) => card.name), ['Priced low', 'Priced high', 'Unpriced']);
+    assert.equal(mixed[0].name, 'Priced high', 'the saved list was not mutated');
   });
 });

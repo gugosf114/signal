@@ -224,3 +224,32 @@ export function collectionValueSummary(list) {
   summary.total = Math.round(summary.total * 100) / 100;
   return summary;
 }
+
+function addedTime(card) {
+  const value = Date.parse(card?.addedAt || '');
+  return Number.isFinite(value) ? value : 0;
+}
+
+// One collection, four views: every card together or one game's binder.
+// Sorting returns a copy so changing the view never rewrites the saved order.
+export function collectionView(list, binder = 'all', sort = 'newest') {
+  const cards = Array.isArray(list) ? list : [];
+  const game = String(binder || 'all').toLowerCase();
+  const visible = game === 'all'
+    ? [...cards]
+    : cards.filter((card) => String(card?.game || '').toLowerCase() === game);
+
+  return visible.sort((a, b) => {
+    if (sort === 'oldest') return addedTime(a) - addedTime(b) || String(a?.name || '').localeCompare(String(b?.name || ''));
+    if (sort === 'price_high' || sort === 'price_low') {
+      const aPrice = cleanMoney(a?.marketPrice);
+      const bPrice = cleanMoney(b?.marketPrice);
+      if (aPrice === null && bPrice !== null) return 1;
+      if (aPrice !== null && bPrice === null) return -1;
+      if (aPrice !== null && bPrice !== null && aPrice !== bPrice) {
+        return sort === 'price_high' ? bPrice - aPrice : aPrice - bPrice;
+      }
+    }
+    return addedTime(b) - addedTime(a) || String(a?.name || '').localeCompare(String(b?.name || ''));
+  });
+}

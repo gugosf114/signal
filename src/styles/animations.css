@@ -1056,6 +1056,18 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+.cl-meta {
+  position: absolute;
+  top: 72px;
+  left: 20px;
+  right: 20px;
+  max-width: 560px;
+  color: #6E6A62;
+  font: 9px/1.5 'JetBrains Mono', monospace;
+  letter-spacing: 0.03em;
+  text-align: left;
+  pointer-events: none;
+}
 
 .cl-close {
   position: absolute;
@@ -2090,6 +2102,61 @@
   border-color: rgba(196, 64, 64, 0.3);
 }
 
+.col-binders {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin: 20px 0 10px;
+}
+.col-binder {
+  position: relative;
+  min-width: 0;
+  min-height: 68px;
+  padding: 11px 10px 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid #24272E;
+  border-radius: 4px;
+  background: linear-gradient(150deg, rgba(255,255,255,0.018), transparent 60%), #0B0D11;
+  color: #77736B;
+  text-align: left;
+  cursor: pointer;
+}
+.col-binder::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 9px;
+  width: 28px;
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  background: #6E6A62;
+  opacity: 0.55;
+}
+.col-binder--pokemon::before { background: #A09060; }
+.col-binder--yugioh::before { background: #7080A0; }
+.col-binder--mtg::before { background: #B08060; }
+.col-binder strong {
+  overflow: hidden;
+  max-width: 100%;
+  color: #A8A498;
+  font: 700 10px/1.25 'Syne', sans-serif;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.col-binder span { color: #5F5B54; font: 9px 'JetBrains Mono', monospace; }
+.col-binder--on {
+  border-color: #4A4540;
+  background: linear-gradient(150deg, rgba(160,144,96,0.09), transparent 62%), #0D0F13;
+  box-shadow: inset 0 0 0 1px rgba(160,144,96,0.08);
+}
+.col-binder--on strong { color: #E8E4DC; }
+.col-binder--on span { color: #92897C; }
+
 .col-count {
   margin: 22px 0 10px;
   font-family: 'JetBrains Mono', monospace;
@@ -2102,7 +2169,7 @@
 .col-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 20px 0 10px;
+  margin: 10px 0;
   border: 1px solid #1A1D24;
   border-radius: 4px;
   background: #0B0D11;
@@ -2135,6 +2202,39 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+.col-view-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid #1A1D24;
+  border-radius: 4px;
+  background: #0A0C10;
+}
+.col-view-controls > div, .col-view-controls label { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.col-view-controls > div > span, .col-view-controls label > span {
+  color: #6E6A62;
+  font: 700 8px 'Syne', sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.col-view-controls > div > strong {
+  color: #D8D4CC;
+  font: 700 12px 'Syne', sans-serif;
+}
+.col-view-controls select {
+  min-height: 40px;
+  padding: 0 34px 0 11px;
+  border: 1px solid #2A2D34;
+  border-radius: 3px;
+  background: #0E1014;
+  color: #D8D4CC;
+  font: 10px 'JetBrains Mono', monospace;
+  outline: none;
+}
+.col-view-controls select:focus { border-color: #A09060; }
 .col-tools {
   display: flex;
   gap: 7px;
@@ -2185,6 +2285,7 @@
 .col-empty-mark span:last-child { right: 7px; top: 4px; transform: rotate(8deg); border-color: #5A3838; }
 .col-empty strong { color: #D8D4CC; font: 700 14px 'Syne', sans-serif; }
 .col-empty p { max-width: 350px; margin: 8px 0 18px; color: #77736B; font: italic 15px/1.55 'Instrument Serif', serif; }
+.col-empty--binder { margin-bottom: 4px; }
 .col-empty button {
   min-height: 46px;
   padding: 10px 17px;
@@ -2300,6 +2401,15 @@
   color: #6E6A62;
 }
 .col-card-meta strong { color: #C8C4BC; font-size: 11px; }
+
+@media (max-width: 600px) {
+  .col-binders { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .col-binder { min-height: 64px; }
+  .col-view-controls { align-items: stretch; }
+  .col-view-controls label { flex: 1; }
+  .col-view-controls select { width: 100%; }
+  .cl-meta { top: 68px; right: 68px; }
+}
 
 .result-add-button {
   display: inline-flex;

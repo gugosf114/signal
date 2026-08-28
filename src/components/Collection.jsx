@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   loadCollection, importCollection, removeOne, removeAll,
   countCards, collectionValueSummary, cardKey,
   collectionFormLabel, formatCollectionMoney,
+  collectionView,
 } from '../services/collection';
 import {
   parseCollectionBackup, saveCollectionBackup, saveCollectionCsv,
@@ -20,10 +21,32 @@ const CONDITION_LABEL = {
   damaged: 'Damaged',
 };
 
+const BINDERS = [
+  { id: 'all', label: 'All cards' },
+  { id: 'pokemon', label: 'Pokémon' },
+  { id: 'yugioh', label: 'Yu-Gi-Oh!' },
+  { id: 'mtg', label: 'MTG' },
+];
+
+const SORTS = [
+  { id: 'newest', label: 'Newest added' },
+  { id: 'oldest', label: 'Oldest added' },
+  { id: 'price_high', label: 'Price high → low' },
+  { id: 'price_low', label: 'Price low → high' },
+];
+
+function addedLabel(value) {
+  const date = new Date(value || '');
+  if (Number.isNaN(date.getTime())) return 'Unknown date';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 export default function Collection({ onLookup, onAddCard }) {
   const [cards, setCards] = useState(() => loadCollection());
   const [status, setStatus] = useState(null);
   const [viewing, setViewing] = useState(null);
+  const [binder, setBinder] = useState('all');
+  const [sort, setSort] = useState('newest');
   const importRef = useRef(null);
   const flashTimer = useRef(null);
 
@@ -73,8 +96,14 @@ export default function Collection({ onLookup, onAddCard }) {
     }
   };
 
-  const total = countCards(cards);
-  const market = collectionValueSummary(cards);
+  const visibleCards = useMemo(() => collectionView(cards, binder, sort), [cards, binder, sort]);
+  const binderCounts = useMemo(() => Object.fromEntries(BINDERS.map(({ id }) => [
+    id,
+    countCards(id === 'all' ? cards : cards.filter((card) => card.game === id)),
+  ])), [cards]);
+  const activeBinder = BINDERS.find((item) => item.id === binder) || BINDERS[0];
+  const total = countCards(visibleCards);
+  const market = collectionValueSummary(visibleCards);
   const marketDisplay = market.pricedQty > 0
     ? `${formatCollectionMoney(market.total)}${market.unpricedQty > 0 ? '+' : ''}`
     : (market.unpricedQty > 0 ? '—' : '$0.00');
@@ -103,18 +132,47 @@ export default function Collection({ onLookup, onAddCard }) {
 
       <input ref={importRef} type="file" accept="application/json,.json" onChange={restoreBackup} hidden />
 
+      <div className="col-binders" role="tablist" aria-label="Collection binders">
+        {BINDERS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={binder === item.id}
+            className={`col-binder col-binder--${item.id}${binder === item.id ? ' col-binder--on' : ''}`}
+            onClick={() => setBinder(item.id)}
+          >
+            <strong>{item.label}</strong>
+            <span>{binderCounts[item.id]} card{binderCounts[item.id] === 1 ? '' : 's'}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="col-summary">
         <div>
-          <span className="col-summary-label">Cards</span>
+          <span className="col-summary-label">{activeBinder.label} · cards</span>
           <strong>{total}</strong>
         </div>
         <div>
-          <span className="col-summary-label">Market total</span>
+          <span className="col-summary-label">{activeBinder.label} · market total</span>
           <strong>{marketDisplay}</strong>
           {market.unpricedQty > 0 && (
             <small className="col-summary-note">{market.unpricedQty} unpriced</small>
           )}
         </div>
+      </div>
+
+      <div className="col-view-controls">
+        <div>
+          <span>Viewing</span>
+          <strong>{activeBinder.label}</strong>
+        </div>
+        <label>
+          <span>Sort</span>
+          <select value={sort} onChange={(event) => setSort(event.target.value)}>
+            {SORTS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+          </select>
+        </label>
       </div>
 
       <div className="col-tools">
@@ -129,9 +187,15 @@ export default function Collection({ onLookup, onAddCard }) {
           <strong>No cards saved yet</strong>
           <p>Use the scanner or search above to add your first card.</p>
         </div>
+      ) : visibleCards.length === 0 ? (
+        <div className="col-empty col-empty--binder">
+          <div className="col-empty-mark" aria-hidden="true"><span /><span /></div>
+          <strong>No {activeBinder.label} cards yet</strong>
+          <p>Cards from this game will appear in this binder after you add them.</p>
+        </div>
       ) : (
         <div className="col-grid">
-          {cards.map((card) => (
+          {visibleCards.map((card) => (
             <div className="col-cell" key={cardKey(card)}>
               <button
                 type="button"
@@ -155,6 +219,7 @@ export default function Collection({ onLookup, onAddCard }) {
                 <strong>{formatCollectionMoney(card.marketPrice)}</strong>
                 <span>{holdingMeta(card)}</span>
                 {card.paidPerCard != null && <span>Paid {formatCollectionMoney(card.paidPerCard)}</span>}
+                <span>Added {addedLabel(card.addedAt)}</span>
               </div>
             </div>
           ))}
@@ -173,6 +238,13 @@ export default function Collection({ onLookup, onAddCard }) {
         onClose={() => setViewing(null)}
         imageUrl={viewing?.imageLarge || viewing?.imageUrl}
         cardName={viewing?.name}
+        cardMeta={viewing ? [
+          [viewing.setName, viewing.number].filter(Boolean).join(' · '),
+          `${formatCollectionMoney(viewing.marketPrice)} each`,
+          `${viewing.qty} cop${viewing.qty === 1 ? 'y' : 'ies'}`,
+          holdingMeta(viewing),
+          `Added ${addedLabel(viewing.addedAt)}`,
+        ].filter(Boolean).join('  ·  ') : null}
         scanLabel="Open Signal"
         onScan={viewing && onLookup ? () => {
           const card = viewing;
