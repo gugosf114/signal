@@ -1,6 +1,6 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GATEWAY_DIRECT_URL, GATEWAY_URL, gateway } from './signalGateway.js';
+import { GATEWAY_DIRECT_URL, GATEWAY_EDGE_URL, GATEWAY_URL, gateway } from './signalGateway.js';
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
@@ -18,7 +18,7 @@ describe('Signal gateway retry', () => {
 
     assert.deepEqual(await gateway({ action: 'vision' }), { result: 'ok' });
     assert.equal(calls, 3);
-    assert.deepEqual(urls, [GATEWAY_URL, GATEWAY_DIRECT_URL, GATEWAY_DIRECT_URL]);
+    assert.deepEqual(urls, [GATEWAY_EDGE_URL, GATEWAY_URL, GATEWAY_DIRECT_URL]);
   });
 
   test('does not retry a real client error', async () => {

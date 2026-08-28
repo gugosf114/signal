@@ -1,6 +1,7 @@
 const GATEWAY_URL = 'https://us-central1-bakers-agent.cloudfunctions.net/signal-gateway-v1';
 const GATEWAY_DIRECT_URL = 'https://signal-gateway-v1-qfv7mm5hva-uc.a.run.app';
-const GATEWAY_URLS = [GATEWAY_URL, GATEWAY_DIRECT_URL];
+const GATEWAY_EDGE_URL = 'https://signal-gateway-edge.gugosf.workers.dev';
+const GATEWAY_URLS = [GATEWAY_EDGE_URL, GATEWAY_URL, GATEWAY_DIRECT_URL];
 const INSTALL_KEY = 'signal_install_id_v1';
 
 function installId() {
@@ -77,4 +78,4 @@ export function getOfficialYugiohArt({ cardName, setCode, rarity }) {
   return gateway({ action: 'yugiohArt', cardName, setCode, rarity }, undefined, 1);
 }
 
-export { GATEWAY_DIRECT_URL, GATEWAY_URL };
+export { GATEWAY_DIRECT_URL, GATEWAY_EDGE_URL, GATEWAY_URL };
