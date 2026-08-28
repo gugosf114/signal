@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { drawCameraFrame } from '../services/cameraCanvas';
 import { computeVideoCrop } from '../services/scannerCrop';
 import {
   cameraTorchSupported,
@@ -47,12 +48,14 @@ function FlashIcon({ on }) {
 
 export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onManualSearch }) {
   const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const stageRef = useRef(null);
   const frameRef = useRef(null);
   const fileInputRef = useRef(null);
   const streamRef = useRef(null);
   const abortRef = useRef(null);
   const previewRef = useRef(null);
+  const previewLoopRef = useRef(null);
   const cameraTokenRef = useRef(0);
   const [phase, setPhase] = useState('opening');
   const [error, setError] = useState(null);
@@ -79,9 +82,13 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
 
   const stop = useCallback(() => {
     cameraTokenRef.current += 1;
+    if (previewLoopRef.current != null) cancelAnimationFrame(previewLoopRef.current);
+    previewLoopRef.current = null;
     for (const track of streamRef.current?.getTracks?.() || []) track.stop();
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
+    const canvas = canvasRef.current;
+    if (canvas?.width && canvas?.height) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
   }, []);
 
   const start = useCallback(async () => {
@@ -109,6 +116,16 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
       if (!video) { stop(); return; }
       video.srcObject = stream;
       await video.play();
+      let lastFrameAt = 0;
+      const paint = (time) => {
+        if (cameraToken !== cameraTokenRef.current) return;
+        if (time - lastFrameAt >= 32) {
+          drawCameraFrame(video, canvasRef.current);
+          lastFrameAt = time;
+        }
+        previewLoopRef.current = requestAnimationFrame(paint);
+      };
+      previewLoopRef.current = requestAnimationFrame(paint);
       setFocusSupported(Boolean(focus?.focusSupported));
       setFocusMessage(focus?.focusSupported ? 'Auto focus on' : 'Hold the phone a little farther back');
       setTorchSupported(cameraTorchSupported(track));
@@ -284,16 +301,22 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
         {previewUrl ? (
           <img className="live-scanner-preview" src={previewUrl} alt="Card photo being checked" />
         ) : (
-          <video
-            ref={videoRef}
-            className="live-scanner-video"
-            muted
-            playsInline
-            autoPlay
-            controls={false}
-            disablePictureInPicture
-            onContextMenu={(event) => event.preventDefault()}
-          />
+          <>
+            <canvas ref={canvasRef} className="live-scanner-video" aria-hidden="true" />
+            <video
+              ref={videoRef}
+              className="live-scanner-source"
+              muted
+              playsInline
+              autoPlay
+              controls={false}
+              tabIndex={-1}
+              aria-hidden="true"
+              disablePictureInPicture
+              disableRemotePlayback
+              onContextMenu={(event) => event.preventDefault()}
+            />
+          </>
         )}
 
         <div className="live-scanner-topbar">
