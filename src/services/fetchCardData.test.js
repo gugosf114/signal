@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   applyTrustedMarketPrice,
+  applyTrustedPinMarketPrice,
   applyTrustedPriceNarrative,
   fetchCardData,
 } from './fetchCardData.js';
@@ -22,6 +23,22 @@ function response(status, body) {
 }
 
 describe('fetchCardData exact-print contract', () => {
+  test('a trusted TCGplayer fallback becomes the exact report price', () => {
+    const cardData = applyTrustedPinMarketPrice({
+      name: 'Fydraulis Harmonia',
+      priceLines: null,
+      priceScope: 'exact-print price unavailable',
+    }, {
+      price: 175.54,
+      priceSource: 'TCGplayer',
+      priceUrl: 'https://www.tcgplayer.com/product/692267',
+    });
+
+    assert.deepEqual(cardData.priceLines, ['TCGplayer exact-print market price: $175.54']);
+    assert.equal(cardData.priceScope, 'exact-print TCGplayer market price');
+    assert.equal(applyTrustedMarketPrice({}, cardData, 175.54).en_price, '$175.54');
+  });
+
   test('a dead pin does not fall back to a different name match', async () => {
     const calls = [];
     globalThis.fetch = async (url) => {

@@ -90,12 +90,24 @@ async function fetchPinned(pin) {
       if (!res.ok) return null;
       const data = await res.json();
       if (data.error) return null;
-      return data.data?.[0] ? shapeYGO(data.data[0], pin) : null;
+      return data.data?.[0] ? applyTrustedPinMarketPrice(shapeYGO(data.data[0], pin), pin) : null;
     }
   } catch {
     return null;
   }
   return null;
+}
+
+export function applyTrustedPinMarketPrice(cardData, pin) {
+  const price = Number(pin?.price);
+  if (!cardData || pin?.priceSource !== 'TCGplayer' || !Number.isFinite(price) || price <= 0) return cardData;
+  return {
+    ...cardData,
+    priceLines: [`TCGplayer exact-print market price: $${price.toFixed(2)}`],
+    priceScope: 'exact-print TCGplayer market price',
+    priceSource: 'TCGplayer',
+    priceUrl: pin.priceUrl || null,
+  };
 }
 
 // ─── Pokémon TCG API ──────────────────────────────────────────────────────────

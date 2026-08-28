@@ -77,10 +77,14 @@ export default function QuickPicks({ onSelect, loading }) {
       </div>
 
       <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
         gap: 6,
-        justifyContent: 'center',
+        maxHeight: 108,
+        overflowY: 'auto',
+        alignContent: 'start',
+        paddingRight: 2,
+        scrollbarWidth: 'thin',
       }}>
         {trending.map((card, idx) => {
           const game = GAME_LABELS[card.game] || { color: '#605C54', label: card.game || '?' };
@@ -93,7 +97,10 @@ export default function QuickPicks({ onSelect, loading }) {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
-                padding: '5px 12px',
+                width: '100%',
+                minWidth: 0,
+                minHeight: 32,
+                padding: '5px 10px',
                 background: 'transparent',
                 border: '1px solid #14161A',
                 borderRadius: 2,
@@ -104,6 +111,7 @@ export default function QuickPicks({ onSelect, loading }) {
                 fontWeight: 500,
                 transition: 'all 0.12s',
                 whiteSpace: 'nowrap',
+                overflow: 'hidden',
                 opacity: loading ? 0.3 : 1,
                 letterSpacing: '0.02em',
               }}
@@ -119,7 +127,7 @@ export default function QuickPicks({ onSelect, loading }) {
               }}
             >
               <BrandIcon brand={GAME_BRAND[card.game]} size={11} style={{ opacity: 0.7, flexShrink: 0 }} />
-              {card.name}
+              <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.name}</span>
               {/* Only shown when the source article was specifically about price
                   spikes — a mixed "biggest movers" list carries no arrow rather
                   than a guessed direction. Title names the article. */}

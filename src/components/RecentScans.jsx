@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GAME_LABELS, SCORE_VERSION, calculateOverallScore } from '../config/signals';
 import { getCachedScan } from '../services/scanCache';
 import { recentPrintingLine, sanitizeRecentScans } from '../services/recentScans';
@@ -8,6 +8,7 @@ import { recentPrintingLine, sanitizeRecentScans } from '../services/recentScans
 // (left-border accent, monospace score, italic name) instead of pill chips.
 export default function RecentScans({ onSelect, loading }) {
   const [scans, setScans] = useState([]);
+  const listRef = useRef(null);
 
   useEffect(() => {
     const load = () => {
@@ -37,6 +38,10 @@ export default function RecentScans({ onSelect, loading }) {
       window.removeEventListener('storage', load);
     };
   }, []);
+
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0;
+  }, [scans]);
 
   if (scans.length === 0) return null;
 
@@ -73,7 +78,19 @@ export default function RecentScans({ onSelect, loading }) {
         }} />
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center' }}>
+      <div
+        ref={listRef}
+        aria-label="Recent scans. Scroll for older scans."
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr)',
+          gap: 4,
+          maxHeight: 140,
+          overflowY: 'auto',
+          paddingRight: 3,
+          scrollbarWidth: 'thin',
+        }}
+      >
         {scans.map((s, i) => {
           const gameMeta = GAME_LABELS[s.game];
           const color = gameMeta?.color || '#A8A498';
@@ -86,74 +103,67 @@ export default function RecentScans({ onSelect, loading }) {
               onClick={() => !loading && onSelect(s.name, s.game, { pin: s.pin || null })}
               disabled={loading}
               style={{
-                display: 'inline-flex',
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1fr) 72px',
                 alignItems: 'center',
                 gap: 9,
-                padding: '4px 12px 4px 10px',
+                width: '100%',
+                minWidth: 0,
+                minHeight: 44,
+                padding: '5px 10px 5px 12px',
                 background: 'transparent',
                 border: 'none',
-                borderLeft: `2px solid ${color}40`,
+                borderRight: `2px solid ${color}40`,
                 color: '#A8A498',
                 cursor: loading ? 'not-allowed' : 'pointer',
                 opacity: loading ? 0.3 : 1,
                 transition: 'all 0.15s',
-                maxWidth: '100%',
+                textAlign: 'right',
               }}
               onMouseEnter={(e) => {
                 if (!loading) {
-                  e.currentTarget.style.borderLeftColor = color;
+                  e.currentTarget.style.borderRightColor = color;
                   e.currentTarget.style.color = '#C8C4BC';
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderLeftColor = color + '40';
+                e.currentTarget.style.borderRightColor = color + '40';
                 e.currentTarget.style.color = '#A8A498';
               }}
             >
+              <span style={{
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                textAlign: 'right',
+                fontFamily: "'Instrument Serif', serif",
+                fontStyle: 'italic',
+                fontSize: 15,
+                lineHeight: 1.2,
+              }}>
+                {s.name}
+                {printing && (
+                  <small style={{
+                    marginLeft: 7,
+                    color: '#706C64',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 8,
+                    fontStyle: 'normal',
+                    letterSpacing: '0.02em',
+                  }}>· {printing}</small>
+                )}
+              </span>
               <span style={{
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 14,
                 fontWeight: 700,
                 color: color,
-                minWidth: 18,
                 textAlign: 'right',
                 letterSpacing: '0.02em',
+                whiteSpace: 'nowrap',
               }}>
                 {s.score}/100
-              </span>
-              <span style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                minWidth: 0,
-              }}>
-                <span style={{
-                  fontFamily: "'Instrument Serif', serif",
-                  fontStyle: 'italic',
-                  fontSize: 15,
-                  lineHeight: 1,
-                  maxWidth: '100%',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}>
-                  {s.name}
-                </span>
-                {printing && (
-                  <span style={{
-                    marginTop: 3,
-                    maxWidth: '100%',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    color: '#706C64',
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 8,
-                    letterSpacing: '0.02em',
-                  }}>
-                    {printing}
-                  </span>
-                )}
               </span>
             </button>
           );

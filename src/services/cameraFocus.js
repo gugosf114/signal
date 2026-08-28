@@ -53,6 +53,22 @@ export function focusConstraintPlan(capabilities = {}, supported = {}, point = n
   return plan;
 }
 
+export function cameraTorchSupported(track) {
+  return track?.getCapabilities?.()?.torch === true;
+}
+
+export async function setCameraTorch(track, enabled) {
+  if (!track?.applyConstraints || !cameraTorchSupported(track)) {
+    return { applied: false, enabled: false };
+  }
+  try {
+    await track.applyConstraints({ advanced: [{ torch: Boolean(enabled) }] });
+    return { applied: true, enabled: Boolean(enabled) };
+  } catch {
+    return { applied: false, enabled: false };
+  }
+}
+
 export async function focusCameraTrack(track, point = null, mediaDevices = navigator.mediaDevices) {
   if (!track?.applyConstraints) return { applied: false, focusSupported: false };
   const capabilities = track.getCapabilities?.() || {};

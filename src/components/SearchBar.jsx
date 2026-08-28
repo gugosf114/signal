@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { scanCardImage } from '../services/scanCardImage';
-import { suggestCards, resolvePrinting } from '../services/fetchExpansions';
+import { looksLikeYgoPasscode, resolvePrintingOptions, suggestCards } from '../services/fetchExpansions';
 import { looksLikeSetCode } from '../services/lookupBySetCode';
 import { saveScannedCardImage } from '../services/scannedCardImage';
 import { withScanKeepAlive } from '../services/scanKeepAlive';
+import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
 import CardScanner from './CardScanner';
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
@@ -23,15 +24,11 @@ const GAME_LABEL = { pokemon: 'PKM', mtg: 'MTG', yugioh: 'YGO' };
 export default function SearchBar({ onSearch, loading }) {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
-  const [identifying, setIdentifying] = useState(false);
   const [scanError, setScanError] = useState(null);
-  const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
-  const fileInputRef = useRef(null);
-  const photoMenuRef = useRef(null);
   const formRef = useRef(null);
   // Bumped on every keystroke and every pick, so a slow catalogue reply that
   // lands after the user moved on can't repopulate the list.
@@ -41,11 +38,12 @@ export default function SearchBar({ onSearch, loading }) {
   // consumed on the way in and the dropdown pops open again over the finished
   // result. The list stays shut until the user actually types something else.
   const quietFor = useRef(null);
+  const scanSearchFor = useRef(null);
 
   useEffect(() => {
     const q = query.trim();
     if (q && q === quietFor.current) { setOpen(false); return; }
-    if (q.length < MIN_CHARS || loading || identifying) {
+    if (q.length < MIN_CHARS || loading || scannerOpen) {
       setSuggestions([]);
       setOpen(false);
       return;
@@ -58,16 +56,21 @@ export default function SearchBar({ onSearch, loading }) {
         setSuggestions(hits);
         setActive(-1);
         setOpen(hits.length > 0);
+        if (scanSearchFor.current === q) {
+          setScanError(hits.length ? null : 'No exact printing was found. Type the set code.');
+          scanSearchFor.current = null;
+        }
       } catch {
         if (myToken !== reqToken.current) return;
         setSuggestions([]);
         setOpen(false);
         setActive(-1);
         setScanError('Card catalogues could not load. Try again.');
+        if (scanSearchFor.current === q) scanSearchFor.current = null;
       }
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [query, loading, identifying]);
+  }, [query, loading, scannerOpen]);
 
   useEffect(() => {
     if (!open) return;
@@ -78,30 +81,20 @@ export default function SearchBar({ onSearch, loading }) {
     return () => document.removeEventListener('pointerdown', onDocDown);
   }, [open]);
 
-  useEffect(() => {
-    if (!photoMenuOpen) return;
-    const close = (event) => {
-      if (!photoMenuRef.current?.contains(event.target)) setPhotoMenuOpen(false);
-    };
-    const escape = (event) => { if (event.key === 'Escape') setPhotoMenuOpen(false); };
-    document.addEventListener('pointerdown', close);
-    window.addEventListener('keydown', escape);
-    return () => {
-      document.removeEventListener('pointerdown', close);
-      window.removeEventListener('keydown', escape);
-    };
-  }, [photoMenuOpen]);
-
-  const pick = (card) => {
+  const pick = async (card) => {
+    const pricedCard = await addTcgplayerPrice(card);
     reqToken.current += 1;
-    quietFor.current = card.name;
-    setQuery(card.name);
+    quietFor.current = pricedCard.name;
+    setQuery(pricedCard.name);
     setSuggestions([]);
     setOpen(false);
     setActive(-1);
     // The whole row travels with the search: `pin` is what stops the scan from
     // guessing a printing.
-    onSearch(card.name, card.game, { pin: card });
+    onSearch(pricedCard.name, pricedCard.game, {
+      pin: pricedCard,
+      force: pricedCard.priceSource === 'TCGplayer',
+    });
   };
 
   const handleSubmit = (e) => {
@@ -143,78 +136,62 @@ export default function SearchBar({ onSearch, loading }) {
     }
   };
 
-  const identifyFile = (file, framed = false) => withScanKeepAlive(async () => {
-      const card = await scanCardImage(file, { framed });
-      // The photo showed one specific printing and the scanner read its set and
-      // number off the card. Turn that into a catalogue row so the scan is
-      // pinned to the card actually photographed — otherwise a picture of the
-      // $1,499 Umbreon ex and a picture of the $7 one produce the same answer.
-      const pin = await resolvePrinting(card).catch(() => null);
-      if (!pin) throw new Error('The exact printing could not be matched. Search by set and card number.');
-      // Keep one small local copy of the photographed card. Konami's official
-      // alternate-art images carry a permanent SAMPLE watermark; the owner's
-      // own scan is both exact and clean, and survives app restarts.
-      const scanImagePath = await saveScannedCardImage(file, pin).catch(() => null);
-      const exactPin = scanImagePath ? { ...pin, scanImagePath } : pin;
-      // The camera already identified one specific card; don't turn its name
-      // back into a list of alternatives.
-      reqToken.current += 1;
-      quietFor.current = card.name;
-      setQuery(card.name);
-      setOpen(false);
-      await onSearch(card.name, exactPin.game || card.game || null, { pin: exactPin });
+  const identifyPhoto = (file, { framed = false, signal } = {}) => withScanKeepAlive(async () => {
+    const card = await scanCardImage(file, { framed, signal });
+    // A camera guess is not yet a printing. Resolve it against the live card
+    // catalogues, then show the match before spending money on the full report.
+    const options = await resolvePrintingOptions(card).catch(() => []);
+    const candidates = await Promise.all(options.map((option) => addTcgplayerPrice(option, signal)));
+    return {
+      card,
+      pin: candidates.length === 1 ? candidates[0] : null,
+      candidates,
+      file,
+    };
   });
 
-  const openPhotoMenu = () => {
+  const openScanner = () => {
     setScanError(null);
     setOpen(false);
-    setPhotoMenuOpen((value) => !value);
-  };
-
-  const takePhoto = () => {
-    setPhotoMenuOpen(false);
-    setScanError(null);
     setScannerOpen(true);
   };
 
-  const handleScannerCapture = async (file) => {
+  const confirmPhotoMatch = async ({ card, pin, file }) => {
+    if (!pin) return;
+    // Save the owner's exact card only after the match is confirmed. A wrong
+    // guess must never replace the art for a different printing.
+    const scanImagePath = await saveScannedCardImage(file, pin).catch(() => null);
+    const exactPin = scanImagePath ? { ...pin, scanImagePath } : pin;
+    const exactName = exactPin.name || card.name;
+    reqToken.current += 1;
+    quietFor.current = exactName;
+    setQuery(exactName);
+    setOpen(false);
     setScannerOpen(false);
-    setIdentifying(true);
-    try {
-      await identifyFile(file, true);
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('[signal] card image scan failed', err);
-      setScanError(err?.message || 'Card identification failed.');
-    } finally {
-      setIdentifying(false);
-    }
+    await onSearch(exactName, exactPin.game || card.game || null, {
+      pin: exactPin,
+      // A newly found exact market price must replace a cached report whose
+      // price was blank. Otherwise the match sheet shows money and the report
+      // immediately erases it again.
+      force: exactPin.priceSource === 'TCGplayer',
+    });
   };
 
-  const uploadPhoto = () => {
-    setPhotoMenuOpen(false);
-    setScanError(null);
-    fileInputRef.current?.click();
+  const searchPhotoMatch = ({ card } = {}) => {
+    const lookupValue = card?.number || card?.passcode || '';
+    const name = looksLikeSetCode(lookupValue) || looksLikeYgoPasscode(lookupValue)
+      ? lookupValue
+      : (card?.name || '');
+    reqToken.current += 1;
+    quietFor.current = null;
+    scanSearchFor.current = name;
+    setQuery(name);
+    setOpen(false);
+    setScannerOpen(false);
+    setScanError('Finding the exact printing…');
   };
 
-  const handleFile = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIdentifying(true);
-    setScanError(null);
-    try {
-      await identifyFile(file);
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('[signal] card image scan failed', err);
-      setScanError(err?.message || 'Card identification failed.');
-    } finally {
-      setIdentifying(false);
-      if (e.target) e.target.value = '';
-    }
-  };
-
-  const busy = loading || identifying;
+  const busy = loading;
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} style={{
@@ -223,24 +200,14 @@ export default function SearchBar({ onSearch, loading }) {
       maxWidth: 580,
     }}>
       <div style={{ position: 'relative', width: '100%' }}>
-        {/* Upload input never carries `capture`, so Upload always means gallery/files. */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleFile}
-        />
-
-        {/* Camera button — left side of the input */}
+        {/* Camera button opens one complete scanner. Gallery lives inside it,
+            matching the fast camera-first flow collectors already know. */}
         <button
           type="button"
-          onClick={openPhotoMenu}
+          onClick={openScanner}
           disabled={busy}
-          aria-label="Choose scan or upload"
-          aria-expanded={photoMenuOpen}
-          aria-haspopup="menu"
-          title="Scan or upload a card photo"
+          aria-label="Scan a card"
+          title="Scan a card"
           style={{
             position: 'absolute',
             left: 6,
@@ -254,38 +221,18 @@ export default function SearchBar({ onSearch, loading }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: identifying ? '#C44040' : '#A8A498',
+            color: '#A8A498',
             cursor: busy ? 'not-allowed' : 'pointer',
             transition: 'color 0.15s',
           }}
           onMouseEnter={(e) => { if (!busy) e.currentTarget.style.color = '#C44040'; }}
           onMouseLeave={(e) => { if (!busy) e.currentTarget.style.color = '#A8A498'; }}
         >
-          {identifying ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="cam-spin">
-              <circle cx="12" cy="12" r="9" opacity="0.25" />
-              <path d="M21 12a9 9 0 0 0-9-9" />
-            </svg>
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
-            </svg>
-          )}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
         </button>
-
-        {photoMenuOpen && !busy && (
-          <div ref={photoMenuRef} className="photo-choice-menu" role="menu" aria-label="Card photo source">
-            <button type="button" role="menuitem" onClick={takePhoto}>
-              <span className="photo-choice-icon" aria-hidden>◎</span>
-              <span><strong>Scan card</strong><small>Open the camera</small></span>
-            </button>
-            <button type="button" role="menuitem" onClick={uploadPhoto}>
-              <span className="photo-choice-icon" aria-hidden>↑</span>
-              <span><strong>Upload photo</strong><small>Use a saved image</small></span>
-            </button>
-          </div>
-        )}
 
         {/* No explicit submit button — camera icon on the left handles image scans,
             Enter key on the keyboard submits a typed card name. The previous
@@ -306,7 +253,7 @@ export default function SearchBar({ onSearch, loading }) {
           aria-autocomplete="list"
           aria-controls="signal-card-suggestions"
           aria-activedescendant={active >= 0 ? `signal-card-option-${active}` : undefined}
-          placeholder={identifying ? 'Identifying card…' : 'Card name, number, or name + last digits'}
+          placeholder="Card name, number, or name + last digits"
           disabled={busy}
           enterKeyHint="search"
           style={{
@@ -386,7 +333,9 @@ export default function SearchBar({ onSearch, loading }) {
       <CardScanner
         open={scannerOpen}
         onCancel={() => setScannerOpen(false)}
-        onCapture={handleScannerCapture}
+        onIdentify={identifyPhoto}
+        onConfirm={confirmPhotoMatch}
+        onManualSearch={searchPhotoMatch}
       />
     </form>
   );
