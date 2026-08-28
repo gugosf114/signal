@@ -45,6 +45,27 @@ const fydraulis = {
   ],
 };
 
+const rarityCollectionReinforcement = {
+  id: 32807846,
+  name: 'Reinforcement of the Army',
+  card_prices: [{ tcgplayer_price: '0.29' }],
+  card_images: [{ image_url: 'ra01.jpg', image_url_small: 'ra01-small.jpg' }],
+  card_sets: [
+    "Collector's Rare",
+    'Platinum Secret Rare',
+    'Quarter Century Secret Rare',
+    'Secret Rare',
+    'Super Rare',
+    'Ultimate Rare',
+    'Ultra Rare',
+  ].map((set_rarity) => ({
+    set_name: '25th Anniversary Rarity Collection',
+    set_code: 'RA01-EN051',
+    set_rarity,
+    set_price: '0',
+  })),
+};
+
 describe('Yu-Gi-Oh printing rows', () => {
   test('one card-level id expands into distinct printing identities', () => {
     const rows = ygoPrintingRows(blueEyes);
@@ -184,6 +205,27 @@ describe('camera printing resolution', () => {
     });
     assert.deepEqual(options.map((row) => row.rarity), ['Secret Rare', 'Starlight Rare']);
     assert.notEqual(options[0].printingId, options[1].printingId);
+  });
+
+  test('an exact set code shows every real rarity instead of cutting off after three', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      async json() { return { data: [rarityCollectionReinforcement] }; },
+    });
+    const options = await resolvePrintingOptions({
+      name: 'Reinforcement of the Army', game: 'yugioh',
+      number: 'RA01-EN051', set: 'Unknown',
+    });
+    assert.deepEqual(options.map((row) => row.rarity), [
+      "Collector's Rare",
+      'Platinum Secret Rare',
+      'Quarter Century Secret Rare',
+      'Secret Rare',
+      'Super Rare',
+      'Ultimate Rare',
+      'Ultra Rare',
+    ]);
   });
 
   test('Search matches expands a passcode into every real printing', async () => {

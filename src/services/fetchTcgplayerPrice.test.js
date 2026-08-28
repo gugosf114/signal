@@ -52,6 +52,24 @@ const collector = {
   customAttributes: { number: 'RA01-EN051' },
 };
 
+const ultimate = {
+  productId: 524690,
+  productName: 'Reinforcement of the Army (PUR)',
+  setName: '25th Anniversary Rarity Collection',
+  rarityName: 'Prismatic Ultimate Rare',
+  marketPrice: 2.13,
+  customAttributes: { number: 'RA01-EN051' },
+};
+
+const ra01Secret = {
+  productId: 524686,
+  productName: 'Reinforcement of the Army (Secret Rare)',
+  setName: '25th Anniversary Rarity Collection',
+  rarityName: 'Secret Rare',
+  marketPrice: 1.03,
+  customAttributes: { number: 'RA01-EN051' },
+};
+
 describe('TCGplayer exact-print price', () => {
   test('chooses the matching rarity instead of the cheaper same-code card', () => {
     const result = selectTcgplayerPrice([secret, starlight], printing);
@@ -71,6 +89,12 @@ describe('TCGplayer exact-print price', () => {
 
   test('adds the exact market price to an unpriced scan pin', async () => {
     globalThis.fetch = async (url) => {
+      if (String(url).includes('/search/request')) {
+        return {
+          ok: true,
+          async json() { return { results: [{ results: [secret, starlight] }] }; },
+        };
+      }
       if (String(url).includes('/autocomplete')) {
         return {
           ok: true,
@@ -114,5 +138,40 @@ describe('TCGplayer exact-print price', () => {
     });
     assert.equal(result?.price, 1.25);
     assert.equal(result?.productId, 524691);
+  });
+
+  test("matches YGOPRODeck Ultimate Rare to TCGplayer's Prismatic name", () => {
+    const result = selectTcgplayerPrice([ultimate], {
+      name: 'Reinforcement of the Army',
+      game: 'yugioh',
+      setName: '25th Anniversary Rarity Collection',
+      number: 'RA01-EN051',
+      rarity: 'Ultimate Rare',
+    });
+    assert.equal(result?.price, 2.13);
+    assert.equal(result?.productId, 524690);
+  });
+
+  test('marketplace search recovers duplicate-name products hidden by autocomplete', async () => {
+    let calls = 0;
+    globalThis.fetch = async (url) => {
+      calls += 1;
+      assert.match(String(url), /\/search\/request/);
+      return {
+        ok: true,
+        async json() { return { results: [{ results: [ra01Secret] }] }; },
+      };
+    };
+    const result = await addTcgplayerPrice({
+      name: 'Reinforcement of the Army',
+      game: 'yugioh',
+      setName: '25th Anniversary Rarity Collection',
+      number: 'RA01-EN051',
+      rarity: 'Secret Rare',
+      price: null,
+    });
+    assert.equal(result.price, 1.03);
+    assert.equal(result.tcgplayerProductId, 524686);
+    assert.equal(calls, 1);
   });
 });

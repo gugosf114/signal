@@ -57,6 +57,49 @@ export async function fetchTcgplayerPrice(printing, signal) {
   const name = clean(printing?.name);
   if (!line || !name) return null;
 
+  // Autocomplete collapses products that share a card name. For RA01-EN051
+  // it hid the Super and Secret Rare product IDs. Marketplace search returns
+  // every product row, with exact rarity, set code, price, and product ID.
+  try {
+    const terms = { productLineName: [line] };
+    if (clean(printing.setName)) terms.setName = [clean(printing.setName)];
+    const searchResponse = await fetchWithTimeout(
+      `https://mp-search-api.tcgplayer.com/v1/search/request?q=${encodeURIComponent(name)}&isList=false`,
+      {
+        method: 'POST',
+        signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          algorithm: 'sales_exp_fields_synonym',
+          from: 0,
+          size: 50,
+          filters: { term: terms, range: {}, match: {} },
+          listingSearch: {
+            context: { cart: {} },
+            filters: {
+              term: { sellerStatus: 'Live', channelId: 0 },
+              range: { quantity: { gte: 1 } },
+              exclude: { channelExclusion: 0 },
+            },
+          },
+          context: { cart: {}, shippingCountry: 'US' },
+          settings: { useFuzzySearch: true },
+          sort: {},
+        }),
+      },
+      8000,
+    );
+    if (searchResponse.ok) {
+      const payload = await searchResponse.json();
+      const rows = payload?.results?.[0]?.results || [];
+      const exact = selectTcgplayerPrice(rows, printing);
+      if (exact) return exact;
+    }
+  } catch (error) {
+    if (error?.name === 'AbortError') throw error;
+    // Keep the autocomplete/detail path below as a live fallback.
+  }
+
   const autocomplete = await fetchWithTimeout(
     `https://data.tcgplayer.com/autocomplete?q=${encodeURIComponent(name)}`
       + `&product-line-affinity=${encodeURIComponent(line)}&algorithm=product_line_affinity`,

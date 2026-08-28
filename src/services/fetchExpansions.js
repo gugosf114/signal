@@ -164,7 +164,12 @@ export async function resolvePrintingOptions(input = {}) {
         `${row.id}:${normalizeYgoCode(row.number)}:${String(row.rarity || '').toLowerCase()}`,
         variantIdentity(row),
       ])).values()];
-      if (unique.length) return unique.slice(0, 3);
+      if (unique.length) {
+        // One set code can carry many real foil treatments. RA01-EN051 has
+        // seven; the old three-row cap hid the owner's Ultimate/Ultra/Super/
+        // Secret card. Exact-code scans must show every rarity for that code.
+        return number ? unique : unique.slice(0, 8);
+      }
     }
   }
 
