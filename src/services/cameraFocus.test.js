@@ -1,10 +1,12 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  cameraTorchSupported,
   focusCameraTrack,
   focusConstraintPlan,
   pickMainRearCamera,
   rearCameraConstraints,
+  setCameraTorch,
 } from './cameraFocus.js';
 
 describe('camera focus', () => {
@@ -59,5 +61,27 @@ describe('camera focus', () => {
     assert.equal(result.applied, true);
     assert.equal(result.mode, 'continuous');
     assert.equal(calls.length, 2);
+  });
+});
+
+describe('camera torch', () => {
+  test('turns on a supported torch with one track constraint', async () => {
+    const calls = [];
+    const track = {
+      getCapabilities: () => ({ torch: true }),
+      applyConstraints: async (value) => calls.push(value),
+    };
+    assert.equal(cameraTorchSupported(track), true);
+    assert.deepEqual(await setCameraTorch(track, true), { applied: true, enabled: true });
+    assert.deepEqual(calls, [{ advanced: [{ torch: true }] }]);
+  });
+
+  test('does not claim a torch when the camera lacks one', async () => {
+    const track = {
+      getCapabilities: () => ({}),
+      applyConstraints: async () => { throw new Error('must not run'); },
+    };
+    assert.equal(cameraTorchSupported(track), false);
+    assert.deepEqual(await setCameraTorch(track, true), { applied: false, enabled: false });
   });
 });
