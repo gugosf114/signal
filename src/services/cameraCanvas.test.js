@@ -22,4 +22,16 @@ describe('camera canvas preview', () => {
     const canvas = { getContext: () => ({ drawImage: () => assert.fail('must not draw') }) };
     assert.equal(drawCameraFrame({ videoWidth: 0, videoHeight: 0 }, canvas), false);
   });
+
+  test('draws an ImageCapture bitmap without a video player', () => {
+    const calls = [];
+    const bitmap = { width: 1920, height: 1080 };
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ({ drawImage: (...args) => calls.push(args) }),
+    };
+    assert.equal(drawCameraFrame(bitmap, canvas), true);
+    assert.deepEqual(calls, [[bitmap, 0, 0, 1920, 1080]]);
+  });
 });

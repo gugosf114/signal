@@ -53,9 +53,12 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
   const frameRef = useRef(null);
   const fileInputRef = useRef(null);
   const streamRef = useRef(null);
+  const imageCaptureRef = useRef(null);
   const abortRef = useRef(null);
   const previewRef = useRef(null);
   const previewLoopRef = useRef(null);
+  const previewTimerRef = useRef(null);
+  const previewPausedRef = useRef(false);
   const cameraTokenRef = useRef(0);
   const [phase, setPhase] = useState('opening');
   const [error, setError] = useState(null);
@@ -84,6 +87,10 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
     cameraTokenRef.current += 1;
     if (previewLoopRef.current != null) cancelAnimationFrame(previewLoopRef.current);
     previewLoopRef.current = null;
+    if (previewTimerRef.current != null) clearTimeout(previewTimerRef.current);
+    previewTimerRef.current = null;
+    previewPausedRef.current = true;
+    imageCaptureRef.current = null;
     for (const track of streamRef.current?.getTracks?.() || []) track.stop();
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
@@ -103,6 +110,7 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
     setFocusSupported(false);
     setTorchSupported(false);
     setTorchOn(false);
+    previewPausedRef.current = false;
     const cameraToken = ++cameraTokenRef.current;
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('Live camera is unavailable on this device.');
@@ -113,19 +121,52 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
       }
       streamRef.current = stream;
       const video = videoRef.current;
-      if (!video) { stop(); return; }
-      video.srcObject = stream;
-      await video.play();
-      let lastFrameAt = 0;
-      const paint = (time) => {
-        if (cameraToken !== cameraTokenRef.current) return;
-        if (time - lastFrameAt >= 32) {
-          drawCameraFrame(video, canvasRef.current);
-          lastFrameAt = time;
+      if (!video || !canvasRef.current) { stop(); return; }
+      let previewMode = 'video-fallback';
+      if (typeof globalThis.ImageCapture === 'function') {
+        try {
+          const imageCapture = new globalThis.ImageCapture(track);
+          imageCaptureRef.current = imageCapture;
+          const firstFrame = await imageCapture.grabFrame();
+          if (cameraToken !== cameraTokenRef.current) {
+            firstFrame.close?.();
+            return;
+          }
+          drawCameraFrame(firstFrame, canvasRef.current);
+          firstFrame.close?.();
+          previewMode = 'image-capture';
+          const paint = async () => {
+            if (cameraToken !== cameraTokenRef.current || imageCaptureRef.current !== imageCapture) return;
+            try {
+              const frame = await imageCapture.grabFrame();
+              if (cameraToken === cameraTokenRef.current) drawCameraFrame(frame, canvasRef.current);
+              frame.close?.();
+            } catch {
+              // One dropped preview frame is harmless. The next frame retries.
+            }
+            if (cameraToken === cameraTokenRef.current && !previewPausedRef.current) {
+              previewTimerRef.current = setTimeout(paint, 66);
+            }
+          };
+          previewTimerRef.current = setTimeout(paint, 66);
+        } catch {
+          imageCaptureRef.current = null;
         }
+      }
+      if (!imageCaptureRef.current) {
+        video.srcObject = stream;
+        await video.play();
+        let lastFrameAt = 0;
+        const paint = (time) => {
+          if (cameraToken !== cameraTokenRef.current) return;
+          if (time - lastFrameAt >= 32) {
+            drawCameraFrame(video, canvasRef.current);
+            lastFrameAt = time;
+          }
+          previewLoopRef.current = requestAnimationFrame(paint);
+        };
         previewLoopRef.current = requestAnimationFrame(paint);
-      };
-      previewLoopRef.current = requestAnimationFrame(paint);
+      }
       setFocusSupported(Boolean(focus?.focusSupported));
       setFocusMessage(focus?.focusSupported ? 'Auto focus on' : 'Hold the phone a little farther back');
       setTorchSupported(cameraTorchSupported(track));
@@ -136,6 +177,7 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
         facingMode: settings.facingMode,
         focusMode: settings.focusMode || focus?.mode || null,
         zoom: settings.zoom || null,
+        previewMode,
       });
       setPhase('ready');
     } catch (cameraError) {
@@ -222,29 +264,41 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
   };
 
   const capture = async () => {
-    const video = videoRef.current;
     const stage = stageRef.current;
     const frame = frameRef.current;
     const track = streamRef.current?.getVideoTracks?.()[0];
-    if (!video || !stage || !frame || !track || phase !== 'ready') return;
+    const video = videoRef.current;
+    if (!stage || !frame || !track || phase !== 'ready') return;
     setPhase('capturing');
+    previewPausedRef.current = true;
+    if (previewTimerRef.current != null) clearTimeout(previewTimerRef.current);
+    previewTimerRef.current = null;
     try {
       await focusCameraTrack(track, { x: 0.5, y: 0.5 }, navigator.mediaDevices);
       await new Promise((resolve) => setTimeout(resolve, 350));
+      const bitmap = imageCaptureRef.current ? await imageCaptureRef.current.grabFrame() : null;
+      const source = bitmap || video;
+      const sourceWidth = source?.width || source?.videoWidth;
+      const sourceHeight = source?.height || source?.videoHeight;
+      if (!source || !sourceWidth || !sourceHeight) throw new Error('The live camera frame was empty.');
       const stageBox = stage.getBoundingClientRect();
       const frameBox = frame.getBoundingClientRect();
       const crop = computeVideoCrop(
-        video.videoWidth, video.videoHeight, stageBox.width, stageBox.height,
+        sourceWidth, sourceHeight, stageBox.width, stageBox.height,
         { x: frameBox.left - stageBox.left, y: frameBox.top - stageBox.top, width: frameBox.width, height: frameBox.height },
       );
-      if (!crop) throw new Error('The card frame could not be read.');
+      if (!crop) {
+        bitmap?.close?.();
+        throw new Error('The card frame could not be read.');
+      }
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.round(crop.width));
       canvas.height = Math.max(1, Math.round(crop.height));
       canvas.getContext('2d').drawImage(
-        video, crop.x, crop.y, crop.width, crop.height,
+        source, crop.x, crop.y, crop.width, crop.height,
         0, 0, canvas.width, canvas.height,
       );
+      bitmap?.close?.();
       await identify(await canvasFile(canvas), true);
     } catch (captureError) {
       setError({ title: 'Photo failed', message: captureError?.message || 'The card photo could not be captured.' });
@@ -396,7 +450,9 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
               <span>{details.confidence ? `${details.confidence} photo confidence` : 'Card found'}</span>
             </div>
             <div className="live-match-card">
-              {details.imageUrl ? <img src={details.imageUrl} alt="" /> : <span className="live-match-art" aria-hidden />}
+              {details.imageUrl || previewUrl
+                ? <img src={details.imageUrl || previewUrl} alt="" />
+                : <span className="live-match-art" aria-hidden />}
               <div>
                 <strong>{details.name}</strong>
                 <span>{details.gameLabel}</span>

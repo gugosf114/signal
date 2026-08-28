@@ -37,6 +37,7 @@ export default function SearchBar({ onSearch, loading }) {
   // consumed on the way in and the dropdown pops open again over the finished
   // result. The list stays shut until the user actually types something else.
   const quietFor = useRef(null);
+  const scanSearchFor = useRef(null);
 
   useEffect(() => {
     const q = query.trim();
@@ -54,12 +55,17 @@ export default function SearchBar({ onSearch, loading }) {
         setSuggestions(hits);
         setActive(-1);
         setOpen(hits.length > 0);
+        if (scanSearchFor.current === q) {
+          setScanError(hits.length ? null : 'No exact printing was found. Type the set code.');
+          scanSearchFor.current = null;
+        }
       } catch {
         if (myToken !== reqToken.current) return;
         setSuggestions([]);
         setOpen(false);
         setActive(-1);
         setScanError('Card catalogues could not load. Try again.');
+        if (scanSearchFor.current === q) scanSearchFor.current = null;
       }
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
@@ -145,22 +151,24 @@ export default function SearchBar({ onSearch, loading }) {
     // guess must never replace the art for a different printing.
     const scanImagePath = await saveScannedCardImage(file, pin).catch(() => null);
     const exactPin = scanImagePath ? { ...pin, scanImagePath } : pin;
+    const exactName = exactPin.name || card.name;
     reqToken.current += 1;
-    quietFor.current = card.name;
-    setQuery(card.name);
+    quietFor.current = exactName;
+    setQuery(exactName);
     setOpen(false);
     setScannerOpen(false);
-    await onSearch(card.name, exactPin.game || card.game || null, { pin: exactPin });
+    await onSearch(exactName, exactPin.game || card.game || null, { pin: exactPin });
   };
 
   const searchPhotoMatch = ({ card } = {}) => {
-    const name = card?.name || '';
+    const name = looksLikeSetCode(card?.number || '') ? card.number : (card?.name || '');
     reqToken.current += 1;
     quietFor.current = null;
+    scanSearchFor.current = name;
     setQuery(name);
     setOpen(false);
     setScannerOpen(false);
-    setScanError('Choose the exact printing from the list.');
+    setScanError('Finding the exact printing…');
   };
 
   const busy = loading;

@@ -525,8 +525,11 @@ export async function resolvePrinting({ name, game, number, set } = {}) {
   // to its first page and hide the new release.
   if (number && looksLikeSetCode(String(number))) {
     const direct = await lookupBySetCode(String(number)).catch(() => null);
-    if (direct && (!game || direct.game === game)
-      && String(direct.name || '').trim().toLowerCase() === n.toLowerCase()) return direct;
+    // A full set code identifies one printing. Trust that catalogue record over
+    // vision's name OCR: BLZD-EN024 is Fydraulis Harmonia even when foil text is
+    // read as "Hydradius Harmonia". Requiring both strings to agree turned a
+    // correct code into a dead Search matches button.
+    if (direct && (!game || direct.game === game)) return direct;
     // Foil glare can make a printed L look like I. Recover only that one glyph,
     // only for Yu-Gi-Oh, and only when the exact card name leaves one catalogue
     // code. Any wider or ambiguous mismatch must still stop instead of guessing.

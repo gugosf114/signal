@@ -108,6 +108,37 @@ describe('live expansion shelf', () => {
 });
 
 describe('camera printing resolution', () => {
+  test('an exact full set code corrects a foil-misread card name', async () => {
+    globalThis.fetch = async (url) => {
+      if (String(url).includes('setcode=BLZD-EN024')) {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              id: 70088809,
+              name: 'Fydraulis Harmonia',
+              set_name: 'Blazing Dominion',
+              set_code: 'BLZD-EN024',
+              set_rarity: 'Starlight Rare',
+              set_price: '0',
+            };
+          },
+        };
+      }
+      return { ok: false, status: 400, async json() { return {}; } };
+    };
+
+    const hit = await resolvePrinting({
+      name: 'Hydradius Harmonia', game: 'yugioh',
+      set: 'BLZD', number: 'BLZD-EN024',
+    });
+
+    assert.equal(hit?.name, 'Fydraulis Harmonia');
+    assert.equal(hit?.number, 'BLZD-EN024');
+    assert.equal(hit?.rarity, 'Starlight Rare');
+  });
+
   test('repairs one I/L OCR error through one exact-name catalogue match', async () => {
     const requested = [];
     globalThis.fetch = async (url) => {
