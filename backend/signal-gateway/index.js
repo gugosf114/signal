@@ -145,10 +145,10 @@ function validateModelBody(body) {
   if (!body || typeof body !== 'object') throw new Error('Missing model request.');
   if (!ALLOWED_MODELS.has(body.model)) throw new Error('Model is not allowed.');
   const max = Number(body.max_tokens);
-  if (!Number.isFinite(max) || max < 1 || max > 8000) throw new Error('Token limit is not allowed.');
+  if (!Number.isFinite(max) || max < 1 || max > 6000) throw new Error('Token limit is not allowed.');
   if (!Array.isArray(body.messages) || body.messages.length !== 1) throw new Error('Message shape is not allowed.');
   const tools = Array.isArray(body.tools) ? body.tools : [];
-  if (tools.some((tool) => (
+  if ((tools.length && body.model !== 'claude-haiku-4-5') || tools.some((tool) => (
     tool?.type !== 'web_search_20260209'
     || tool?.name !== 'web_search'
     || Number(tool?.max_uses || 0) !== 1

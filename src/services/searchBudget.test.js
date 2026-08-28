@@ -36,6 +36,6 @@ describe('gateway search budget', () => {
       max_uses: 1,
       allowed_callers: ['direct'],
     });
-    assert.equal(ANALYSIS_MAX_TOKENS, 8000);
+    assert.equal(ANALYSIS_MAX_TOKENS, 6000);
   });
 });

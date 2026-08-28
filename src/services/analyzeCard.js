@@ -33,9 +33,10 @@ import {
   selectSearchTargets,
 } from './searchBudget';
 
-// Full reports use one model so the work shape does not change by card.
-// Camera identification remains on Haiku in scanCardImage.js.
-const ANALYSIS_MODEL = 'claude-sonnet-4-6';
+// Full reports use the same fast model so the work shape does not change by
+// card. Live proof showed Sonnet still needed 68 seconds after dynamic search
+// filtering was removed; Haiku completed the same direct-search step in 3.4.
+const ANALYSIS_MODEL = 'claude-haiku-4-5';
 
 function sharedCacheKey(cardName, game, pin) {
   const identity = pin?.printingId || pin?.id || '';
@@ -183,14 +184,9 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
 
   const modelRequest = {
       model,
-      // Eight thousand tokens covers the measured report shape while stopping
+      // Six thousand tokens covers the measured report shape while stopping
       // a sparse card from expanding into an unbounded research transcript.
       max_tokens: ANALYSIS_MAX_TOKENS,
-      // Adaptive thinking stays at low effort inside the same fixed ceiling.
-      // (Adaptive replaces the deprecated {type:'enabled',budget_tokens} form,
-      //  which 400s on Opus 4.7+/Fable if the model is ever upgraded.)
-      thinking: { type: 'adaptive' },
-      output_config: { effort: 'low' },
       system: [
         {
           type: 'text',

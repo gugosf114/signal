@@ -38,13 +38,13 @@ test('only Signal models and bounded requests pass', () => {
   };
   assert.doesNotThrow(() => validateModelBody(body));
   assert.throws(() => validateModelBody({ ...body, model: 'claude-opus-4-8' }), /not allowed/);
-  assert.throws(() => validateModelBody({ ...body, max_tokens: 8001 }), /not allowed/);
+  assert.throws(() => validateModelBody({ ...body, max_tokens: 6001 }), /not allowed/);
 });
 
 test('analysis permits one direct search and rejects hidden code filtering', () => {
   const body = {
-    model: 'claude-sonnet-4-6',
-    max_tokens: 8000,
+    model: 'claude-haiku-4-5',
+    max_tokens: 6000,
     messages: [{ role: 'user', content: 'test' }],
     tools: [{
       type: 'web_search_20260209',
@@ -62,6 +62,7 @@ test('analysis permits one direct search and rejects hidden code filtering', () 
     ...body,
     tools: [{ ...body.tools[0], allowed_callers: ['code_execution_20260120'] }],
   }), /not allowed/);
+  assert.throws(() => validateModelBody({ ...body, model: 'claude-sonnet-4-6' }), /not allowed/);
 });
 
 test('a live report or lease prevents a second paid model call', () => {

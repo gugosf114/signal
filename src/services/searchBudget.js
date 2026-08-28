@@ -1,5 +1,5 @@
 export const MAX_GATEWAY_SEARCHES = 1;
-export const ANALYSIS_MAX_TOKENS = 8000;
+export const ANALYSIS_MAX_TOKENS = 6000;
 export const FIXED_SEARCH_TARGET =
   'Find the single strongest current source missing from the supplied tournament, Reddit, or YouTube evidence.';
 
