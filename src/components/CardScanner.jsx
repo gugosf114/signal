@@ -436,7 +436,7 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
         {(phase === 'identifying' || phase === 'launching') && (
           <div className="live-scan-readout" role="status" aria-live="polite">
             <span className="live-scan-spinner" aria-hidden />
-            <strong>{phase === 'launching' ? 'Opening Signal' : 'Finding the exact printing'}</strong>
+            <strong>{phase === 'launching' ? 'Running card' : 'Finding the exact printing'}</strong>
             <span>{phase === 'launching' ? 'Starting the full market report.' : 'Reading the name, set, number, and variant.'}</span>
           </div>
         )}
@@ -464,7 +464,7 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
             <div className="live-match-actions">
               <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
               {details.exact ? (
-                <button type="button" className="live-match-primary" onClick={confirm}>Open Signal</button>
+                <button type="button" className="live-match-primary" onClick={confirm}>Run card</button>
               ) : (
                 <button type="button" className="live-match-primary" onClick={() => onManualSearch?.(match)}>Search matches</button>
               )}
