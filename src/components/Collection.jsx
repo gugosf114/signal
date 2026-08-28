@@ -123,7 +123,11 @@ export default function Collection({ onLookup, onAddCard }) {
       </div>
 
       <div className="col-finder">
-        <SearchBar onCardFound={(card) => onAddCard?.(card)} />
+        <SearchBar
+          onSearch={onLookup}
+          onCardFound={(card) => onAddCard?.(card)}
+          onScannerAdd={(card) => onAddCard?.(card)}
+        />
       </div>
 
       {status && (

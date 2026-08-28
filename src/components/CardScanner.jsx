@@ -50,11 +50,9 @@ const CardScanner = forwardRef(function CardScanner({
   open,
   onCancel,
   onIdentify,
-  onConfirm,
+  onAdd,
+  onRun,
   onManualSearch,
-  confirmLabel = 'Run card',
-  confirmingTitle = 'Running card',
-  confirmingText = 'Starting the full market report.',
 }, ref) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -81,6 +79,7 @@ const CardScanner = forwardRef(function CardScanner({
   const [focusMessage, setFocusMessage] = useState('');
   const [torchSupported, setTorchSupported] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
+  const [launchAction, setLaunchAction] = useState(null);
 
   const clearPreview = useCallback(() => {
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
@@ -122,6 +121,7 @@ const CardScanner = forwardRef(function CardScanner({
     setFocusSupported(false);
     setTorchSupported(false);
     setTorchOn(false);
+    setLaunchAction(null);
     previewPausedRef.current = false;
     const cameraToken = ++cameraTokenRef.current;
     try {
@@ -346,13 +346,18 @@ const CardScanner = forwardRef(function CardScanner({
     else setFocusMessage('Flash is unavailable');
   };
 
-  const confirm = async () => {
-    if (!match?.pin || !onConfirm) return;
+  const launch = async (action) => {
+    const handler = action === 'add' ? onAdd : onRun;
+    if (!match?.pin || !handler) return;
+    setLaunchAction(action);
     setPhase('launching');
     try {
-      await onConfirm(match);
+      await handler(match);
     } catch (confirmError) {
-      setError({ title: 'Signal did not open', message: confirmError?.message || 'Try the card again.' });
+      setError({
+        title: action === 'add' ? 'Collection did not open' : 'Signal did not open',
+        message: confirmError?.message || 'Try the card again.',
+      });
       setPhase('error');
     }
   };
@@ -454,8 +459,12 @@ const CardScanner = forwardRef(function CardScanner({
         {(phase === 'identifying' || phase === 'launching') && (
           <div className="live-scan-readout" role="status" aria-live="polite">
             <span className="live-scan-spinner" aria-hidden />
-            <strong>{phase === 'launching' ? confirmingTitle : 'Finding the exact printing'}</strong>
-            <span>{phase === 'launching' ? confirmingText : 'Reading the name, set, number, and variant.'}</span>
+            <strong>{phase === 'launching'
+              ? (launchAction === 'add' ? 'Opening collection form' : 'Running full Signal')
+              : 'Finding the exact printing'}</strong>
+            <span>{phase === 'launching'
+              ? (launchAction === 'add' ? 'Preparing this exact printing.' : 'Starting the complete market report.')
+              : 'Reading the name, set, number, and variant.'}</span>
           </div>
         )}
 
@@ -501,14 +510,23 @@ const CardScanner = forwardRef(function CardScanner({
             <p className="live-match-check">
               {candidates.length > 1 ? 'Pick the printing that matches your card.' : 'Check the set, number, and rarity before opening the report.'}
             </p>
-            <div className="live-match-actions">
-              <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
+            <div className={`live-match-actions ${details.exact ? 'live-match-actions--complete' : ''}`}>
               {details.exact ? (
-                <button type="button" className="live-match-primary" onClick={confirm}>{confirmLabel}</button>
+                <>
+                  <button type="button" className="live-match-add" onClick={() => launch('add')}>Add to collection</button>
+                  <button type="button" className="live-match-primary" onClick={() => launch('run')}>Run full Signal</button>
+                  <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
+                </>
               ) : needsChoice ? (
-                <button type="button" className="live-match-primary" disabled>Choose one</button>
+                <>
+                  <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
+                  <button type="button" className="live-match-primary" disabled>Choose one</button>
+                </>
               ) : (
-                <button type="button" className="live-match-primary" onClick={() => onManualSearch?.(match)}>Search matches</button>
+                <>
+                  <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
+                  <button type="button" className="live-match-primary" onClick={() => onManualSearch?.(match)}>Search matches</button>
+                </>
               )}
             </div>
           </section>

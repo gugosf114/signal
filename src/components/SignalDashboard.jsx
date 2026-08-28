@@ -491,7 +491,11 @@ export default function SignalDashboard() {
           gap: 14,
           marginBottom: 40,
         }}>
-          <SearchBar onSearch={handleSearch} loading={loading} />
+          <SearchBar
+            onSearch={handleSearch}
+            onScannerAdd={(card) => setAddCard(card)}
+            loading={loading}
+          />
           <QuickPicks onSelect={handleSearch} loading={loading} />
           <RecentScans onSelect={handleSearch} loading={loading} />
         </div>

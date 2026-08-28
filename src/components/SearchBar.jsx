@@ -22,7 +22,7 @@ const MIN_CHARS = 2;
 
 const GAME_LABEL = { pokemon: 'PKM', mtg: 'MTG', yugioh: 'YGO' };
 
-export default function SearchBar({ onSearch, onCardFound = null, loading = false }) {
+export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd = null, loading = false }) {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [scanError, setScanError] = useState(null);
@@ -208,7 +208,7 @@ export default function SearchBar({ onSearch, onCardFound = null, loading = fals
     scannerRef.current?.choosePhoto();
   };
 
-  const confirmPhotoMatch = async ({ card, pin, file }) => {
+  const finishPhotoMatch = async ({ card, pin, file }, action) => {
     if (!pin) return;
     // Save the owner's exact card only after the match is confirmed. A wrong
     // guess must never replace the art for a different printing.
@@ -223,14 +223,16 @@ export default function SearchBar({ onSearch, onCardFound = null, loading = fals
     const exactName = exactPin.name || card.name;
     reqToken.current += 1;
     quietFor.current = exactName;
-    setQuery(exactName);
+    setQuery(action === 'add' ? '' : exactName);
     setOpen(false);
     setScannerOpen(false);
-    if (onCardFound) {
-      setQuery('');
-      await onCardFound(exactPin);
+    if (action === 'add') {
+      const add = onScannerAdd || onCardFound;
+      if (!add) throw new Error('Adding to Collection is unavailable.');
+      await add(exactPin);
       return;
     }
+    if (!onSearch) throw new Error('Full Signal is unavailable.');
     await onSearch(exactName, exactPin.game || card.game || null, {
       pin: exactPin,
       // A newly found exact market price must replace a cached report whose
@@ -412,11 +414,9 @@ export default function SearchBar({ onSearch, onCardFound = null, loading = fals
         open={scannerOpen}
         onCancel={() => setScannerOpen(false)}
         onIdentify={identifyPhoto}
-        onConfirm={confirmPhotoMatch}
+        onAdd={(match) => finishPhotoMatch(match, 'add')}
+        onRun={(match) => finishPhotoMatch(match, 'run')}
         onManualSearch={searchPhotoMatch}
-        confirmLabel={onCardFound ? 'Add to collection' : 'Run card'}
-        confirmingTitle={onCardFound ? 'Opening collection form' : 'Running card'}
-        confirmingText={onCardFound ? 'Preparing this exact printing.' : 'Starting the full market report.'}
       />
     </form>
   );

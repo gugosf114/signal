@@ -1830,7 +1830,11 @@
   font: 700 12px 'Syne', sans-serif;
   cursor: pointer;
 }
+.live-match-actions--complete { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.live-match-actions--complete .live-match-secondary { grid-column: 1 / -1; min-height: 44px; }
 .live-match-secondary { border: 1px solid #34373E; background: transparent; color: #D0CCC4; }
+.live-match-add { border: 1px solid #608870; background: rgba(96,136,112,0.18); color: #C4D8C8; }
+.live-match-add:hover, .live-match-add:focus-visible { background: rgba(96,136,112,0.28); color: #FFF; }
 .live-match-primary { border: 1px solid #C44040; background: #C44040; color: #FFF; }
 .live-match-primary:disabled { opacity: 0.45; cursor: default; }
 .live-scanner-error {
