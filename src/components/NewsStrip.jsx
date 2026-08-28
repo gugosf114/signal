@@ -7,11 +7,6 @@ const CARD_W = 178;
 const GAP = 14;
 const STEP = CARD_W + GAP;
 const SPEED = 0.35;
-// The sub-frame every tile image lives in — a trading card's proportions.
-const FRAME_ASPECT = 0.716;
-// Anything meaningfully wider than that is a banner, not a card, and should
-// fill the frame rather than sit in letterbox bars.
-const BANNER_RATIO = FRAME_ASPECT * 1.1;
 
 function timeAgo(d) {
   const stamp = d instanceof Date ? d.getTime() : NaN;
@@ -27,7 +22,6 @@ function timeAgo(d) {
 // The pocket never moves. The gap that appears IS the pocket interior / dark fabric.
 function ArticleCard({ article }) {
   const [imgSrc, setImgSrc] = useState(article.imageUrl || null);
-  const [fit, setFit] = useState('contain');
   const c = article.source.color;
 
   // Which picture a tile wants depends on what its source publishes.
@@ -87,24 +81,15 @@ function ArticleCard({ article }) {
       className="npc-outer"
     >
       {/* ── CARD IMAGE — the part sticking out of the pocket ──────── */}
-      {/* All images render inside a centered portrait sub-frame so YGO cards
-          and article banners share the same visual footprint regardless of
-          source aspect ratio. */}
+      {/* The picture owns the whole tile width. The old centered portrait
+          sub-frame left black gutters on both sides after news sources began
+          providing real article art. Cover the shared frame edge to edge. */}
       <div className="npc-above" style={{ background: '#08090A' }}>
         {imgSrc ? (
           <div style={{
             position: 'absolute',
-            left: '50%',
-            top: 0,
-            transform: 'translateX(-50%)',
-            height: '100%',
-            aspectRatio: String(FRAME_ASPECT),
+            inset: 0,
             overflow: 'hidden',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: fit === 'cover' ? 0 : 6,
-            boxSizing: 'border-box',
           }}>
             <img
               src={imgSrc}
@@ -114,14 +99,10 @@ function ArticleCard({ article }) {
               style={{
                 width: '100%',
                 height: '100%',
-                objectFit: fit,
+                objectFit: 'cover',
                 objectPosition: 'center',
                 background: 'transparent',
                 display: 'block',
-              }}
-              onLoad={e => {
-                const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
-                if (w && h && w / h > BANNER_RATIO) setFit('cover');
               }}
               onError={e => { e.currentTarget.style.display = 'none'; }}
             />
