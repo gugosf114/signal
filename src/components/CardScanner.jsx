@@ -46,7 +46,16 @@ function FlashIcon({ on }) {
   );
 }
 
-export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onManualSearch }) {
+export default function CardScanner({
+  open,
+  onCancel,
+  onIdentify,
+  onConfirm,
+  onManualSearch,
+  confirmLabel = 'Run card',
+  confirmingTitle = 'Running card',
+  confirmingText = 'Starting the full market report.',
+}) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
@@ -442,8 +451,8 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
         {(phase === 'identifying' || phase === 'launching') && (
           <div className="live-scan-readout" role="status" aria-live="polite">
             <span className="live-scan-spinner" aria-hidden />
-            <strong>{phase === 'launching' ? 'Running card' : 'Finding the exact printing'}</strong>
-            <span>{phase === 'launching' ? 'Starting the full market report.' : 'Reading the name, set, number, and variant.'}</span>
+            <strong>{phase === 'launching' ? confirmingTitle : 'Finding the exact printing'}</strong>
+            <span>{phase === 'launching' ? confirmingText : 'Reading the name, set, number, and variant.'}</span>
           </div>
         )}
 
@@ -492,7 +501,7 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
             <div className="live-match-actions">
               <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
               {details.exact ? (
-                <button type="button" className="live-match-primary" onClick={confirm}>Run card</button>
+                <button type="button" className="live-match-primary" onClick={confirm}>{confirmLabel}</button>
               ) : needsChoice ? (
                 <button type="button" className="live-match-primary" disabled>Choose one</button>
               ) : (

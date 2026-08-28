@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { suggestCards } from '../services/fetchExpansions';
 import {
   loadCollection, importCollection, removeOne, removeAll,
   countCards, collectionValueSummary, cardKey,
@@ -8,9 +7,11 @@ import {
 import {
   parseCollectionBackup, saveCollectionBackup, saveCollectionCsv,
 } from '../services/collectionFiles';
+import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
 import CardLightbox from './CardLightbox';
+import CardBrowser from './CardBrowser';
+import SearchBar from './SearchBar';
 
-const GAME_LABEL = { pokemon: 'PKM', mtg: 'MTG', yugioh: 'YGO' };
 const CONDITION_LABEL = {
   near_mint: 'Near mint',
   lightly_played: 'Lightly played',
@@ -18,19 +19,12 @@ const CONDITION_LABEL = {
   heavily_played: 'Heavily played',
   damaged: 'Damaged',
 };
-const DEBOUNCE_MS = 250;
 
-export default function Collection({ onLookup, onGoToSignal }) {
+export default function Collection({ onLookup, onAddCard }) {
   const [cards, setCards] = useState(() => loadCollection());
   const [status, setStatus] = useState(null);
   const [viewing, setViewing] = useState(null);
-  const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchActive, setSearchActive] = useState(-1);
-  const searchRef = useRef(null);
   const importRef = useRef(null);
-  const reqToken = useRef(0);
   const flashTimer = useRef(null);
 
   const reload = useCallback(() => setCards(loadCollection()), []);
@@ -52,67 +46,6 @@ export default function Collection({ onLookup, onGoToSignal }) {
     if (flashTimer.current) clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setStatus((value) => value?.text === text ? null : value), 4200);
   }, []);
-
-  useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) {
-      setSuggestions([]);
-      setSearchOpen(false);
-      return;
-    }
-    const myToken = ++reqToken.current;
-    const timer = setTimeout(async () => {
-      try {
-        const hits = await suggestCards(q, 8);
-        if (myToken !== reqToken.current) return;
-        setSuggestions(hits);
-        setSearchActive(-1);
-        setSearchOpen(hits.length > 0);
-      } catch {
-        if (myToken !== reqToken.current) return;
-        setSuggestions([]);
-        setSearchOpen(false);
-        flash('bad', 'Card catalogues could not load. Try again.');
-      }
-    }, DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [query, flash]);
-
-  useEffect(() => {
-    if (!searchOpen) return;
-    const onDocDown = (event) => {
-      if (!searchRef.current?.contains(event.target)) setSearchOpen(false);
-    };
-    document.addEventListener('pointerdown', onDocDown);
-    return () => document.removeEventListener('pointerdown', onDocDown);
-  }, [searchOpen]);
-
-  const openLookup = (card) => {
-    if (!card) return;
-    reqToken.current += 1;
-    setQuery('');
-    setSuggestions([]);
-    setSearchOpen(false);
-    onLookup?.(card.name, card.game, { pin: card });
-  };
-
-  const submitLookup = (event) => {
-    event.preventDefault();
-    if (searchActive >= 0 && suggestions[searchActive]) {
-      openLookup(suggestions[searchActive]);
-      return;
-    }
-    if (suggestions.length === 1) {
-      openLookup(suggestions[0]);
-      return;
-    }
-    if (suggestions.length > 1) {
-      setSearchOpen(true);
-      flash('bad', 'Choose the card you mean from the list.');
-      return;
-    }
-    if (query.trim().length >= 2) flash('bad', 'No card matched that search yet.');
-  };
 
   const restoreBackup = async (event) => {
     const file = event.target.files?.[0];
@@ -157,69 +90,12 @@ export default function Collection({ onLookup, onGoToSignal }) {
   return (
     <div>
       <div className="col-intro">
-        Search an exact printing. Open its Signal report, then add your copy here.
+        Scan or search an exact printing, then add your copy here.
       </div>
 
-      <form className="col-search" ref={searchRef} onSubmit={submitLookup}>
-        <input
-          type="text"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => {
-            if (!searchOpen || !suggestions.length) return;
-            if (event.key === 'ArrowDown') {
-              event.preventDefault();
-              setSearchActive((value) => (value + 1) % suggestions.length);
-            } else if (event.key === 'ArrowUp') {
-              event.preventDefault();
-              setSearchActive((value) => value <= 0 ? suggestions.length - 1 : value - 1);
-            } else if (event.key === 'Enter' && searchActive >= 0) {
-              event.preventDefault();
-              openLookup(suggestions[searchActive]);
-            } else if (event.key === 'Escape') setSearchOpen(false);
-          }}
-          onFocus={() => { if (suggestions.length) setSearchOpen(true); }}
-          placeholder="Card name, number, or name + last digits"
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          enterKeyHint="search"
-          className="col-search-input"
-          role="combobox"
-          aria-expanded={searchOpen}
-          aria-controls="collection-card-suggestions"
-          aria-activedescendant={searchActive >= 0 ? `collection-card-option-${searchActive}` : undefined}
-        />
-        {searchOpen && suggestions.length > 0 && (
-          <ul id="collection-card-suggestions" className="sb-list" role="listbox">
-            {suggestions.map((card, index) => (
-              <li key={`${card.game}-${card.printingId || card.id}-${index}`} role="presentation">
-                <button
-                  id={`collection-card-option-${index}`}
-                  type="button"
-                  role="option"
-                  aria-selected={index === searchActive}
-                  className={`sb-item ${index === searchActive ? 'sb-item--on' : ''}`}
-                  onMouseEnter={() => setSearchActive(index)}
-                  onClick={() => openLookup(card)}
-                >
-                  {card.imageUrl
-                    ? <img src={card.imageUrl} alt="" className="sb-thumb" loading="lazy" />
-                    : <span className="sb-thumb sb-thumb--empty" />}
-                  <span className="sb-text">
-                    <span className="sb-name">{card.name}</span>
-                    <span className="sb-meta">
-                      <span className="sb-game">{GAME_LABEL[card.game] || card.game}</span>
-                      {card.setName || 'Set not listed'}{card.number ? ` · ${card.number}` : ''}
-                    </span>
-                  </span>
-                  {card.price != null && <span className="sb-price">{money(card.price)}</span>}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </form>
+      <div className="col-finder">
+        <SearchBar onCardFound={(card) => onAddCard?.(card)} />
+      </div>
 
       {status && (
         <div className={`col-status ${status.kind === 'bad' ? 'col-status--bad' : ''}`}>{status.text}</div>
@@ -251,8 +127,7 @@ export default function Collection({ onLookup, onGoToSignal }) {
         <div className="col-empty">
           <div className="col-empty-mark" aria-hidden="true"><span /><span /></div>
           <strong>No cards saved yet</strong>
-          <p>Open an exact printing in Signal, then tap Add to collection.</p>
-          <button type="button" onClick={() => onGoToSignal?.()}>Find a card in Signal</button>
+          <p>Use the scanner or search above to add your first card.</p>
         </div>
       ) : (
         <div className="col-grid">
@@ -285,6 +160,13 @@ export default function Collection({ onLookup, onGoToSignal }) {
           ))}
         </div>
       )}
+
+      <CardBrowser
+        actionLabel="Add to collection"
+        onCardSelect={async (_name, _game, options = {}) => {
+          if (options.pin) onAddCard?.(await addTcgplayerPrice(options.pin));
+        }}
+      />
 
       <CardLightbox
         isOpen={!!viewing}

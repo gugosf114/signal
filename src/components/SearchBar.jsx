@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { scanCardImage } from '../services/scanCardImage';
 import { looksLikeYgoPasscode, resolvePrintingOptions, suggestCards } from '../services/fetchExpansions';
-import { looksLikeSetCode } from '../services/lookupBySetCode';
-import { saveScannedCardImage } from '../services/scannedCardImage';
+import { looksLikeSetCode, lookupBySetCode } from '../services/lookupBySetCode';
+import { loadScannedCardImage, saveScannedCardImage } from '../services/scannedCardImage';
 import { withScanKeepAlive } from '../services/scanKeepAlive';
 import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
 import CardScanner from './CardScanner';
@@ -21,11 +21,12 @@ const MIN_CHARS = 2;
 
 const GAME_LABEL = { pokemon: 'PKM', mtg: 'MTG', yugioh: 'YGO' };
 
-export default function SearchBar({ onSearch, loading }) {
+export default function SearchBar({ onSearch, onCardFound = null, loading = false }) {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [scanError, setScanError] = useState(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [resolving, setResolving] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -82,22 +83,26 @@ export default function SearchBar({ onSearch, loading }) {
   }, [open]);
 
   const pick = async (card) => {
-    const pricedCard = await addTcgplayerPrice(card);
-    reqToken.current += 1;
-    quietFor.current = pricedCard.name;
-    setQuery(pricedCard.name);
-    setSuggestions([]);
-    setOpen(false);
-    setActive(-1);
-    // The whole row travels with the search: `pin` is what stops the scan from
-    // guessing a printing.
-    onSearch(pricedCard.name, pricedCard.game, {
-      pin: pricedCard,
-      force: pricedCard.priceSource === 'TCGplayer',
-    });
+    setResolving(true);
+    try {
+      const pricedCard = await addTcgplayerPrice(card);
+      reqToken.current += 1;
+      quietFor.current = pricedCard.name;
+      setQuery(onCardFound ? '' : pricedCard.name);
+      setSuggestions([]);
+      setOpen(false);
+      setActive(-1);
+      if (onCardFound) await onCardFound(pricedCard);
+      else onSearch?.(pricedCard.name, pricedCard.game, {
+        pin: pricedCard,
+        force: pricedCard.priceSource === 'TCGplayer',
+      });
+    } finally {
+      setResolving(false);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (open && active >= 0 && suggestions[active]) {
       pick(suggestions[active]);
@@ -118,7 +123,23 @@ export default function SearchBar({ onSearch, loading }) {
       reqToken.current += 1;
       quietFor.current = query.trim();
       setOpen(false);
-      onSearch(query.trim());
+      if (onCardFound) {
+        setResolving(true);
+        try {
+          const hit = await lookupBySetCode(query.trim());
+          if (!hit) {
+            setScanError('That exact card number was not found.');
+            return;
+          }
+          const priced = await addTcgplayerPrice(hit);
+          setQuery('');
+          await onCardFound(priced);
+        } catch {
+          setScanError('The card catalogues could not load. Try again.');
+        } finally {
+          setResolving(false);
+        }
+      } else onSearch?.(query.trim());
     }
   };
 
@@ -161,13 +182,24 @@ export default function SearchBar({ onSearch, loading }) {
     // Save the owner's exact card only after the match is confirmed. A wrong
     // guess must never replace the art for a different printing.
     const scanImagePath = await saveScannedCardImage(file, pin).catch(() => null);
-    const exactPin = scanImagePath ? { ...pin, scanImagePath } : pin;
+    const localImageUrl = scanImagePath ? await loadScannedCardImage(scanImagePath).catch(() => null) : null;
+    const exactPin = scanImagePath ? {
+      ...pin,
+      scanImagePath,
+      imageUrl: pin.imageUrl || localImageUrl,
+      imageLarge: pin.imageLarge || localImageUrl,
+    } : pin;
     const exactName = exactPin.name || card.name;
     reqToken.current += 1;
     quietFor.current = exactName;
     setQuery(exactName);
     setOpen(false);
     setScannerOpen(false);
+    if (onCardFound) {
+      setQuery('');
+      await onCardFound(exactPin);
+      return;
+    }
     await onSearch(exactName, exactPin.game || card.game || null, {
       pin: exactPin,
       // A newly found exact market price must replace a cached report whose
@@ -191,7 +223,7 @@ export default function SearchBar({ onSearch, loading }) {
     setScanError('Finding the exact printing…');
   };
 
-  const busy = loading;
+  const busy = loading || resolving;
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} style={{
@@ -336,6 +368,9 @@ export default function SearchBar({ onSearch, loading }) {
         onIdentify={identifyPhoto}
         onConfirm={confirmPhotoMatch}
         onManualSearch={searchPhotoMatch}
+        confirmLabel={onCardFound ? 'Add to collection' : 'Run card'}
+        confirmingTitle={onCardFound ? 'Opening collection form' : 'Running card'}
+        confirmingText={onCardFound ? 'Preparing this exact printing.' : 'Starting the full market report.'}
       />
     </form>
   );

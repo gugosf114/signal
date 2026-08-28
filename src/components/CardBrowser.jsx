@@ -12,7 +12,7 @@ const TABS = [
   { id: 'yugioh',  label: 'Yu-Gi-Oh!', color: '#7080A0' },
 ];
 
-export default function CardBrowser({ onCardSelect }) {
+export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this card' }) {
   const [activeGame, setActiveGame] = useState('pokemon');
   const [expansions, setExpansions] = useState({ pokemon: [], mtg: [], yugioh: [] });
   const [activeSet, setActiveSet] = useState(null);
@@ -406,6 +406,7 @@ export default function CardBrowser({ onCardSelect }) {
         onClose={() => setViewing(null)}
         imageUrl={viewing?.imageLarge || viewing?.imageUrl}
         cardName={viewing?.name}
+        scanLabel={actionLabel}
         onScan={() => {
           const c = viewing;
           setViewing(null);

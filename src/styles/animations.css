@@ -2050,6 +2050,11 @@
   font-style: italic;
   line-height: 1.55;
 }
+.col-finder {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
 .col-search { position: relative; }
 .col-search-input {
   width: 100%;
