@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { scanCardImage } from '../services/scanCardImage';
-import { suggestCards, resolvePrinting } from '../services/fetchExpansions';
+import { looksLikeYgoPasscode, suggestCards, resolvePrinting } from '../services/fetchExpansions';
 import { looksLikeSetCode } from '../services/lookupBySetCode';
 import { saveScannedCardImage } from '../services/scannedCardImage';
 import { withScanKeepAlive } from '../services/scanKeepAlive';
@@ -81,16 +81,20 @@ export default function SearchBar({ onSearch, loading }) {
     return () => document.removeEventListener('pointerdown', onDocDown);
   }, [open]);
 
-  const pick = (card) => {
+  const pick = async (card) => {
+    const pricedCard = await addTcgplayerPrice(card);
     reqToken.current += 1;
-    quietFor.current = card.name;
-    setQuery(card.name);
+    quietFor.current = pricedCard.name;
+    setQuery(pricedCard.name);
     setSuggestions([]);
     setOpen(false);
     setActive(-1);
     // The whole row travels with the search: `pin` is what stops the scan from
     // guessing a printing.
-    onSearch(card.name, card.game, { pin: card });
+    onSearch(pricedCard.name, pricedCard.game, {
+      pin: pricedCard,
+      force: pricedCard.priceSource === 'TCGplayer',
+    });
   };
 
   const handleSubmit = (e) => {
@@ -169,7 +173,10 @@ export default function SearchBar({ onSearch, loading }) {
   };
 
   const searchPhotoMatch = ({ card } = {}) => {
-    const name = looksLikeSetCode(card?.number || '') ? card.number : (card?.name || '');
+    const lookupValue = card?.number || card?.passcode || '';
+    const name = looksLikeSetCode(lookupValue) || looksLikeYgoPasscode(lookupValue)
+      ? lookupValue
+      : (card?.name || '');
     reqToken.current += 1;
     quietFor.current = null;
     scanSearchFor.current = name;

@@ -12,6 +12,10 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 const COUNT = 12;
 const PAGE = 21;
 
+export function looksLikeYgoPasscode(input) {
+  return /^\d{8}$/.test(String(input || '').trim());
+}
+
 function pokemonRow(c, fallbackSetName = '') {
   const variants = c.tcgplayer?.prices || {};
   const market = (value) => Number.isFinite(value?.market) ? value.market : null;
@@ -113,6 +117,15 @@ export function ygoPrintingRows(card, wantedSet = null) {
     imageLarge: card?.card_images?.[0]?.image_url || card?.card_images?.[0]?.image_url_small || null,
     };
   });
+}
+
+export async function fetchYgoPrintingsByPasscode(passcode) {
+  if (!looksLikeYgoPasscode(passcode)) return [];
+  const data = await getJSON(
+    `https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${encodeURIComponent(String(passcode).trim())}`
+  ).catch(() => null);
+  const card = data?.data?.[0];
+  return card ? ygoPrintingRows(card) : [];
 }
 
 // "Captain 123" means: search the name Captain, then keep cards whose printed
@@ -389,6 +402,7 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
 export async function searchCardsByName(game, query, priceSort = null) {
   const q = (query || '').trim();
   if (q.length < 2) return [];
+  if (game === 'yugioh' && looksLikeYgoPasscode(q)) return fetchYgoPrintingsByPasscode(q);
   if (looksLikeSetCode(q)) {
     const hit = await lookupBySetCode(q);
     if (!hit || hit.game !== game) return [];
@@ -468,6 +482,7 @@ export async function searchCardsByName(game, query, priceSort = null) {
 export async function suggestCards(query, limit = 8) {
   const q = (query || '').trim();
   if (q.length < 2) return [];
+  if (looksLikeYgoPasscode(q)) return (await fetchYgoPrintingsByPasscode(q)).slice(0, limit);
   if (looksLikeSetCode(q)) {
     const hit = await lookupBySetCode(q);
     return hit ? [{ ...hit, setId: hit.setId || hit.setCode || null }] : [];
@@ -516,7 +531,7 @@ export async function suggestCards(query, limit = 8) {
 //
 // Returns null when nothing matches confidently; the caller falls back to a
 // plain name search, which is what it did before.
-export async function resolvePrinting({ name, game, number, set } = {}) {
+export async function resolvePrinting({ name, game, number, set, passcode, rarity } = {}) {
   const n = (name || '').trim();
   if (n.length < 2) return null;
 
@@ -549,6 +564,27 @@ export async function resolvePrinting({ name, game, number, set } = {}) {
           && String(corrected.name || '').trim().toLowerCase() === n.toLowerCase()) return corrected;
       }
     }
+  }
+
+  const ygoPasscode = looksLikeYgoPasscode(passcode) ? String(passcode).trim()
+    : (looksLikeYgoPasscode(number) ? String(number).trim() : null);
+  if ((!game || game === 'yugioh') && ygoPasscode) {
+    const rows = await fetchYgoPrintingsByPasscode(ygoPasscode);
+    const rarityText = String(rarity || '').trim().toLowerCase();
+    const rawSet = String(set || '').trim().toLowerCase();
+    const passcodeSet = /unknown|unable|unreadable|not (?:clear|visible)/i.test(rawSet) ? '' : rawSet;
+    const candidates = rows.filter((row) => {
+      const rarityMatches = !rarityText || String(row.rarity || '').trim().toLowerCase() === rarityText;
+      const rowSetName = String(row.setName || '').trim().toLowerCase();
+      const rowSetCode = String(row.setId || '').trim().toLowerCase();
+      const setMatches = !passcodeSet
+        || rowSetName === passcodeSet
+        || rowSetCode === passcodeSet
+        || rowSetCode.startsWith(`${passcodeSet}-`);
+      return rarityMatches && setMatches;
+    });
+    if (candidates.length === 1) return candidates[0];
+    if (!rarityText && !passcodeSet && rows.length === 1) return rows[0];
   }
 
   // "199/198" is printed on the card; catalogues store "199".

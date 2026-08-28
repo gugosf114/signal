@@ -20,7 +20,7 @@ export function scannerMatchDetails(match = {}) {
     game: source.game || vision.game || null,
     gameLabel: GAME_LABELS[source.game || vision.game] || 'Trading card',
     setName: clean(source.setName) || clean(source.set) || clean(vision.set) || 'Set unknown',
-    number: clean(source.number) || clean(source.setCode) || clean(vision.number) || null,
+    number: clean(source.number) || clean(source.setCode) || clean(vision.number) || clean(vision.passcode) || null,
     rarity: clean(source.rarity) || null,
     imageUrl: clean(source.imageUrl) || null,
     price: Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : null,

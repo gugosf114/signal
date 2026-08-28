@@ -11,7 +11,7 @@ describe('vision result validation', () => {
     });
     assert.deepEqual(out, {
       name: 'Charizard ex', game: null, set: null, number: '199/198',
-      confidence: 'low', notes: 'blurry',
+      passcode: null, rarity: null, confidence: 'low', notes: 'blurry',
     });
   });
 
@@ -24,5 +24,16 @@ describe('vision result validation', () => {
     assert.equal(out.game, 'yugioh');
     assert.equal(out.number, 'L26D-ENS08');
     assert.equal(out.confidence, 'high');
+  });
+
+  test('separates a Yu-Gi-Oh passcode from its exact printing code and rarity', () => {
+    const out = validateCardIdentification({
+      name: 'Hydraulis Harmonia', game: 'yugioh', set: 'Unknown',
+      number: '70088809', passcode: '70088809', rarity: 'Starlight Rare',
+      confidence: 'high', notes: 'The lower-right set code is blurred.',
+    });
+    assert.equal(out.number, null);
+    assert.equal(out.passcode, '70088809');
+    assert.equal(out.rarity, 'Starlight Rare');
   });
 });

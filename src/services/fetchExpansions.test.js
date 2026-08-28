@@ -2,8 +2,8 @@ import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  cardNumberEndsWith, parseCardLookupQuery, resolvePrinting,
-  searchCardsByName, selectRecentYugiohSets, ygoPrintingRows,
+  cardNumberEndsWith, fetchYgoPrintingsByPasscode, parseCardLookupQuery, resolvePrinting,
+  searchCardsByName, selectRecentYugiohSets, suggestCards, ygoPrintingRows,
 } from './fetchExpansions.js';
 
 const originalFetch = globalThis.fetch;
@@ -31,6 +31,17 @@ const reinforcement = {
     set_rarity,
     set_price: '0',
   })),
+};
+
+const fydraulis = {
+  id: 70088809,
+  name: 'Fydraulis Harmonia',
+  card_prices: [{ tcgplayer_price: '90.80' }],
+  card_images: [{ image_url: 'fydraulis.jpg', image_url_small: 'fydraulis-small.jpg' }],
+  card_sets: [
+    { set_name: 'Blazing Dominion', set_code: 'BLZD-EN024', set_rarity: 'Secret Rare', set_price: '0' },
+    { set_name: 'Blazing Dominion', set_code: 'BLZD-EN024', set_rarity: 'Starlight Rare', set_price: '0' },
+  ],
 };
 
 describe('Yu-Gi-Oh printing rows', () => {
@@ -108,6 +119,36 @@ describe('live expansion shelf', () => {
 });
 
 describe('camera printing resolution', () => {
+  test('a Yu-Gi-Oh passcode and foil rarity repair a wrong OCR name', async () => {
+    globalThis.fetch = async (url) => {
+      if (String(url).includes('cardinfo.php?id=70088809')) {
+        return { ok: true, status: 200, async json() { return { data: [fydraulis] }; } };
+      }
+      return { ok: false, status: 400, async json() { return {}; } };
+    };
+
+    const hit = await resolvePrinting({
+      name: 'Hydraulis Harmonia', game: 'yugioh', set: 'Unknown',
+      number: null, passcode: '70088809', rarity: 'Starlight Rare',
+    });
+
+    assert.equal(hit?.name, 'Fydraulis Harmonia');
+    assert.equal(hit?.number, 'BLZD-EN024');
+    assert.equal(hit?.rarity, 'Starlight Rare');
+  });
+
+  test('Search matches expands a passcode into every real printing', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      async json() { return { data: [fydraulis] }; },
+    });
+    const rows = await fetchYgoPrintingsByPasscode('70088809');
+    const suggestions = await suggestCards('70088809');
+    assert.equal(rows.length, 2);
+    assert.deepEqual(suggestions.map((row) => row.rarity), ['Secret Rare', 'Starlight Rare']);
+  });
+
   test('an exact full set code corrects a foil-misread card name', async () => {
     globalThis.fetch = async (url) => {
       if (String(url).includes('setcode=BLZD-EN024')) {

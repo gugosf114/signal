@@ -20,6 +20,8 @@ Output strict JSON only — no markdown, no prose. Schema:
   "game": "pokemon" | "yugioh" | "mtg" | null,
   "set": "<set name or null>",
   "number": "<collector number like 199/198 or null>",
+  "passcode": "<Yu-Gi-Oh 8-digit lower-left card passcode, or null>",
+  "rarity": "<visible printing rarity such as Starlight Rare, or null>",
   "confidence": "high" | "medium" | "low",
   "notes": "<one short sentence if confidence < high, else empty>"
 }
@@ -29,7 +31,10 @@ Rules:
 - game: pokemon if a Pokémon energy symbol or Pokéball is visible; yugioh if a Yu-Gi-Oh card frame (eye-of-Wadjet back, Synchro/Xyz/Link frames); mtg if Magic mana costs or planeswalker icons. null if you can't tell.
 - set: the printed set name or set code (e.g. "Prismatic Evolutions", "PRE", "MOM", "LOB").
 - number: the collector number printed on the card (e.g. "199/198" or "EN001").
-- Inspect the lower-right edge above the text box for the printed code. A second image is a close crop of that area. Preserve letters before digits, such as L26D-ENS08.
+- For Yu-Gi-Oh, number means the lower-right SET CODE above the text box, such as BLZD-EN024. Never put the 8-digit lower-left card passcode in number.
+- For Yu-Gi-Oh, copy the lower-left 8-digit card passcode into passcode. It identifies the card even when foil hides the name.
+- rarity: copy a printed rarity when present. For Yu-Gi-Oh, identify obvious foil treatments such as Starlight Rare, Secret Rare, or Ultra Rare; use null when unsure.
+- Inspect both lower corners. A second image is a close crop of that area. Preserve every letter in set codes such as L26D-ENS08.
 - confidence: high only if you can read the card name clearly. medium if name is partially obscured but inferable. low otherwise.
 - If the image is not a TCG card or is unreadable, return name "" and confidence "low" with a notes sentence explaining what you saw.
 - Do NOT fabricate. If unsure, leave a field null and lower the confidence.`;
@@ -194,11 +199,24 @@ export function validateCardIdentification(value) {
     .filter((item) => typeof item === 'string')
     .join(' ');
   const recoveredCode = codePool.match(/\b[A-Z0-9]{2,6}-(?:EN|JP|DE|FR|IT|PT|SP|KR|CH|SS|GR)?[A-Z]?\d{1,4}[A-Z]?\b/i)?.[0] || null;
+  const passcodePool = [input.passcode, input.number, input.notes]
+    .filter((item) => typeof item === 'string')
+    .join(' ');
+  const passcode = passcodePool.match(/\b\d{8}\b/)?.[0] || null;
+  const rarityPool = [input.rarity, input.notes]
+    .filter((item) => typeof item === 'string')
+    .join(' ');
+  const recoveredRarity = rarityPool.match(/\b(?:Starlight|Quarter Century Secret|Prismatic Secret|Secret|Ultra|Super|Collector'?s|Ultimate|Ghost|Rare) Rare\b/i)?.[0]
+    || rarityPool.match(/\bCommon\b/i)?.[0]
+    || null;
+  const numberIsPasscode = /^\d{8}$/.test(statedNumber);
   return {
     name: cleanText(input.name, 180),
     game,
     set: cleanText(input.set, 160) || null,
-    number: unknownNumber ? recoveredCode : statedNumber,
+    number: unknownNumber || numberIsPasscode ? recoveredCode : statedNumber,
+    passcode,
+    rarity: recoveredRarity ? cleanText(recoveredRarity, 80) : null,
     confidence,
     notes: cleanText(input.notes, 240),
   };
