@@ -58,6 +58,8 @@ export function toPrinting(game, pin, cardData) {
     number: pin?.number || src.number || null,
     printedTotal: pin?.printedTotal || (mayEnrichPin ? src.printedTotal : null) || null,
     rarity: pin?.rarity || (mayEnrichPin ? src.rarity : null) || null,
+    imageUrl: pin?.imageUrl || src.imageUrl || null,
+    imageLarge: pin?.imageLarge || src.imageLarge || null,
     pinned: !!pin,
   };
   return out.setName || out.number || out.setId ? out : null;

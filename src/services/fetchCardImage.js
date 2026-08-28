@@ -25,6 +25,10 @@ import { loadScannedCardImage } from './scannedCardImage.js';
 // session (also de-duping concurrent in-flight requests) and in localStorage
 // across launches.
 //
+// v4: New Pokémon sets return Scrydex image URLs. v3 rebuilt every Pokémon URL
+// on the older images.pokemontcg.io host, which returns a generic card back for
+// those sets. Keep the exact URL returned by the catalogue instead.
+//
 // v3: Konami's exact-art endpoint burns SAMPLE into every returned image. v2
 // cached those images for a week. Standard art now uses the clean catalogue;
 // alternate art uses the owner's saved scan, so the key is bumped again.
@@ -33,7 +37,7 @@ import { loadScannedCardImage } from './scannedCardImage.js';
 // transient pokemontcg.io 500. One bad minute on their end blanked a card's art
 // for a week. Negatives now expire in an hour, and outright failures aren't
 // cached at all. The key was bumped so poisoned v1 entries are simply dropped.
-const IMG_CACHE_KEY = 'signal_card_image_cache_v3';
+const IMG_CACHE_KEY = 'signal_card_image_cache_v4';
 const IMG_TTL_MS = 7 * 24 * 60 * 60 * 1000;   // found an image
 const NEG_TTL_MS = 60 * 60 * 1000;            // genuinely no image for this card
 const IMG_MAX_ENTRIES = 300;
@@ -228,12 +232,10 @@ async function fetchYuGiOhCatalogueImage(name, pin = null) {
 async function fetchPokemonImage(name, pin = null) {
   if (pin?.imageLarge || pin?.imageUrl) return pin.imageLarge || pin.imageUrl;
 
-  // Pokémon's image CDN follows the catalogue identity exactly:
-  // det1-10 -> /det1/10_hires.png. Build that stable URL directly instead of
-  // waiting on the card API, which took 18.7 seconds in the blank Detective
-  // Pikachu case while the image component has an 8-second request limit.
-  const directImage = pokemonImageFromPin(pin);
-  if (directImage) return directImage;
+  // Exact records carry the provider's real image host. New sets use Scrydex;
+  // older sets use images.pokemontcg.io. Never invent the host from the ID.
+  const id = pin?.printingId || pin?.catalogId || pin?.id;
+  if (id) return fetchPokemonExactImage(id, name);
 
   // Strip suffixes like "ex", "V", "VMAX" for better search matching.
   // Also strip embedded quotes — encodeURIComponent doesn't escape them and
@@ -244,10 +246,9 @@ async function fetchPokemonImage(name, pin = null) {
     .trim();
   let res;
   try {
-    const id = pin?.printingId || pin?.id;
-    res = await fetchWithTimeout(id
-      ? `https://api.pokemontcg.io/v2/cards/${encodeURIComponent(id)}`
-      : `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(cleanName)}"&pageSize=1&orderBy=-set.releaseDate`);
+    res = await fetchWithTimeout(
+      `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(cleanName)}"&pageSize=1&orderBy=-set.releaseDate`
+    );
   } catch (e) {
     console.warn(`[fetchCardImage] pokemontcg network error for "${cleanName}":`, e);
     return FAILED;
@@ -267,15 +268,38 @@ async function fetchPokemonImage(name, pin = null) {
   }
 }
 
-export function pokemonImageFromPin(pin) {
-  let setId = String(pin?.setId || '').trim();
-  let number = String(pin?.number || '').trim();
-  const identity = String(pin?.printingId || pin?.catalogId || pin?.id || '').trim();
-  if ((!setId || !number) && identity.includes('-')) {
-    const split = identity.lastIndexOf('-');
-    setId ||= identity.slice(0, split);
-    number ||= identity.slice(split + 1);
+async function fetchPokemonExactImage(id, name) {
+  const outcomes = [];
+  try {
+    const res = await fetchWithTimeout(`https://api.pokemontcg.io/v2/cards/${encodeURIComponent(id)}`);
+    if (res.ok) {
+      const data = await res.json();
+      const url = data.data?.images?.large || data.data?.images?.small || null;
+      if (url) return url;
+      outcomes.push(null);
+    } else {
+      if (res.status !== 404) console.warn(`[fetchCardImage] pokemontcg ${res.status} for "${name}"/${id}`);
+      outcomes.push(res.status === 404 ? null : FAILED);
+    }
+  } catch (error) {
+    console.warn(`[fetchCardImage] pokemontcg network error for "${name}"/${id}:`, error);
+    outcomes.push(FAILED);
   }
-  if (!/^[a-z0-9]+$/i.test(setId) || !/^[a-z0-9]+$/i.test(number)) return null;
-  return `https://images.pokemontcg.io/${encodeURIComponent(setId)}/${encodeURIComponent(number)}_hires.png`;
+
+  // TCGdex shares the legacy IDs and is the fallback when pokemontcg.io has
+  // one of its routine 500/502 spells.
+  try {
+    const res = await fetchWithTimeout(`https://api.tcgdex.net/v2/en/cards/${encodeURIComponent(id)}`);
+    if (res.ok) {
+      const card = await res.json();
+      if (card?.image) return `${card.image}/high.webp`;
+      outcomes.push(null);
+    } else {
+      outcomes.push(res.status === 404 ? null : FAILED);
+    }
+  } catch {
+    outcomes.push(FAILED);
+  }
+
+  return outcomes.every((value) => value === null) ? null : FAILED;
 }

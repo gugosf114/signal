@@ -50,7 +50,7 @@ describe('printingLabel', () => {
 });
 
 describe('toPrinting', () => {
-  const cardData = { game: 'pokemon', catalogId: 'sv3-223', printingId: 'sv3-223', setName: 'Obsidian Flames', setId: 'sv3', number: '223', printedTotal: '197', rarity: 'Illustration Rare' };
+  const cardData = { game: 'pokemon', catalogId: 'sv3-223', printingId: 'sv3-223', setName: 'Obsidian Flames', setId: 'sv3', number: '223', printedTotal: '197', rarity: 'Illustration Rare', imageUrl: 'https://images.example/sv3-223/large' };
 
   test('a chosen printing beats whatever the lookup returned', () => {
     const pin = { id: 'sv8pt5-161', setName: 'Prismatic Evolutions', setId: 'sv8pt5', number: '161' };
@@ -75,6 +75,7 @@ describe('toPrinting', () => {
     assert.equal(out.number, '223');
     assert.equal(out.printedTotal, '197');
     assert.equal(out.pinned, false);
+    assert.equal(out.imageUrl, 'https://images.example/sv3-223/large');
   });
 
   test('knowing nothing produces nothing, not an empty shell', () => {

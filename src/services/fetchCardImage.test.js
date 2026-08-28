@@ -31,7 +31,7 @@ const okPokemon = (imgUrl) => () => ({
 const status = (code) => () => ({ ok: false, status: code, json: async () => ({}) });
 const notFound = () => ({ ok: false, status: 404, json: async () => ({}) });
 
-const { fetchCardImage, officialArtNumber, pokemonImageFromPin } = await import('./fetchCardImage.js');
+const { fetchCardImage, officialArtNumber } = await import('./fetchCardImage.js');
 
 describe('fetchCardImage cache', () => {
   beforeEach(() => {
@@ -43,7 +43,7 @@ describe('fetchCardImage cache', () => {
     responder = okPokemon('https://img.example.com/pikachu.png');
     const a = await fetchCardImage('Pikachu Test A', 'pokemon');
     assert.equal(a, 'https://img.example.com/pikachu.png');
-    assert.ok(store['signal_card_image_cache_v3'], 'wrote to the v3 cache key');
+    assert.ok(store['signal_card_image_cache_v4'], 'wrote to the v4 cache key');
   });
 
   test('a server error is NOT cached, so the next call retries', async () => {
@@ -51,7 +51,7 @@ describe('fetchCardImage cache', () => {
     const first = await fetchCardImage('Slowbro Test B', 'pokemon');
     assert.equal(first, null, 'returns null to the caller');
 
-    const cache = JSON.parse(store['signal_card_image_cache_v3'] || '{}');
+    const cache = JSON.parse(store['signal_card_image_cache_v4'] || '{}');
     assert.equal(Object.keys(cache).length, 0, 'nothing written to the cache');
 
     // The API recovers; the very next call must reach it rather than serve a
@@ -64,7 +64,7 @@ describe('fetchCardImage cache', () => {
   test('a rate-limit is treated the same as any other server error', async () => {
     responder = status(429);
     await fetchCardImage('Ratelimited Test C', 'pokemon');
-    const cache = JSON.parse(store['signal_card_image_cache_v3'] || '{}');
+    const cache = JSON.parse(store['signal_card_image_cache_v4'] || '{}');
     assert.equal(Object.keys(cache).length, 0);
   });
 
@@ -72,7 +72,7 @@ describe('fetchCardImage cache', () => {
     responder = notFound;
     const r = await fetchCardImage('Nonexistent Test D', 'pokemon');
     assert.equal(r, null);
-    const cache = JSON.parse(store['signal_card_image_cache_v3'] || '{}');
+    const cache = JSON.parse(store['signal_card_image_cache_v4'] || '{}');
     assert.equal(Object.keys(cache).length, 1, 'the genuine miss was remembered');
     assert.equal(Object.values(cache)[0].url, null);
   });
@@ -142,18 +142,23 @@ describe('fetchCardImage cache', () => {
     assert.equal(headers['User-Agent'], 'SignalTCG/1.0');
   });
 
-  test('an exact Pokémon result builds its stable image without the slow card API', async () => {
-    const image = await fetchCardImage('Detective Pikachu', 'pokemon', {
-      printingId: 'det1-10', setId: 'det1', number: '10',
+  test('an exact Pokémon result keeps the image host returned by its catalogue', async () => {
+    responder = () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ data: { images: { large: 'https://images.scrydex.com/pokemon/me2pt5-295/large' } } }),
     });
-    assert.equal(image, 'https://images.pokemontcg.io/det1/10_hires.png');
-    assert.equal(callCount, 0);
+    const image = await fetchCardImage('Mega Dragonite ex', 'pokemon', { printingId: 'me2pt5-295' });
+    assert.equal(image, 'https://images.scrydex.com/pokemon/me2pt5-295/large');
+    assert.equal(callCount, 1);
   });
 
-  test('a Pokémon catalogue id can supply the same direct image path', () => {
-    assert.equal(
-      pokemonImageFromPin({ id: 'swsh4-25' }),
-      'https://images.pokemontcg.io/swsh4/25_hires.png',
-    );
+  test('TCGdex repairs an exact Pokémon image when the primary API is down', async () => {
+    responder = (url) => String(url).includes('pokemontcg.io')
+      ? { ok: false, status: 502, json: async () => ({}) }
+      : { ok: true, status: 200, json: async () => ({ image: 'https://assets.tcgdex.net/en/sm/det1/10' }) };
+    const image = await fetchCardImage('Detective Pikachu fallback', 'pokemon', { printingId: 'det1-10' });
+    assert.equal(image, 'https://assets.tcgdex.net/en/sm/det1/10/high.webp');
+    assert.equal(callCount, 2);
   });
 });
