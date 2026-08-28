@@ -1,0 +1,8 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "signal-gateway-edge",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-28",
+  "workers_dev": true,
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 }
+}
