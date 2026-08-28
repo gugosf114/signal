@@ -70,6 +70,15 @@ const ra01Secret = {
   customAttributes: { number: 'RA01-EN051' },
 };
 
+const l26dStarlight = {
+  productId: 683013,
+  productName: 'Reinforcement of the Army (Alternate Art) (Starlight Rare)',
+  setName: 'Legendary Modern Decks 2026',
+  rarityName: 'Starlight Rare',
+  marketPrice: 262.45,
+  customAttributes: { number: 'L26D-ENS08' },
+};
+
 describe('TCGplayer exact-print price', () => {
   test('chooses the matching rarity instead of the cheaper same-code card', () => {
     const result = selectTcgplayerPrice([secret, starlight], printing);
@@ -173,5 +182,17 @@ describe('TCGplayer exact-print price', () => {
     assert.equal(result.price, 1.03);
     assert.equal(result.tcgplayerProductId, 524686);
     assert.equal(calls, 1);
+  });
+
+  test('matches alternate-art and rarity labels on the photographed L26D card', () => {
+    const result = selectTcgplayerPrice([l26dStarlight], {
+      name: 'Reinforcement of the Army',
+      game: 'yugioh',
+      setName: 'Legendary Modern Decks 2026',
+      number: 'L26D-ENS08',
+      rarity: 'Starlight Rare',
+    });
+    assert.equal(result?.price, 262.45);
+    assert.equal(result?.productId, 683013);
   });
 });

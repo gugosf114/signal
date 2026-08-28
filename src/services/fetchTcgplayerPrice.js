@@ -26,7 +26,7 @@ export function selectTcgplayerPrice(details, printing) {
     // products: "Card (Platinum Secret Rare)", "Card (QCSR)", "Card (PCR)".
     // Compare the exact title first, then the same title without one trailing
     // parenthetical. The set code and rarity checks below still guard identity.
-    const baseProductName = key(String(item?.productName || '').replace(/\s*\([^)]*\)\s*$/, ''));
+    const baseProductName = key(String(item?.productName || '').replace(/(?:\s*\([^)]*\))+\s*$/, ''));
     const number = key(item?.customAttributes?.number);
     const rarity = key(item?.rarityName || item?.customAttributes?.rarityDbName);
     const rarityWithoutPrismatic = rarity.replace(/^prismatic /, '');
