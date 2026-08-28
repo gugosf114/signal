@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { drawCameraFrame } from '../services/cameraCanvas';
 import { computeVideoCrop } from '../services/scannerCrop';
 import {
@@ -46,7 +46,7 @@ function FlashIcon({ on }) {
   );
 }
 
-export default function CardScanner({
+const CardScanner = forwardRef(function CardScanner({
   open,
   onCancel,
   onIdentify,
@@ -55,7 +55,7 @@ export default function CardScanner({
   confirmLabel = 'Run card',
   confirmingTitle = 'Running card',
   confirmingText = 'Starting the full market report.',
-}) {
+}, ref) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
@@ -69,6 +69,9 @@ export default function CardScanner({
   const previewTimerRef = useRef(null);
   const previewPausedRef = useRef(false);
   const cameraTokenRef = useRef(0);
+  useImperativeHandle(ref, () => ({
+    choosePhoto: () => fileInputRef.current?.click(),
+  }), []);
   const [phase, setPhase] = useState('opening');
   const [error, setError] = useState(null);
   const [match, setMatch] = useState(null);
@@ -525,4 +528,6 @@ export default function CardScanner({
       </div>
     </div>
   );
-}
+});
+
+export default CardScanner;
