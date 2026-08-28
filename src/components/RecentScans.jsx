@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GAME_LABELS, SCORE_VERSION, calculateOverallScore } from '../config/signals';
 import { getCachedScan } from '../services/scanCache';
 import { recentPrintingLine, sanitizeRecentScans } from '../services/recentScans';
@@ -8,6 +8,7 @@ import { recentPrintingLine, sanitizeRecentScans } from '../services/recentScans
 // (left-border accent, monospace score, italic name) instead of pill chips.
 export default function RecentScans({ onSelect, loading }) {
   const [scans, setScans] = useState([]);
+  const listRef = useRef(null);
 
   useEffect(() => {
     const load = () => {
@@ -37,6 +38,10 @@ export default function RecentScans({ onSelect, loading }) {
       window.removeEventListener('storage', load);
     };
   }, []);
+
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0;
+  }, [scans]);
 
   if (scans.length === 0) return null;
 
@@ -74,6 +79,7 @@ export default function RecentScans({ onSelect, loading }) {
       </div>
 
       <div
+        ref={listRef}
         aria-label="Recent scans. Scroll for older scans."
         style={{
           display: 'grid',
