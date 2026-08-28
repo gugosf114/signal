@@ -153,13 +153,19 @@ export async function resolvePrintingOptions(input = {}) {
       const rawSet = String(input.set || '').trim().toLowerCase();
       const set = /unknown|unable|unreadable|not (?:clear|visible)/i.test(rawSet) ? '' : rawSet;
       const narrowed = rows.filter((row) => {
-        if (number) return normalizeYgoCode(row.number) === number;
+        if (number) {
+          return normalizeYgoCode(row.number) === number
+            || differsOnlyByIl(number, row.number);
+        }
         if (!set) return true;
         const rowName = String(row.setName || '').trim().toLowerCase();
         const rowCode = String(row.setId || '').trim().toLowerCase();
         return rowName === set || rowCode === set || rowCode.startsWith(`${set}-`);
       });
-      const options = narrowed.length ? narrowed : rows;
+      // A photographed set code is stronger evidence than a name search. If
+      // it does not match, never fall back to unrelated printings from another
+      // set. The former fallback turned an OCR'd I26D-ENS08 into RA01-EN051.
+      const options = narrowed.length ? narrowed : (number ? [] : rows);
       const unique = [...new Map(options.map((row) => [
         `${row.id}:${normalizeYgoCode(row.number)}:${String(row.rarity || '').toLowerCase()}`,
         variantIdentity(row),

@@ -207,6 +207,33 @@ describe('camera printing resolution', () => {
     assert.notEqual(options[0].printingId, options[1].printingId);
   });
 
+  test('one I/L camera error still opens the exact L26D printing choices', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      async json() { return { data: [reinforcement] }; },
+    });
+    const options = await resolvePrintingOptions({
+      name: 'Reinforcement of the Army', game: 'yugioh',
+      number: 'I26D-ENS08', set: 'Unknown',
+    });
+    assert.deepEqual(options.map((row) => row.rarity), ['Common', 'Secret Rare', 'Starlight Rare']);
+    assert.equal(options.every((row) => row.number === 'L26D-ENS08'), true);
+  });
+
+  test('an unmatched photographed code never falls back to another set', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      async json() { return { data: [rarityCollectionReinforcement] }; },
+    });
+    const options = await resolvePrintingOptions({
+      name: 'Reinforcement of the Army', game: 'yugioh',
+      number: 'L26D-ENS08', set: 'Unknown',
+    });
+    assert.deepEqual(options, []);
+  });
+
   test('an exact set code shows every real rarity instead of cutting off after three', async () => {
     globalThis.fetch = async () => ({
       ok: true,
