@@ -7,7 +7,7 @@
 
 import { looksLikeSetCode, lookupBySetCode } from './lookupBySetCode.js';
 
-const CACHE_KEY = 'signal_expansions_v2';
+const CACHE_KEY = 'signal_expansions_v3';
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const COUNT = 12;
 const PAGE = 21;
@@ -423,16 +423,26 @@ async function fetchYugiohSets() {
   } catch { return []; }
 }
 
-function readCache() {
+export function parseExpansionCache(raw, now = Date.now()) {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const { ts, data } = JSON.parse(raw);
-    const age = Date.now() - ts;
-    if (age < 0 || age > CACHE_TTL_MS) return null;
+    const age = now - ts;
+    if (age < 0) return null;
     if (!data || typeof data !== 'object') return null;
-    return data;
+    return { data, ageMs: age, fresh: age <= CACHE_TTL_MS };
   } catch { return null; }
+}
+
+export function getExpansionSnapshot() {
+  try {
+    return parseExpansionCache(localStorage.getItem(CACHE_KEY));
+  } catch { return null; }
+}
+
+function readCache() {
+  const snapshot = getExpansionSnapshot();
+  return snapshot?.fresh ? snapshot.data : null;
 }
 
 function writeCache(data) {

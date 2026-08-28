@@ -2,7 +2,7 @@ import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  cardNumberEndsWith, fetchYgoPrintingsByPasscode, parseCardLookupQuery, resolvePrinting,
+  cardNumberEndsWith, fetchYgoPrintingsByPasscode, parseCardLookupQuery, parseExpansionCache, resolvePrinting,
   resolvePrintingOptions, searchCardsByName, selectRecentMtgSets, selectRecentYugiohSets,
   selectRecentTcgDexPokemonSets, suggestCards, ygoPrintingRows,
 } from './fetchExpansions.js';
@@ -102,6 +102,15 @@ describe('short name + last digits lookup', () => {
 });
 
 describe('live expansion shelf', () => {
+  test('the one-hour copy stays visible while a stale copy asks for an update', () => {
+    const data = { pokemon: [{ id: 'me05' }], mtg: [{ id: 'hob' }], yugioh: [{ id: 'LAVD' }] };
+    const fresh = parseExpansionCache(JSON.stringify({ ts: 1_000, data }), 1_000 + 30 * 60 * 1000);
+    const stale = parseExpansionCache(JSON.stringify({ ts: 1_000, data }), 1_000 + 61 * 60 * 1000);
+    assert.equal(fresh.fresh, true);
+    assert.equal(stale.fresh, false);
+    assert.deepEqual(stale.data, data);
+  });
+
   test('Magic drops digital-only expansions that have no paper cards', () => {
     const sets = selectRecentMtgSets([
       { code: 'hob', name: 'The Hobbit', set_type: 'expansion', released_at: '2026-08-14', card_count: 300, digital: false },

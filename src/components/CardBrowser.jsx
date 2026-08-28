@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GAME_LABELS } from '../config/signals';
 import { BrandIcon } from '../config/brandIcons';
-import { getExpansions, fetchCardsBySet, fetchLatestCardsForGame, searchCardsByName } from '../services/fetchExpansions';
+import { getExpansionSnapshot, getExpansions, fetchCardsBySet, fetchLatestCardsForGame, searchCardsByName } from '../services/fetchExpansions';
 import CardLightbox from './CardLightbox';
 
 const GAME_BRAND = { pokemon: 'pokemon', mtg: 'mtg', yugioh: 'yugioh' };
@@ -33,9 +33,13 @@ export default function CardBrowser({ onCardSelect }) {
     return () => clearTimeout(t);
   }, [query]);
 
-  // One-shot expansion fetch on mount; cached 7d.
+  // Show the last good expansion shelf immediately. Once it is an hour old,
+  // refresh behind the visible shelf instead of replacing it with a blank wait.
   useEffect(() => {
     let cancelled = false;
+    const snapshot = getExpansionSnapshot();
+    if (snapshot?.data) setExpansions(snapshot.data);
+    if (snapshot?.fresh) return () => { cancelled = true; };
     getExpansions({ force: true }).then((data) => {
       if (cancelled) return;
       setExpansions(data);
