@@ -4,6 +4,7 @@ import { suggestCards, resolvePrinting } from '../services/fetchExpansions';
 import { looksLikeSetCode } from '../services/lookupBySetCode';
 import { saveScannedCardImage } from '../services/scannedCardImage';
 import { withScanKeepAlive } from '../services/scanKeepAlive';
+import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
 import CardScanner from './CardScanner';
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
@@ -136,7 +137,8 @@ export default function SearchBar({ onSearch, loading }) {
     // A camera guess is not yet a printing. Resolve it against the live card
     // catalogues, then show the match before spending money on the full report.
     const pin = await resolvePrinting(card).catch(() => null);
-    return { card, pin, file };
+    const pricedPin = pin ? await addTcgplayerPrice(pin, signal) : null;
+    return { card, pin: pricedPin, file };
   });
 
   const openScanner = () => {
