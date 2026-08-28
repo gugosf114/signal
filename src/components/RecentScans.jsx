@@ -115,7 +115,7 @@ export default function RecentScans({ onSelect, loading }) {
               disabled={loading}
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1fr) 72px',
+                gridTemplateColumns: 'minmax(0, 1.25fr) minmax(0, 0.75fr) 72px',
                 alignItems: 'center',
                 gap: 9,
                 width: '100%',
@@ -154,17 +154,19 @@ export default function RecentScans({ onSelect, loading }) {
                 lineHeight: 1.2,
               }}>
                 {s.name}
-                {printing && (
-                  <small style={{
-                    marginLeft: 7,
-                    color: '#706C64',
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 8,
-                    fontStyle: 'normal',
-                    letterSpacing: '0.02em',
-                  }}>· {printing}</small>
-                )}
               </span>
+              <small style={{
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                color: '#706C64',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 8,
+                fontStyle: 'normal',
+                letterSpacing: '0.02em',
+                textAlign: 'left',
+              }}>{printing ? `· ${printing}` : ''}</small>
               <span style={{
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 14,
