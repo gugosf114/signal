@@ -345,7 +345,13 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
     }
   };
 
-  const details = scannerMatchDetails(match || {});
+  const candidates = Array.isArray(match?.candidates) ? match.candidates : [];
+  const chooseCandidate = (pin) => setMatch((current) => ({ ...current, pin }));
+  const displayMatch = !match?.pin && candidates.length
+    ? { ...match, card: { ...(match.card || {}), name: candidates[0].name, game: candidates[0].game } }
+    : match;
+  const details = scannerMatchDetails(displayMatch || {});
+  const needsChoice = candidates.length > 1 && !match?.pin;
   const cameraVisible = phase === 'opening' || phase === 'ready' || phase === 'capturing';
 
   return (
@@ -445,7 +451,7 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
           <section className="live-scan-match" aria-label="Matched card">
             <div className="live-match-heading">
               <span className={`live-match-chip ${details.exact ? 'live-match-chip--exact' : ''}`}>
-                {details.exact ? 'Exact match' : 'Needs a check'}
+                {candidates.length > 1 ? (match.pin ? 'Printing selected' : 'Choose printing') : (details.exact ? 'Exact match' : 'Needs a check')}
               </span>
               <span>{details.confidence ? `${details.confidence} photo confidence` : 'Card found'}</span>
             </div>
@@ -460,11 +466,35 @@ export default function CardScanner({ open, onCancel, onIdentify, onConfirm, onM
               </div>
               <b>{scannerMatchPrice(details)}</b>
             </div>
-            <p className="live-match-check">Check the set, number, and rarity before opening the report.</p>
+            {candidates.length > 1 && (
+              <div className="live-match-options" role="group" aria-label="Choose the card printing">
+                {candidates.map((option) => {
+                  const optionDetails = scannerMatchDetails({ card: match.card, pin: option });
+                  const selected = match.pin?.printingId === option.printingId;
+                  return (
+                    <button
+                      type="button"
+                      key={`${option.printingId}-${option.rarity}`}
+                      className={selected ? 'live-match-option live-match-option--selected' : 'live-match-option'}
+                      onClick={() => chooseCandidate(option)}
+                      aria-pressed={selected}
+                    >
+                      <span><strong>{option.rarity || 'Unknown rarity'}</strong><small>{option.number || option.setName}</small></span>
+                      <b>{scannerMatchPrice(optionDetails)}</b>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <p className="live-match-check">
+              {candidates.length > 1 ? 'Pick the printing that matches your card.' : 'Check the set, number, and rarity before opening the report.'}
+            </p>
             <div className="live-match-actions">
               <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
               {details.exact ? (
                 <button type="button" className="live-match-primary" onClick={confirm}>Run card</button>
+              ) : needsChoice ? (
+                <button type="button" className="live-match-primary" disabled>Choose one</button>
               ) : (
                 <button type="button" className="live-match-primary" onClick={() => onManualSearch?.(match)}>Search matches</button>
               )}

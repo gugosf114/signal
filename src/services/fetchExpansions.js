@@ -128,6 +128,50 @@ export async function fetchYgoPrintingsByPasscode(passcode) {
   return card ? ygoPrintingRows(card) : [];
 }
 
+function variantIdentity(row) {
+  if (row?.game !== 'yugioh' || !row?.id || !row?.number) return row;
+  const rarity = String(row.rarity || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  return { ...row, printingId: `${row.id}:${row.number}:${rarity}` };
+}
+
+export async function resolvePrintingOptions(input = {}) {
+  const name = String(input.name || '').trim();
+  if (!name) return [];
+  if (!input.game || input.game === 'yugioh') {
+    let rows = [];
+    const passcode = looksLikeYgoPasscode(input.passcode) ? input.passcode
+      : (looksLikeYgoPasscode(input.number) ? input.number : null);
+    if (passcode) rows = await fetchYgoPrintingsByPasscode(passcode);
+    else if (name.length >= 2) {
+      const found = await searchCardsByName('yugioh', name, null).catch(() => []);
+      const exactName = found.filter((row) => String(row.name || '').trim().toLowerCase() === name.toLowerCase());
+      rows = exactName.length ? exactName : found;
+    }
+
+    if (rows.length) {
+      const number = looksLikeSetCode(input.number) ? normalizeYgoCode(input.number) : '';
+      const rawSet = String(input.set || '').trim().toLowerCase();
+      const set = /unknown|unable|unreadable|not (?:clear|visible)/i.test(rawSet) ? '' : rawSet;
+      const narrowed = rows.filter((row) => {
+        if (number) return normalizeYgoCode(row.number) === number;
+        if (!set) return true;
+        const rowName = String(row.setName || '').trim().toLowerCase();
+        const rowCode = String(row.setId || '').trim().toLowerCase();
+        return rowName === set || rowCode === set || rowCode.startsWith(`${set}-`);
+      });
+      const options = narrowed.length ? narrowed : rows;
+      const unique = [...new Map(options.map((row) => [
+        `${row.id}:${normalizeYgoCode(row.number)}:${String(row.rarity || '').toLowerCase()}`,
+        variantIdentity(row),
+      ])).values()];
+      if (unique.length) return unique.slice(0, 3);
+    }
+  }
+
+  const pin = await resolvePrinting(input);
+  return pin ? [pin] : [];
+}
+
 // "Captain 123" means: search the name Captain, then keep cards whose printed
 // number ends in 123. This mirrors how a person reads a card in their hand — a
 // memorable first word plus the few digits they can see at the bottom.

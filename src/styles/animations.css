@@ -1691,6 +1691,8 @@
   border-radius: 20px 20px 0 0;
   background: rgba(8,9,10,0.97);
   box-shadow: 0 -18px 54px rgba(0,0,0,0.58);
+  max-height: 78vh;
+  overflow-y: auto;
 }
 .live-match-heading {
   display: flex;
@@ -1729,6 +1731,27 @@
 .live-match-card span { color: #B6B1A8; font: 700 10px 'Syne', sans-serif; }
 .live-match-card p { margin: 0; overflow: hidden; color: #77736B; font: 10px/1.4 'JetBrains Mono', monospace; text-overflow: ellipsis; white-space: nowrap; }
 .live-match-card b { color: #E8E4DC; font: 700 15px 'JetBrains Mono', monospace; white-space: nowrap; }
+.live-match-options { display: grid; gap: 7px; margin-top: 10px; }
+.live-match-option {
+  min-height: 54px;
+  padding: 8px 11px;
+  border: 1px solid #2A2D34;
+  border-radius: 7px;
+  background: #0E1014;
+  color: #E8E4DC;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.live-match-option > span { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.live-match-option strong { font: 700 12px 'Syne', sans-serif; }
+.live-match-option small { overflow: hidden; color: #77736B; font: 9px 'JetBrains Mono', monospace; text-overflow: ellipsis; white-space: nowrap; }
+.live-match-option b { color: #D0CCC4; font: 700 12px 'JetBrains Mono', monospace; white-space: nowrap; }
+.live-match-option--selected { border-color: #C44040; background: rgba(196,64,64,0.16); }
+.live-match-option--selected strong, .live-match-option--selected b { color: #FFF; }
 .live-match-check { margin: 12px 2px; color: #9A968D; font: 10px/1.45 'JetBrains Mono', monospace; }
 .live-match-actions { display: grid; grid-template-columns: 1fr 1.35fr; gap: 10px; }
 .live-match-actions button {
@@ -1739,6 +1762,7 @@
 }
 .live-match-secondary { border: 1px solid #34373E; background: transparent; color: #D0CCC4; }
 .live-match-primary { border: 1px solid #C44040; background: #C44040; color: #FFF; }
+.live-match-primary:disabled { opacity: 0.45; cursor: default; }
 .live-scanner-error {
   left: 20px;
   right: 20px;

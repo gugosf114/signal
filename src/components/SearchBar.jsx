@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { scanCardImage } from '../services/scanCardImage';
-import { looksLikeYgoPasscode, suggestCards, resolvePrinting } from '../services/fetchExpansions';
+import { looksLikeYgoPasscode, resolvePrintingOptions, suggestCards } from '../services/fetchExpansions';
 import { looksLikeSetCode } from '../services/lookupBySetCode';
 import { saveScannedCardImage } from '../services/scannedCardImage';
 import { withScanKeepAlive } from '../services/scanKeepAlive';
@@ -140,9 +140,14 @@ export default function SearchBar({ onSearch, loading }) {
     const card = await scanCardImage(file, { framed, signal });
     // A camera guess is not yet a printing. Resolve it against the live card
     // catalogues, then show the match before spending money on the full report.
-    const pin = await resolvePrinting(card).catch(() => null);
-    const pricedPin = pin ? await addTcgplayerPrice(pin, signal) : null;
-    return { card, pin: pricedPin, file };
+    const options = await resolvePrintingOptions(card).catch(() => []);
+    const candidates = await Promise.all(options.map((option) => addTcgplayerPrice(option, signal)));
+    return {
+      card,
+      pin: candidates.length === 1 ? candidates[0] : null,
+      candidates,
+      file,
+    };
   });
 
   const openScanner = () => {

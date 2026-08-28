@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   cardNumberEndsWith, fetchYgoPrintingsByPasscode, parseCardLookupQuery, resolvePrinting,
-  searchCardsByName, selectRecentYugiohSets, suggestCards, ygoPrintingRows,
+  resolvePrintingOptions, searchCardsByName, selectRecentYugiohSets, suggestCards, ygoPrintingRows,
 } from './fetchExpansions.js';
 
 const originalFetch = globalThis.fetch;
@@ -135,6 +135,20 @@ describe('camera printing resolution', () => {
     assert.equal(hit?.name, 'Fydraulis Harmonia');
     assert.equal(hit?.number, 'BLZD-EN024');
     assert.equal(hit?.rarity, 'Starlight Rare');
+  });
+
+  test('scanner offers same-code rarities instead of guessing the foil', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      async json() { return { data: [fydraulis] }; },
+    });
+    const options = await resolvePrintingOptions({
+      name: 'Hydraulis Harmonia', game: 'yugioh', set: 'Unknown',
+      passcode: '70088809', rarity: 'Starlight Rare',
+    });
+    assert.deepEqual(options.map((row) => row.rarity), ['Secret Rare', 'Starlight Rare']);
+    assert.notEqual(options[0].printingId, options[1].printingId);
   });
 
   test('Search matches expands a passcode into every real printing', async () => {
