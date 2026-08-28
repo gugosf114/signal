@@ -227,12 +227,136 @@ async function getJSON(url, tries = 3) {
   throw last;
 }
 
+const TCGDEX_BASE = 'https://api.tcgdex.net/v2/en';
+
+function tcgdexImages(base) {
+  return {
+    small: base ? `${base}/low.webp` : null,
+    large: base ? `${base}/high.webp` : null,
+  };
+}
+
+function tcgdexPrices(card) {
+  const prices = card?.pricing?.tcgplayer || {};
+  const market = (entry) => {
+    const value = Number(entry?.marketPrice);
+    return Number.isFinite(value) && value > 0 ? value : null;
+  };
+  const normal = market(prices.normal) ?? market(prices.holofoil)
+    ?? market(prices['1st-edition-holofoil']) ?? market(prices['unlimited-holofoil']);
+  const reverse = market(prices['reverse-holofoil']);
+  return { normal, reverse };
+}
+
+function tcgdexPokemonRow(card, fallbackSet = null) {
+  const images = tcgdexImages(card?.image);
+  const prices = tcgdexPrices(card);
+  const set = card?.set || fallbackSet || {};
+  return {
+    id: card?.id || null,
+    printingId: card?.id || null,
+    name: card?.name || '',
+    game: 'pokemon',
+    setName: set.name || fallbackSet?.name || '',
+    setId: set.id || fallbackSet?.id || null,
+    number: card?.localId || null,
+    printedTotal: set.cardCount?.official || fallbackSet?.cardCount?.official || null,
+    rarity: card?.rarity || null,
+    price: prices.normal ?? prices.reverse,
+    marketPrices: prices,
+    imageUrl: images.small,
+    imageLarge: images.large,
+    source: 'tcgdex',
+  };
+}
+
+function isTcgDexPhysicalSet(set, today) {
+  return Boolean(set?.releaseDate && set.releaseDate <= today
+    && set.serie?.id !== 'tcgp'
+    && Number(set.cardCount?.official) > 0
+    && !/\b(?:promo|promos|energy|mcdonald|trick or trade|prize pack)\b/i.test(set.name || ''));
+}
+
+export function selectRecentTcgDexPokemonSets(details, today, limit = COUNT) {
+  return (Array.isArray(details) ? details : [])
+    .filter((set) => isTcgDexPhysicalSet(set, today))
+    .sort((a, b) => b.releaseDate.localeCompare(a.releaseDate))
+    .slice(0, limit)
+    .map((set) => ({
+      id: set.id,
+      name: set.name,
+      code: set.id,
+      releaseDate: set.releaseDate,
+      game: 'pokemon',
+      source: 'tcgdex',
+      cardCount: set.cardCount,
+    }));
+}
+
+async function fetchTcgDexRecentSets() {
+  const briefs = await getJSON(
+    `${TCGDEX_BASE}/sets?sort:field=releaseDate&sort:order=DESC&pagination:page=1&pagination:itemsPerPage=64`
+  ).catch(() => null);
+  if (!Array.isArray(briefs)) return [];
+  const today = new Date().toISOString().slice(0, 10);
+  const current = [];
+  for (let index = 0; index < briefs.length && current.length < COUNT; index += 8) {
+    const batch = await Promise.allSettled(
+      briefs.slice(index, index + 8).map((set) => getJSON(`${TCGDEX_BASE}/sets/${encodeURIComponent(set.id)}`, 3))
+    );
+    for (const result of batch) {
+      const set = result.status === 'fulfilled' ? result.value : null;
+      if (!isTcgDexPhysicalSet(set, today)) continue;
+      current.push(set);
+    }
+  }
+  return selectRecentTcgDexPokemonSets(current, today);
+}
+
+async function fetchTcgDexPokemonCard(cardId) {
+  const card = await getJSON(`${TCGDEX_BASE}/cards/${encodeURIComponent(cardId)}`, 2);
+  return card ? tcgdexPokemonRow(card) : null;
+}
+
+async function fetchTcgDexSetCards(set, priceSort = null) {
+  const data = await getJSON(`${TCGDEX_BASE}/sets/${encodeURIComponent(set.id)}`, 2);
+  const all = Array.isArray(data?.cards) ? data.cards : [];
+  if (!all.length) return [];
+  let pool;
+  if (!priceSort) pool = all.slice(-PAGE).reverse();
+  else if (all.length <= 100) pool = all;
+  else pool = priceSort === 'asc' ? all.slice(0, 80) : all.slice(-100);
+  const settled = await Promise.allSettled(pool.map((card) => fetchTcgDexPokemonCard(card.id)));
+  const rows = settled.filter((result) => result.status === 'fulfilled' && result.value).map((result) => result.value);
+  if (!priceSort) return rows.slice(0, PAGE);
+  return rows.sort((a, b) => {
+    if (a.price == null) return 1;
+    if (b.price == null) return -1;
+    return priceSort === 'asc' ? a.price - b.price : b.price - a.price;
+  }).slice(0, PAGE);
+}
+
+async function searchTcgDexPokemonCards(query, numberSuffix = null) {
+  const cards = await getJSON(
+    `${TCGDEX_BASE}/cards?name=${encodeURIComponent(query)}&pagination:page=1&pagination:itemsPerPage=40`,
+    2,
+  );
+  if (!Array.isArray(cards)) return [];
+  const selected = numberSuffix
+    ? cards.filter((card) => cardNumberEndsWith(card.localId, numberSuffix))
+    : cards;
+  const settled = await Promise.allSettled(selected.slice(0, PAGE).map((card) => fetchTcgDexPokemonCard(card.id)));
+  return settled.filter((result) => result.status === 'fulfilled' && result.value).map((result) => result.value);
+}
+
 async function fetchPokemonSets() {
+  const current = await fetchTcgDexRecentSets();
+  if (current.length) return current;
   try {
     const data = await getJSON('https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate&pageSize=12');
     if (!data) return [];
     const today = new Date().toISOString().slice(0, 10);
-    return (data.data || [])
+    const sets = (data.data || [])
       .filter((set) => !set.releaseDate || set.releaseDate <= today)
       .slice(0, COUNT)
       .map((s) => ({
@@ -242,7 +366,9 @@ async function fetchPokemonSets() {
         releaseDate: s.releaseDate || '',
         game: 'pokemon',
       }));
-  } catch { return []; }
+    if (sets.length) return sets;
+  } catch {}
+  return [];
 }
 
 async function fetchMtgSets() {
@@ -250,17 +376,26 @@ async function fetchMtgSets() {
     const data = await getJSON('https://api.scryfall.com/sets');
     if (!data) return [];
     const today = new Date().toISOString().slice(0, 10);
-    const sets = (data.data || [])
-      .filter((s) => s.set_type === 'expansion' && s.released_at && s.released_at <= today)
-      .sort((a, b) => b.released_at.localeCompare(a.released_at));
-    return sets.slice(0, COUNT).map((s) => ({
+    return selectRecentMtgSets(data.data, today);
+  } catch { return []; }
+}
+
+export function selectRecentMtgSets(data, today, limit = COUNT) {
+  return (Array.isArray(data) ? data : [])
+    .filter((set) => set.set_type === 'expansion'
+      && !set.digital
+      && Number(set.card_count) > 0
+      && set.released_at
+      && set.released_at <= today)
+    .sort((a, b) => b.released_at.localeCompare(a.released_at))
+    .slice(0, limit)
+    .map((s) => ({
       id: s.code,
       name: s.name,
       code: s.code,
       releaseDate: s.released_at || '',
       game: 'mtg',
     }));
-  } catch { return []; }
 }
 
 export function selectRecentYugiohSets(data, today, limit = COUNT) {
@@ -370,13 +505,17 @@ function sortYugiohByPrice(cards, priceSort) {
 export async function fetchLatestCardsForGame(game, priceSort = null) {
   try {
     if (game === 'pokemon') {
-      const today = new Date().toISOString().slice(0, 10);
-      const data = await getJSON(
-        'https://api.pokemontcg.io/v2/cards?q=' + encodeURIComponent(`set.releaseDate:[* TO ${today}]`) +
-        `&pageSize=${priceSort ? 100 : PAGE}&orderBy=${encodeURIComponent(pokemonOrderBy(priceSort))}`
-      );
-      if (!data) return [];
-      return sortPokemonByPrice(data.data || [], priceSort).slice(0, PAGE).map((c) => pokemonRow(c));
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const data = await getJSON(
+          'https://api.pokemontcg.io/v2/cards?q=' + encodeURIComponent(`set.releaseDate:[* TO ${today}]`) +
+          `&pageSize=${priceSort ? 100 : PAGE}&orderBy=${encodeURIComponent(pokemonOrderBy(priceSort))}`
+        );
+        const rows = sortPokemonByPrice(data?.data || [], priceSort).slice(0, PAGE).map((c) => pokemonRow(c));
+        if (rows.length) return rows;
+      } catch {}
+      const sets = await fetchTcgDexRecentSets();
+      return sets[0] ? fetchTcgDexSetCards(sets[0], priceSort) : [];
     }
     if (game === 'mtg') {
       const data = await getJSON(
@@ -405,12 +544,16 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
   if (!set?.id) return [];
   try {
     if (game === 'pokemon') {
-      const orderBy = '-number';
-      const data = await getJSON(
-        `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent('set.id:' + set.id)}&pageSize=${priceSort ? 100 : PAGE}&orderBy=${encodeURIComponent(orderBy)}`
-      );
-      if (!data) return [];
-      return sortPokemonByPrice(data.data || [], priceSort).slice(0, PAGE).map((c) => pokemonRow(c, set.name));
+      if (set.source === 'tcgdex') return fetchTcgDexSetCards(set, priceSort);
+      try {
+        const orderBy = '-number';
+        const data = await getJSON(
+          `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent('set.id:' + set.id)}&pageSize=${priceSort ? 100 : PAGE}&orderBy=${encodeURIComponent(orderBy)}`
+        );
+        const rows = sortPokemonByPrice(data?.data || [], priceSort).slice(0, PAGE).map((c) => pokemonRow(c, set.name));
+        if (rows.length) return rows;
+      } catch {}
+      return fetchTcgDexSetCards({ ...set, source: 'tcgdex' }, priceSort);
     }
     if (game === 'mtg') {
       const orderStr = priceSort
@@ -471,13 +614,15 @@ export async function searchCardsByName(game, query, priceSort = null) {
       const pokemonQuery = nameQuery
         ? `name:"*${nameQuery}*"`
         : `number:${numberSuffix.replace(/^0+/, '') || '0'}`;
+    try {
       const data = await getJSON(
         `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(pokemonQuery)}` +
-      `&pageSize=${pageSize}&orderBy=${encodeURIComponent(order)}`
+        `&pageSize=${pageSize}&orderBy=${encodeURIComponent(order)}`
       );
-      if (!data) return [];
-    const rows = sortPokemonByPrice(data.data || [], priceSort).map((c) => pokemonRow(c));
-    return keepNumber(rows).slice(0, PAGE);
+      const rows = sortPokemonByPrice(data?.data || [], priceSort).map((c) => pokemonRow(c));
+      if (rows.length) return keepNumber(rows).slice(0, PAGE);
+    } catch {}
+    return searchTcgDexPokemonCards(nameQuery || '', numberSuffix);
   }
 
   if (game === 'mtg') {

@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 
 import {
   cardNumberEndsWith, fetchYgoPrintingsByPasscode, parseCardLookupQuery, resolvePrinting,
-  resolvePrintingOptions, searchCardsByName, selectRecentYugiohSets, suggestCards, ygoPrintingRows,
+  resolvePrintingOptions, searchCardsByName, selectRecentMtgSets, selectRecentYugiohSets,
+  selectRecentTcgDexPokemonSets, suggestCards, ygoPrintingRows,
 } from './fetchExpansions.js';
 
 const originalFetch = globalThis.fetch;
@@ -101,6 +102,31 @@ describe('short name + last digits lookup', () => {
 });
 
 describe('live expansion shelf', () => {
+  test('Magic drops digital-only expansions that have no paper cards', () => {
+    const sets = selectRecentMtgSets([
+      { code: 'hob', name: 'The Hobbit', set_type: 'expansion', released_at: '2026-08-14', card_count: 300, digital: false },
+      { code: 'om1', name: 'Through the Omenpaths', set_type: 'expansion', released_at: '2025-09-23', card_count: 188, digital: true },
+      { code: 'eoe', name: 'Edge of Eternities', set_type: 'expansion', released_at: '2025-08-01', card_count: 250, digital: false },
+    ], '2026-08-28');
+    assert.deepEqual(sets.map((set) => set.id), ['hob', 'eoe']);
+  });
+
+  test('Pokemon keeps current physical sets and drops Pocket, promos, and future sets', () => {
+    const physical = (id, name, releaseDate) => ({
+      id, name, releaseDate, serie: { id: 'me' }, cardCount: { official: 80, total: 100 },
+    });
+    const sets = selectRecentTcgDexPokemonSets([
+      physical('me05', 'Pitch Black', '2026-07-17'),
+      physical('future', 'Future Set', '2026-09-01'),
+      { ...physical('B2', 'Fantastical Parade', '2026-01-29'), serie: { id: 'tcgp' } },
+      physical('mep', 'MEP Black Star Promos', '2025-09-26'),
+      physical('mcd24', "McDonald's Collection 2024", '2024-12-04'),
+      physical('sv08', 'Surging Sparks', '2024-11-08'),
+    ], '2026-08-28');
+    assert.deepEqual(sets.map((set) => set.id), ['me05', 'sv08']);
+    assert.equal(sets[0].source, 'tcgdex');
+  });
+
   test('keeps twelve recent sets so a month-old release is not pushed off the shelf', () => {
     const data = Array.from({ length: 11 }, (_, index) => ({
       set_name: `Newer ${index}`,

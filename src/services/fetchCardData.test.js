@@ -23,6 +23,31 @@ function response(status, body) {
 }
 
 describe('fetchCardData exact-print contract', () => {
+  test('a TCGdex Pokemon pin keeps its current set, image, and market price', async () => {
+    globalThis.fetch = async (url) => {
+      assert.match(String(url), /api\.tcgdex\.net\/v2\/en\/cards\/me05-120$/);
+      return response(200, {
+        id: 'me05-120',
+        localId: '120',
+        name: 'Mega Darkrai ex',
+        rarity: 'Special Illustration Rare',
+        image: 'https://assets.tcgdex.net/en/me/me05/120',
+        set: { id: 'me05', name: 'Pitch Black', cardCount: { official: 84, total: 120 } },
+        pricing: {
+          tcgplayer: { holofoil: { marketPrice: 214.69, lowPrice: 190, highPrice: 250 } },
+          cardmarket: { avg30: 182.5 },
+        },
+      });
+    };
+
+    const result = await fetchCardData('Mega Darkrai ex', 'pokemon', {
+      id: 'me05-120', game: 'pokemon', source: 'tcgdex',
+    });
+    assert.equal(result.setName, 'Pitch Black');
+    assert.deepEqual(result.priceLines, ['Holofoil: $214.69 market / $190.00 low / $250.00 high']);
+    assert.equal(result.imageUrl, 'https://assets.tcgdex.net/en/me/me05/120/high.webp');
+  });
+
   test('a trusted TCGplayer fallback becomes the exact report price', () => {
     const cardData = applyTrustedPinMarketPrice({
       name: 'Fydraulis Harmonia',
@@ -51,8 +76,9 @@ describe('fetchCardData exact-print contract', () => {
     });
 
     assert.equal(result, null);
-    assert.equal(calls.length, 1);
+    assert.equal(calls.length, 2);
     assert.match(calls[0], /cards\/sv8pt5-161$/);
+    assert.match(calls[1], /tcgdex\.net\/v2\/en\/cards\/sv8pt5-161$/);
   });
 
   test('a Yu-Gi-Oh pin selects its exact set printing, not card_sets[0]', async () => {

@@ -70,10 +70,15 @@ async function retryFetch(url, init, tries = 3) {
 async function fetchPinned(pin) {
   try {
     if (pin.game === 'pokemon') {
-      const res = await retryFetch(`https://api.pokemontcg.io/v2/cards/${encodeURIComponent(pin.id)}`);
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.data ? shapePokemon(data.data) : null;
+      if (pin.source === 'tcgdex') return fetchTcgDexPokemonData(pin.id);
+      try {
+        const res = await retryFetch(`https://api.pokemontcg.io/v2/cards/${encodeURIComponent(pin.id)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.data) return shapePokemon(data.data);
+        }
+      } catch {}
+      return fetchTcgDexPokemonData(pin.id);
     }
     if (pin.game === 'mtg') {
       const res = await retryFetch(`https://api.scryfall.com/cards/${encodeURIComponent(pin.id)}`, {
@@ -111,6 +116,51 @@ export function applyTrustedPinMarketPrice(cardData, pin) {
 }
 
 // ─── Pokémon TCG API ──────────────────────────────────────────────────────────
+
+async function fetchTcgDexPokemonData(cardId) {
+  const res = await retryFetch(`https://api.tcgdex.net/v2/en/cards/${encodeURIComponent(cardId)}`, {}, 2);
+  if (!res.ok) return null;
+  const card = await res.json();
+  if (!card?.id || !card?.name) return null;
+  const priceLines = [];
+  const labels = {
+    normal: 'Normal',
+    holofoil: 'Holofoil',
+    'reverse-holofoil': 'Reverse Holo',
+    '1st-edition-holofoil': '1st Ed Holo',
+    'unlimited-holofoil': 'Unlimited Holo',
+  };
+  for (const [variant, value] of Object.entries(card.pricing?.tcgplayer || {})) {
+    const market = Number(value?.marketPrice);
+    if (!Number.isFinite(market) || market <= 0) continue;
+    const parts = [`$${market.toFixed(2)} market`];
+    const low = Number(value?.lowPrice);
+    const high = Number(value?.highPrice);
+    if (Number.isFinite(low) && low > 0) parts.push(`$${low.toFixed(2)} low`);
+    if (Number.isFinite(high) && high > 0) parts.push(`$${high.toFixed(2)} high`);
+    priceLines.push(`${labels[variant] || variant}: ${parts.join(' / ')}`);
+  }
+  const eu = Number(card.pricing?.cardmarket?.avg30);
+  const legalFormats = Object.entries(card.legal || {})
+    .filter(([, value]) => String(value).toLowerCase() === 'legal')
+    .map(([format]) => format);
+  return {
+    game: 'pokemon',
+    catalogId: card.id,
+    printingId: card.id,
+    name: card.name,
+    setName: card.set?.name || null,
+    setId: card.set?.id || null,
+    number: card.localId || null,
+    printedTotal: card.set?.cardCount?.official || card.set?.cardCount?.total || null,
+    rarity: card.rarity || null,
+    priceLines: priceLines.length ? priceLines : null,
+    euTrend: Number.isFinite(eu) && eu > 0 ? `€${eu.toFixed(2)} (EU 30-day avg)` : null,
+    legalFormats,
+    tcgplayerUrl: null,
+    imageUrl: card.image ? `${card.image}/high.webp` : null,
+  };
+}
 
 async function fetchPokemonData(cardName) {
   const cleanName = cardName
