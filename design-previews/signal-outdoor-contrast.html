@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en" data-theme="outdoor">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="signal-preview" content="outdoor-contrast-v1" />
+  <title>Signal — Outdoor Contrast Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+JP:wght@800&family=Syne:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --canvas: #08090a;
+      --panel: #0e1014;
+      --tile: #0a0c10;
+      --raised: #171a20;
+      --border: #1a1d24;
+      --border-strong: #2a2d34;
+      --muted: #605c54;
+      --secondary: #7a7368;
+      --soft: #a8a498;
+      --text: #e8e4dc;
+      --cream: #f1ede5;
+      --red: #c44040;
+      --green: #608870;
+      --gold: #a09060;
+      --blue: #7080a0;
+      --rust: #b08060;
+    }
+
+    :root[data-theme="outdoor"] {
+      --canvas: #08090a;
+      --panel: #1c1b20;
+      --tile: #27262c;
+      --raised: #333139;
+      --border: #4a464f;
+      --border-strong: #5c5761;
+      --muted: #a39e96;
+      --secondary: #c2bcb3;
+      --soft: #d1cbc2;
+      --text: #f1ede5;
+      --cream: #fffaf0;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: #111216; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #111216;
+      color: var(--text);
+      font-family: "Syne", sans-serif;
+    }
+    button, input { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+
+    .phone {
+      width: min(100%, 430px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 24px 18px 72px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 80% 5%, rgba(196,64,64,.09), transparent 22%),
+        var(--canvas);
+      transition: background-color .2s, color .2s;
+    }
+
+    .preview-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 28px;
+      padding: 8px 9px 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--panel);
+    }
+    .preview-bar > span {
+      color: var(--muted);
+      font: 700 9px "JetBrains Mono", monospace;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--tile);
+    }
+    .switch button {
+      min-height: 36px;
+      padding: 6px 10px;
+      border: 0;
+      border-radius: 3px;
+      background: transparent;
+      color: var(--muted);
+      font: 700 9px "Syne", sans-serif;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .switch button[aria-pressed="true"] { background: var(--raised); color: var(--cream); }
+
+    .brand { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 24px;
+      border: 1px solid var(--red);
+      border-radius: 9px;
+    }
+    .brand-mark b {
+      color: var(--red);
+      font: 800 39px/1 "Noto Sans JP", sans-serif;
+    }
+    .brand-mark strong {
+      color: var(--cream);
+      font: 700 40px/.9 "Syne", sans-serif;
+      letter-spacing: -.04em;
+    }
+    .tagline { color: var(--secondary); font: italic 16px "Instrument Serif", serif; }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      margin: 28px 0 30px;
+    }
+    .tabs button {
+      min-height: 52px;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      background: transparent;
+      color: var(--muted);
+      font: 700 10px "Syne", sans-serif;
+      letter-spacing: .19em;
+      text-transform: uppercase;
+    }
+    .tabs .active { border-color: var(--border-strong); background: var(--panel); color: var(--cream); }
+
+    .intro { margin-bottom: 13px; color: var(--secondary); font: italic 17px/1.5 "Instrument Serif", serif; }
+    .search {
+      position: relative;
+      display: flex;
+      align-items: center;
+      min-height: 58px;
+      padding: 0 16px 0 54px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--secondary);
+      font-size: 14px;
+    }
+    .camera {
+      position: absolute;
+      left: 14px;
+      width: 24px;
+      height: 18px;
+      border: 2px solid var(--soft);
+      border-radius: 4px;
+    }
+    .camera::before { content: ""; position: absolute; width: 7px; height: 7px; left: 6px; top: 3px; border: 2px solid var(--soft); border-radius: 50%; }
+    .camera::after { content: ""; position: absolute; width: 8px; height: 4px; left: 5px; top: -6px; border: 2px solid var(--soft); border-bottom: 0; border-radius: 3px 3px 0 0; }
+    .helper { margin: 8px 0 24px; color: var(--muted); font: 10px/1.5 "JetBrains Mono", monospace; }
+
+    .panel {
+      margin-top: 18px;
+      padding: 15px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--panel);
+    }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      color: var(--secondary);
+      font: 700 10px "Syne", sans-serif;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+    .section-title::before, .section-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+    .section-title i { color: var(--red); font-style: normal; }
+
+    .trending {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+    }
+    .trend {
+      min-height: 48px;
+      padding: 10px 11px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      background: var(--tile);
+      color: var(--secondary);
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .trend span { overflow: hidden; text-overflow: ellipsis; }
+    .pip { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); box-shadow: inset 0 0 0 3px var(--tile); border: 1px solid var(--gold); }
+    .spark { flex: none; color: var(--red); }
+    .up { margin-left: auto; color: var(--green); font: 11px "JetBrains Mono", monospace; }
+
+    .recent { display: grid; gap: 7px; }
+    .recent-row {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      gap: 11px;
+      align-items: center;
+      min-height: 68px;
+      padding: 8px 11px;
+      border-left: 3px solid var(--gold);
+      border-radius: 0 4px 4px 0;
+      background: var(--tile);
+    }
+    .score { color: var(--cream); font: 700 17px "JetBrains Mono", monospace; }
+    .recent-copy { min-width: 0; }
+    .recent-copy strong { display: block; overflow: hidden; color: var(--cream); font: italic 19px "Instrument Serif", serif; text-overflow: ellipsis; white-space: nowrap; }
+    .recent-copy small { display: block; margin-top: 4px; overflow: hidden; color: var(--muted); font: 10px "JetBrains Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
+
+    .news-head { display: flex; align-items: center; justify-content: space-between; margin: 36px 2px 14px; }
+    .news-head strong { color: var(--secondary); font: 700 10px "Syne", sans-serif; letter-spacing: .22em; text-transform: uppercase; }
+    .dots { display: flex; gap: 12px; }
+    .dots i { width: 8px; height: 8px; border: 1px solid var(--border-strong); border-radius: 50%; }
+    .dots i:nth-child(2) { background: var(--blue); border-color: var(--blue); }
+    .news-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .news-card { overflow: hidden; border: 1px solid var(--border); border-radius: 7px; background: var(--panel); }
+    .news-card img { display: block; width: 100%; height: 118px; object-fit: cover; }
+    .news-copy { min-height: 142px; padding: 12px; border-top: 2px solid color-mix(in srgb, var(--blue), var(--border) 60%); }
+    .source { color: var(--gold); font: 700 9px "JetBrains Mono", monospace; letter-spacing: .1em; text-transform: uppercase; }
+    .news-copy h3 { margin: 8px 0 7px; color: var(--cream); font: italic 17px/1.25 "Instrument Serif", serif; }
+    .news-copy p { margin: 0; color: var(--secondary); font: 12px/1.55 "Syne", sans-serif; }
+
+    .feature {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 15px;
+      margin-top: 34px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--panel);
+    }
+    .feature img { width: 110px; border-radius: 5px; }
+    .eyebrow { color: var(--gold); font: 700 9px "Syne", sans-serif; letter-spacing: .16em; text-transform: uppercase; }
+    .feature h2 { margin: 6px 0; color: var(--cream); font: italic 25px/1 "Instrument Serif", serif; }
+    .feature .big { color: var(--cream); font: 700 34px "JetBrains Mono", monospace; }
+    .feature p { margin: 5px 0 0; color: var(--secondary); font: 11px/1.5 "Syne", sans-serif; }
+
+    .note { margin: 30px 8px 0; color: var(--muted); font: 9px/1.6 "JetBrains Mono", monospace; text-align: center; }
+
+    @media (min-width: 600px) {
+      .phone { margin-block: 22px; border: 1px solid #30323a; border-radius: 18px; box-shadow: 0 30px 90px rgba(0,0,0,.45); }
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="preview-bar">
+      <span>Signal page · contrast mockup</span>
+      <div class="switch" role="group" aria-label="Compare palette">
+        <button id="original" type="button" aria-pressed="false">Original</button>
+        <button id="outdoor" type="button" aria-pressed="true">Outdoor</button>
+      </div>
+    </div>
+
+    <header class="brand">
+      <div class="brand-mark"><b>株</b><strong>Signal</strong></div>
+      <div class="tagline">Trading card intelligence</div>
+    </header>
+
+    <nav class="tabs" aria-label="App pages">
+      <button class="active">Signal</button><button>Collection</button><button>Dossier</button>
+    </nav>
+
+    <main>
+      <div class="intro">Scan a card, or type a name, number, or name + last digits.</div>
+      <div class="search"><span class="camera" aria-hidden="true"></span>Card name, number, or name + last digits</div>
+      <div class="helper">Price appears first. Run the full Signal report only when you want it.</div>
+
+      <section class="panel">
+        <div class="section-title"><i>▲</i> Top trending · 5</div>
+        <div class="trending">
+          <div class="trend"><i class="pip"></i><span>Detective Pikachu</span><b class="up">▲</b></div>
+          <div class="trend"><i class="pip"></i><span>Greninja</span><b class="up">▲</b></div>
+          <div class="trend"><b class="spark">✦</b><span>Smaug the Magnificent</span><b class="up">▲</b></div>
+          <div class="trend"><b class="spark">✦</b><span>Professional Face-Breaker</span><b class="up">▲</b></div>
+          <div class="trend"><b class="spark" style="color:var(--gold)">△</b><span>Mind Shuffle</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title">Your last scans</div>
+        <div class="recent">
+          <div class="recent-row"><span class="score">70/100</span><div class="recent-copy"><strong>Mega Greninja ex</strong><small>Chaos Rising · 122/86 · Mega Hyper Rare</small></div></div>
+          <div class="recent-row"><span class="score">57/100</span><div class="recent-copy"><strong>Mega Dragonite ex</strong><small>Ascended Heroes · 295/217 · Mega Hyper Rare</small></div></div>
+          <div class="recent-row"><span class="score">50/100</span><div class="recent-copy"><strong>Reinforcement of the Army</strong><small>Legendary Modern Decks 2026 · L26D-ENS08</small></div></div>
+        </div>
+      </section>
+
+      <div class="news-head"><strong>TCG Intelligence</strong><span class="dots"><i></i><i></i><i></i><i></i></span></div>
+      <section class="news-grid">
+        <article class="news-card">
+          <img src="https://mtgrocks.com/wp-content/uploads/2026/08/Storvald-Frost-Giant-Jarl-MTG-Featured-Image-768x432.webp" alt="Fantasy card artwork" referrerpolicy="no-referrer" />
+          <div class="news-copy"><span class="source">MTG Rocks · 1h</span><h3>Funky MTG Giant Commander Enables Forgotten Win Condition</h3><p>A strange giant turns an old instant into a real table threat.</p></div>
+        </article>
+        <article class="news-card">
+          <img src="https://draftsim.com/wp-content/uploads/2026/08/Yuriko-the-Tigers-Shadow-Illustration-by-Yongjai-Choi-1-768x432.png" alt="Fantasy card artwork" referrerpolicy="no-referrer" />
+          <div class="news-copy"><span class="source">Draftsim · 5h</span><h3>Conjure in MTG: Rules, History, and Best Cards</h3><p>How digital-only mechanics changed card value and deck building.</p></div>
+        </article>
+      </section>
+
+      <section class="feature">
+        <img src="https://images.scrydex.com/pokemon/me2pt5-295/large" alt="Mega Dragonite ex" referrerpolicy="no-referrer" />
+        <div><span class="eyebrow">Latest exact scan</span><h2>Mega Dragonite ex</h2><div class="big">57/100</div><p>Ascended Heroes · 295/217<br />Market price and evidence remain readable outdoors.</p></div>
+      </section>
+    </main>
+
+    <div class="note">Static design preview only · No app data is changed</div>
+  </div>
+
+  <script>
+    const root = document.documentElement;
+    const original = document.getElementById('original');
+    const outdoor = document.getElementById('outdoor');
+    function setTheme(theme) {
+      root.dataset.theme = theme;
+      original.setAttribute('aria-pressed', String(theme === 'original'));
+      outdoor.setAttribute('aria-pressed', String(theme === 'outdoor'));
+    }
+    original.addEventListener('click', () => setTheme('original'));
+    outdoor.addEventListener('click', () => setTheme('outdoor'));
+  </script>
+</body>
+</html>
