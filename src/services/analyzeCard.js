@@ -27,15 +27,15 @@ import {
 import { tryParseSignalJSON } from './jsonRepair';
 import { normalizeAnalysis } from './validateAnalysis';
 import { recordSignalMeasurement, sharedAnalyze } from './signalGateway';
-import { selectSearchTargets } from './searchBudget';
+import {
+  ANALYSIS_MAX_TOKENS,
+  directSearchTool,
+  selectSearchTargets,
+} from './searchBudget';
 
-// Two-tier model selection. When the pre-fetch has already answered everything
-// (MTG resolves with 0 web_searches), the model is only judging supplied facts
-// and emitting JSON — work Haiku handles at ~1/3 the cost. Sonnet is reserved
-// for scans that still need live search and cross-source synthesis.
-// Flip FAST_MODEL to SMART_MODEL to disable the tiering in one edit.
-const SMART_MODEL = 'claude-sonnet-4-6';
-const FAST_MODEL = 'claude-haiku-4-5';
+// Full reports use one model so the work shape does not change by card.
+// Camera identification remains on Haiku in scanCardImage.js.
+const ANALYSIS_MODEL = 'claude-sonnet-4-6';
 
 function sharedCacheKey(cardName, game, pin) {
   const identity = pin?.printingId || pin?.id || '';
@@ -149,13 +149,12 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     ? `Analyze the ${game} card: "${cardName}"${exact}. Search both English and Japanese markets.`
     : `Analyze the trading card: "${cardName}"${exact}. Determine which game it's from (Pokemon, Yu-Gi-Oh, or MTG), then search both English and Japanese markets.`;
 
-  // Each web_search is 5-15s of SEQUENTIAL wall clock — the dominant cost. Only
-  // search for what the parallel pre-fetch can't cover, and gate by game so we
-  // never pay for irrelevant searches (e.g. JP/tournament for an MTG card).
+  // The direct APIs above always run in parallel. Every report then gets one
+  // direct web search. Dynamic search filtering is deliberately disabled: it
+  // made sparse cards run many hidden code jobs and turned a 40-second report
+  // into a 147-second report.
   const resolvedGame = (game || cardData?.game || '').toLowerCase();
-  // The gateway permits two searches. When several free pre-fetches fail at
-  // once, keep the two highest-priority gaps instead of sending a request the
-  // gateway must reject before analysis begins.
+  // Keep the research shape fixed even when a pre-fetch happens to fail.
   const searchTargets = selectSearchTargets(resolvedGame, { catalysts, community, creators });
   const maxSearches = searchTargets.length;
 
@@ -165,8 +164,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   // since those never appear in a web_search_tool_result block.
   const prefetchUrls = collectPrefetchUrls({ cardData, community, creators, ebay, jp });
 
-  // Haiku for pure-synthesis scans, Sonnet whenever live search is in play.
-  const model = maxSearches === 0 ? FAST_MODEL : SMART_MODEL;
+  const model = ANALYSIS_MODEL;
 
   const userMessage = hasPreFetch
     ? [
@@ -177,7 +175,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
         '</untrusted_market_data>',
         '',
         maxSearches
-          ? 'The blocks above are pre-fetched and REAL — use them directly, do NOT re-search them. web_search ONLY for what is missing below:'
+          ? 'The blocks above are pre-fetched and REAL — use them directly, do NOT re-search them. Run exactly ONE direct web_search for the target below. Never repeat the query:'
           : 'The blocks above are pre-fetched and REAL. Score only what those blocks support. Missing evidence stays neutral; do NOT fill gaps from memory.',
         ...searchTargets.map((t, i) => `${i + 1}. ${t}`),
       ].join('\n')
@@ -185,19 +183,14 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
 
   const modelRequest = {
       model,
-      // Sonnet runs adaptive thinking, so it needs headroom above the ~4k of
-      // JSON the schema produces. The Haiku path does no thinking and only has
-      // to format pre-fetched facts, so 8k is ample and keeps the bill down.
-      max_tokens: model === FAST_MODEL ? 8000 : 24000,
-      // Adaptive thinking: the model decides how much to reason through
-      // cross-signal patterns before emitting the structured 9-signal scorecard.
-      // Thinking tokens are drawn from max_tokens, so max_tokens carries headroom
-      // (24k) to leave room for the full JSON output and avoid truncation.
+      // Eight thousand tokens covers the measured report shape while stopping
+      // a sparse card from expanding into an unbounded research transcript.
+      max_tokens: ANALYSIS_MAX_TOKENS,
+      // Adaptive thinking stays at low effort inside the same fixed ceiling.
       // (Adaptive replaces the deprecated {type:'enabled',budget_tokens} form,
       //  which 400s on Opus 4.7+/Fable if the model is ever upgraded.)
-      ...(model === FAST_MODEL
-        ? {}
-        : { thinking: { type: 'adaptive' }, output_config: { effort: 'low' } }),
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'low' },
       system: [
         {
           type: 'text',
@@ -205,11 +198,9 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
           cache_control: { type: 'ephemeral' },
         },
       ],
-      // Attach web_search ONLY when there's something left to search — a card
-      // that needs no search (e.g. MTG) skips the tool entirely and just
-      // synthesizes from pre-fetched data, which is far faster.
+      // This is a direct search. Anthropic cannot spawn dynamic code filters.
       ...(maxSearches > 0
-        ? { tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: maxSearches }] }
+        ? { tools: [directSearchTool()] }
         : {}),
       messages: [{ role: 'user', content: userMessage }],
   };

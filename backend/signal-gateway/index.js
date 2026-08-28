@@ -8,6 +8,9 @@ const MEASUREMENTS = 'signal_score_measurements_v1';
 const LIMITS = 'signal_gateway_limits_v1';
 const YUGIOH_ART = 'signal_yugioh_official_art_v1';
 const REPORT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const REPORT_LEASE_MS = 3 * 60 * 1000;
+const REPORT_WAIT_MS = 110 * 1000;
+const REPORT_POLL_MS = 1000;
 const DAILY_MODEL_CALLS = 100;
 const ALLOWED_MODELS = new Set(['claude-haiku-4-5', 'claude-sonnet-4-6']);
 
@@ -26,6 +29,31 @@ function finite(value) {
   if (value === null || value === undefined || value === '') return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+function timestampMillis(value) {
+  if (typeof value?.toMillis === 'function') return value.toMillis();
+  if (value instanceof Date) return value.getTime();
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function reportDisposition(saved, now = Date.now()) {
+  if (saved?.rawResponse && timestampMillis(saved.expiresAt) > now) return 'cached';
+  if (saved?.inFlightOwner && timestampMillis(saved.inFlightUntil) > now) return 'wait';
+  return 'claim';
+}
+
+function cachedReport(saved) {
+  return {
+    cached: true,
+    createdAt: saved?.createdAt?.toDate?.()?.toISOString() || null,
+    result: saved?.rawResponse,
+  };
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function safeText(value, max = 300) {
@@ -117,10 +145,17 @@ function validateModelBody(body) {
   if (!body || typeof body !== 'object') throw new Error('Missing model request.');
   if (!ALLOWED_MODELS.has(body.model)) throw new Error('Model is not allowed.');
   const max = Number(body.max_tokens);
-  if (!Number.isFinite(max) || max < 1 || max > 24000) throw new Error('Token limit is not allowed.');
+  if (!Number.isFinite(max) || max < 1 || max > 8000) throw new Error('Token limit is not allowed.');
   if (!Array.isArray(body.messages) || body.messages.length !== 1) throw new Error('Message shape is not allowed.');
   const tools = Array.isArray(body.tools) ? body.tools : [];
-  if (tools.some((tool) => tool?.name !== 'web_search' || Number(tool?.max_uses || 0) > 2)) {
+  if (tools.some((tool) => (
+    tool?.type !== 'web_search_20260209'
+    || tool?.name !== 'web_search'
+    || Number(tool?.max_uses || 0) !== 1
+    || !Array.isArray(tool?.allowed_callers)
+    || tool.allowed_callers.length !== 1
+    || tool.allowed_callers[0] !== 'direct'
+  ))) {
     throw new Error('Tool request is not allowed.');
   }
   const bytes = Buffer.byteLength(JSON.stringify(body));
@@ -174,28 +209,88 @@ async function callAnthropic(req, modelBody) {
   return payload;
 }
 
-async function analyze(req, body) {
+async function claimReport(ref, cacheKey, card) {
+  const owner = crypto.randomUUID();
+  return db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+    const saved = snap.data();
+    const now = Date.now();
+    const disposition = reportDisposition(saved, now);
+    if (disposition === 'cached') return { disposition, saved };
+    if (disposition === 'wait') return { disposition };
+    transaction.set(ref, {
+      cacheKey,
+      card,
+      inFlightOwner: owner,
+      inFlightUntil: Timestamp.fromMillis(now + REPORT_LEASE_MS),
+    }, { merge: true });
+    return { disposition: 'claim', owner };
+  });
+}
+
+async function waitForReport(ref) {
+  const deadline = Date.now() + REPORT_WAIT_MS;
+  while (Date.now() < deadline) {
+    await delay(REPORT_POLL_MS);
+    const saved = (await ref.get()).data();
+    const disposition = reportDisposition(saved);
+    if (disposition === 'cached') return saved;
+    if (disposition === 'claim') return null;
+  }
+  const error = new Error('This card report is still running. Try again shortly.');
+  error.status = 409;
+  throw error;
+}
+
+async function releaseReportClaim(ref, owner) {
+  await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+    if (snap.data()?.inFlightOwner !== owner) return;
+    transaction.set(ref, {
+      inFlightOwner: FieldValue.delete(),
+      inFlightUntil: FieldValue.delete(),
+    }, { merge: true });
+  });
+}
+
+async function analyze(req, body, retry = 0) {
   const cacheKey = safeText(body.cacheKey, 500);
   if (!cacheKey) throw new Error('Missing cache key.');
   const id = hash(cacheKey);
   const ref = db.collection(REPORTS).doc(id);
-  const now = Date.now();
-  const snap = await ref.get();
-  const saved = snap.data();
-  if (saved?.expiresAt?.toMillis?.() > now && saved.rawResponse) {
-    return { cached: true, createdAt: saved.createdAt?.toDate?.()?.toISOString() || null, result: saved.rawResponse };
+  const card = body.card && typeof body.card === 'object' ? body.card : {};
+  const claim = await claimReport(ref, cacheKey, card);
+  if (claim.disposition === 'cached') return cachedReport(claim.saved);
+  if (claim.disposition === 'wait') {
+    const saved = await waitForReport(ref);
+    if (saved) return cachedReport(saved);
+    if (retry >= 1) {
+      const error = new Error('The first card report stopped before finishing. Try again.');
+      error.status = 409;
+      throw error;
+    }
+    return analyze(req, body, retry + 1);
   }
 
-  const result = await callAnthropic(req, body.modelRequest);
-  const createdAt = new Date();
-  await ref.set({
-    cacheKey,
-    card: body.card && typeof body.card === 'object' ? body.card : {},
-    rawResponse: result,
-    createdAt: Timestamp.fromDate(createdAt),
-    expiresAt: Timestamp.fromMillis(now + REPORT_TTL_MS),
-  });
-  return { cached: false, createdAt: createdAt.toISOString(), result };
+  const modelStartedAt = Date.now();
+  try {
+    const result = await callAnthropic(req, body.modelRequest);
+    const createdAt = new Date();
+    await ref.set({
+      cacheKey,
+      card,
+      rawResponse: result,
+      createdAt: Timestamp.fromDate(createdAt),
+      expiresAt: Timestamp.fromMillis(createdAt.getTime() + REPORT_TTL_MS),
+      modelDurationMs: createdAt.getTime() - modelStartedAt,
+      inFlightOwner: FieldValue.delete(),
+      inFlightUntil: FieldValue.delete(),
+    }, { merge: true });
+    return { cached: false, createdAt: createdAt.toISOString(), result };
+  } catch (error) {
+    await releaseReportClaim(ref, claim.owner).catch(() => {});
+    throw error;
+  }
 }
 
 async function observe(body) {
@@ -242,6 +337,6 @@ async function handler(req, res) {
 functions.http('signalGateway', handler);
 
 module.exports = {
-  handler, hash, finite, validateModelBody,
+  handler, hash, finite, validateModelBody, reportDisposition,
   officialCardCid, officialSetPid, officialSetImage,
 };

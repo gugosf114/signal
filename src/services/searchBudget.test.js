@@ -1,32 +1,41 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { selectSearchTargets } from './searchBudget.js';
+import {
+  ANALYSIS_MAX_TOKENS,
+  FIXED_SEARCH_TARGET,
+  directSearchTool,
+  selectSearchTargets,
+} from './searchBudget.js';
 
 describe('gateway search budget', () => {
-  test('never asks the two-search gateway for three searches', () => {
+  test('uses the same single research target when every prefetch is missing', () => {
     const targets = selectSearchTargets('yugioh', {
       catalysts: null,
       community: null,
       creators: null,
     });
 
-    assert.deepEqual(targets, [
-      'Tournament / competitive usage + ban status',
-      'Recent community coverage — Reddit',
-    ]);
+    assert.deepEqual(targets, [FIXED_SEARCH_TARGET]);
   });
 
-  test('uses both remaining evidence gaps when catalyst data exists', () => {
+  test('uses the same single research target when every prefetch succeeds', () => {
     const targets = selectSearchTargets('yugioh', {
       catalysts: { banStatus: 'Limited' },
-      community: null,
-      creators: null,
+      community: [{ title: 'Reddit result' }],
+      creators: [{ title: 'YouTube result' }],
     });
 
-    assert.deepEqual(targets, [
-      'Recent community coverage — Reddit',
-      'Recent creator coverage — YouTube',
-    ]);
+    assert.deepEqual(targets, [FIXED_SEARCH_TARGET]);
+  });
+
+  test('forces one direct search with no automatic code filtering', () => {
+    assert.deepEqual(directSearchTool(), {
+      type: 'web_search_20260209',
+      name: 'web_search',
+      max_uses: 1,
+      allowed_callers: ['direct'],
+    });
+    assert.equal(ANALYSIS_MAX_TOKENS, 8000);
   });
 });

@@ -1,13 +1,21 @@
-export const MAX_GATEWAY_SEARCHES = 2;
+export const MAX_GATEWAY_SEARCHES = 1;
+export const ANALYSIS_MAX_TOKENS = 8000;
+export const FIXED_SEARCH_TARGET =
+  'Find the single strongest current source missing from the supplied tournament, Reddit, or YouTube evidence.';
 
-export function selectSearchTargets(resolvedGame, { catalysts, community, creators } = {}) {
-  const targets = [];
-  if (resolvedGame === 'pokemon') {
-    targets.push('Tournament — Limitless usage / ban list');
-  } else if ((resolvedGame === 'yugioh' || resolvedGame === 'mtg') && !catalysts) {
-    targets.push('Tournament / competitive usage + ban status');
-  }
-  if (!community) targets.push('Recent community coverage — Reddit');
-  if (!creators) targets.push('Recent creator coverage — YouTube');
-  return targets.slice(0, MAX_GATEWAY_SEARCHES);
+// Every fresh report gets the same bounded research pass. The old gap-based
+// budget gave Claude up to two dynamic searches. On sparse cards that turned
+// into long chains of code-execution filters, while an easier card finished
+// after only a few. One direct search keeps the work and bill predictable.
+export function selectSearchTargets() {
+  return [FIXED_SEARCH_TARGET];
+}
+
+export function directSearchTool() {
+  return {
+    type: 'web_search_20260209',
+    name: 'web_search',
+    max_uses: MAX_GATEWAY_SEARCHES,
+    allowed_callers: ['direct'],
+  };
 }

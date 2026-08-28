@@ -1,7 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
-  hash, finite, validateModelBody, officialCardCid, officialSetPid, officialSetImage,
+  hash, finite, validateModelBody, reportDisposition,
+  officialCardCid, officialSetPid, officialSetImage,
 } = require('./index');
 
 test('cache ids are stable and hide card text', () => {
@@ -37,5 +38,37 @@ test('only Signal models and bounded requests pass', () => {
   };
   assert.doesNotThrow(() => validateModelBody(body));
   assert.throws(() => validateModelBody({ ...body, model: 'claude-opus-4-8' }), /not allowed/);
-  assert.throws(() => validateModelBody({ ...body, max_tokens: 24001 }), /not allowed/);
+  assert.throws(() => validateModelBody({ ...body, max_tokens: 8001 }), /not allowed/);
+});
+
+test('analysis permits one direct search and rejects hidden code filtering', () => {
+  const body = {
+    model: 'claude-sonnet-4-6',
+    max_tokens: 8000,
+    messages: [{ role: 'user', content: 'test' }],
+    tools: [{
+      type: 'web_search_20260209',
+      name: 'web_search',
+      max_uses: 1,
+      allowed_callers: ['direct'],
+    }],
+  };
+  assert.doesNotThrow(() => validateModelBody(body));
+  assert.throws(() => validateModelBody({
+    ...body,
+    tools: [{ ...body.tools[0], max_uses: 2 }],
+  }), /not allowed/);
+  assert.throws(() => validateModelBody({
+    ...body,
+    tools: [{ ...body.tools[0], allowed_callers: ['code_execution_20260120'] }],
+  }), /not allowed/);
+});
+
+test('a live report or lease prevents a second paid model call', () => {
+  const now = 1000;
+  const timestamp = (value) => ({ toMillis: () => value });
+  assert.equal(reportDisposition({ rawResponse: { id: 'msg_1' }, expiresAt: timestamp(2000) }, now), 'cached');
+  assert.equal(reportDisposition({ inFlightOwner: 'worker-1', inFlightUntil: timestamp(2000) }, now), 'wait');
+  assert.equal(reportDisposition({ inFlightOwner: 'worker-1', inFlightUntil: timestamp(999) }, now), 'claim');
+  assert.equal(reportDisposition(null, now), 'claim');
 });
