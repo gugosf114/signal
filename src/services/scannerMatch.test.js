@@ -1,6 +1,13 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { scannerMatchDetails, scannerMatchMeta, scannerMatchPrice } from './scannerMatch.js';
+import {
+  createScannerBatchEntry,
+  scannerBatchFormOptions,
+  scannerBatchSummary,
+  scannerMatchDetails,
+  scannerMatchMeta,
+  scannerMatchPrice,
+} from './scannerMatch.js';
 
 describe('scanner match display', () => {
   test('uses the live catalogue printing instead of the vision guess', () => {
@@ -33,5 +40,29 @@ describe('scanner match display', () => {
     assert.equal(details.name, 'Island');
     assert.equal(details.gameLabel, 'Magic');
     assert.equal(scannerMatchPrice(details), 'Price unavailable');
+  });
+});
+
+describe('scanner batch', () => {
+  test('one exact match becomes one near-mint queue entry', () => {
+    const match = { pin: { name: 'Black Lotus', game: 'mtg', price: 1000 } };
+    assert.deepEqual(createScannerBatchEntry(match, 'row-1'), {
+      id: 'row-1', match, quantity: 1, condition: 'near_mint', form: 'normal',
+    });
+    assert.equal(createScannerBatchEntry({ card: { name: 'Unconfirmed' } }, 'row-2'), null);
+  });
+
+  test('batch totals count copies and keep missing prices visible', () => {
+    const entries = [
+      { quantity: 2, match: { pin: { price: 12.50 } } },
+      { quantity: 1, match: { pin: { price: null } } },
+    ];
+    assert.deepEqual(scannerBatchSummary(entries), { cards: 3, value: 25, unpriced: 1 });
+  });
+
+  test('batch finish choices follow each game', () => {
+    assert.deepEqual(scannerBatchFormOptions('pokemon').map((item) => item.label), ['Normal', 'Reverse']);
+    assert.deepEqual(scannerBatchFormOptions('mtg').map((item) => item.label), ['Non-foil', 'Foil']);
+    assert.deepEqual(scannerBatchFormOptions('yugioh'), []);
   });
 });

@@ -7,7 +7,14 @@ import {
   openFocusedRearCamera,
   setCameraTorch,
 } from '../services/cameraFocus';
-import { scannerMatchDetails, scannerMatchMeta, scannerMatchPrice } from '../services/scannerMatch';
+import {
+  createScannerBatchEntry,
+  scannerBatchFormOptions,
+  scannerBatchSummary,
+  scannerMatchDetails,
+  scannerMatchMeta,
+  scannerMatchPrice,
+} from '../services/scannerMatch';
 import { setScannerOverlayProtection } from '../services/scannerDisplay';
 
 function canvasFile(canvas) {
@@ -46,13 +53,23 @@ function FlashIcon({ on }) {
   );
 }
 
+const BATCH_CONDITIONS = [
+  { value: 'near_mint', label: 'Near mint' },
+  { value: 'lightly_played', label: 'Lightly played' },
+  { value: 'moderately_played', label: 'Moderately played' },
+  { value: 'heavily_played', label: 'Heavily played' },
+  { value: 'damaged', label: 'Damaged' },
+];
+
 const CardScanner = forwardRef(function CardScanner({
   open,
   onCancel,
   onIdentify,
   onAdd,
   onRun,
+  onBatchAdd,
   onManualSearch,
+  mode = 'single',
 }, ref) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -67,6 +84,7 @@ const CardScanner = forwardRef(function CardScanner({
   const previewTimerRef = useRef(null);
   const previewPausedRef = useRef(false);
   const cameraTokenRef = useRef(0);
+  const pendingFilesRef = useRef([]);
   useImperativeHandle(ref, () => ({
     choosePhoto: () => fileInputRef.current?.click(),
   }), []);
@@ -80,6 +98,9 @@ const CardScanner = forwardRef(function CardScanner({
   const [torchSupported, setTorchSupported] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [launchAction, setLaunchAction] = useState(null);
+  const [batch, setBatch] = useState([]);
+  const batchMode = mode === 'batch';
+  const batchSummary = scannerBatchSummary(batch);
 
   const clearPreview = useCallback(() => {
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
@@ -321,9 +342,61 @@ const CardScanner = forwardRef(function CardScanner({
   const choosePhoto = () => fileInputRef.current?.click();
 
   const handleFile = async (event) => {
-    const file = event.target.files?.[0];
+    const files = [...(event.target.files || [])];
     if (event.target) event.target.value = '';
-    if (file) await identify(file, false);
+    if (!files.length) return;
+    pendingFilesRef.current = batchMode ? files.slice(1) : [];
+    await identify(files[0], false);
+  };
+
+  const reviewBatch = () => {
+    abortRef.current?.abort();
+    stop();
+    clearPreview();
+    setPhase('review');
+  };
+
+  const continueBatch = async () => {
+    clearPreview();
+    const next = pendingFilesRef.current.shift();
+    if (next) await identify(next, false);
+    else start();
+  };
+
+  const keepForBatch = async (destination = 'scan') => {
+    const entry = createScannerBatchEntry(match, `${Date.now()}-${batch.length}`);
+    if (!entry) return;
+    setBatch((current) => [...current, entry]);
+    setMatch(null);
+    clearPreview();
+    if (destination === 'review') {
+      stop();
+      setPhase('review');
+      return;
+    }
+    const next = pendingFilesRef.current.shift();
+    if (next) await identify(next, false);
+    else start();
+  };
+
+  const updateBatchEntry = (id, patch) => {
+    setBatch((current) => current.map((entry) => entry.id === id ? { ...entry, ...patch } : entry));
+  };
+
+  const removeBatchEntry = (id) => {
+    setBatch((current) => current.filter((entry) => entry.id !== id));
+  };
+
+  const addBatch = async () => {
+    if (!batch.length || !onBatchAdd) return;
+    setLaunchAction('batch');
+    setPhase('launching');
+    try {
+      await onBatchAdd(batch);
+    } catch (batchError) {
+      setError({ title: 'Collection did not open', message: batchError?.message || 'Try the batch again.' });
+      setPhase('error');
+    }
   };
 
   const scanAgain = () => {
@@ -374,7 +447,14 @@ const CardScanner = forwardRef(function CardScanner({
   return (
     <div className={`live-scanner live-scanner--${phase}`} role="dialog" aria-modal="true" aria-label="Scan a trading card">
       <div ref={stageRef} className="live-scanner-stage">
-        <input ref={fileInputRef} type="file" accept="image/*" className="live-scanner-file" onChange={handleFile} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple={batchMode}
+          className="live-scanner-file"
+          onChange={handleFile}
+        />
         {previewUrl ? (
           <img className="live-scanner-preview" src={previewUrl} alt="Card photo being checked" />
         ) : (
@@ -398,8 +478,12 @@ const CardScanner = forwardRef(function CardScanner({
 
         <div className="live-scanner-topbar">
           <button type="button" onClick={cancel}>Cancel</button>
-          <strong>Scan card</strong>
-          <span className="live-scanner-auto">AUTO</span>
+          <strong>{batchMode ? 'Batch scan' : 'Scan card'}</strong>
+          {batchMode ? (
+            <button type="button" className="live-batch-count" onClick={reviewBatch} disabled={!batch.length}>
+              {batchSummary.cards} saved
+            </button>
+          ) : <span className="live-scanner-auto">AUTO</span>}
         </div>
 
         {cameraVisible && !error && (
@@ -460,10 +544,12 @@ const CardScanner = forwardRef(function CardScanner({
           <div className="live-scan-readout" role="status" aria-live="polite">
             <span className="live-scan-spinner" aria-hidden />
             <strong>{phase === 'launching'
-              ? (launchAction === 'add' ? 'Opening collection form' : 'Running full Signal')
+              ? (launchAction === 'batch' ? 'Adding batch to Collection'
+                : launchAction === 'add' ? 'Opening collection form' : 'Running full Signal')
               : 'Finding the exact printing'}</strong>
             <span>{phase === 'launching'
-              ? (launchAction === 'add' ? 'Preparing this exact printing.' : 'Starting the complete market report.')
+              ? (launchAction === 'batch' ? `Saving ${batchSummary.cards} cards.`
+                : launchAction === 'add' ? 'Preparing this exact printing.' : 'Starting the complete market report.')
               : 'Reading the name, set, number, and variant.'}</span>
           </div>
         )}
@@ -512,11 +598,19 @@ const CardScanner = forwardRef(function CardScanner({
             </p>
             <div className={`live-match-actions ${details.exact ? 'live-match-actions--complete' : ''}`}>
               {details.exact ? (
-                <>
-                  <button type="button" className="live-match-add" onClick={() => launch('add')}>Add to collection</button>
-                  <button type="button" className="live-match-primary" onClick={() => launch('run')}>Run full Signal</button>
-                  <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
-                </>
+                batchMode ? (
+                  <>
+                    <button type="button" className="live-match-primary" onClick={() => keepForBatch('scan')}>Keep & scan next</button>
+                    <button type="button" className="live-match-add" onClick={() => keepForBatch('review')}>Keep & review</button>
+                    <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" className="live-match-add" onClick={() => launch('add')}>Add to collection</button>
+                    <button type="button" className="live-match-primary" onClick={() => launch('run')}>Run full Signal</button>
+                    <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
+                  </>
+                )
               ) : needsChoice ? (
                 <>
                   <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
@@ -528,6 +622,83 @@ const CardScanner = forwardRef(function CardScanner({
                   <button type="button" className="live-match-primary" onClick={() => onManualSearch?.(match)}>Search matches</button>
                 </>
               )}
+            </div>
+          </section>
+        )}
+
+        {phase === 'review' && (
+          <section className="live-batch-review" aria-label="Review scanned cards">
+            <div className="live-batch-heading">
+              <div>
+                <span>Batch review</span>
+                <strong>{batchSummary.cards} card{batchSummary.cards === 1 ? '' : 's'}</strong>
+              </div>
+              <div>
+                <span>Market total</span>
+                <strong>${batchSummary.value.toFixed(2)}{batchSummary.unpriced ? '+' : ''}</strong>
+                {batchSummary.unpriced > 0 && <small>{batchSummary.unpriced} unpriced</small>}
+              </div>
+            </div>
+
+            {batch.length ? (
+              <div className="live-batch-list">
+                {batch.map((entry) => {
+                  const item = scannerMatchDetails(entry.match);
+                  const forms = scannerBatchFormOptions(item.game);
+                  return (
+                    <article className="live-batch-item" key={entry.id}>
+                      {item.imageUrl
+                        ? <img src={item.imageUrl} alt="" />
+                        : <span className="live-batch-noart" aria-hidden>?</span>}
+                      <div className="live-batch-copy">
+                        <strong>{item.name}</strong>
+                        <small>{scannerMatchMeta(item)}</small>
+                        <b>{scannerMatchPrice(item)}</b>
+                      </div>
+                      <button
+                        type="button"
+                        className="live-batch-remove"
+                        onClick={() => removeBatchEntry(entry.id)}
+                        aria-label={`Remove ${item.name} from batch`}
+                      >×</button>
+                      <div className="live-batch-fields">
+                        <label>
+                          <span>Condition</span>
+                          <select value={entry.condition} onChange={(event) => updateBatchEntry(entry.id, { condition: event.target.value })}>
+                            {BATCH_CONDITIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                          </select>
+                        </label>
+                        {forms.length > 0 && (
+                          <label>
+                            <span>Finish</span>
+                            <select value={entry.form} onChange={(event) => updateBatchEntry(entry.id, { form: event.target.value })}>
+                              {forms.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                          </label>
+                        )}
+                        <div className="live-batch-qty" role="group" aria-label={`Quantity for ${item.name}`}>
+                          <span>Quantity</span>
+                          <div>
+                            <button type="button" onClick={() => updateBatchEntry(entry.id, { quantity: Math.max(1, entry.quantity - 1) })}>−</button>
+                            <b>{entry.quantity}</b>
+                            <button type="button" onClick={() => updateBatchEntry(entry.id, { quantity: Math.min(999, entry.quantity + 1) })}>+</button>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="live-batch-empty">
+                <strong>No cards kept yet</strong>
+                <span>Continue scanning to build this batch.</span>
+              </div>
+            )}
+
+            <div className="live-batch-actions">
+              <button type="button" className="live-match-secondary" onClick={continueBatch}>Continue scanning</button>
+              <button type="button" className="live-match-add" onClick={addBatch} disabled={!batch.length}>Add all to Collection</button>
             </div>
           </section>
         )}

@@ -30,6 +30,7 @@ import { hasPrintingPin, nameClaimsExactPrinting } from '../services/recentScans
 import { recordScanDuration } from '../services/scanProgress';
 import { pendingScanCard } from '../services/pendingScan';
 import { resultCardPin } from '../services/printing';
+import { addToCollection } from '../services/collection';
 import {
   clearScanSession,
   loadRecoverableScanSession,
@@ -84,6 +85,16 @@ export default function SignalDashboard() {
   const flashSaveMsg = (msg) => {
     setSaveMsg(msg);
     setTimeout(() => setSaveMsg((m) => (m === msg ? null : m)), 3500);
+  };
+
+  const addScannerBatch = async (entries) => {
+    let copies = 0;
+    for (const entry of entries || []) {
+      addToCollection(entry.card, entry.details);
+      copies += Number(entry?.details?.quantity) || 1;
+    }
+    window.dispatchEvent(new Event('signal-collection-updated'));
+    flashSaveMsg(`${copies} card${copies === 1 ? '' : 's'} added to collection`);
   };
 
   // Held across renders so the brand-mark "go home" handler can abort an
@@ -470,6 +481,7 @@ export default function SignalDashboard() {
         <div id="panel-collection" role="tabpanel" aria-labelledby="tab-collection">
           <Collection
             onAddCard={(card) => setAddCard(card)}
+            onAddBatch={addScannerBatch}
             onLookup={(name, game, opts) => {
               setPage('signal');
               handleSearch(name, game, opts);
@@ -494,6 +506,7 @@ export default function SignalDashboard() {
           <SearchBar
             onSearch={handleSearch}
             onScannerAdd={(card) => setAddCard(card)}
+            onScannerBatch={addScannerBatch}
             loading={loading}
           />
           <QuickPicks onSelect={handleSearch} loading={loading} />

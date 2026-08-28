@@ -41,7 +41,7 @@ function addedLabel(value) {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function Collection({ onLookup, onAddCard }) {
+export default function Collection({ onLookup, onAddCard, onAddBatch }) {
   const [cards, setCards] = useState(() => loadCollection());
   const [status, setStatus] = useState(null);
   const [viewing, setViewing] = useState(null);
@@ -127,6 +127,7 @@ export default function Collection({ onLookup, onAddCard }) {
           onSearch={onLookup}
           onCardFound={(card) => onAddCard?.(card)}
           onScannerAdd={(card) => onAddCard?.(card)}
+          onScannerBatch={onAddBatch}
         />
       </div>
 

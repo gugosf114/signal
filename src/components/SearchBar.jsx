@@ -22,11 +22,13 @@ const MIN_CHARS = 2;
 
 const GAME_LABEL = { pokemon: 'PKM', mtg: 'MTG', yugioh: 'YGO' };
 
-export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd = null, loading = false }) {
+export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd = null, onScannerBatch = null, loading = false }) {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [scanError, setScanError] = useState(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerMode, setScannerMode] = useState('single');
+  const [scannerSession, setScannerSession] = useState(0);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -197,6 +199,15 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
 
   const scanCard = () => {
     setPhotoMenuOpen(false);
+    setScannerMode('single');
+    setScannerSession((value) => value + 1);
+    setScannerOpen(true);
+  };
+
+  const batchScan = () => {
+    setPhotoMenuOpen(false);
+    setScannerMode('batch');
+    setScannerSession((value) => value + 1);
     setScannerOpen(true);
   };
 
@@ -204,11 +215,15 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
     setPhotoMenuOpen(false);
     // Mount the shared scanner before clicking its hidden file input. Keeping
     // both operations inside this tap preserves Android's file-picker gesture.
-    flushSync(() => setScannerOpen(true));
+    flushSync(() => {
+      setScannerMode('single');
+      setScannerSession((value) => value + 1);
+      setScannerOpen(true);
+    });
     scannerRef.current?.choosePhoto();
   };
 
-  const finishPhotoMatch = async ({ card, pin, file }, action) => {
+  const preparePhotoMatch = async ({ card, pin, file }) => {
     if (!pin) return;
     // Save the owner's exact card only after the match is confirmed. A wrong
     // guess must never replace the art for a different printing.
@@ -221,6 +236,13 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
       imageLarge: pin.imageLarge || localImageUrl,
     } : pin;
     const exactName = exactPin.name || card.name;
+    return { card, exactPin, exactName };
+  };
+
+  const finishPhotoMatch = async (match, action) => {
+    const prepared = await preparePhotoMatch(match);
+    if (!prepared) return;
+    const { card, exactPin, exactName } = prepared;
     reqToken.current += 1;
     quietFor.current = exactName;
     setQuery(action === 'add' ? '' : exactName);
@@ -240,6 +262,27 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
       // immediately erases it again.
       force: exactPin.priceSource === 'TCGplayer',
     });
+  };
+
+  const finishPhotoBatch = async (entries) => {
+    if (!onScannerBatch) throw new Error('Batch Collection is unavailable.');
+    const prepared = [];
+    for (const entry of entries || []) {
+      const exact = await preparePhotoMatch(entry.match);
+      if (!exact) continue;
+      prepared.push({
+        card: exact.exactPin,
+        details: {
+          quantity: entry.quantity,
+          condition: entry.condition,
+          form: entry.form,
+        },
+      });
+    }
+    if (!prepared.length) return;
+    setScannerOpen(false);
+    setQuery('');
+    await onScannerBatch(prepared);
   };
 
   const searchPhotoMatch = ({ card } = {}) => {
@@ -305,6 +348,10 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
             <button type="button" role="menuitem" onClick={scanCard}>
               <span className="photo-choice-icon" aria-hidden>◎</span>
               <span><strong>Scan card</strong><small>Open the live camera</small></span>
+            </button>
+            <button type="button" role="menuitem" onClick={batchScan}>
+              <span className="photo-choice-icon" aria-hidden>＋</span>
+              <span><strong>Batch scan</strong><small>Camera or select many photos</small></span>
             </button>
             <button type="button" role="menuitem" onClick={uploadPhoto}>
               <span className="photo-choice-icon" aria-hidden>↑</span>
@@ -410,12 +457,15 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
       )}
 
       <CardScanner
+        key={scannerSession}
         ref={scannerRef}
         open={scannerOpen}
+        mode={scannerMode}
         onCancel={() => setScannerOpen(false)}
         onIdentify={identifyPhoto}
         onAdd={(match) => finishPhotoMatch(match, 'add')}
         onRun={(match) => finishPhotoMatch(match, 'run')}
+        onBatchAdd={finishPhotoBatch}
         onManualSearch={searchPhotoMatch}
       />
     </form>

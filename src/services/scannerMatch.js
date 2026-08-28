@@ -37,3 +37,39 @@ export function scannerMatchPrice(details = {}) {
     ? `$${details.price.toFixed(2)}`
     : 'Price unavailable';
 }
+
+export function scannerBatchFormOptions(game) {
+  if (game === 'yugioh') return [];
+  if (game === 'mtg') return [
+    { value: 'normal', label: 'Non-foil' },
+    { value: 'reverse', label: 'Foil' },
+  ];
+  return [
+    { value: 'normal', label: 'Normal' },
+    { value: 'reverse', label: 'Reverse' },
+  ];
+}
+
+export function createScannerBatchEntry(match, id) {
+  if (!match?.pin) return null;
+  return {
+    id: String(id),
+    match,
+    quantity: 1,
+    condition: 'near_mint',
+    form: 'normal',
+  };
+}
+
+export function scannerBatchSummary(entries) {
+  const result = (Array.isArray(entries) ? entries : []).reduce((summary, entry) => {
+    const qty = Math.max(1, Math.min(999, Math.floor(Number(entry?.quantity) || 1)));
+    const price = Number(entry?.match?.pin?.price);
+    summary.cards += qty;
+    if (Number.isFinite(price) && price > 0) summary.value += price * qty;
+    else summary.unpriced += qty;
+    return summary;
+  }, { cards: 0, value: 0, unpriced: 0 });
+  result.value = Math.round(result.value * 100) / 100;
+  return result;
+}
