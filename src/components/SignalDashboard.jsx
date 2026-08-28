@@ -29,6 +29,7 @@ import { startScanKeepAlive, stopScanKeepAlive } from '../services/scanKeepAlive
 import { hasPrintingPin, nameClaimsExactPrinting } from '../services/recentScans';
 import { recordScanDuration } from '../services/scanProgress';
 import { pendingScanCard } from '../services/pendingScan';
+import { resultCardPin } from '../services/printing';
 import {
   clearScanSession,
   loadRecoverableScanSession,
@@ -630,11 +631,11 @@ export default function SignalDashboard() {
 
             <button
               onClick={() => {
-                const pin = result._pin || {};
+                const pin = resultCardPin(result) || {};
                 setAddCard({
                   ...pin,
-                  id: pin.id || result.printing?.catalogId || null,
-                  printingId: pin.printingId || pin.id || null,
+                  id: pin.id || pin.catalogId || result.printing?.catalogId || null,
+                  printingId: pin.printingId || pin.id || pin.catalogId || null,
                   name: result.card_name,
                   game: result.game,
                   setName: pin.setName || result.printing?.setName || null,
@@ -781,7 +782,7 @@ export default function SignalDashboard() {
             <button
               onClick={() => {
                 if (!result?.card_name) return;
-                const resultPin = result._pin || null;
+                const resultPin = resultCardPin(result);
                 clearCachedScan(result.card_name, result.game, resultPin);
                 handleSearch(result.card_name, result.game, { force: true, pin: resultPin });
               }}
@@ -833,12 +834,12 @@ export default function SignalDashboard() {
               expectedSignalCount={8}
               coveragePct={scoreDetails?.coveragePct || 0}
               evidencePct={scoreDetails?.evidencePct || 0}
-              onRetry={() => handleSearch(result.card_name, result.game, { force: true, pin: result._pin || null })}
+              onRetry={() => handleSearch(result.card_name, result.game, { force: true, pin: resultCardPin(result) })}
               signals={result.signals || []}
               enPrice={result.prices?.en_price}
               onCardImageLoaded={setCardImageUrl}
               printing={result.printing}
-              pin={result._pin || null}
+              pin={resultCardPin(result)}
             />
           )}
 

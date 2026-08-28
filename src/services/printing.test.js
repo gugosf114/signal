@@ -8,7 +8,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { printingLabel, toPrinting } from './printing.js';
+import { printingLabel, resultCardPin, toPrinting } from './printing.js';
 
 describe('printingLabel', () => {
   test('pokemon shows the number over the set total', () => {
@@ -80,5 +80,17 @@ describe('toPrinting', () => {
   test('knowing nothing produces nothing, not an empty shell', () => {
     assert.equal(toPrinting('pokemon', null, null), null);
     assert.equal(toPrinting('pokemon', null, { game: 'pokemon' }), null);
+  });
+});
+
+describe('resultCardPin', () => {
+  test('an old cached result keeps its exact printing for artwork lookup', () => {
+    const printing = { game: 'pokemon', printingId: 'det1-10', setId: 'det1', number: '10' };
+    assert.equal(resultCardPin({ printing }), printing);
+  });
+
+  test('a user-picked pin still wins over report metadata', () => {
+    const pin = { id: 'sv8pt5-161' };
+    assert.equal(resultCardPin({ _pin: pin, printing: { printingId: 'det1-10' } }), pin);
   });
 });

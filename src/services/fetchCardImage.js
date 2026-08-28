@@ -226,6 +226,15 @@ async function fetchYuGiOhCatalogueImage(name, pin = null) {
 }
 
 async function fetchPokemonImage(name, pin = null) {
+  if (pin?.imageLarge || pin?.imageUrl) return pin.imageLarge || pin.imageUrl;
+
+  // Pokémon's image CDN follows the catalogue identity exactly:
+  // det1-10 -> /det1/10_hires.png. Build that stable URL directly instead of
+  // waiting on the card API, which took 18.7 seconds in the blank Detective
+  // Pikachu case while the image component has an 8-second request limit.
+  const directImage = pokemonImageFromPin(pin);
+  if (directImage) return directImage;
+
   // Strip suffixes like "ex", "V", "VMAX" for better search matching.
   // Also strip embedded quotes — encodeURIComponent doesn't escape them and
   // they break the name:"..." Pokémon API query syntax.
@@ -256,4 +265,17 @@ async function fetchPokemonImage(name, pin = null) {
   } catch {
     return FAILED;
   }
+}
+
+export function pokemonImageFromPin(pin) {
+  let setId = String(pin?.setId || '').trim();
+  let number = String(pin?.number || '').trim();
+  const identity = String(pin?.printingId || pin?.catalogId || pin?.id || '').trim();
+  if ((!setId || !number) && identity.includes('-')) {
+    const split = identity.lastIndexOf('-');
+    setId ||= identity.slice(0, split);
+    number ||= identity.slice(split + 1);
+  }
+  if (!/^[a-z0-9]+$/i.test(setId) || !/^[a-z0-9]+$/i.test(number)) return null;
+  return `https://images.pokemontcg.io/${encodeURIComponent(setId)}/${encodeURIComponent(number)}_hires.png`;
 }

@@ -31,7 +31,7 @@ const okPokemon = (imgUrl) => () => ({
 const status = (code) => () => ({ ok: false, status: code, json: async () => ({}) });
 const notFound = () => ({ ok: false, status: 404, json: async () => ({}) });
 
-const { fetchCardImage, officialArtNumber } = await import('./fetchCardImage.js');
+const { fetchCardImage, officialArtNumber, pokemonImageFromPin } = await import('./fetchCardImage.js');
 
 describe('fetchCardImage cache', () => {
   beforeEach(() => {
@@ -142,14 +142,18 @@ describe('fetchCardImage cache', () => {
     assert.equal(headers['User-Agent'], 'SignalTCG/1.0');
   });
 
-  test('an exact Pokémon result fetches its selected catalogue id', async () => {
-    let requested = '';
-    responder = (url) => {
-      requested = String(url);
-      return { ok: true, status: 200, json: async () => ({ data: { images: { large: 'exact-pokemon.png' } } }) };
-    };
-    const image = await fetchCardImage('Charizard', 'pokemon', { id: 'swsh4-25' });
-    assert.equal(image, 'exact-pokemon.png');
-    assert.match(requested, /cards\/swsh4-25$/);
+  test('an exact Pokémon result builds its stable image without the slow card API', async () => {
+    const image = await fetchCardImage('Detective Pikachu', 'pokemon', {
+      printingId: 'det1-10', setId: 'det1', number: '10',
+    });
+    assert.equal(image, 'https://images.pokemontcg.io/det1/10_hires.png');
+    assert.equal(callCount, 0);
+  });
+
+  test('a Pokémon catalogue id can supply the same direct image path', () => {
+    assert.equal(
+      pokemonImageFromPin({ id: 'swsh4-25' }),
+      'https://images.pokemontcg.io/swsh4/25_hires.png',
+    );
   });
 });

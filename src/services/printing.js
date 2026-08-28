@@ -62,3 +62,10 @@ export function toPrinting(game, pin, cardData) {
   };
   return out.setName || out.number || out.setId ? out : null;
 }
+
+// Older cached reports can know the exact printing without carrying `_pin`.
+// Rendering must not throw that identity away and fall back to a slow name
+// search, especially for Pokémon where one name can cover many cards.
+export function resultCardPin(result) {
+  return result?._pin || result?.printing || null;
+}
