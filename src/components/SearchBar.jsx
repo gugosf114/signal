@@ -159,7 +159,13 @@ export default function SearchBar({ onSearch, loading }) {
     setQuery(exactName);
     setOpen(false);
     setScannerOpen(false);
-    await onSearch(exactName, exactPin.game || card.game || null, { pin: exactPin });
+    await onSearch(exactName, exactPin.game || card.game || null, {
+      pin: exactPin,
+      // A newly found exact market price must replace a cached report whose
+      // price was blank. Otherwise the match sheet shows money and the report
+      // immediately erases it again.
+      force: exactPin.priceSource === 'TCGplayer',
+    });
   };
 
   const searchPhotoMatch = ({ card } = {}) => {
