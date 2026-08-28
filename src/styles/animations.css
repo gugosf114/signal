@@ -1373,6 +1373,17 @@
   color: #A8A498;
 }
 
+.compact-scroll-fade {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 3px;
+  bottom: 0;
+  height: 28px;
+  background: linear-gradient(180deg, rgba(14,16,20,0), rgba(14,16,20,0.96));
+  pointer-events: none;
+}
+
 /* ─── Live card scanner ─────────────────────────────────────────────────── */
 .live-scanner {
   position: fixed;

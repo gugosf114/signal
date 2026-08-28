@@ -8,7 +8,14 @@ import { recentPrintingLine, sanitizeRecentScans } from '../services/recentScans
 // (left-border accent, monospace score, italic name) instead of pill chips.
 export default function RecentScans({ onSelect, loading }) {
   const [scans, setScans] = useState([]);
+  const [showFade, setShowFade] = useState(false);
   const listRef = useRef(null);
+
+  const updateFade = () => {
+    const list = listRef.current;
+    if (!list) return;
+    setShowFade(list.scrollTop + list.clientHeight < list.scrollHeight - 1);
+  };
 
   useEffect(() => {
     const load = () => {
@@ -41,6 +48,8 @@ export default function RecentScans({ onSelect, loading }) {
 
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = 0;
+    const frame = requestAnimationFrame(updateFade);
+    return () => cancelAnimationFrame(frame);
   }, [scans]);
 
   if (scans.length === 0) return null;
@@ -78,20 +87,22 @@ export default function RecentScans({ onSelect, loading }) {
         }} />
       </div>
 
-      <div
-        ref={listRef}
-        aria-label="Recent scans. Scroll for older scans."
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr)',
-          gap: 4,
-          maxHeight: 140,
-          overflowY: 'auto',
-          paddingRight: 3,
-          scrollbarWidth: 'thin',
-        }}
-      >
-        {scans.map((s, i) => {
+      <div style={{ position: 'relative' }}>
+        <div
+          ref={listRef}
+          onScroll={updateFade}
+          aria-label="Recent scans. Scroll for older scans."
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr)',
+            gap: 4,
+            maxHeight: 140,
+            overflowY: 'auto',
+            paddingRight: 3,
+            scrollbarWidth: 'thin',
+          }}
+        >
+          {scans.map((s, i) => {
           const gameMeta = GAME_LABELS[s.game];
           const color = gameMeta?.color || '#A8A498';
           const printing = recentPrintingLine(s);
@@ -167,7 +178,9 @@ export default function RecentScans({ onSelect, loading }) {
               </span>
             </button>
           );
-        })}
+          })}
+        </div>
+        {showFade && <div className="compact-scroll-fade" aria-hidden />}
       </div>
     </div>
   );

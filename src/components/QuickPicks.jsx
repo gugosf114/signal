@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SAMPLE_CARDS, GAME_LABELS } from '../config/signals';
 import { BrandIcon } from '../config/brandIcons';
 import { getTopTrending } from '../services/fetchTopTrending';
@@ -16,6 +16,14 @@ const FALLBACK_TRENDING = SAMPLE_CARDS.slice(0, 5);
 export default function QuickPicks({ onSelect, loading }) {
   const [trending, setTrending] = useState(FALLBACK_TRENDING);
   const [isLive, setIsLive] = useState(false);
+  const [showFade, setShowFade] = useState(false);
+  const listRef = useRef(null);
+
+  const updateFade = () => {
+    const list = listRef.current;
+    if (!list) return;
+    setShowFade(list.scrollTop + list.clientHeight < list.scrollHeight - 1);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -26,6 +34,11 @@ export default function QuickPicks({ onSelect, loading }) {
     }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(updateFade);
+    return () => cancelAnimationFrame(frame);
+  }, [trending]);
 
   return (
     <div style={{
@@ -76,17 +89,22 @@ export default function QuickPicks({ onSelect, loading }) {
         }} />
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-        gap: 6,
-        maxHeight: 108,
-        overflowY: 'auto',
-        alignContent: 'start',
-        paddingRight: 2,
-        scrollbarWidth: 'thin',
-      }}>
-        {trending.map((card, idx) => {
+      <div style={{ position: 'relative' }}>
+        <div
+          ref={listRef}
+          onScroll={updateFade}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: 6,
+            maxHeight: 108,
+            overflowY: 'auto',
+            alignContent: 'start',
+            paddingRight: 2,
+            scrollbarWidth: 'thin',
+          }}
+        >
+          {trending.map((card, idx) => {
           const game = GAME_LABELS[card.game] || { color: '#605C54', label: card.game || '?' };
           return (
             <button
@@ -145,7 +163,9 @@ export default function QuickPicks({ onSelect, loading }) {
               )}
             </button>
           );
-        })}
+          })}
+        </div>
+        {showFade && <div className="compact-scroll-fade" aria-hidden />}
       </div>
     </div>
   );
