@@ -87,6 +87,25 @@ function QuickPriceResult({ card, onAdd, onDone }) {
   );
 }
 
+async function withResolvedCardImage(pin, fallbackCard = null) {
+  if (!pin) return pin;
+  const name = pin.name || fallbackCard?.name;
+  const game = pin.game || fallbackCard?.game || null;
+  const tcgplayerImage = pin.tcgplayerImageUrl || null;
+  const catalogueImage = tcgplayerImage || await fetchCardImage(name, game, {
+    ...pin,
+    scanImagePath: null,
+    preferExactOwnerArt: game === 'yugioh',
+  }).catch(() => null);
+  return {
+    ...pin,
+    scanImagePath: null,
+    imageUrl: catalogueImage,
+    imageLarge: catalogueImage,
+    imageSource: tcgplayerImage ? 'tcgplayer' : (catalogueImage ? 'exact-catalogue' : null),
+  };
+}
+
 export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd = null, onScannerBatch = null, loading = false }) {
   const [lookupMode, setLookupMode] = useState(null);
   const [quickResult, setQuickResult] = useState(null);
@@ -170,14 +189,15 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
   }, [photoMenuOpen]);
 
   const routeResolvedCard = async (pricedCard) => {
+    const resolvedCard = await withResolvedCardImage(pricedCard);
     reqToken.current += 1;
-    quietFor.current = pricedCard.name;
+    quietFor.current = resolvedCard.name;
     setSuggestions([]);
     setOpen(false);
     setActive(-1);
     if (lookupMode === 'price') {
       setQuery('');
-      setQuickResult(pricedCard);
+      setQuickResult(resolvedCard);
       return;
     }
     if (lookupMode !== 'full') {
@@ -185,10 +205,10 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
       return;
     }
     if (!onSearch) throw new Error('Full Signal is unavailable.');
-    setQuery(pricedCard.name);
-    await onSearch(pricedCard.name, pricedCard.game, {
-      pin: pricedCard,
-      force: pricedCard.priceSource === 'TCGplayer',
+    setQuery(resolvedCard.name);
+    await onSearch(resolvedCard.name, resolvedCard.game, {
+      pin: resolvedCard,
+      force: resolvedCard.priceSource === 'TCGplayer',
     });
   };
 
@@ -327,20 +347,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
   const preparePhotoMatch = async ({ card, pin }) => {
     if (!pin) return;
     const exactName = pin.name || card.name;
-    const game = pin.game || card.game || null;
-    const tcgplayerImage = pin.tcgplayerImageUrl || null;
-    const catalogueImage = tcgplayerImage || await fetchCardImage(exactName, game, {
-      ...pin,
-      scanImagePath: null,
-      preferExactOwnerArt: game === 'yugioh',
-    }).catch(() => null);
-    const exactPin = {
-      ...pin,
-      scanImagePath: null,
-      imageUrl: catalogueImage,
-      imageLarge: catalogueImage,
-      imageSource: tcgplayerImage ? 'tcgplayer' : (catalogueImage ? 'exact-catalogue' : null),
-    };
+    const exactPin = await withResolvedCardImage(pin, card);
     return { card, exactPin, exactName };
   };
 
