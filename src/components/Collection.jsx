@@ -33,6 +33,45 @@ const BINDERS = [
   { id: 'mtg', label: 'MTG' },
 ];
 
+function BinderArt({ id }) {
+  if (id === 'pokemon') return (
+    <svg viewBox="0 0 150 88" fill="none">
+      <circle cx="103" cy="44" r="31" stroke="currentColor" strokeWidth="3" />
+      <path d="M73 42h60M76 31q27-27 54 0" stroke="#D55A55" strokeWidth="8" opacity=".7" />
+      <path d="M77 58q26 24 52 0" stroke="#5C79B8" strokeWidth="6" opacity=".55" />
+      <circle cx="103" cy="44" r="10" fill="var(--signal-tile)" stroke="currentColor" strokeWidth="3" />
+      <circle cx="103" cy="44" r="4" fill="currentColor" />
+    </svg>
+  );
+  if (id === 'yugioh') return (
+    <svg viewBox="0 0 150 88" fill="none">
+      <path d="M66 46c9-28 56-31 68-1 10 25-20 41-42 31-18-8-12-32 7-35 15-3 25 14 15 24-8 8-24 1-21-10" stroke="currentColor" strokeWidth="3" opacity=".85" />
+      <path d="m101 18 18 27-18 26-18-26z" stroke="#D7A766" strokeWidth="2" opacity=".65" />
+      <path d="M78 45q23-19 47 0-24 20-47 0Z" fill="currentColor" fillOpacity=".13" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="102" cy="45" r="6" fill="#D7A766" opacity=".72" />
+    </svg>
+  );
+  if (id === 'mtg') return (
+    <svg viewBox="0 0 150 88" fill="none">
+      <path d="M105 12c8 17 3 26-1 33 8-5 13-13 13-22 15 16 18 38 5 51-11 11-34 10-44-3-10-14-2-32 8-43-1 11 3 19 9 23-2-14 1-28 10-39Z" fill="currentColor" fillOpacity=".38" stroke="currentColor" strokeWidth="2.5" />
+      <path d="M103 37c5 10 3 16 0 21 6-3 9-8 10-14 7 10 7 20 1 27-6 7-18 7-24 0-7-9-1-21 6-27-1 8 2 13 7 16-2-8-2-15 0-23Z" fill="#E8A15D" opacity=".62" />
+    </svg>
+  );
+  return (
+    <svg viewBox="0 0 150 88" fill="none">
+      <text x="101" y="61" textAnchor="middle" fontSize="49" fontWeight="900" fill="currentColor" opacity=".16" fontFamily="'Noto Sans JP', sans-serif">株</text>
+      <g stroke="currentColor" strokeWidth="2">
+        <rect x="58" y="22" width="34" height="48" rx="3" transform="rotate(-13 58 22)" fill="var(--signal-panel)" fillOpacity=".72" />
+        <rect x="80" y="17" width="34" height="50" rx="3" fill="var(--signal-panel)" fillOpacity=".82" />
+        <rect x="105" y="22" width="34" height="48" rx="3" transform="rotate(13 105 22)" fill="var(--signal-panel)" fillOpacity=".72" />
+      </g>
+      <circle cx="76" cy="44" r="8" stroke="#D8C14B" strokeWidth="2" /><path d="M68 44h16" stroke="#D8C14B" />
+      <path d="M92 47c4-11 19-11 23 0-5 9-18 9-23 0Z" stroke="#A9785D" strokeWidth="1.5" />
+      <path d="M121 36c5 9 2 14-1 18 6-4 8-8 8-13 8 9 6 20-3 23-9 3-17-6-12-15 0 5 2 8 5 10-1-8 0-16 3-23Z" fill="#B96947" opacity=".68" />
+    </svg>
+  );
+}
+
 const SORTS = [
   { id: 'newest', label: 'Newest added' },
   { id: 'oldest', label: 'Oldest added' },
@@ -198,6 +237,7 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
             className={`col-binder col-binder--${item.id}${binder === item.id ? ' col-binder--on' : ''}`}
             onClick={() => setBinder(item.id)}
           >
+            <span className="col-binder-art" aria-hidden="true"><BinderArt id={item.id} /></span>
             <strong>{item.label}</strong>
             <span>{binderCounts[item.id]} card{binderCounts[item.id] === 1 ? '' : 's'}</span>
           </button>

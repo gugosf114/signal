@@ -2437,6 +2437,14 @@
   color: #77736B;
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  --binder-accent: #C8B98D;
+  --binder-glow: rgba(200, 185, 141, 0.12);
+  background:
+    radial-gradient(circle at 76% 54%, var(--binder-glow), transparent 48%),
+    linear-gradient(150deg, rgba(255,255,255,0.018), transparent 60%),
+    var(--signal-tile);
 }
 .col-binder::before {
   content: '';
@@ -2449,10 +2457,27 @@
   background: #6E6A62;
   opacity: 0.55;
 }
-.col-binder--pokemon::before { background: #A09060; }
-.col-binder--yugioh::before { background: #7080A0; }
-.col-binder--mtg::before { background: #B08060; }
+.col-binder--pokemon { --binder-accent: #D8C14B; --binder-glow: rgba(216,193,75,0.14); }
+.col-binder--yugioh { --binder-accent: #B8795A; --binder-glow: rgba(184,121,90,0.14); }
+.col-binder--mtg { --binder-accent: #C46643; --binder-glow: rgba(196,102,67,0.14); }
+.col-binder--pokemon::before,
+.col-binder--yugioh::before,
+.col-binder--mtg::before { background: var(--binder-accent); }
+.col-binder-art {
+  position: absolute;
+  z-index: 0;
+  inset: 2px 0 2px 26%;
+  color: var(--binder-accent);
+  opacity: 0.3;
+  pointer-events: none;
+  transform: scale(1);
+  transform-origin: 72% 52%;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.col-binder-art svg { width: 100%; height: 100%; display: block; }
 .col-binder strong {
+  position: relative;
+  z-index: 1;
   overflow: hidden;
   max-width: 100%;
   color: #A8A498;
@@ -2461,14 +2486,19 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.col-binder span { color: #5F5B54; font: 9px 'JetBrains Mono', monospace; }
+.col-binder > span:not(.col-binder-art) { position: relative; z-index: 1; color: #5F5B54; font: 9px 'JetBrains Mono', monospace; }
 .col-binder--on {
   border-color: #FFFFFF;
-  background: linear-gradient(150deg, rgba(160,144,96,0.09), transparent 62%), var(--signal-raised);
+  background:
+    radial-gradient(circle at 76% 54%, var(--binder-glow), transparent 50%),
+    linear-gradient(150deg, rgba(160,144,96,0.09), transparent 62%),
+    var(--signal-raised);
   box-shadow: inset 0 0 0 1px rgba(160,144,96,0.08);
 }
 .col-binder--on strong { color: #E8E4DC; }
-.col-binder--on span { color: #92897C; }
+.col-binder--on > span:not(.col-binder-art) { color: #92897C; }
+.col-binder--on .col-binder-art { opacity: 0.5; transform: scale(1.035); }
+.col-binder:active .col-binder-art { transform: scale(1.07); opacity: 0.58; }
 
 .col-count {
   margin: 22px 0 10px;
