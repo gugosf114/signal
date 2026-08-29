@@ -27,11 +27,13 @@ const LOOKUP_MODES = [
   {
     id: 'price',
     label: 'Price only',
+    shortLabel: 'Price',
     detail: 'Fast · no full-report charge',
   },
   {
     id: 'full',
     label: 'Run full Signal',
+    shortLabel: 'Full',
     detail: 'About one minute · paid analysis',
   },
 ];
@@ -52,7 +54,7 @@ function LookupModeChooser({ value, onChange, disabled }) {
             disabled={disabled}
             onClick={() => onChange(mode.id)}
           >
-            <strong>{mode.label}</strong>
+            <strong>{mode.shortLabel}</strong>
           </button>
         ))}
       </div>
@@ -438,8 +440,8 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
       width: '100%',
       maxWidth: 580,
     }}>
-      <LookupModeChooser value={lookupMode} onChange={chooseLookupMode} disabled={busy} />
-      <div style={{ position: 'relative', width: '100%' }}>
+      <div className="lookup-entry-row">
+      <div style={{ position: 'relative', width: '100%', minWidth: 0 }}>
         {/* Signal and Collection use this same two-choice photo menu. */}
         <button
           type="button"
@@ -567,6 +569,8 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
             ))}
           </ul>
         )}
+      </div>
+      <LookupModeChooser value={lookupMode} onChange={chooseLookupMode} disabled={busy} />
       </div>
 
       <div style={{ marginTop: 6, fontSize: 9, color: '#605C54', fontFamily: "'JetBrains Mono', monospace", textAlign: 'left' }}>
