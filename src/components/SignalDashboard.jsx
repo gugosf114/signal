@@ -416,6 +416,7 @@ export default function SignalDashboard() {
           if one is running, drops result/error state otherwise. */}
       <div style={{ textAlign: 'center', marginBottom: 32, marginTop: isMobile ? 28 : 0 }}>
         <div
+          className="signal-logo-frame"
           role="button"
           tabIndex={0}
           aria-label="Go to home"

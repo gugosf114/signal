@@ -6,6 +6,45 @@
   --signal-raised: #333139;
 }
 
+@property --signal-border-beam-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.signal-logo-frame {
+  position: relative;
+  isolation: isolate;
+}
+.signal-logo-frame::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset: -2px;
+  padding: 2px;
+  border-radius: 10px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--signal-border-beam-angle),
+    transparent 0deg,
+    transparent 318deg,
+    rgba(240, 199, 122, 0.18) 330deg,
+    rgba(255, 244, 214, 0.92) 342deg,
+    #FFFFFF 346deg,
+    rgba(255, 244, 214, 0.78) 350deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  filter: drop-shadow(0 0 4px rgba(255, 226, 168, 0.72));
+  animation: signalBorderOrbit 9s linear infinite;
+}
+@keyframes signalBorderOrbit {
+  to { --signal-border-beam-angle: 360deg; }
+}
+
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -2652,6 +2691,7 @@
   }
   .ns-track { transform: none !important; }
   .signal-card-backdrop { transition: none !important; transform: none !important; }
+  .signal-logo-frame::after { animation: none !important; }
 }
 .col-name {
   margin-top: 5px;
