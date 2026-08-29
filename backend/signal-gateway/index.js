@@ -13,6 +13,12 @@ const REPORT_WAIT_MS = 110 * 1000;
 const REPORT_POLL_MS = 1000;
 const DAILY_MODEL_CALLS = 100;
 const ALLOWED_MODELS = new Set(['claude-haiku-4-5', 'claude-sonnet-4-6']);
+const CATALOGUE_RULES = new Map([
+  ['api.pokemontcg.io', /^\/v2\/(?:cards|sets)(?:\/[^/]+)?$/],
+  ['api.tcgdex.net', /^\/v2\/en\/(?:cards|sets)(?:\/[^/]+)?$/],
+  ['api.scryfall.com', /^\/(?:cards|sets)(?:\/.*)?$/],
+  ['db.ygoprodeck.com', /^\/api\/v7\/(?:cardinfo|cardsets|cardsetsinfo)\.php$/],
+]);
 
 function hash(value) {
   return crypto.createHash('sha256').update(String(value || '')).digest('hex');
@@ -58,6 +64,38 @@ function delay(ms) {
 
 function safeText(value, max = 300) {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
+}
+
+function catalogueTarget(value) {
+  const raw = safeText(value, 2200);
+  let target;
+  try {
+    target = new URL(raw);
+  } catch {
+    throw Object.assign(new Error('Catalogue URL is invalid.'), { status: 400 });
+  }
+  const rule = CATALOGUE_RULES.get(target.hostname);
+  if (target.protocol !== 'https:' || target.username || target.password || target.hash || !rule?.test(target.pathname)) {
+    throw Object.assign(new Error('Catalogue is not allowed.'), { status: 400 });
+  }
+  return target.toString();
+}
+
+async function catalogueFetch(body, fetcher = fetch) {
+  const target = catalogueTarget(body.url);
+  const response = await fetcher(target, {
+    headers: { 'user-agent': 'SignalTCG/1.0 (card market intelligence)' },
+    signal: AbortSignal.timeout(8000),
+  });
+  const text = await response.text();
+  if (Buffer.byteLength(text, 'utf8') > 6 * 1024 * 1024) {
+    throw Object.assign(new Error('Catalogue reply is too large.'), { status: 502 });
+  }
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch {
+    throw Object.assign(new Error('Catalogue returned invalid data.'), { status: 502 });
+  }
+  return { catalogue: true, ok: response.ok, status: response.status, data };
 }
 
 function decodeHtml(value) {
@@ -320,6 +358,7 @@ async function handler(req, res) {
   try {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     if (body.action === 'health') return res.json({ ok: true, service: 'signal-gateway-v1' });
+    if (body.action === 'catalogueFetch') return res.json(await catalogueFetch(body));
     if (body.action === 'yugiohArt') return res.json(await yugiohArt(body));
     if (body.action === 'vision') {
       const result = await callAnthropic(req, body.modelRequest);
@@ -338,5 +377,5 @@ functions.http('signalGateway', handler);
 
 module.exports = {
   handler, hash, finite, validateModelBody, reportDisposition,
-  officialCardCid, officialSetPid, officialSetImage,
+  officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch,
 };

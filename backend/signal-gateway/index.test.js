@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   hash, finite, validateModelBody, reportDisposition,
-  officialCardCid, officialSetPid, officialSetImage,
+  officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch,
 } = require('./index');
 
 test('cache ids are stable and hide card text', () => {
@@ -17,6 +17,33 @@ test('a missing market price stays missing instead of becoming zero', () => {
   assert.equal(finite(''), null);
   assert.equal(finite('0'), 0);
   assert.equal(finite('12.34'), 12.34);
+});
+
+test('catalogue relay accepts only Signal card APIs', async () => {
+  assert.equal(
+    catalogueTarget('https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=Witness'),
+    'https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=Witness',
+  );
+  assert.throws(() => catalogueTarget('https://example.com/cards'), /not allowed/);
+  assert.throws(() => catalogueTarget('https://api.scryfall.com/account'), /not allowed/);
+
+  let requested;
+  const reply = await catalogueFetch({
+    url: 'https://api.scryfall.com/cards/search?q=Witness',
+  }, async (url) => {
+    requested = url;
+    return new Response(JSON.stringify({ data: [{ name: 'Witness Protection' }] }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  });
+  assert.equal(requested, 'https://api.scryfall.com/cards/search?q=Witness');
+  assert.deepEqual(reply, {
+    catalogue: true,
+    ok: true,
+    status: 200,
+    data: { data: [{ name: 'Witness Protection' }] },
+  });
 });
 
 test('official Yu-Gi-Oh pages map an exact set row to its artwork', () => {

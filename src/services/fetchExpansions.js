@@ -6,6 +6,7 @@
 //   YGO:     YGOPRODeck     (/v7/cardsets.php, sorted by tcg_date)
 
 import { looksLikeSetCode, lookupBySetCode } from './lookupBySetCode.js';
+import { fetchCatalogueJSON } from './signalGateway.js';
 
 const CACHE_KEY = 'signal_expansions_v3';
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -244,6 +245,11 @@ async function getJSON(url, tries = 3) {
   let last;
   for (let i = 0; i < tries; i++) {
     try {
+      try {
+        return await fetchCatalogueJSON(url, AbortSignal.timeout(6000));
+      } catch (relayError) {
+        last = relayError;
+      }
       const res = await fetch(url, {
         signal: AbortSignal.timeout(6000),
         // Scryfall 400s on a default library User-Agent. Browsers forbid

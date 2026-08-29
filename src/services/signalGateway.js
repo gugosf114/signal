@@ -78,4 +78,26 @@ export function getOfficialYugiohArt({ cardName, setCode, rarity }) {
   return gateway({ action: 'yugiohArt', cardName, setCode, rarity }, undefined, 1);
 }
 
+// Android cannot reliably open the public card APIs itself. The same small
+// Cloudflare door used by the scanner asks the server for one allow-listed
+// catalogue URL. This stays free of model calls and cannot become an open proxy.
+export async function fetchCatalogueJSON(url, signal) {
+  const response = await fetch(GATEWAY_EDGE_URL, {
+    method: 'POST',
+    signal,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Signal-Install-Id': installId(),
+    },
+    body: JSON.stringify({ action: 'catalogueFetch', url }),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || payload?.catalogue !== true) {
+    throw new Error(payload?.error || 'Card catalogue relay is unavailable.');
+  }
+  if (payload.status === 400 || payload.status === 404) return null;
+  if (!payload.ok) throw new Error(`Card catalogue failed (${payload.status}).`);
+  return payload.data;
+}
+
 export { GATEWAY_DIRECT_URL, GATEWAY_EDGE_URL, GATEWAY_URL };
