@@ -83,7 +83,7 @@ function BinCard({ listing }) {
   return (
     <div style={{
       padding: '14px 14px 12px',
-      background: '#0A0C10',
+      background: 'var(--signal-tile)',
       border: '1px solid #1A1D24',
       borderRadius: 2,
       display: 'flex',
@@ -135,7 +135,7 @@ function AuctionCard({ listing, isMobile }) {
   return (
     <div style={{
       padding: '14px 14px 12px',
-      background: '#0A0C10',
+      background: 'var(--signal-tile)',
       border: '1px solid #1A1D24',
       borderRadius: 2,
       borderLeft: '2px solid #C44040',

@@ -1,5 +1,11 @@
 /* ─── Core ──────────────────────────────────────────────────────────────── */
 
+:root {
+  --signal-panel: #1C1B20;
+  --signal-tile: #27262C;
+  --signal-raised: #333139;
+}
+
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -949,7 +955,7 @@
 /* Pocket — always fully visible below the image. Never moves.
    The border-top IS the pocket opening seam. */
 .npc-pocket {
-  background: #0C0E12;
+  background: var(--signal-panel);
   border: 1px solid #1A1D24;
   border-top: 2px solid color-mix(in oklab, var(--c) 22%, #2A2D34);
   border-radius: 0 0 8px 8px;
@@ -1225,7 +1231,7 @@
   display: flex;
   align-items: center;
   margin-bottom: 10px;
-  background: #0E1014;
+  background: var(--signal-panel);
   border: 1px solid #1A1D24;
   border-radius: 3px;
   transition: border-color 0.2s;
@@ -1316,7 +1322,7 @@
   max-height: 320px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  background: #0B0D11;
+  background: var(--signal-panel);
   border: 1px solid #23262E;
   border-radius: 3px;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65);
@@ -1335,7 +1341,7 @@
   color: inherit;
   font-family: 'Syne', sans-serif;
 }
-.sb-item--on { background: #171A20; }
+.sb-item--on { background: var(--signal-raised); }
 .sb-thumb {
   width: 32px;
   height: 44px;
@@ -1394,7 +1400,7 @@
   z-index: 75;
   width: min(280px, calc(100vw - 32px));
   padding: 5px;
-  background: #0B0D11;
+  background: var(--signal-panel);
   border: 1px solid #2A2D34;
   border-radius: 4px;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.72);
@@ -1415,7 +1421,7 @@
   cursor: pointer;
 }
 .photo-choice-menu button + button { border-top: 1px solid #171A20; }
-.photo-choice-menu button:hover, .photo-choice-menu button:focus-visible { background: #171A20; outline: none; }
+.photo-choice-menu button:hover, .photo-choice-menu button:focus-visible { background: var(--signal-raised); outline: none; }
 .photo-choice-menu button > span:last-child { display: flex; flex-direction: column; gap: 2px; }
 .photo-choice-menu strong { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 650; }
 .photo-choice-menu small { color: #6E6A62; font-family: 'JetBrains Mono', monospace; font-size: 9px; }
@@ -1982,7 +1988,7 @@
 .pt-tab--on {
   color: #E8E4DC;
   border-color: #2A2D34;
-  background: #0E1014;
+  background: var(--signal-panel);
 }
 
 /* ─── Dossier ─────────────────────────────────────────────────────────────── */
@@ -2000,7 +2006,7 @@
   background:
     linear-gradient(140deg, rgba(196,64,64,0.08), transparent 40%),
     radial-gradient(circle at 88% 8%, rgba(196,64,64,0.13), transparent 34%),
-    #0B0D11;
+    var(--signal-panel);
 }
 .dos-hero::after {
   content: 'DOSSIER';
@@ -2062,7 +2068,7 @@
   list-style: none;
   border: 0.5px solid #C44040;
   border-radius: 4px;
-  background: #0B0D11;
+  background: var(--signal-panel);
 }
 .dos-method li {
   display: grid;
@@ -2094,7 +2100,7 @@
   padding: 22px;
   border: 0.5px solid #C44040;
   border-radius: 3px;
-  background: linear-gradient(135deg, #0D0E12, #0A0C10);
+  background: var(--signal-panel);
 }
 .dos-sample-top {
   display: flex;
@@ -2126,7 +2132,7 @@
   position: relative;
   border: 1px solid #4A2A2C;
   border-radius: 3px;
-  background: #111318;
+  background: var(--signal-tile);
 }
 .dos-sample-mark span { position: absolute; top: 7px; left: 8px; color: #C44040; font: 800 13px 'Noto Sans JP', sans-serif; }
 .dos-sample-mark b { color: #E8E4DC; font: 700 25px 'Syne', sans-serif; }
@@ -2214,7 +2220,7 @@
   width: 100%;
   min-height: 50px;
   padding: 13px 15px;
-  background: #0B0D11;
+  background: var(--signal-panel);
   border: 1px solid #1A1D24;
   border-radius: 3px;
   color: #E8E4DC;
@@ -2262,7 +2268,7 @@
   gap: 8px;
   border: 0.5px solid #C44040;
   border-radius: 4px;
-  background: linear-gradient(150deg, rgba(255,255,255,0.018), transparent 60%), #0B0D11;
+  background: linear-gradient(150deg, rgba(255,255,255,0.018), transparent 60%), var(--signal-tile);
   color: #77736B;
   text-align: left;
   cursor: pointer;
@@ -2293,7 +2299,7 @@
 .col-binder span { color: #5F5B54; font: 9px 'JetBrains Mono', monospace; }
 .col-binder--on {
   border-color: #C44040;
-  background: linear-gradient(150deg, rgba(160,144,96,0.09), transparent 62%), #0D0F13;
+  background: linear-gradient(150deg, rgba(160,144,96,0.09), transparent 62%), var(--signal-raised);
   box-shadow: inset 0 0 0 1px rgba(160,144,96,0.08);
 }
 .col-binder--on strong { color: #E8E4DC; }
@@ -2314,7 +2320,7 @@
   margin: 10px 0;
   border: 0.5px solid #C44040;
   border-radius: 4px;
-  background: #0B0D11;
+  background: var(--signal-panel);
 }
 .col-summary > div {
   min-width: 0;
@@ -2353,7 +2359,7 @@
   padding: 10px 12px;
   border: 0.5px solid #C44040;
   border-radius: 4px;
-  background: #0A0C10;
+  background: var(--signal-panel);
 }
 .col-view-controls > div, .col-view-controls label { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .col-view-controls > div > span, .col-view-controls label > span {
@@ -2371,7 +2377,7 @@
   padding: 0 34px 0 11px;
   border: 1px solid #2A2D34;
   border-radius: 3px;
-  background: #0E1014;
+  background: var(--signal-tile);
   color: #D8D4CC;
   font: 10px 'JetBrains Mono', monospace;
   outline: none;
@@ -2412,7 +2418,7 @@
   color: #7A766E;
   border: 0.5px solid #C44040;
   border-radius: 4px;
-  background: linear-gradient(145deg, rgba(160,144,96,0.035), transparent 55%), #0A0C10;
+  background: linear-gradient(145deg, rgba(160,144,96,0.035), transparent 55%), var(--signal-panel);
 }
 .col-empty-mark { position: relative; width: 54px; height: 54px; margin-bottom: 15px; }
 .col-empty-mark span {
@@ -2421,7 +2427,7 @@
   height: 40px;
   border: 1px solid #3A3D44;
   border-radius: 3px;
-  background: #0E1014;
+  background: var(--signal-tile);
 }
 .col-empty-mark span:first-child { left: 8px; top: 8px; transform: rotate(-8deg); }
 .col-empty-mark span:last-child { right: 7px; top: 4px; transform: rotate(8deg); border-color: #5A3838; }
@@ -2453,7 +2459,7 @@
   width: 100%;
   aspect-ratio: 0.716;
   padding: 0;
-  background: #0A0C10;
+  background: var(--signal-tile);
   border: none;
   border-radius: 4px;
   overflow: hidden;

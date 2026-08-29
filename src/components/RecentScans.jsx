@@ -61,7 +61,7 @@ export default function RecentScans({ onSelect, loading }) {
       border: '0.5px solid #C44040',
       borderRadius: 4,
       padding: '14px 16px 12px',
-      background: 'rgba(20, 22, 26, 0.35)',
+      background: 'var(--signal-panel)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
         <div style={{
@@ -122,7 +122,7 @@ export default function RecentScans({ onSelect, loading }) {
                 minWidth: 0,
                 minHeight: 44,
                 padding: '5px 10px 5px 12px',
-                background: 'transparent',
+                background: 'var(--signal-tile)',
                 border: 'none',
                 borderLeft: `2px solid ${color}40`,
                 color: '#A8A498',

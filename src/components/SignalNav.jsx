@@ -17,7 +17,7 @@ export default function SignalNav({ signals }) {
       gap: 6,
       marginBottom: 32,
       padding: '12px 16px',
-      background: '#0A0C10',
+      background: 'var(--signal-panel)',
       border: '1px solid #14161A',
       borderRadius: 3,
     }}>

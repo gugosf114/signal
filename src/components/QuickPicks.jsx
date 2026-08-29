@@ -46,7 +46,7 @@ export default function QuickPicks({ onSelect, loading }) {
       border: '0.5px solid #C44040',
       borderRadius: 4,
       padding: '14px 16px 12px',
-      background: 'rgba(20, 22, 26, 0.35)',
+      background: 'var(--signal-panel)',
     }}>
       {/* Header — TOP TRENDING / weekly · TCGplayer */}
       <div style={{
@@ -119,8 +119,8 @@ export default function QuickPicks({ onSelect, loading }) {
                 minWidth: 0,
                 minHeight: 32,
                 padding: '5px 10px',
-                background: 'transparent',
-                border: '1px solid #14161A',
+                background: 'var(--signal-tile)',
+                border: '1px solid #4A464F',
                 borderRadius: 2,
                 color: '#7A7368',
                 fontSize: 14,
@@ -140,7 +140,7 @@ export default function QuickPicks({ onSelect, loading }) {
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#14161A';
+                e.currentTarget.style.borderColor = '#4A464F';
                 e.currentTarget.style.color = '#7A7368';
               }}
             >

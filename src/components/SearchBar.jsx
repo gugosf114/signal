@@ -385,7 +385,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
           style={{
             width: '100%',
             padding: '16px 18px 16px 50px',
-            background: '#0E1014',
+            background: 'var(--signal-panel)',
             border: `1px solid ${focused ? '#2A2D34' : '#1A1D24'}`,
             borderRadius: 3,
             color: '#E8E4DC',

@@ -29,7 +29,7 @@ export default function CardImage({ cardName, game, pin = null, size = 200, glow
       <div style={{
         width: w, height: size,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: '#0A0C10',
+        background: 'var(--signal-tile)',
         border: '1px solid #1A1D24',
         borderRadius: 2,
         color: '#1A1D24',
@@ -43,7 +43,7 @@ export default function CardImage({ cardName, game, pin = null, size = 200, glow
     return (
       <div className="loading-shimmer" style={{
         width: w, height: size,
-        background: '#0A0C10',
+        background: 'var(--signal-tile)',
         border: '1px solid #1A1D24',
         borderRadius: 2,
       }} />

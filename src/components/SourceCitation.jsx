@@ -111,7 +111,7 @@ function YouTubeEmbed({ videoId, title }) {
       position: 'relative',
       maxWidth: 360,
       aspectRatio: '16 / 9',
-      background: '#0A0C10',
+      background: 'var(--signal-tile)',
       border: '1px solid #1A1D24',
     }}>
       {playing ? (

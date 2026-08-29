@@ -307,7 +307,7 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
             <div key={i} className="loading-shimmer" style={{
               aspectRatio: '0.716',
               borderRadius: 4,
-              background: '#0A0C10',
+              background: 'var(--signal-tile)',
             }} />
           ))}
         </div>
@@ -360,7 +360,7 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
                 <div style={{
                   width: '100%',
                   aspectRatio: '0.716',
-                  background: '#0A0C10',
+                  background: 'var(--signal-tile)',
                   border: '1px solid #1A1D24',
                   borderRadius: 4,
                   display: 'flex',

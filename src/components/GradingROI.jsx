@@ -11,7 +11,7 @@ import React from 'react';
 // canvas, the muted text graduation, and the same restrained green/red the
 // implication arrows use elsewhere.
 
-const SURFACE   = '#0E1014';
+const SURFACE   = 'var(--signal-panel)';
 const HAIRLINE  = '#1A1D24';
 const INK       = '#E8E4DC';
 const INK_MID   = '#92897C';

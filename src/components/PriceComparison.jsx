@@ -50,13 +50,13 @@ export default function PriceComparison({ data }) {
     borderTop: '1px solid #1A1D24',
     borderBottom: '1px solid #1A1D24',
     marginBottom: 40,
-    background: '#0B0D10',
+    background: 'var(--signal-panel)',
   } : {
     display: 'flex',
     borderTop: '1px solid #1A1D24',
     borderBottom: '1px solid #1A1D24',
     marginBottom: 40,
-    background: '#0B0D10',
+    background: 'var(--signal-panel)',
   };
 
   return (
