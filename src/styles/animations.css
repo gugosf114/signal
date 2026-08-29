@@ -1350,6 +1350,23 @@
 .lookup-mode-toggle:focus-visible { outline: 2px solid #F1EDE5; outline-offset: 2px; }
 .lookup-mode-toggle:disabled { cursor: default; opacity: 0.45; }
 
+.sb-searching {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 7px;
+  color: #A39E96;
+  font: 9px 'JetBrains Mono', monospace;
+}
+.sb-searching > span {
+  width: 11px;
+  height: 11px;
+  border: 2px solid #4A464F;
+  border-top-color: #C44040;
+  border-radius: 50%;
+  animation: camSpin 0.8s linear infinite;
+}
+
 .quick-price-result {
   margin-top: 12px;
   padding: 14px;

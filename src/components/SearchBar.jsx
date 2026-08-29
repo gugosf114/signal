@@ -98,6 +98,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
   const [scannerSession, setScannerSession] = useState(0);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
   const [resolving, setResolving] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -116,14 +117,16 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
 
   useEffect(() => {
     const q = query.trim();
-    if (q && q === quietFor.current) { setOpen(false); return; }
+    if (q && q === quietFor.current) { setSuggesting(false); setOpen(false); return; }
     if (q.length < MIN_CHARS || loading || scannerOpen) {
+      setSuggesting(false);
       setSuggestions([]);
       setOpen(false);
       return;
     }
     const myToken = ++reqToken.current;
     const timer = setTimeout(async () => {
+      setSuggesting(true);
       try {
         const hits = await suggestCards(q, 8);
         if (myToken !== reqToken.current) return;
@@ -139,13 +142,15 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
           setScanError(hits.length ? null : 'No exact printing was found. Type the set code.');
           scanSearchFor.current = null;
         }
-      } catch {
+      } catch (error) {
         if (myToken !== reqToken.current) return;
         setSuggestions([]);
         setOpen(false);
         setActive(-1);
-        setScanError('Card catalogues could not load. Try again.');
+        setScanError(error?.message || 'Card catalogues could not load. Try again.');
         if (scanSearchFor.current === q) scanSearchFor.current = null;
+      } finally {
+        if (myToken === reqToken.current) setSuggesting(false);
       }
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
@@ -254,11 +259,11 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
             setOpen(false);
             setScanError(`No cards match "${submitted}". Remove extra letters or type the set code.`);
           }
-        } catch {
+        } catch (error) {
           if (myToken === reqToken.current) {
             setSuggestions([]);
             setOpen(false);
-            setScanError('Card catalogues could not load. Try again.');
+            setScanError(error?.message || 'Card catalogues could not load. Try again.');
           }
         } finally {
           setResolving(false);
@@ -589,6 +594,12 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
             ? 'Price Only: exact printing and current market price.'
             : 'Full Signal: confirm the exact printing before the paid report runs.'}
       </div>
+
+      {(suggesting || resolving) && query.trim().length >= MIN_CHARS && (
+        <div className="sb-searching" role="status" aria-live="polite">
+          <span aria-hidden /> Searching card catalogues…
+        </div>
+      )}
 
       {quickResult && (
         <QuickPriceResult

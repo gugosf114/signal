@@ -11,6 +11,17 @@ const CACHE_KEY = 'signal_expansions_v3';
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const COUNT = 12;
 const PAGE = 21;
+const SUGGEST_TIMEOUT_MS = 3500;
+
+function suggestionSearch(promise) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve({ status: 'timeout' }), SUGGEST_TIMEOUT_MS);
+    promise.then(
+      (rows) => { clearTimeout(timer); resolve({ status: 'ok', rows }); },
+      (error) => { clearTimeout(timer); resolve({ status: 'error', error }); },
+    );
+  });
+}
 
 export function cardBrowserRowKey(card) {
   const identity = card?.printingId || card?.id
@@ -716,9 +727,9 @@ export async function suggestCards(query, limit = 8) {
   const parsed = parseCardLookupQuery(q);
 
   const games = ['pokemon', 'mtg', 'yugioh'];
-  const settled = await Promise.allSettled(
-    games.map((g) => searchCardsByName(g, q, null))
-  );
+  const searches = await Promise.all(games.map((game) => suggestionSearch(
+    searchCardsByName(game, q, null),
+  )));
 
   const needle = parsed.name.toLowerCase();
   const rank = (c) => {
@@ -732,21 +743,25 @@ export async function suggestCards(query, limit = 8) {
   // "Nobody answered" is not the same fact as "this card doesn't exist", and
   // the caller renders them very differently — an empty list versus keeping
   // what it already had. Only the first is worth showing.
-  if (settled.every((r) => r.status === 'rejected')) {
-    throw settled[0].reason || new Error('all catalogues unreachable');
+  if (searches.every((result) => result.status !== 'ok')) {
+    throw new Error('Card catalogues are taking too long. Try again.');
   }
 
   // Interleave the three lists so one game with many hits can't crowd out the
   // others — someone typing "dragon" should see all three games represented.
-  const lists = settled.map((r) => (r.status === 'fulfilled' ? r.value : []));
+  const lists = searches.map((result) => (result.status === 'ok' ? result.rows : []));
   const merged = [];
   for (let i = 0; merged.length < limit * 3 && i < PAGE; i++) {
     for (const list of lists) if (list[i]) merged.push(list[i]);
   }
 
-  return merged
+  const suggestions = merged
     .sort((a, b) => rank(a) - rank(b))
     .slice(0, limit);
+  if (!suggestions.length && searches.some((result) => result.status === 'timeout')) {
+    throw new Error('Card catalogues are taking too long. Try again.');
+  }
+  return suggestions;
 }
 
 // ─── Camera → exact printing ─────────────────────────────────────────────────
