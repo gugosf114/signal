@@ -830,6 +830,26 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.signal-card-row {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.signal-card-toggle,
+.signal-card-row .signal-evidence {
+  position: relative;
+  z-index: 1;
+}
+.signal-card-backdrop {
+  position: absolute;
+  z-index: 0;
+  inset: 8px 4px 9px 34%;
+  opacity: 0.28;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 32%, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 32%, #000 100%);
+}
+.signal-card-backdrop svg { width: 100%; height: 100%; display: block; }
 .signal-card-toggle:focus-visible {
   outline: 1px solid var(--signal-color, #A8A498);
   outline-offset: 2px;

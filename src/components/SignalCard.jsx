@@ -54,6 +54,77 @@ const MARKS = {
   ),
 };
 
+const BACKDROPS = {
+  creator: (c) => (
+    <svg viewBox="0 0 320 120" fill="none">
+      <path d="M36 72h24l10-28 16 55 15-42 13 24h31" stroke={c} strokeWidth="2" opacity=".34" />
+      <circle cx="247" cy="60" r="28" stroke={c} strokeWidth="2" opacity=".5" />
+      <path d="M240 45v30l24-15z" fill={c} opacity=".42" />
+      <path d="M207 31q-24 29 0 58M287 31q24 29 0 58" stroke={c} strokeWidth="1.5" opacity=".28" />
+    </svg>
+  ),
+  community: (c) => (
+    <svg viewBox="0 0 320 120" fill="none">
+      <path d="M54 83 104 38l57 39 57-48 54 49M104 38l114-9M161 77l111 1M54 83l107-6" stroke={c} strokeWidth="1.5" opacity=".35" />
+      {[['54','83','8'],['104','38','10'],['161','77','12'],['218','29','9'],['272','78','11']].map(([cx,cy,r]) => (
+        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill={c} opacity=".28" stroke={c} strokeWidth="2" />
+      ))}
+    </svg>
+  ),
+  ip_momentum: (c) => (
+    <svg viewBox="0 0 320 120" fill="none">
+      <path d="M32 101h258M48 88V67m0 7h-8m8 0h10M93 78V42m0 9H82m11 0h11M143 70V50m0 8h-9m9 0h10M199 51V23m0 8h-10m10 0h10" stroke={c} strokeWidth="1.5" opacity=".28" />
+      <path d="m34 94 57-23 46 5 55-31 68-15" stroke={c} strokeWidth="3" opacity=".62" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m246 21 16 8-10 15" stroke={c} strokeWidth="3" opacity=".62" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  editorial: (c) => (
+    <svg viewBox="0 0 320 120" fill="none">
+      <rect x="58" y="19" width="204" height="82" rx="3" stroke={c} strokeWidth="2" opacity=".45" />
+      <rect x="75" y="35" width="66" height="47" fill={c} opacity=".16" />
+      <path d="M158 36h83M158 48h70M158 60h78M75 91h166" stroke={c} strokeWidth="2" opacity=".34" />
+      <path d="M48 29v82h204" stroke={c} strokeWidth="1" opacity=".18" />
+    </svg>
+  ),
+  competitive: (c) => (
+    <svg viewBox="0 0 320 120" fill="none">
+      <path d="M38 24h42v24h36M38 96h42V72h36M282 24h-42v24h-36M282 96h-42V72h-36" stroke={c} strokeWidth="2" opacity=".34" />
+      <path d="M132 42h56v31q0 24-28 30-28-6-28-30z" stroke={c} strokeWidth="2.5" opacity=".48" />
+      <path d="M144 42q-3-16 16-20 19 4 16 20M145 58h30M160 58v27" stroke={c} strokeWidth="2" opacity=".34" />
+    </svg>
+  ),
+  scarcity: (c) => (
+    <svg viewBox="0 0 320 120" fill="none">
+      <path d="m159 14 57 38-57 56-57-56z" stroke={c} strokeWidth="2.5" opacity=".52" />
+      <path d="m102 52 57 14 57-14M159 14v94M102 52l57-38 57 38-57 14z" stroke={c} strokeWidth="1.5" opacity=".25" />
+      <path d="M44 94h25V69H44zm207 0h25V38h-25z" fill={c} opacity=".16" />
+    </svg>
+  ),
+  jp_hype: (c) => (
+    <svg viewBox="0 0 320 120" fill="none">
+      {[0,1,2,3].flatMap((row) => [0,1,2,3,4,5].map((col) => (
+        <rect key={`${row}-${col}`} x={42 + col * 28} y={20 + row * 22} width="20" height="14" rx="2"
+          fill={c} opacity={0.08 + ((row + col) % 4) * 0.07} />
+      )))}
+      <path d="M225 88c34-12 34-44 0-56M225 75c18-8 18-26 0-34" stroke={c} strokeWidth="2" opacity=".38" />
+      <circle cx="225" cy="59" r="6" fill={c} opacity=".5" />
+    </svg>
+  ),
+  jp_release: (c) => (
+    <svg viewBox="0 0 320 120" fill="none">
+      <path d="M38 67h244" stroke={c} strokeWidth="2" opacity=".38" />
+      {[64,112,160,208,256].map((x, index) => (
+        <g key={x}>
+          <circle cx={x} cy="67" r={index === 2 ? 9 : 6} fill={c} opacity={index === 2 ? '.48' : '.24'} />
+          <path d={`M${x} 36v18M${x} 80v17`} stroke={c} opacity=".24" />
+        </g>
+      ))}
+      <path d="m265 56 17 11-17 11" stroke={c} strokeWidth="2" opacity=".5" />
+      <path d="M105 25h110M122 25v22m76-22v22M112 15h96" stroke={c} strokeWidth="2" opacity=".28" />
+    </svg>
+  ),
+};
+
 export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
   const [expanded, setExpanded] = useState(false);
   const [activeSourceIdx, setActiveSourceIdx] = useState(0);
@@ -63,6 +134,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
 
   const isHot = signal.level >= 4;
   const markFn = MARKS[signal.key];
+  const backdropFn = BACKDROPS[signal.key];
 
   const preview = signal.detail
     ? signal.detail.substring(0, 72) + (signal.detail.length > 72 ? '…' : '')
@@ -101,6 +173,11 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.012)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
     >
+      {backdropFn && (
+        <div className="signal-card-backdrop" aria-hidden="true">
+          {backdropFn(meta.color)}
+        </div>
+      )}
       <button
         type="button"
         className="signal-card-toggle"
