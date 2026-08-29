@@ -39,7 +39,6 @@ const LOOKUP_MODES = [
 function LookupModeChooser({ value, onChange, disabled }) {
   return (
     <div className="lookup-mode-block">
-      <div className="lookup-mode-label">Choose lookup</div>
       <div className="lookup-mode-options" role="radiogroup" aria-label="Choose price only or full Signal">
         {LOOKUP_MODES.map((mode) => (
           <button
@@ -47,12 +46,13 @@ function LookupModeChooser({ value, onChange, disabled }) {
             type="button"
             role="radio"
             aria-checked={value === mode.id}
+            aria-label={`${mode.label}. ${mode.detail}`}
+            title={mode.detail}
             className={`lookup-mode-option lookup-mode-option--${mode.id}${value === mode.id ? ' lookup-mode-option--on' : ''}`}
             disabled={disabled}
             onClick={() => onChange(mode.id)}
           >
             <strong>{mode.label}</strong>
-            <span>{mode.detail}</span>
           </button>
         ))}
       </div>
@@ -571,7 +571,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
 
       <div style={{ marginTop: 6, fontSize: 9, color: '#605C54', fontFamily: "'JetBrains Mono', monospace", textAlign: 'left' }}>
         {!lookupMode
-          ? 'Choose the fast price lane or the full Signal report first.'
+          ? 'Price: fast · Full Signal: about one minute.'
           : lookupMode === 'price'
             ? 'Price Only: exact printing and current market price.'
             : 'Full Signal: confirm the exact printing before the paid report runs.'}

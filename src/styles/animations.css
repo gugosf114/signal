@@ -1310,52 +1310,42 @@
    Dropdown under the main search bar. Sits above everything else on the
    page — the result card and the nav both use stacking contexts of their
    own, and a suggestion list that slides *behind* the page is useless. */
-.lookup-mode-block { margin-bottom: 12px; }
-.lookup-mode-label {
-  margin-bottom: 7px;
-  color: #A39E96;
-  font: 700 10px 'Syne', sans-serif;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
+.lookup-mode-block { margin-bottom: 8px; }
 .lookup-mode-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 3px;
+  padding: 3px;
+  border: 0.5px solid #FFFFFF;
+  border-radius: 5px;
+  background: var(--signal-panel);
 }
 .lookup-mode-option {
   min-width: 0;
-  min-height: 74px;
-  padding: 11px 12px;
-  border: 1px solid #4A464F;
-  border-radius: 5px;
-  background: var(--signal-panel);
+  min-height: 42px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
   color: #C2BCB3;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
 }
 .lookup-mode-option strong {
   display: block;
-  margin-bottom: 5px;
+  margin: 0;
   color: #F1EDE5;
-  font: 700 12px 'Syne', sans-serif;
-  letter-spacing: 0.04em;
+  font: 700 10px 'Syne', sans-serif;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.lookup-mode-option span {
-  display: block;
-  color: #A39E96;
-  font: 9px/1.45 'JetBrains Mono', monospace;
-}
 .lookup-mode-option--price.lookup-mode-option--on {
-  border-color: #78A187;
   background: rgba(96,136,112,0.16);
-  box-shadow: inset 0 0 0 1px rgba(96,136,112,0.2);
+  box-shadow: inset 0 0 0 1px #78A187;
 }
 .lookup-mode-option--full.lookup-mode-option--on {
-  border-color: #C44040;
   background: rgba(196,64,64,0.16);
-  box-shadow: inset 0 0 0 1px rgba(196,64,64,0.22);
+  box-shadow: inset 0 0 0 1px #C44040;
 }
 .lookup-mode-option:focus-visible { outline: 2px solid #F1EDE5; outline-offset: 2px; }
 .lookup-mode-option:disabled { cursor: default; opacity: 0.45; }
