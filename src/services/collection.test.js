@@ -159,16 +159,30 @@ describe('collection', () => {
     assert.deepEqual(loadCollection(), []);
   });
 
-  test('entries carry artwork and a timestamp', () => {
+  test('entries keep catalogue artwork and reject an uploaded phone photo', () => {
     const list = addToCollection({
       ...RICH,
-      imageUrl: 'small.png',
-      imageLarge: 'big.png',
+      imageUrl: 'http://localhost/_capacitor_file_/data/user/0/signal-scan-art/card.jpg',
+      imageLarge: 'https://catalog.example/cards/big.png',
       scanImagePath: 'signal-scan-art/sv8pt5-161.jpg',
     }, '2026-08-15T00:00:00.000Z');
-    assert.equal(list[0].imageLarge, 'big.png');
-    assert.equal(list[0].scanImagePath, 'signal-scan-art/sv8pt5-161.jpg');
+    assert.equal(list[0].imageUrl, 'https://catalog.example/cards/big.png');
+    assert.equal(list[0].imageLarge, 'https://catalog.example/cards/big.png');
+    assert.equal('scanImagePath' in list[0], false);
     assert.equal(list[0].addedAt, '2026-08-15T00:00:00.000Z');
+  });
+
+  test('old collection rows containing only an uploaded photo show no art', () => {
+    store['signal_collection_v1'] = JSON.stringify([{
+      ...RICH,
+      imageUrl: 'blob:https://localhost/uploaded-card',
+      imageLarge: 'file:///data/user/0/signal-scan-art/card.jpg',
+      scanImagePath: 'signal-scan-art/card.jpg',
+    }]);
+    const [card] = loadCollection();
+    assert.equal(card.imageUrl, null);
+    assert.equal(card.imageLarge, null);
+    assert.equal('scanImagePath' in card, false);
   });
 
   test('cardKey never merges different games', () => {

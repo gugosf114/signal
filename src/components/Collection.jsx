@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  loadCollection, importCollection, removeOne, removeAll,
+  loadCollection, saveCollection, importCollection, removeOne, removeAll,
   countCards, collectionValueSummary, cardKey,
   collectionFormLabel, formatCollectionMoney,
   collectionView,
@@ -9,6 +9,7 @@ import {
   parseCollectionBackup, saveCollectionBackup, saveCollectionCsv,
 } from '../services/collectionFiles';
 import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
+import { fetchCatalogueCardImage } from '../services/fetchCardImage';
 import CardLightbox from './CardLightbox';
 import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
@@ -61,6 +62,25 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
       window.removeEventListener('storage', reload);
     };
   }, [reload]);
+
+  useEffect(() => {
+    const missing = cards.filter((card) => !card.imageUrl && !card.imageLarge).slice(0, 12);
+    if (!missing.length) return undefined;
+    let cancelled = false;
+    Promise.all(missing.map(async (card) => [
+      cardKey(card),
+      await fetchCatalogueCardImage(card.name, card.game, card).catch(() => null),
+    ])).then((resolved) => {
+      if (cancelled) return;
+      const images = new Map(resolved.filter(([, url]) => url));
+      if (!images.size) return;
+      setCards((current) => saveCollection(current.map((card) => {
+        const imageUrl = images.get(cardKey(card));
+        return imageUrl ? { ...card, imageUrl, imageLarge: imageUrl } : card;
+      })));
+    });
+    return () => { cancelled = true; };
+  }, [cards]);
 
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
 

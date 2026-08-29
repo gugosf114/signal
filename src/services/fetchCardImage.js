@@ -52,7 +52,8 @@ function imgKey(name, game, pin) {
   const identity = pin?.printingId || pin?.number || pin?.setId || pin?.id || '';
   const rarity = pin?.rarity || '';
   const scan = pin?.scanImagePath ? 'scan' : '';
-  return `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}::${identity}::${rarity}::${scan}`;
+  const catalogue = pin?.catalogueOnly ? 'catalogue' : '';
+  return `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}::${identity}::${rarity}::${scan}::${catalogue}`;
 }
 
 function readImgCache() {
@@ -114,6 +115,20 @@ export async function fetchCardImage(cardName, game, pin = null) {
 
   inFlight.set(key, promise);
   return promise;
+}
+
+// Collection must never display an uploaded phone photo. When an old saved
+// row has only local scan art, resolve a clean catalogue image instead. For a
+// Yu-Gi-Oh! alternate art with no clean exact source, the ordinary catalogue
+// art is still preferable to a photo containing the owner's desk or keyboard.
+export function fetchCatalogueCardImage(cardName, game, pin = null) {
+  return fetchCardImage(cardName, game, {
+    ...(pin || {}),
+    scanImagePath: null,
+    imageUrl: null,
+    imageLarge: null,
+    catalogueOnly: true,
+  });
 }
 
 async function fetchCardImageUncached(cardName, game, pin) {
@@ -179,6 +194,7 @@ async function fetchMTGImage(name, pin = null) {
 async function fetchYuGiOhImage(name, pin = null) {
   const setCode = pin?.number || pin?.setId || null;
   const catalogue = await fetchYuGiOhCatalogueImage(name, pin);
+  if (pin?.catalogueOnly) return catalogue;
   if (setCode) {
     try {
       const official = await getOfficialYugiohArt({ cardName: name, setCode, rarity: pin?.rarity || '' });

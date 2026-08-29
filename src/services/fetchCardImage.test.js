@@ -31,7 +31,7 @@ const okPokemon = (imgUrl) => () => ({
 const status = (code) => () => ({ ok: false, status: code, json: async () => ({}) });
 const notFound = () => ({ ok: false, status: 404, json: async () => ({}) });
 
-const { fetchCardImage, officialArtNumber } = await import('./fetchCardImage.js');
+const { fetchCardImage, fetchCatalogueCardImage, officialArtNumber } = await import('./fetchCardImage.js');
 
 describe('fetchCardImage cache', () => {
   beforeEach(() => {
@@ -121,6 +121,21 @@ describe('fetchCardImage cache', () => {
       game: 'yugioh', printingId: '79015062:ALIN-EN054', number: 'ALIN-EN054', rarity: 'Super Rare',
     });
     assert.equal(image, 'ai-connect-clean.png');
+  });
+
+  test('Collection replaces an uploaded Yu-Gi-Oh photo with clean catalogue art', async () => {
+    const requests = [];
+    responder = (url) => {
+      requests.push(String(url));
+      return { ok: true, status: 200, json: async () => ({ data: [{ card_images: [{ image_url: 'collection-clean.png' }] }] }) };
+    };
+    const image = await fetchCatalogueCardImage('Collection Alternate Art Test', 'yugioh', {
+      game: 'yugioh', printingId: '32807846:L26D-ENS08', number: 'L26D-ENS08', rarity: 'Starlight Rare',
+      scanImagePath: 'signal-scan-art/upload.jpg',
+      imageUrl: 'http://localhost/_capacitor_file_/upload.jpg',
+    });
+    assert.equal(image, 'collection-clean.png');
+    assert.equal(requests.some((url) => url.includes('signal-gateway')), false);
   });
 
   test('reads the official alternate-art number', () => {

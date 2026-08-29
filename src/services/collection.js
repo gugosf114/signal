@@ -32,6 +32,17 @@ function cleanFormForGame(game, value) {
   return String(game || '').toLowerCase() === 'yugioh' ? 'normal' : cleanForm(value);
 }
 
+function cleanCatalogueImage(value) {
+  const image = typeof value === 'string' ? value.trim() : '';
+  if (!image) return null;
+  // Uploaded/scanned photos are private working files, not collection art.
+  // Capacitor serves them through a localhost _capacitor_file_ URL. Old
+  // builds also stored blob/data/file URLs. Reject every local form while
+  // keeping catalogue URLs and older relative test/import values intact.
+  if (/^(?:blob:|data:|file:|capacitor:)/i.test(image) || /\/_capacitor_file_\//i.test(image)) return null;
+  return image;
+}
+
 export function formatCollectionMoney(value) {
   const amount = cleanMoney(value);
   return amount === null ? '—' : `$${amount.toFixed(2)}`;
@@ -87,6 +98,8 @@ function normalizeEntry(card) {
   if (!card || !card.name) return null;
   const qty = cleanQty(card.qty);
   const paidPerCard = cleanMoney(card.paidPerCard);
+  const smallImage = cleanCatalogueImage(card.imageUrl);
+  const largeImage = cleanCatalogueImage(card.imageLarge);
   return {
     id: card.id || null,
     printingId: card.printingId || card.id || null,
@@ -96,9 +109,8 @@ function normalizeEntry(card) {
     setId: card.setId || null,
     number: card.number || null,
     rarity: card.rarity || null,
-    scanImagePath: card.scanImagePath || null,
-    imageUrl: card.imageUrl || card.imageLarge || null,
-    imageLarge: card.imageLarge || card.imageUrl || null,
+    imageUrl: smallImage || largeImage,
+    imageLarge: largeImage || smallImage,
     form: cleanFormForGame(card.game, card.form),
     condition: cleanCondition(card.condition),
     qty,

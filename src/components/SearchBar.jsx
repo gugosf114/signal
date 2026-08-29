@@ -223,10 +223,14 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
     scannerRef.current?.choosePhoto();
   };
 
-  const preparePhotoMatch = async ({ card, pin, file }) => {
+  const preparePhotoMatch = async ({ card, pin, file }, { keepOwnerImage = true } = {}) => {
     if (!pin) return;
+    if (!keepOwnerImage) {
+      return { card, exactPin: pin, exactName: pin.name || card.name };
+    }
     // Save the owner's exact card only after the match is confirmed. A wrong
-    // guess must never replace the art for a different printing.
+    // guess must never replace the art for a different printing. Collection
+    // never takes this path: it keeps catalogue art, not the uploaded photo.
     const scanImagePath = await saveScannedCardImage(file, pin).catch(() => null);
     const localImageUrl = scanImagePath ? await loadScannedCardImage(scanImagePath).catch(() => null) : null;
     const exactPin = scanImagePath ? {
@@ -240,7 +244,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
   };
 
   const finishPhotoMatch = async (match, action) => {
-    const prepared = await preparePhotoMatch(match);
+    const prepared = await preparePhotoMatch(match, { keepOwnerImage: action === 'run' });
     if (!prepared) return;
     const { card, exactPin, exactName } = prepared;
     reqToken.current += 1;
@@ -268,7 +272,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
     if (!onScannerBatch) throw new Error('Batch Collection is unavailable.');
     const prepared = [];
     for (const entry of entries || []) {
-      const exact = await preparePhotoMatch(entry.match);
+      const exact = await preparePhotoMatch(entry.match, { keepOwnerImage: false });
       if (!exact) continue;
       prepared.push({
         card: exact.exactPin,
