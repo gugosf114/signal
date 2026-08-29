@@ -575,6 +575,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
                       <span className="sb-game">{GAME_LABEL[card.game] || card.game}</span>
                       {card.setName || 'Unknown set'}
                       {card.number ? ` · ${card.number}` : ''}
+                      {card.rarity ? ` · ${card.rarity}` : ''}
                     </span>
                   </span>
                   {card.price != null && (
