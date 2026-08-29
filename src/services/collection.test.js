@@ -168,7 +168,7 @@ describe('collection', () => {
     }, '2026-08-15T00:00:00.000Z');
     assert.equal(list[0].imageUrl, 'https://catalog.example/cards/big.png');
     assert.equal(list[0].imageLarge, 'https://catalog.example/cards/big.png');
-    assert.equal('scanImagePath' in list[0], false);
+    assert.equal(list[0].scanImagePath, null);
     assert.equal(list[0].addedAt, '2026-08-15T00:00:00.000Z');
   });
 
@@ -182,7 +182,21 @@ describe('collection', () => {
     const [card] = loadCollection();
     assert.equal(card.imageUrl, null);
     assert.equal(card.imageLarge, null);
-    assert.equal('scanImagePath' in card, false);
+    assert.equal(card.scanImagePath, null);
+  });
+
+  test('an explicitly cropped exact-owner image is kept', () => {
+    const local = 'http://localhost/_capacitor_file_/data/user/0/signal-scan-art/card.jpg';
+    const [card] = addToCollection({
+      ...RICH,
+      imageUrl: local,
+      imageLarge: local,
+      scanImagePath: 'signal-scan-art/card.jpg',
+      imageSource: 'owner-crop',
+    });
+    assert.equal(card.imageUrl, local);
+    assert.equal(card.scanImagePath, 'signal-scan-art/card.jpg');
+    assert.equal(card.imageSource, 'owner-crop');
   });
 
   test('cardKey never merges different games', () => {

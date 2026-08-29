@@ -31,7 +31,7 @@ const okPokemon = (imgUrl) => () => ({
 const status = (code) => () => ({ ok: false, status: code, json: async () => ({}) });
 const notFound = () => ({ ok: false, status: 404, json: async () => ({}) });
 
-const { fetchCardImage, fetchCatalogueCardImage, officialArtNumber } = await import('./fetchCardImage.js');
+const { fetchCardImage, officialArtNumber } = await import('./fetchCardImage.js');
 
 describe('fetchCardImage cache', () => {
   beforeEach(() => {
@@ -43,7 +43,7 @@ describe('fetchCardImage cache', () => {
     responder = okPokemon('https://img.example.com/pikachu.png');
     const a = await fetchCardImage('Pikachu Test A', 'pokemon');
     assert.equal(a, 'https://img.example.com/pikachu.png');
-    assert.ok(store['signal_card_image_cache_v4'], 'wrote to the v4 cache key');
+    assert.ok(store['signal_card_image_cache_v5'], 'wrote to the v5 cache key');
   });
 
   test('a server error is NOT cached, so the next call retries', async () => {
@@ -51,7 +51,7 @@ describe('fetchCardImage cache', () => {
     const first = await fetchCardImage('Slowbro Test B', 'pokemon');
     assert.equal(first, null, 'returns null to the caller');
 
-    const cache = JSON.parse(store['signal_card_image_cache_v4'] || '{}');
+    const cache = JSON.parse(store['signal_card_image_cache_v5'] || '{}');
     assert.equal(Object.keys(cache).length, 0, 'nothing written to the cache');
 
     // The API recovers; the very next call must reach it rather than serve a
@@ -64,7 +64,7 @@ describe('fetchCardImage cache', () => {
   test('a rate-limit is treated the same as any other server error', async () => {
     responder = status(429);
     await fetchCardImage('Ratelimited Test C', 'pokemon');
-    const cache = JSON.parse(store['signal_card_image_cache_v4'] || '{}');
+    const cache = JSON.parse(store['signal_card_image_cache_v5'] || '{}');
     assert.equal(Object.keys(cache).length, 0);
   });
 
@@ -72,7 +72,7 @@ describe('fetchCardImage cache', () => {
     responder = notFound;
     const r = await fetchCardImage('Nonexistent Test D', 'pokemon');
     assert.equal(r, null);
-    const cache = JSON.parse(store['signal_card_image_cache_v4'] || '{}');
+    const cache = JSON.parse(store['signal_card_image_cache_v5'] || '{}');
     assert.equal(Object.keys(cache).length, 1, 'the genuine miss was remembered');
     assert.equal(Object.values(cache)[0].url, null);
   });
@@ -123,19 +123,16 @@ describe('fetchCardImage cache', () => {
     assert.equal(image, 'ai-connect-clean.png');
   });
 
-  test('Collection replaces an uploaded Yu-Gi-Oh photo with clean catalogue art', async () => {
-    const requests = [];
-    responder = (url) => {
-      requests.push(String(url));
-      return { ok: true, status: 200, json: async () => ({ data: [{ card_images: [{ image_url: 'collection-clean.png' }] }] }) };
-    };
-    const image = await fetchCatalogueCardImage('Collection Alternate Art Test', 'yugioh', {
+  test('an uncertain official-art lookup prefers exact owner art over a wrong catalogue substitute', async () => {
+    responder = (url) => String(url).includes('signal-gateway')
+      ? { ok: false, status: 503, json: async () => ({ error: 'temporary failure' }) }
+      : { ok: true, status: 200, json: async () => ({ data: [{ card_images: [{ image_url: 'wrong-original.png' }] }] }) };
+    const image = await fetchCardImage('Collection Alternate Art Fallback Test', 'yugioh', {
       game: 'yugioh', printingId: '32807846:L26D-ENS08', number: 'L26D-ENS08', rarity: 'Starlight Rare',
       scanImagePath: 'signal-scan-art/upload.jpg',
-      imageUrl: 'http://localhost/_capacitor_file_/upload.jpg',
+      preferExactOwnerArt: true,
     });
-    assert.equal(image, 'collection-clean.png');
-    assert.equal(requests.some((url) => url.includes('signal-gateway')), false);
+    assert.equal(image, null, 'the missing local test file does not fall through to the wrong artwork');
   });
 
   test('reads the official alternate-art number', () => {

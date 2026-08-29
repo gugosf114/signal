@@ -43,6 +43,12 @@ function cleanCatalogueImage(value) {
   return image;
 }
 
+function cleanOwnerCropImage(value) {
+  const image = typeof value === 'string' ? value.trim() : '';
+  if (!image) return null;
+  return /\/_capacitor_file_\//i.test(image) || /^(?:file:|capacitor:)/i.test(image) ? image : null;
+}
+
 export function formatCollectionMoney(value) {
   const amount = cleanMoney(value);
   return amount === null ? '—' : `$${amount.toFixed(2)}`;
@@ -98,8 +104,12 @@ function normalizeEntry(card) {
   if (!card || !card.name) return null;
   const qty = cleanQty(card.qty);
   const paidPerCard = cleanMoney(card.paidPerCard);
-  const smallImage = cleanCatalogueImage(card.imageUrl);
-  const largeImage = cleanCatalogueImage(card.imageLarge);
+  const ownerCrop = card.imageSource === 'owner-crop' && Boolean(card.scanImagePath);
+  const smallImage = ownerCrop ? cleanOwnerCropImage(card.imageUrl) : cleanCatalogueImage(card.imageUrl);
+  const largeImage = ownerCrop ? cleanOwnerCropImage(card.imageLarge) : cleanCatalogueImage(card.imageLarge);
+  const imageSource = ownerCrop && (smallImage || largeImage)
+    ? 'owner-crop'
+    : (card.imageSource === 'exact-catalogue' ? 'exact-catalogue' : null);
   return {
     id: card.id || null,
     printingId: card.printingId || card.id || null,
@@ -109,8 +119,10 @@ function normalizeEntry(card) {
     setId: card.setId || null,
     number: card.number || null,
     rarity: card.rarity || null,
+    scanImagePath: imageSource === 'owner-crop' ? card.scanImagePath : null,
     imageUrl: smallImage || largeImage,
     imageLarge: largeImage || smallImage,
+    imageSource,
     form: cleanFormForGame(card.game, card.form),
     condition: cleanCondition(card.condition),
     qty,

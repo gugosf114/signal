@@ -9,7 +9,13 @@ import {
   parseCollectionBackup, saveCollectionBackup, saveCollectionCsv,
 } from '../services/collectionFiles';
 import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
-import { fetchCatalogueCardImage } from '../services/fetchCardImage';
+import { fetchCardImage } from '../services/fetchCardImage';
+import {
+  cropStoredScannedCardImage,
+  loadScannedCardImage,
+  scannedCardImageExists,
+  scannedCardImagePath,
+} from '../services/scannedCardImage';
 import CardLightbox from './CardLightbox';
 import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
@@ -64,19 +70,46 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
   }, [reload]);
 
   useEffect(() => {
-    const missing = cards.filter((card) => !card.imageUrl && !card.imageLarge).slice(0, 12);
-    if (!missing.length) return undefined;
+    const unresolved = cards.filter((card) => (
+      (!card.imageUrl && !card.imageLarge)
+      || (card.game === 'yugioh' && !['owner-crop', 'exact-catalogue'].includes(card.imageSource))
+    )).slice(0, 12);
+    if (!unresolved.length) return undefined;
     let cancelled = false;
-    Promise.all(missing.map(async (card) => [
-      cardKey(card),
-      await fetchCatalogueCardImage(card.name, card.game, card).catch(() => null),
-    ])).then((resolved) => {
+    Promise.all(unresolved.map(async (card) => {
+      const scanImagePath = scannedCardImagePath(card);
+      const hasOwnerImage = await scannedCardImageExists(scanImagePath);
+      const localImageUrl = hasOwnerImage ? await loadScannedCardImage(scanImagePath).catch(() => null) : null;
+      const pin = hasOwnerImage ? {
+        ...card,
+        scanImagePath,
+        preferExactOwnerArt: true,
+      } : {
+        ...card,
+        scanImagePath: null,
+        preferExactOwnerArt: card.game === 'yugioh',
+      };
+      let imageUrl = await fetchCardImage(card.name, card.game, pin).catch(() => null);
+      let imageSource = 'exact-catalogue';
+      if (hasOwnerImage && localImageUrl && (!imageUrl || imageUrl === localImageUrl)) {
+        await cropStoredScannedCardImage(scanImagePath, card).catch(() => null);
+        imageUrl = await loadScannedCardImage(scanImagePath).catch(() => localImageUrl);
+        imageSource = 'owner-crop';
+      }
+      return [cardKey(card), imageUrl ? { imageUrl, imageSource, scanImagePath } : null];
+    })).then((resolved) => {
       if (cancelled) return;
-      const images = new Map(resolved.filter(([, url]) => url));
+      const images = new Map(resolved.filter(([, value]) => value));
       if (!images.size) return;
       setCards((current) => saveCollection(current.map((card) => {
-        const imageUrl = images.get(cardKey(card));
-        return imageUrl ? { ...card, imageUrl, imageLarge: imageUrl } : card;
+        const image = images.get(cardKey(card));
+        return image ? {
+          ...card,
+          imageUrl: image.imageUrl,
+          imageLarge: image.imageUrl,
+          imageSource: image.imageSource,
+          scanImagePath: image.imageSource === 'owner-crop' ? image.scanImagePath : null,
+        } : card;
       })));
     });
     return () => { cancelled = true; };

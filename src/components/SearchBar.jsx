@@ -6,6 +6,7 @@ import { looksLikeSetCode, lookupBySetCode } from '../services/lookupBySetCode';
 import { loadScannedCardImage, saveScannedCardImage } from '../services/scannedCardImage';
 import { withScanKeepAlive } from '../services/scanKeepAlive';
 import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
+import { fetchCardImage } from '../services/fetchCardImage';
 import CardScanner from './CardScanner';
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
@@ -223,28 +224,52 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
     scannerRef.current?.choosePhoto();
   };
 
-  const preparePhotoMatch = async ({ card, pin, file }, { keepOwnerImage = true } = {}) => {
+  const preparePhotoMatch = async ({ card, pin, file, framed = false }) => {
     if (!pin) return;
-    if (!keepOwnerImage) {
-      return { card, exactPin: pin, exactName: pin.name || card.name };
+    const exactName = pin.name || card.name;
+    const game = pin.game || card.game || null;
+    let scanImagePath = null;
+    let localImageUrl = null;
+
+    // Yu-Gi-Oh!'s catalogue can know the exact set/rarity while still serving
+    // the old artwork. Save an automatic card-only crop first, then let the
+    // official-art check choose: clean catalogue for standard art, exact owner
+    // crop for an alternate art. Other games use their exact catalogue IDs and
+    // need the crop only when their catalogue genuinely has no image.
+    if (file && game === 'yugioh') {
+      scanImagePath = await saveScannedCardImage(file, pin, { autoCrop: !framed }).catch(() => null);
+      localImageUrl = scanImagePath ? await loadScannedCardImage(scanImagePath).catch(() => null) : null;
     }
-    // Save the owner's exact card only after the match is confirmed. A wrong
-    // guess must never replace the art for a different printing. Collection
-    // never takes this path: it keeps catalogue art, not the uploaded photo.
-    const scanImagePath = await saveScannedCardImage(file, pin).catch(() => null);
-    const localImageUrl = scanImagePath ? await loadScannedCardImage(scanImagePath).catch(() => null) : null;
-    const exactPin = scanImagePath ? {
+
+    const candidate = scanImagePath ? {
       ...pin,
       scanImagePath,
-      imageUrl: pin.imageUrl || localImageUrl,
-      imageLarge: pin.imageLarge || localImageUrl,
-    } : pin;
-    const exactName = exactPin.name || card.name;
+      preferExactOwnerArt: true,
+    } : { ...pin, scanImagePath: null };
+    let resolvedImage = await fetchCardImage(exactName, game, candidate).catch(() => null);
+
+    if (!resolvedImage && file && !scanImagePath) {
+      scanImagePath = await saveScannedCardImage(file, pin, { autoCrop: !framed }).catch(() => null);
+      localImageUrl = scanImagePath ? await loadScannedCardImage(scanImagePath).catch(() => null) : null;
+      resolvedImage = localImageUrl;
+    }
+
+    const usesOwnerCrop = Boolean(localImageUrl && resolvedImage === localImageUrl);
+    const exactYugioh = game === 'yugioh' && Boolean(pin.number || pin.setId);
+    const fallbackImage = exactYugioh ? null : (pin.imageLarge || pin.imageUrl || null);
+    const imageUrl = resolvedImage || fallbackImage;
+    const exactPin = {
+      ...pin,
+      scanImagePath: usesOwnerCrop ? scanImagePath : null,
+      imageUrl,
+      imageLarge: imageUrl,
+      imageSource: usesOwnerCrop ? 'owner-crop' : 'exact-catalogue',
+    };
     return { card, exactPin, exactName };
   };
 
   const finishPhotoMatch = async (match, action) => {
-    const prepared = await preparePhotoMatch(match, { keepOwnerImage: action === 'run' });
+    const prepared = await preparePhotoMatch(match);
     if (!prepared) return;
     const { card, exactPin, exactName } = prepared;
     reqToken.current += 1;
@@ -272,7 +297,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
     if (!onScannerBatch) throw new Error('Batch Collection is unavailable.');
     const prepared = [];
     for (const entry of entries || []) {
-      const exact = await preparePhotoMatch(entry.match, { keepOwnerImage: false });
+      const exact = await preparePhotoMatch(entry.match);
       if (!exact) continue;
       prepared.push({
         card: exact.exactPin,

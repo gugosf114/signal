@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
+import { cropUploadedCardFile } from './uploadedCardCrop.js';
 
 const SCAN_ART_DIR = 'signal-scan-art';
 const MAX_EDGE = 900;
@@ -41,14 +42,39 @@ async function resizedJpegBase64(file) {
   return canvas.toDataURL('image/jpeg', 0.82).split(',', 2)[1];
 }
 
-export async function saveScannedCardImage(file, pin) {
+export async function saveScannedCardImage(file, pin, { autoCrop = false } = {}) {
   if (!file || !Capacitor.isNativePlatform()) return null;
   const path = scannedCardImagePath(pin);
   if (!path) return null;
-  const data = await resizedJpegBase64(file);
+  const source = autoCrop ? await cropUploadedCardFile(file) : file;
+  const data = await resizedJpegBase64(source);
   await Filesystem.mkdir({ path: SCAN_ART_DIR, directory: Directory.Data, recursive: true }).catch(() => {});
   await Filesystem.writeFile({ path, data, directory: Directory.Data });
   return path;
+}
+
+export async function scannedCardImageExists(path) {
+  if (!path || !Capacitor.isNativePlatform()) return false;
+  try {
+    await Filesystem.stat({ path, directory: Directory.Data });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function base64File(data, name = 'saved-card.jpg') {
+  if (data instanceof Blob) return new File([data], name, { type: data.type || 'image/jpeg' });
+  const binary = atob(String(data || '').replace(/^data:[^,]+,/, ''));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+  return new File([bytes], name, { type: 'image/jpeg' });
+}
+
+export async function cropStoredScannedCardImage(path, pin) {
+  if (!path || !pin || !Capacitor.isNativePlatform()) return null;
+  const result = await Filesystem.readFile({ path, directory: Directory.Data });
+  return saveScannedCardImage(base64File(result.data), pin, { autoCrop: true });
 }
 
 export async function loadScannedCardImage(path) {

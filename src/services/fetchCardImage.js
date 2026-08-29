@@ -37,7 +37,9 @@ import { loadScannedCardImage } from './scannedCardImage.js';
 // transient pokemontcg.io 500. One bad minute on their end blanked a card's art
 // for a week. Negatives now expire in an hour, and outright failures aren't
 // cached at all. The key was bumped so poisoned v1 entries are simply dropped.
-const IMG_CACHE_KEY = 'signal_card_image_cache_v4';
+// v5 drops the generic Yu-Gi-Oh artwork that the short-lived Collection
+// catalogue fallback could cache for an exact alternate-art printing.
+const IMG_CACHE_KEY = 'signal_card_image_cache_v5';
 const IMG_TTL_MS = 7 * 24 * 60 * 60 * 1000;   // found an image
 const NEG_TTL_MS = 60 * 60 * 1000;            // genuinely no image for this card
 const IMG_MAX_ENTRIES = 300;
@@ -52,8 +54,7 @@ function imgKey(name, game, pin) {
   const identity = pin?.printingId || pin?.number || pin?.setId || pin?.id || '';
   const rarity = pin?.rarity || '';
   const scan = pin?.scanImagePath ? 'scan' : '';
-  const catalogue = pin?.catalogueOnly ? 'catalogue' : '';
-  return `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}::${identity}::${rarity}::${scan}::${catalogue}`;
+  return `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}::${identity}::${rarity}::${scan}`;
 }
 
 function readImgCache() {
@@ -115,20 +116,6 @@ export async function fetchCardImage(cardName, game, pin = null) {
 
   inFlight.set(key, promise);
   return promise;
-}
-
-// Collection must never display an uploaded phone photo. When an old saved
-// row has only local scan art, resolve a clean catalogue image instead. For a
-// Yu-Gi-Oh! alternate art with no clean exact source, the ordinary catalogue
-// art is still preferable to a photo containing the owner's desk or keyboard.
-export function fetchCatalogueCardImage(cardName, game, pin = null) {
-  return fetchCardImage(cardName, game, {
-    ...(pin || {}),
-    scanImagePath: null,
-    imageUrl: null,
-    imageLarge: null,
-    catalogueOnly: true,
-  });
 }
 
 async function fetchCardImageUncached(cardName, game, pin) {
@@ -194,7 +181,6 @@ async function fetchMTGImage(name, pin = null) {
 async function fetchYuGiOhImage(name, pin = null) {
   const setCode = pin?.number || pin?.setId || null;
   const catalogue = await fetchYuGiOhCatalogueImage(name, pin);
-  if (pin?.catalogueOnly) return catalogue;
   if (setCode) {
     try {
       const official = await getOfficialYugiohArt({ cardName: name, setCode, rarity: pin?.rarity || '' });
@@ -206,8 +192,14 @@ async function fetchYuGiOhImage(name, pin = null) {
         // than a watermarked image or the wrong art.
         return await loadScannedCardImage(pin?.scanImagePath) || null;
       }
+      if (!art && pin?.preferExactOwnerArt) {
+        return await loadScannedCardImage(pin?.scanImagePath) || null;
+      }
     } catch (error) {
       console.warn(`[fetchCardImage] official Yu-Gi-Oh art failed for "${name}"/${setCode}:`, error?.message || error);
+      if (pin?.preferExactOwnerArt) {
+        return await loadScannedCardImage(pin?.scanImagePath) || null;
+      }
     }
   }
   return catalogue;
