@@ -92,14 +92,20 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
       id={`signal-${signal.key}`}
       className={`fade-slide-up fade-slide-up-${animDelay} signal-card-row`}
       style={{
-        padding: '14px 0',
-        borderBottom: `1px solid ${isJapan ? 'rgba(196,64,64,0.06)' : '#14161A'}`,
+        padding: '20px 12px 22px',
+        marginBottom: 8,
+        borderBottom: `1px solid ${isJapan ? 'rgba(196,64,64,0.28)' : 'rgba(232,228,220,0.2)'}`,
         transition: 'background 0.12s',
         '--signal-color': meta.color,
       }}
       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.012)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
     >
+      {markFn && (
+        <div className="signal-card-watermark" aria-hidden="true">
+          {markFn(meta.color)}
+        </div>
+      )}
       <button
         type="button"
         className="signal-card-toggle"
