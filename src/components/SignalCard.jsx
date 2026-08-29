@@ -101,11 +101,6 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.012)'; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
     >
-      {markFn && (
-        <div className="signal-card-watermark" aria-hidden="true">
-          {markFn(meta.color)}
-        </div>
-      )}
       <button
         type="button"
         className="signal-card-toggle"

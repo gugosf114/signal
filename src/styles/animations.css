@@ -830,29 +830,6 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.signal-card-row {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-.signal-card-toggle,
-.signal-card-row .signal-evidence {
-  position: relative;
-  z-index: 1;
-}
-.signal-card-watermark {
-  position: absolute;
-  z-index: 0;
-  top: 52%;
-  right: 74px;
-  width: 16px;
-  height: 16px;
-  opacity: 0.13;
-  transform: translateY(-50%) scale(6.5);
-  transform-origin: center;
-  pointer-events: none;
-}
-.signal-card-watermark svg { display: block; }
 .signal-card-toggle:focus-visible {
   outline: 1px solid var(--signal-color, #A8A498);
   outline-offset: 2px;
