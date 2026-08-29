@@ -1,4 +1,5 @@
 import { fetchWithTimeout } from './http.js';
+import { gateway } from './signalGateway.js';
 
 const PRODUCT_LINE = {
   pokemon: 'Pokemon',
@@ -19,6 +20,49 @@ export function tcgplayerProductImageUrl(productId) {
   return Number.isInteger(id) && id > 0
     ? `https://product-images.tcgplayer.com/${id}.jpg`
     : null;
+}
+
+export function baseTcgplayerName(value) {
+  return clean(value).replace(/(?:\s*\([^)]*\))+\s*$/, '').trim();
+}
+
+export function tcgplayerProductRow(item, base = null) {
+  const productId = Number(item?.productId);
+  if (!Number.isInteger(productId) || productId <= 0) return null;
+  const price = positiveNumber(item?.marketPrice);
+  const number = clean(item?.number || item?.customAttributes?.number) || null;
+  const name = clean(item?.productName);
+  if (!name) return null;
+  const imageUrl = tcgplayerProductImageUrl(productId);
+  return {
+    id: base?.id || null,
+    printingId: `tcgplayer:${productId}`,
+    tcgplayerProductId: productId,
+    tcgplayerProductName: name,
+    baseName: baseTcgplayerName(name),
+    name,
+    game: 'yugioh',
+    setName: clean(item?.setName) || base?.setName || '',
+    setId: number,
+    number,
+    rarity: clean(item?.rarityName || item?.customAttributes?.rarityDbName) || null,
+    price,
+    marketPrices: { normal: price, reverse: null },
+    priceScope: price ? 'exact-print TCGplayer market price' : 'exact-print price unavailable',
+    priceSource: price ? 'TCGplayer' : null,
+    priceUrl: `https://www.tcgplayer.com/product/${productId}`,
+    tcgplayerImageUrl: imageUrl,
+    imageUrl,
+    imageLarge: imageUrl,
+    releaseDate: item?.releaseDate || item?.customAttributes?.releaseDate || null,
+  };
+}
+
+export async function searchTcgplayerProducts(query, { setName = '', signal } = {}) {
+  const payload = await gateway({ action: 'tcgplayerSearch', query: clean(query), setName: clean(setName) }, signal, 0);
+  return (Array.isArray(payload?.products) ? payload.products : [])
+    .map((item) => tcgplayerProductRow(item))
+    .filter(Boolean);
 }
 
 export function selectTcgplayerPrice(details, printing) {

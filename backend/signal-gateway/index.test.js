@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   hash, finite, validateModelBody, reportDisposition,
-  officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch,
+  officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch, tcgplayerSearch,
 } = require('./index');
 
 test('cache ids are stable and hide card text', () => {
@@ -44,6 +44,23 @@ test('catalogue relay accepts only Signal card APIs', async () => {
     status: 200,
     data: { data: [{ name: 'Witness Protection' }] },
   });
+});
+
+test('TCGplayer relay keeps separate art products and their exact prices', async () => {
+  const reply = await tcgplayerSearch({ query: 'Witness of the Ancient' }, async (url, init) => {
+    assert.match(url, /mp-search-api\.tcgplayer\.com/);
+    assert.equal(init.method, 'POST');
+    return Response.json({ results: [{ results: [
+      { productId: 702445, productName: 'Witness of the Ancient', setName: 'Chaos Origins',
+        rarityName: 'Ultra Rare', marketPrice: 1.86, customAttributes: { number: 'CORI-EN081' } },
+      { productId: 702446, productName: 'Witness of the Ancient (Extended Art)', setName: 'Chaos Origins',
+        rarityName: 'Ultra Rare', marketPrice: 10.67, customAttributes: { number: 'CORI-EN081' } },
+    ] }] });
+  });
+  assert.deepEqual(reply.products.map((item) => [item.productId, item.productName, item.marketPrice]), [
+    [702445, 'Witness of the Ancient', 1.86],
+    [702446, 'Witness of the Ancient (Extended Art)', 10.67],
+  ]);
 });
 
 test('official Yu-Gi-Oh pages map an exact set row to its artwork', () => {

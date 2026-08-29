@@ -2,7 +2,9 @@ import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   addTcgplayerPrice,
+  baseTcgplayerName,
   selectTcgplayerPrice,
+  tcgplayerProductRow,
   tcgplayerProductImageUrl,
 } from './fetchTcgplayerPrice.js';
 
@@ -84,6 +86,27 @@ const l26dStarlight = {
 };
 
 describe('TCGplayer exact-print price', () => {
+  test('keeps standard, extended-art, and Starlight products separate', () => {
+    const standard = tcgplayerProductRow({
+      productId: 702445, productName: 'Witness of the Ancient', setName: 'Chaos Origins',
+      number: 'CORI-EN081', rarityName: 'Ultra Rare', marketPrice: 1.86,
+    });
+    const extended = tcgplayerProductRow({
+      productId: 702446, productName: 'Witness of the Ancient (Extended Art)', setName: 'Chaos Origins',
+      number: 'CORI-EN081', rarityName: 'Ultra Rare', marketPrice: 10.67,
+    });
+    const starlight = tcgplayerProductRow({
+      productId: 702447, productName: 'Witness of the Ancient (Starlight Rare) (Extended Art)', setName: 'Chaos Origins',
+      number: 'CORI-EN081', rarityName: 'Starlight Rare', marketPrice: 63.76,
+    });
+    assert.deepEqual([standard, extended, starlight].map((row) => row.printingId), [
+      'tcgplayer:702445', 'tcgplayer:702446', 'tcgplayer:702447',
+    ]);
+    assert.deepEqual([standard, extended, starlight].map((row) => row.price), [1.86, 10.67, 63.76]);
+    assert.equal(extended.imageUrl, 'https://product-images.tcgplayer.com/702446.jpg');
+    assert.equal(baseTcgplayerName(starlight.name), 'Witness of the Ancient');
+  });
+
   test('chooses the matching rarity instead of the cheaper same-code card', () => {
     const result = selectTcgplayerPrice([secret, starlight], printing);
     assert.deepEqual(result, {

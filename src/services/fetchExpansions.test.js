@@ -46,6 +46,26 @@ const fydraulis = {
   ],
 };
 
+const witness = {
+  id: 54577949,
+  name: 'Witness of the Ancient',
+  card_prices: [{ tcgplayer_price: '1.78' }],
+  card_images: [{ image_url: 'wrong-base.jpg', image_url_small: 'wrong-base-small.jpg' }],
+  card_sets: [
+    { set_name: 'Chaos Origins', set_code: 'CORI-EN081', set_rarity: 'Ultra Rare', set_price: '0' },
+    { set_name: 'Chaos Origins', set_code: 'CORI-EN081', set_rarity: 'Starlight Rare', set_price: '0' },
+  ],
+};
+
+const witnessProducts = [
+  { productId: 702445, productName: 'Witness of the Ancient', setName: 'Chaos Origins',
+    number: 'CORI-EN081', rarityName: 'Ultra Rare', marketPrice: 1.86 },
+  { productId: 702446, productName: 'Witness of the Ancient (Extended Art)', setName: 'Chaos Origins',
+    number: 'CORI-EN081', rarityName: 'Ultra Rare', marketPrice: 10.67 },
+  { productId: 702447, productName: 'Witness of the Ancient (Starlight Rare) (Extended Art)', setName: 'Chaos Origins',
+    number: 'CORI-EN081', rarityName: 'Starlight Rare', marketPrice: 63.76 },
+];
+
 const rarityCollectionReinforcement = {
   id: 32807846,
   name: 'Reinforcement of the Army',
@@ -205,6 +225,34 @@ describe('live expansion shelf', () => {
 });
 
 describe('camera printing resolution', () => {
+  test('same-code full-art products keep their own image, price, and product id', async () => {
+    globalThis.fetch = async (_url, init = {}) => {
+      const body = JSON.parse(init.body || '{}');
+      if (body.action === 'tcgplayerSearch') {
+        return { ok: true, status: 200, async json() { return { products: witnessProducts }; } };
+      }
+      if (body.action === 'catalogueFetch') {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return { catalogue: true, ok: true, status: 200, data: { data: [witness] } };
+          },
+        };
+      }
+      return { ok: false, status: 400, async json() { return {}; } };
+    };
+    const options = await resolvePrintingOptions({
+      name: 'Witness of the Ancient', game: 'yugioh', number: 'CORI-EN081',
+    });
+    assert.deepEqual(options.map((row) => row.printingId), [
+      'tcgplayer:702445', 'tcgplayer:702446', 'tcgplayer:702447',
+    ]);
+    assert.deepEqual(options.map((row) => row.price), [1.86, 10.67, 63.76]);
+    assert.equal(options[1].imageUrl, 'https://product-images.tcgplayer.com/702446.jpg');
+    assert.equal(options[1].id, '54577949');
+  });
+
   test('a Yu-Gi-Oh passcode and foil rarity repair a wrong OCR name', async () => {
     globalThis.fetch = async (url) => {
       if (String(url).includes('cardinfo.php?id=70088809')) {

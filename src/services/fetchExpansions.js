@@ -7,6 +7,7 @@
 
 import { looksLikeSetCode, lookupBySetCode } from './lookupBySetCode.js';
 import { fetchCatalogueJSON } from './signalGateway.js';
+import { baseTcgplayerName, searchTcgplayerProducts } from './fetchTcgplayerPrice.js';
 
 const CACHE_KEY = 'signal_expansions_v3';
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -157,6 +158,7 @@ export async function fetchYgoPrintingsByPasscode(passcode) {
 }
 
 function variantIdentity(row) {
+  if (row?.tcgplayerProductId) return { ...row, printingId: `tcgplayer:${row.tcgplayerProductId}` };
   if (row?.game !== 'yugioh' || !row?.id || !row?.number) return row;
   const rarity = String(row.rarity || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-');
   return { ...row, printingId: `${row.id}:${row.number}:${rarity}` };
@@ -169,12 +171,14 @@ export async function resolvePrintingOptions(input = {}) {
     let rows = [];
     const passcode = looksLikeYgoPasscode(input.passcode) ? input.passcode
       : (looksLikeYgoPasscode(input.number) ? input.number : null);
-    if (passcode) rows = await fetchYgoPrintingsByPasscode(passcode);
-    else if (name.length >= 2) {
-      const found = await searchCardsByName('yugioh', name, null).catch(() => []);
-      const exactName = found.filter((row) => String(row.name || '').trim().toLowerCase() === name.toLowerCase());
+    const passcodeRows = passcode ? await fetchYgoPrintingsByPasscode(passcode) : [];
+    const lookupName = passcodeRows[0]?.name || name;
+    if (lookupName.length >= 2) {
+      const found = await searchCardsByName('yugioh', lookupName, null).catch(() => []);
+      const exactName = found.filter((row) => String(row.baseName || row.name || '').trim().toLowerCase() === lookupName.toLowerCase());
       rows = exactName.length ? exactName : found;
     }
+    if (!rows.length) rows = passcodeRows;
 
     if (rows.length) {
       const number = looksLikeSetCode(input.number) ? normalizeYgoCode(input.number) : '';
@@ -194,10 +198,12 @@ export async function resolvePrintingOptions(input = {}) {
       // it does not match, never fall back to unrelated printings from another
       // set. The former fallback turned an OCR'd I26D-ENS08 into RA01-EN051.
       const options = narrowed.length ? narrowed : (number ? [] : rows);
-      const unique = [...new Map(options.map((row) => [
-        `${row.id}:${normalizeYgoCode(row.number)}:${String(row.rarity || '').toLowerCase()}`,
-        variantIdentity(row),
-      ])).values()];
+      const unique = [...new Map(options.map((row) => {
+        const identity = row.tcgplayerProductId
+          ? `tcgplayer:${row.tcgplayerProductId}`
+          : `${row.id}:${normalizeYgoCode(row.number)}:${String(row.rarity || '').toLowerCase()}`;
+        return [identity, variantIdentity(row)];
+      })).values()];
       if (unique.length) {
         // One set code can carry many real foil treatments. RA01-EN051 has
         // seven; the old three-row cap hid the owner's Ultimate/Ultra/Super/
@@ -691,25 +697,46 @@ export async function searchCardsByName(game, query, priceSort = null) {
   }
 
   if (game === 'yugioh') {
-    // fname is YGOPRODeck's fuzzy match; it 400s on no-match. It also matches
-    // card TEXT, so searching "reinforcement" returns Charge Into a Dark World
-    // ahead of Reinforcement of the Army in the API's alphabetical order. Pull
-    // name matches to the front, earliest position first, before any price sort.
     if (!nameQuery) return [];
     const fetchSize = numberSuffix ? 100 : (priceSort ? 60 : PAGE * 3);
-    const data = await getJSON(
-      `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(nameQuery)}&num=${fetchSize}&offset=0`
-    );
-    if (!data || data.error) return [];
+    // YGOPRODeck has one image per card name. TCGplayer has one product per
+    // real printing, so standard art, extended art, and Starlight keep their
+    // own picture and price even when they share the same printed set code.
+    const [products, data] = await Promise.all([
+      searchTcgplayerProducts(nameQuery).catch(() => []),
+      getJSON(
+        `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(nameQuery)}&num=${fetchSize}&offset=0`
+      ).catch(() => null),
+    ]);
     const needle = nameQuery.toLowerCase();
     const rank = (c) => {
       const i = (c.name || '').toLowerCase().indexOf(needle);
       return i < 0 ? Number.MAX_SAFE_INTEGER : i;
     };
-    const cards = priceSort
-      ? sortYugiohByPrice(data.data || [], priceSort)
-      : [...(data.data || [])].sort((a, b) => rank(a) - rank(b));
-    return keepNumber(cards.flatMap((card) => ygoPrintingRows(card))).slice(0, PAGE);
+    const cards = data?.error ? [] : (data?.data || []);
+    const baseRows = cards.flatMap((card) => ygoPrintingRows(card));
+    const productRows = products
+      .filter((product) => String(product.baseName || baseTcgplayerName(product.name)).toLowerCase().includes(needle))
+      .map((product) => {
+        const productName = String(product.baseName || baseTcgplayerName(product.name)).toLowerCase();
+        const productCode = normalizeYgoCode(product.number);
+        const base = baseRows.find((row) => String(row.name || '').toLowerCase() === productName
+          && (!productCode || normalizeYgoCode(row.number) === productCode))
+          || baseRows.find((row) => String(row.name || '').toLowerCase() === productName);
+        return { ...product, id: base?.id || null };
+      });
+    if (productRows.length) {
+      const rows = priceSort
+        ? [...productRows].sort((a, b) => priceSort === 'asc'
+          ? (a.price ?? Infinity) - (b.price ?? Infinity)
+          : (b.price ?? -Infinity) - (a.price ?? -Infinity))
+        : productRows;
+      return keepNumber(rows).slice(0, PAGE);
+    }
+    const ordered = priceSort
+      ? sortYugiohByPrice(cards, priceSort)
+      : [...cards].sort((a, b) => rank(a) - rank(b));
+    return keepNumber(ordered.flatMap((card) => ygoPrintingRows(card))).slice(0, PAGE);
   }
 
   return [];

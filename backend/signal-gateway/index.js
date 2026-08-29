@@ -98,6 +98,53 @@ async function catalogueFetch(body, fetcher = fetch) {
   return { catalogue: true, ok: response.ok, status: response.status, data };
 }
 
+async function tcgplayerSearch(body, fetcher = fetch) {
+  const query = safeText(body.query, 180);
+  const setName = safeText(body.setName, 180);
+  if (query.length < 2) throw Object.assign(new Error('Card name is required.'), { status: 400 });
+  const terms = { productLineName: ['YuGiOh'] };
+  if (setName) terms.setName = [setName];
+  const response = await fetcher(
+    `https://mp-search-api.tcgplayer.com/v1/search/request?q=${encodeURIComponent(query)}&isList=false`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'user-agent': 'SignalTCG/1.0' },
+      signal: AbortSignal.timeout(8000),
+      body: JSON.stringify({
+        algorithm: 'sales_exp_fields_synonym',
+        from: 0,
+        size: 50,
+        filters: { term: terms, range: {}, match: {} },
+        listingSearch: {
+          context: { cart: {} },
+          filters: {
+            term: { sellerStatus: 'Live', channelId: 0 },
+            range: { quantity: { gte: 1 } },
+            exclude: { channelExclusion: 0 },
+          },
+        },
+        context: { cart: {}, shippingCountry: 'US' },
+        settings: { useFuzzySearch: true },
+        sort: {},
+      }),
+    },
+  );
+  if (!response.ok) throw Object.assign(new Error(`TCGplayer returned ${response.status}.`), { status: 502 });
+  const payload = await response.json();
+  const products = (payload?.results?.[0]?.results || []).slice(0, 50).map((item) => ({
+    productId: finite(item?.productId),
+    productName: safeText(item?.productName, 220),
+    setName: safeText(item?.setName, 180),
+    number: safeText(item?.customAttributes?.number, 80),
+    rarityName: safeText(item?.rarityName || item?.customAttributes?.rarityDbName, 100),
+    marketPrice: finite(item?.marketPrice),
+    lowestPrice: finite(item?.lowestPrice),
+    medianPrice: finite(item?.medianPrice),
+    releaseDate: safeText(item?.customAttributes?.releaseDate, 40),
+  })).filter((item) => Number.isInteger(item.productId) && item.productId > 0 && item.productName);
+  return { products };
+}
+
 function decodeHtml(value) {
   return String(value || '')
     .replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'")
@@ -359,6 +406,7 @@ async function handler(req, res) {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     if (body.action === 'health') return res.json({ ok: true, service: 'signal-gateway-v1' });
     if (body.action === 'catalogueFetch') return res.json(await catalogueFetch(body));
+    if (body.action === 'tcgplayerSearch') return res.json(await tcgplayerSearch(body));
     if (body.action === 'yugiohArt') return res.json(await yugiohArt(body));
     if (body.action === 'vision') {
       const result = await callAnthropic(req, body.modelRequest);
@@ -377,5 +425,5 @@ functions.http('signalGateway', handler);
 
 module.exports = {
   handler, hash, finite, validateModelBody, reportDisposition,
-  officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch,
+  officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch, tcgplayerSearch,
 };
