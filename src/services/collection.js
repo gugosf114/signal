@@ -232,6 +232,22 @@ export function removeOne(card) {
   return saveCollection(next);
 }
 
+export function addOne(card, at = null) {
+  const list = loadCollection();
+  const key = cardKey(card);
+  const index = list.findIndex((item) => cardKey(item) === key);
+  if (index < 0) return list;
+  const current = normalizeEntry(list[index]);
+  const added = {
+    ...current,
+    qty: Math.min(MAX_QTY, current.qty + 1),
+    addedAt: at || new Date().toISOString(),
+  };
+  const next = [...list];
+  next.splice(index, 1);
+  return saveCollection([added, ...next]);
+}
+
 export function removeAll(card) {
   const key = cardKey(card);
   return saveCollection(loadCollection().filter((item) => cardKey(item) !== key));

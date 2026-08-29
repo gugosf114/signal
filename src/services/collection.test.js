@@ -16,7 +16,7 @@ globalThis.localStorage = {
 };
 
 const {
-  loadCollection, addToCollection, importCollection, removeOne, removeAll,
+  loadCollection, addToCollection, importCollection, addOne, removeOne, removeAll,
   countCards, collectionValue, collectionValueSummary, cardKey, marketPriceFor,
   formatCollectionMoney, collectionFormLabel, collectionFormOptions, collectionView,
 } = await import('./collection.js');
@@ -97,6 +97,16 @@ describe('collection', () => {
     const list = removeOne(RICH);
     assert.equal(list[0].qty, 2);
     assert.equal(list.length, 1);
+  });
+
+  test('adding one copy keeps the holding and paid history intact', () => {
+    addToCollection(RICH, { quantity: 2, paidPerCard: 50 });
+    const list = addOne(RICH, '2026-08-29T12:00:00.000Z');
+    assert.equal(list.length, 1);
+    assert.equal(list[0].qty, 3);
+    assert.equal(list[0].paidPerCard, 50);
+    assert.equal(list[0].paidKnownQty, 2);
+    assert.equal(list[0].addedAt, '2026-08-29T12:00:00.000Z');
   });
 
   test('removing the last copy removes the row', () => {

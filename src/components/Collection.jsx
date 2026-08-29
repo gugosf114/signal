@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  loadCollection, saveCollection, importCollection, removeOne, removeAll,
+  loadCollection, saveCollection, importCollection, addOne, removeOne, removeAll,
   countCards, collectionValueSummary, cardKey,
   collectionFormLabel, formatCollectionMoney,
   collectionView,
@@ -262,14 +262,20 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
                 {card.imageUrl || card.imageLarge ? (
                   <img src={card.imageUrl || card.imageLarge} alt={card.name} loading="lazy" />
                 ) : <span className="col-noart">{card.name}</span>}
-                {card.qty > 1 && <span className="col-qty">×{card.qty}</span>}
               </button>
-              <button
-                type="button"
-                className="col-remove"
-                aria-label={`Remove one ${card.name}`}
-                onClick={() => setCards(removeOne(card))}
-              >−</button>
+              <div className="col-count-control" role="group" aria-label={`Quantity for ${card.name}`}>
+                <button
+                  type="button"
+                  aria-label={`Remove one ${card.name}`}
+                  onClick={() => setCards(removeOne(card))}
+                >−</button>
+                <span aria-live="polite">{card.qty}</span>
+                <button
+                  type="button"
+                  aria-label={`Add one ${card.name}`}
+                  onClick={() => setCards(addOne(card))}
+                >+</button>
+              </div>
               <div className="col-name">{card.name}</div>
               <div className="col-card-meta">
                 <strong>{formatCollectionMoney(card.marketPrice)}</strong>
