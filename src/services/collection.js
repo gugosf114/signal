@@ -7,6 +7,15 @@ const KEY = 'signal_collection_v1';
 const MAX_ENTRIES = 2000;
 const MAX_QTY = 999;
 const CONDITIONS = new Set(['near_mint', 'lightly_played', 'moderately_played', 'heavily_played', 'damaged']);
+const FORM_LABELS = {
+  pokemon: {
+    normal: 'Normal', holo: 'Holo', reverse: 'Reverse Holo',
+    first_edition_normal: '1st Edition Normal', first_edition_holo: '1st Edition Holo',
+    unlimited_normal: 'Unlimited Normal', unlimited_holo: 'Unlimited Holo',
+  },
+  mtg: { normal: 'Non-foil', foil: 'Foil', etched: 'Etched' },
+  yugioh: { normal: '' },
+};
 
 function cleanQty(value) {
   const qty = Number(value);
@@ -24,12 +33,10 @@ function cleanCondition(value) {
   return CONDITIONS.has(value) ? value : 'near_mint';
 }
 
-function cleanForm(value) {
-  return value === 'reverse' ? 'reverse' : 'normal';
-}
-
 function cleanFormForGame(game, value) {
-  return String(game || '').toLowerCase() === 'yugioh' ? 'normal' : cleanForm(value);
+  const key = String(game || '').toLowerCase();
+  const migrated = key === 'mtg' && value === 'reverse' ? 'foil' : String(value || 'normal');
+  return Object.prototype.hasOwnProperty.call(FORM_LABELS[key] || {}, migrated) ? migrated : 'normal';
 }
 
 function cleanCatalogueImage(value) {
@@ -48,22 +55,23 @@ export function formatCollectionMoney(value) {
   return amount === null ? '—' : `$${amount.toFixed(2)}`;
 }
 
-export function collectionFormOptions(game) {
-  if (game === 'yugioh') return [];
-  if (game === 'mtg') return [
-    { value: 'normal', label: 'Non-foil' },
-    { value: 'reverse', label: 'Foil' },
-  ];
-  return [
-    { value: 'normal', label: 'Normal' },
-    { value: 'reverse', label: 'Reverse' },
-  ];
+export function collectionFormOptions(game, card = null) {
+  const key = String(game || '').toLowerCase();
+  if (key === 'yugioh') return [];
+  const labels = FORM_LABELS[key] || FORM_LABELS.pokemon;
+  const listed = Array.isArray(card?.availableFinishes)
+    ? card.availableFinishes
+    : Object.keys(card?.marketPrices || {});
+  const defaults = key === 'mtg' ? ['normal', 'foil'] : ['normal', 'reverse'];
+  const forms = [...new Set((listed.length ? listed : defaults)
+    .map((form) => cleanFormForGame(key, form))
+    .filter((form) => Object.prototype.hasOwnProperty.call(labels, form)))];
+  return forms.map((value) => ({ value, label: labels[value] }));
 }
 
 export function collectionFormLabel(game, form) {
-  if (game === 'yugioh') return '';
-  if (game === 'mtg') return cleanForm(form) === 'reverse' ? 'Foil' : 'Non-foil';
-  return cleanForm(form) === 'reverse' ? 'Reverse' : 'Normal';
+  const key = String(game || '').toLowerCase();
+  return FORM_LABELS[key]?.[cleanFormForGame(key, form)] || '';
 }
 
 function baseCardKey(card) {
@@ -88,10 +96,10 @@ export function marketPriceFor(card, form = card?.form) {
   const variants = card?.marketPrices && typeof card.marketPrices === 'object'
     ? card.marketPrices
     : {};
-  const picked = selectedForm === 'reverse'
-    ? (variants.reverse ?? variants.normal)
-    : (variants.normal ?? variants.reverse);
-  return cleanMoney(picked ?? card?.marketPrice ?? card?.price);
+  const picked = variants[selectedForm];
+  const cardForm = cleanFormForGame(card?.game, card?.form);
+  const rowPrice = selectedForm === cardForm ? (card?.marketPrice ?? card?.price) : null;
+  return cleanMoney(picked ?? rowPrice);
 }
 
 function normalizeEntry(card) {
@@ -116,6 +124,8 @@ function normalizeEntry(card) {
     setId: card.setId || null,
     number: card.number || null,
     rarity: card.rarity || null,
+    finish: card.finish || null,
+    availableFinishes: Array.isArray(card.availableFinishes) ? [...card.availableFinishes] : null,
     scanImagePath: null,
     imageUrl: smallImage || largeImage,
     imageLarge: largeImage || smallImage,
@@ -127,7 +137,9 @@ function normalizeEntry(card) {
     qty,
     marketPrice: marketPriceFor(card),
     marketPrices: card.marketPrices && typeof card.marketPrices === 'object'
-      ? { normal: cleanMoney(card.marketPrices.normal), reverse: cleanMoney(card.marketPrices.reverse) }
+      ? Object.fromEntries(Object.entries(card.marketPrices)
+        .filter(([form]) => Object.prototype.hasOwnProperty.call(FORM_LABELS[card.game] || {}, cleanFormForGame(card.game, form)))
+        .map(([form, value]) => [cleanFormForGame(card.game, form), cleanMoney(value)]))
       : null,
     paidPerCard,
     paidKnownQty: paidPerCard === null ? 0 : Math.max(1, Math.min(qty, cleanQty(card.paidKnownQty || qty))),

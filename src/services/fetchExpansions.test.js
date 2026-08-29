@@ -2,7 +2,8 @@ import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  cardBrowserRowKey, cardNumberEndsWith, fetchYgoPrintingsByPasscode, normalizeCardBrowserResults,
+  cardBrowserRowKey, cardNumberEndsWith, expandFinishRows, fetchYgoPrintingsByPasscode, mtgRow,
+  normalizeCardBrowserResults, pokemonRow,
   parseCardLookupQuery, parseExpansionCache, resolvePrinting,
   resolvePrintingOptions, searchCardsByName, selectRecentMtgSets, selectRecentYugiohSets,
   selectRecentTcgDexPokemonSets, suggestCards, ygoPrintingRows,
@@ -10,6 +11,35 @@ import {
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
+
+describe('Pokémon and Magic finish rows', () => {
+  test('Pokémon exposes every priced finish as its own choice', () => {
+    const rows = expandFinishRows(pokemonRow({
+      id: 'sv-test-1', name: 'Test Pokémon', number: '1', set: { id: 'sv-test', name: 'Test Set' },
+      tcgplayer: { prices: {
+        normal: { market: 2.25 }, holofoil: { market: 7.5 }, reverseHolofoil: { market: 4.75 },
+      } },
+      images: { small: 'small.jpg', large: 'large.jpg' },
+    }));
+    assert.deepEqual(rows.map((row) => [row.form, row.finish, row.price]), [
+      ['normal', 'Normal', 2.25], ['holo', 'Holo', 7.5], ['reverse', 'Reverse Holo', 4.75],
+    ]);
+    assert.equal(new Set(rows.map(cardBrowserRowKey)).size, 3);
+  });
+
+  test('Magic exposes non-foil, foil, and etched as separate choices', () => {
+    const rows = expandFinishRows(mtgRow({
+      id: 'mtg-test-1', name: 'Test Mage', set: 'tst', set_name: 'Test Set', collector_number: '9',
+      rarity: 'rare', finishes: ['nonfoil', 'foil', 'etched'],
+      prices: { usd: '3.00', usd_foil: '8.50', usd_etched: '11.25' },
+      image_uris: { small: 'small.jpg', large: 'large.jpg' },
+    }));
+    assert.deepEqual(rows.map((row) => [row.form, row.finish, row.price]), [
+      ['normal', 'Non-foil', 3], ['foil', 'Foil', 8.5], ['etched', 'Etched', 11.25],
+    ]);
+    assert.equal(new Set(rows.map(cardBrowserRowKey)).size, 3);
+  });
+});
 
 const blueEyes = {
   id: 89631139,

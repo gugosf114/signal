@@ -61,7 +61,7 @@ describe('scanner batch', () => {
   });
 
   test('batch finish choices follow each game', () => {
-    assert.deepEqual(scannerBatchFormOptions('pokemon').map((item) => item.label), ['Normal', 'Reverse']);
+    assert.deepEqual(scannerBatchFormOptions('pokemon').map((item) => item.label), ['Normal', 'Reverse Holo']);
     assert.deepEqual(scannerBatchFormOptions('mtg').map((item) => item.label), ['Non-foil', 'Foil']);
     assert.deepEqual(scannerBatchFormOptions('yugioh'), []);
   });

@@ -280,8 +280,21 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
           setScanError('That exact card number was not found.');
           return;
         }
+        const choices = await resolvePrintingOptions({
+          name: hit.name,
+          game: hit.game,
+          number: hit.number || hit.setCode,
+          set: hit.setName || hit.setId,
+        }).catch(() => []);
+        if (choices.length > 1) {
+          setSuggestions(choices);
+          setActive(-1);
+          setOpen(true);
+          setScanError('Choose the exact finish from the list.');
+          return;
+        }
         const priced = await addTcgplayerPrice(
-          hit,
+          choices[0] || hit,
           undefined,
           { requireProductId: hit.game === 'yugioh' },
         );
@@ -576,6 +589,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
                       {card.setName || 'Unknown set'}
                       {card.number ? ` · ${card.number}` : ''}
                       {card.rarity ? ` · ${card.rarity}` : ''}
+                      {card.finish ? ` · ${card.finish}` : ''}
                     </span>
                   </span>
                   {card.price != null && (

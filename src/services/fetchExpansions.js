@@ -28,7 +28,7 @@ function suggestionSearch(promise) {
 export function cardBrowserRowKey(card) {
   const identity = card?.printingId || card?.id
     || [card?.name, card?.setName, card?.number].filter(Boolean).join(':');
-  return [card?.game || 'unknown', identity || 'unknown', card?.rarity || ''].join(':');
+  return [card?.game || 'unknown', identity || 'unknown', card?.rarity || '', card?.form || ''].join(':');
 }
 
 export function normalizeCardBrowserResults(results, activeGame) {
@@ -45,14 +45,55 @@ export function looksLikeYgoPasscode(input) {
   return /^\d{8}$/.test(String(input || '').trim());
 }
 
-function pokemonRow(c, fallbackSetName = '') {
+const POKEMON_FINISHES = [
+  { form: 'normal', label: 'Normal', keys: ['normal'] },
+  { form: 'holo', label: 'Holo', keys: ['holofoil'] },
+  { form: 'reverse', label: 'Reverse Holo', keys: ['reverseHolofoil', 'reverse-holofoil'] },
+  { form: 'first_edition_normal', label: '1st Edition Normal', keys: ['1stEditionNormal', '1st-edition-normal'] },
+  { form: 'first_edition_holo', label: '1st Edition Holo', keys: ['1stEditionHolofoil', '1st-edition-holofoil'] },
+  { form: 'unlimited_normal', label: 'Unlimited Normal', keys: ['unlimitedNormal', 'unlimited-normal'] },
+  { form: 'unlimited_holo', label: 'Unlimited Holo', keys: ['unlimitedHolofoil', 'unlimited-holofoil'] },
+];
+
+const MTG_FINISHES = [
+  { form: 'normal', label: 'Non-foil' },
+  { form: 'foil', label: 'Foil' },
+  { form: 'etched', label: 'Etched' },
+];
+
+function pokemonPrices(variants, readMarket) {
+  const marketPrices = {};
+  const availableFinishes = [];
+  for (const finish of POKEMON_FINISHES) {
+    const key = finish.keys.find((name) => Object.prototype.hasOwnProperty.call(variants, name));
+    if (!key) continue;
+    availableFinishes.push(finish.form);
+    marketPrices[finish.form] = readMarket(variants[key]);
+  }
+  return { marketPrices, availableFinishes };
+}
+
+export function expandFinishRows(row) {
+  if (!row || !['pokemon', 'mtg'].includes(row.game)) return row ? [row] : [];
+  const definitions = row.game === 'pokemon' ? POKEMON_FINISHES : MTG_FINISHES;
+  const prices = row.marketPrices || {};
+  const wanted = new Set(row.availableFinishes || Object.keys(prices));
+  let finishes = definitions.filter((finish) => wanted.has(finish.form));
+  if (!finishes.length) finishes = [definitions[0]];
+  return finishes.map((finish) => ({
+    ...row,
+    form: finish.form,
+    finish: finish.label,
+    price: prices[finish.form] ?? null,
+    priceScope: 'exact finish',
+  }));
+}
+
+export function pokemonRow(c, fallbackSetName = '') {
   const variants = c.tcgplayer?.prices || {};
-  const market = (value) => Number.isFinite(value?.market) ? value.market : null;
-  const normalPrice = market(variants.normal)
-    ?? market(variants.holofoil)
-    ?? market(variants['1stEditionHolofoil'])
-    ?? market(variants.unlimitedHolofoil);
-  const reversePrice = market(variants.reverseHolofoil);
+  const market = (value) => Number.isFinite(value?.market) && value.market > 0 ? value.market : null;
+  const { marketPrices, availableFinishes } = pokemonPrices(variants, market);
+  const firstPrice = Object.values(marketPrices).find((value) => value != null) ?? null;
   return {
     id: c.id,
     printingId: c.id,
@@ -63,16 +104,24 @@ function pokemonRow(c, fallbackSetName = '') {
     number: c.number || null,
     printedTotal: c.set?.printedTotal || c.set?.total || null,
     rarity: c.rarity || null,
-    price: normalPrice ?? reversePrice,
-    marketPrices: { normal: normalPrice, reverse: reversePrice },
+    price: firstPrice,
+    marketPrices,
+    availableFinishes,
     imageUrl: c.images?.small || null,
     imageLarge: c.images?.large || c.images?.small || null,
   };
 }
 
-function mtgRow(c, fallbackSetName = '') {
+export function mtgRow(c, fallbackSetName = '') {
   const normalPrice = c.prices?.usd ? Number(c.prices.usd) : null;
-  const reversePrice = c.prices?.usd_foil ? Number(c.prices.usd_foil) : null;
+  const foilPrice = c.prices?.usd_foil ? Number(c.prices.usd_foil) : null;
+  const etchedPrice = c.prices?.usd_etched ? Number(c.prices.usd_etched) : null;
+  const marketPrices = { normal: normalPrice, foil: foilPrice, etched: etchedPrice };
+  const sourceFinishes = new Set(Array.isArray(c.finishes) ? c.finishes : []);
+  const availableFinishes = MTG_FINISHES
+    .filter((finish) => sourceFinishes.has(finish.form === 'normal' ? 'nonfoil' : finish.form)
+      || marketPrices[finish.form] != null)
+    .map((finish) => finish.form);
   return {
     id: c.id,
     printingId: c.id,
@@ -82,8 +131,9 @@ function mtgRow(c, fallbackSetName = '') {
     setId: c.set || null,
     number: c.collector_number || null,
     rarity: c.rarity || null,
-    price: normalPrice ?? reversePrice,
-    marketPrices: { normal: normalPrice, reverse: reversePrice },
+    price: normalPrice ?? foilPrice ?? etchedPrice,
+    marketPrices,
+    availableFinishes,
     imageUrl: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || null,
     imageLarge: mtgLargeArt(c),
   };
@@ -213,6 +263,30 @@ export async function resolvePrintingOptions(input = {}) {
     }
   }
 
+  if (input.game === 'pokemon' || input.game === 'mtg') {
+    const rows = await searchCardsByName(input.game, name, null).catch(() => []);
+    const exactName = rows.filter((row) => String(row.name || '').trim().toLowerCase() === name.toLowerCase());
+    const pool = exactName.length ? exactName : rows;
+    const wantedNumber = String(input.number || '').split('/')[0].trim().toLowerCase();
+    const rawSet = String(input.set || '').trim().toLowerCase();
+    const wantedSet = /unknown|unable|unreadable|not (?:clear|visible)/i.test(rawSet) ? '' : rawSet;
+    const matches = pool.filter((row) => {
+      const number = String(row.number || '').trim().toLowerCase();
+      const numberMatches = !wantedNumber || number === wantedNumber
+        || cardNumberEndsWith(number, wantedNumber);
+      const setName = String(row.setName || '').trim().toLowerCase();
+      const setId = String(row.setId || '').trim().toLowerCase();
+      const setMatches = !wantedSet || setName === wantedSet || setId === wantedSet
+        || setName.includes(wantedSet) || wantedSet.includes(setName);
+      return numberMatches && setMatches;
+    });
+    const unique = [...new Map(matches.map((row) => [
+      `${row.printingId || row.id}:${row.form || 'normal'}`,
+      row,
+    ])).values()];
+    if (unique.length) return unique.slice(0, 8);
+  }
+
   const pin = await resolvePrinting(input);
   return pin ? [pin] : [];
 }
@@ -292,15 +366,12 @@ function tcgdexPrices(card) {
     const value = Number(entry?.marketPrice);
     return Number.isFinite(value) && value > 0 ? value : null;
   };
-  const normal = market(prices.normal) ?? market(prices.holofoil)
-    ?? market(prices['1st-edition-holofoil']) ?? market(prices['unlimited-holofoil']);
-  const reverse = market(prices['reverse-holofoil']);
-  return { normal, reverse };
+  return pokemonPrices(prices, market);
 }
 
 function tcgdexPokemonRow(card, fallbackSet = null) {
   const images = tcgdexImages(card?.image);
-  const prices = tcgdexPrices(card);
+  const { marketPrices, availableFinishes } = tcgdexPrices(card);
   const set = card?.set || fallbackSet || {};
   return {
     id: card?.id || null,
@@ -312,8 +383,9 @@ function tcgdexPokemonRow(card, fallbackSet = null) {
     number: card?.localId || null,
     printedTotal: set.cardCount?.official || fallbackSet?.cardCount?.official || null,
     rarity: card?.rarity || null,
-    price: prices.normal ?? prices.reverse,
-    marketPrices: prices,
+    price: Object.values(marketPrices).find((value) => value != null) ?? null,
+    marketPrices,
+    availableFinishes,
     imageUrl: images.small,
     imageLarge: images.large,
     source: 'tcgdex',
@@ -365,7 +437,7 @@ async function fetchTcgDexRecentSets() {
 
 async function fetchTcgDexPokemonCard(cardId) {
   const card = await getJSON(`${TCGDEX_BASE}/cards/${encodeURIComponent(cardId)}`, 2);
-  return card ? tcgdexPokemonRow(card) : null;
+  return card ? expandFinishRows(tcgdexPokemonRow(card)) : [];
 }
 
 async function fetchTcgDexSetCards(set, priceSort = null) {
@@ -377,7 +449,7 @@ async function fetchTcgDexSetCards(set, priceSort = null) {
   else if (all.length <= 100) pool = all;
   else pool = priceSort === 'asc' ? all.slice(0, 80) : all.slice(-100);
   const settled = await Promise.allSettled(pool.map((card) => fetchTcgDexPokemonCard(card.id)));
-  const rows = settled.filter((result) => result.status === 'fulfilled' && result.value).map((result) => result.value);
+  const rows = settled.flatMap((result) => result.status === 'fulfilled' ? result.value : []);
   if (!priceSort) return rows.slice(0, PAGE);
   return rows.sort((a, b) => {
     if (a.price == null) return 1;
@@ -396,7 +468,7 @@ async function searchTcgDexPokemonCards(query, numberSuffix = null) {
     ? cards.filter((card) => cardNumberEndsWith(card.localId, numberSuffix))
     : cards;
   const settled = await Promise.allSettled(selected.slice(0, PAGE).map((card) => fetchTcgDexPokemonCard(card.id)));
-  return settled.filter((result) => result.status === 'fulfilled' && result.value).map((result) => result.value);
+  return settled.flatMap((result) => result.status === 'fulfilled' ? result.value : []);
 }
 
 async function fetchPokemonSets() {
@@ -571,7 +643,7 @@ export async function fetchLatestCardsForGame(game, priceSort = null) {
           'https://api.pokemontcg.io/v2/cards?q=' + encodeURIComponent(`set.releaseDate:[* TO ${today}]`) +
           `&pageSize=${priceSort ? 100 : PAGE}&orderBy=${encodeURIComponent(pokemonOrderBy(priceSort))}`
         );
-        const rows = sortPokemonByPrice(data?.data || [], priceSort).slice(0, PAGE).map((c) => pokemonRow(c));
+        const rows = sortPokemonByPrice(data?.data || [], priceSort).slice(0, PAGE).flatMap((c) => expandFinishRows(pokemonRow(c)));
         if (rows.length) return rows;
       } catch {}
       const sets = await fetchTcgDexRecentSets();
@@ -583,7 +655,7 @@ export async function fetchLatestCardsForGame(game, priceSort = null) {
         `&${mtgOrder(priceSort)}&unique=cards`
       );
       if (!data) return [];
-      return (data.data || []).slice(0, PAGE).map((c) => mtgRow(c));
+      return (data.data || []).slice(0, PAGE).flatMap((c) => expandFinishRows(mtgRow(c))).slice(0, PAGE);
     }
     if (game === 'yugioh') {
       const sets = await fetchYugiohSets();
@@ -610,7 +682,7 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
         const data = await getJSON(
           `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent('set.id:' + set.id)}&pageSize=${priceSort ? 100 : PAGE}&orderBy=${encodeURIComponent(orderBy)}`
         );
-        const rows = sortPokemonByPrice(data?.data || [], priceSort).slice(0, PAGE).map((c) => pokemonRow(c, set.name));
+        const rows = sortPokemonByPrice(data?.data || [], priceSort).slice(0, PAGE).flatMap((c) => expandFinishRows(pokemonRow(c, set.name)));
         if (rows.length) return rows;
       } catch {}
       return fetchTcgDexSetCards({ ...set, source: 'tcgdex' }, priceSort);
@@ -623,7 +695,7 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
         `https://api.scryfall.com/cards/search?q=${encodeURIComponent('s:' + set.code + ' game:paper')}&${orderStr}&unique=cards`
       );
       if (!data) return [];
-      return (data.data || []).slice(0, PAGE).map((c) => mtgRow(c, set.name));
+      return (data.data || []).slice(0, PAGE).flatMap((c) => expandFinishRows(mtgRow(c, set.name))).slice(0, PAGE);
     }
     if (game === 'yugioh') {
       const fetchSize = priceSort ? 60 : 21;
@@ -679,7 +751,7 @@ export async function searchCardsByName(game, query, priceSort = null) {
         `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(pokemonQuery)}` +
         `&pageSize=${pageSize}&orderBy=${encodeURIComponent(order)}`
       );
-      const rows = sortPokemonByPrice(data?.data || [], priceSort).map((c) => pokemonRow(c));
+      const rows = sortPokemonByPrice(data?.data || [], priceSort).flatMap((c) => expandFinishRows(pokemonRow(c)));
       if (rows.length) return keepNumber(rows).slice(0, PAGE);
     } catch {}
     return searchTcgDexPokemonCards(nameQuery || '', numberSuffix);
@@ -693,7 +765,7 @@ export async function searchCardsByName(game, query, priceSort = null) {
       `&${mtgOrder(priceSort)}&unique=prints`
     );
     if (!data) return [];
-    return keepNumber((data.data || []).map((c) => mtgRow(c))).slice(0, PAGE);
+    return keepNumber((data.data || []).flatMap((c) => expandFinishRows(mtgRow(c)))).slice(0, PAGE);
   }
 
   if (game === 'yugioh') {

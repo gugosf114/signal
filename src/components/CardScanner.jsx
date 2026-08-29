@@ -661,7 +661,7 @@ const CardScanner = forwardRef(function CardScanner({
               <div className="live-batch-list">
                 {batch.map((entry) => {
                   const item = scannerMatchDetails(entry.match);
-                  const forms = scannerBatchFormOptions(item.game);
+                  const forms = scannerBatchFormOptions(item.game, entry.match?.pin);
                   return (
                     <article className="live-batch-item" key={entry.id}>
                       {item.imageUrl

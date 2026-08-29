@@ -231,12 +231,35 @@ describe('collection', () => {
   });
 
   test('form labels follow the game instead of calling every finish reverse', () => {
-    assert.equal(collectionFormLabel('pokemon', 'reverse'), 'Reverse');
+    assert.equal(collectionFormLabel('pokemon', 'reverse'), 'Reverse Holo');
+    assert.equal(collectionFormLabel('pokemon', 'holo'), 'Holo');
     assert.equal(collectionFormLabel('mtg', 'normal'), 'Non-foil');
-    assert.equal(collectionFormLabel('mtg', 'reverse'), 'Foil');
+    assert.equal(collectionFormLabel('mtg', 'foil'), 'Foil');
+    assert.equal(collectionFormLabel('mtg', 'etched'), 'Etched');
     assert.equal(collectionFormLabel('yugioh', 'normal'), '');
     assert.deepEqual(collectionFormOptions('mtg').map((option) => option.label), ['Non-foil', 'Foil']);
     assert.deepEqual(collectionFormOptions('yugioh'), []);
+  });
+
+  test('each Pokémon and Magic finish keeps its own collection price', () => {
+    const pokemon = {
+      ...RICH, form: 'holo', finish: 'Holo',
+      availableFinishes: ['normal', 'holo', 'reverse'],
+      marketPrices: { normal: 2.25, holo: 7.5, reverse: 4.75 }, price: 7.5,
+    };
+    assert.deepEqual(collectionFormOptions('pokemon', pokemon).map((option) => option.label),
+      ['Normal', 'Holo', 'Reverse Holo']);
+    assert.equal(marketPriceFor(pokemon, 'holo'), 7.5);
+    assert.equal(marketPriceFor(pokemon, 'reverse'), 4.75);
+
+    const mtg = {
+      id: 'mtg-etched', game: 'mtg', name: 'Test Mage', form: 'etched',
+      availableFinishes: ['normal', 'foil', 'etched'],
+      marketPrices: { normal: 3, foil: 8.5, etched: 11.25 }, price: 11.25,
+    };
+    assert.deepEqual(collectionFormOptions('mtg', mtg).map((option) => option.label),
+      ['Non-foil', 'Foil', 'Etched']);
+    assert.equal(marketPriceFor(mtg, 'etched'), 11.25);
   });
 
   test('Yu-Gi-Oh exact printings ignore a synthetic reverse form', () => {

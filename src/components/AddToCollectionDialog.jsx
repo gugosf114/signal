@@ -28,7 +28,7 @@ export default function AddToCollectionDialog({ card, isOpen, onClose, onAdded }
   useEffect(() => {
     if (!isOpen) return;
     setCondition('near_mint');
-    setForm('normal');
+    setForm(card?.form || 'normal');
     setQuantity(1);
     setPaid('');
     const prior = document.activeElement;
@@ -58,7 +58,7 @@ export default function AddToCollectionDialog({ card, isOpen, onClose, onAdded }
   if (!isOpen || !card) return null;
 
   const marketPrice = marketPriceFor(card, form);
-  const formOptions = collectionFormOptions(card.game);
+  const formOptions = collectionFormOptions(card.game, card);
   const submit = (event) => {
     event.preventDefault();
     const list = addToCollection(card, {

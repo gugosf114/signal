@@ -1,3 +1,5 @@
+import { collectionFormOptions, marketPriceFor } from './collection.js';
+
 const GAME_LABELS = {
   pokemon: 'Pokémon',
   mtg: 'Magic',
@@ -22,6 +24,8 @@ export function scannerMatchDetails(match = {}) {
     setName: clean(source.setName) || clean(source.set) || clean(vision.set) || 'Set unknown',
     number: clean(source.number) || clean(source.setCode) || clean(vision.number) || clean(vision.passcode) || null,
     rarity: clean(source.rarity) || null,
+    finish: clean(source.finish) || null,
+    form: source.form || 'normal',
     imageUrl: clean(source.imageUrl) || null,
     price: Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : null,
     confidence: clean(vision.confidence) || null,
@@ -29,7 +33,7 @@ export function scannerMatchDetails(match = {}) {
 }
 
 export function scannerMatchMeta(details = {}) {
-  return [details.setName, details.number, details.rarity].filter(Boolean).join(' · ');
+  return [details.setName, details.number, details.rarity, details.finish].filter(Boolean).join(' · ');
 }
 
 export function scannerMatchPrice(details = {}) {
@@ -38,16 +42,8 @@ export function scannerMatchPrice(details = {}) {
     : 'Price unavailable';
 }
 
-export function scannerBatchFormOptions(game) {
-  if (game === 'yugioh') return [];
-  if (game === 'mtg') return [
-    { value: 'normal', label: 'Non-foil' },
-    { value: 'reverse', label: 'Foil' },
-  ];
-  return [
-    { value: 'normal', label: 'Normal' },
-    { value: 'reverse', label: 'Reverse' },
-  ];
+export function scannerBatchFormOptions(game, card = null) {
+  return collectionFormOptions(game, card);
 }
 
 export function createScannerBatchEntry(match, id) {
@@ -57,14 +53,14 @@ export function createScannerBatchEntry(match, id) {
     match,
     quantity: 1,
     condition: 'near_mint',
-    form: 'normal',
+    form: match.pin.form || 'normal',
   };
 }
 
 export function scannerBatchSummary(entries) {
   const result = (Array.isArray(entries) ? entries : []).reduce((summary, entry) => {
     const qty = Math.max(1, Math.min(999, Math.floor(Number(entry?.quantity) || 1)));
-    const price = Number(entry?.match?.pin?.price);
+    const price = Number(marketPriceFor(entry?.match?.pin, entry?.form));
     summary.cards += qty;
     if (Number.isFinite(price) && price > 0) summary.value += price * qty;
     else summary.unpriced += qty;
