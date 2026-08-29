@@ -43,7 +43,7 @@ export default function QuickPicks({ onSelect, loading }) {
   return (
     <div style={{
       width: '100%',
-      border: '1px solid #2A2D34',
+      border: '0.5px solid #C44040',
       borderRadius: 4,
       padding: '14px 16px 12px',
       background: 'rgba(20, 22, 26, 0.35)',

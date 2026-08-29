@@ -102,7 +102,7 @@ function ScoreTile({ data, isSample }) {
       position: 'relative',
       flex: 1,
       background: '#0E1014',
-      border: '1px solid #1A1D24',
+      border: '0.5px solid #C44040',
       borderRadius: 3,
       padding: '18px 20px',
       display: 'flex',
@@ -204,7 +204,7 @@ function PriceTile({ prices }) {
     <div style={{
       flex: 1,
       background: '#0B0D10',
-      border: '1px solid #1A1D24',
+      border: '0.5px solid #C44040',
       borderRadius: 3,
       overflow: 'hidden',
       minWidth: 0,
@@ -235,7 +235,7 @@ function SignalTile({ creator }) {
     <div style={{
       flex: 1,
       background: '#0E1014',
-      border: '1px solid #1A1D24',
+      border: '0.5px solid #C44040',
       borderRadius: 3,
       padding: '18px 20px',
       minWidth: 0,
