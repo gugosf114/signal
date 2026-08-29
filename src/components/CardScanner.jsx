@@ -605,11 +605,13 @@ const CardScanner = forwardRef(function CardScanner({
             <p className="live-match-check">
               {candidates.length > 0
                 ? 'Pick the printing that matches your card.'
-                : batchMode
-                  ? 'Check the exact printing before keeping this card.'
-                  : priceOnly
-                    ? 'Price lookup complete. No full Signal report has run.'
-                    : 'Check the exact printing before starting the paid full report.'}
+                : details.exact
+                  ? (batchMode
+                    ? 'Check the exact printing before keeping this card.'
+                    : priceOnly
+                      ? 'Price lookup complete. No full Signal report has run.'
+                      : 'Check the exact printing before starting the paid full report.')
+                  : 'No exact printing is selected yet.'}
             </p>
             <div className={`live-match-actions ${details.exact ? 'live-match-actions--complete' : ''}`}>
               {details.exact ? (

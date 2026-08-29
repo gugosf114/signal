@@ -273,6 +273,34 @@ describe('live expansion shelf', () => {
 });
 
 describe('camera printing resolution', () => {
+  test('an AI-guessed set cannot erase exact-name Magic printings', async () => {
+    const lonelyMountain = {
+      id: 'lonely-248', name: 'The Lonely Mountain', set: 'hob', set_name: 'The Hobbit',
+      collector_number: '248', rarity: 'rare', finishes: ['nonfoil', 'foil'],
+      prices: { usd: '21.76', usd_foil: '23.57', usd_etched: null },
+      image_uris: { small: 'lonely-small.jpg', large: 'lonely-large.jpg' },
+    };
+    globalThis.fetch = async (_url, init = {}) => {
+      const body = JSON.parse(init.body || '{}');
+      if (body.action === 'catalogueFetch') {
+        return {
+          ok: true, status: 200,
+          async json() {
+            return { catalogue: true, ok: true, status: 200, data: { data: [lonelyMountain] } };
+          },
+        };
+      }
+      return { ok: false, status: 400, async json() { return {}; } };
+    };
+    const options = await resolvePrintingOptions({
+      name: 'The Lonely Mountain', game: 'mtg', set: 'Wilds of Eldraine', number: null,
+    });
+    assert.deepEqual(options.map((row) => [row.setName, row.finish, row.price]), [
+      ['The Hobbit', 'Non-foil', 21.76],
+      ['The Hobbit', 'Foil', 23.57],
+    ]);
+  });
+
   test('one bad code letter cannot turn Chaos Magical Hats into an unrelated card', async () => {
     assert.equal(namesCompatibleForCode('Hydradius Harmonia', 'Fydraulis Harmonia'), true);
     assert.equal(namesCompatibleForCode('Chaos Magical Hats', "D/D/D Oracle King d'Arc"), false);

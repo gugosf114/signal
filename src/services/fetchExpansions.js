@@ -315,7 +315,11 @@ export async function resolvePrintingOptions(input = {}) {
         || setName.includes(wantedSet) || wantedSet.includes(setName);
       return numberMatches && setMatches;
     });
-    const unique = [...new Map(matches.map((row) => [
+    // Vision's set label is a hint, not an identity. If the name is exact and
+    // there is no readable collector number, a wrong set guess must not erase
+    // the real catalogue printings. Show those printings and let the owner pick.
+    const choices = matches.length ? matches : (!wantedNumber ? pool : []);
+    const unique = [...new Map(choices.map((row) => [
       `${row.printingId || row.id}:${row.form || 'normal'}`,
       row,
     ])).values()];
