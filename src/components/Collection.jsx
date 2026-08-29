@@ -17,7 +17,7 @@ import { fetchCardImage } from '../services/fetchCardImage';
 import CardLightbox from './CardLightbox';
 import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
-import pokeBallMark from '../assets/binders/poke-ball.png';
+import pokeBallMark from '../assets/binders/poke-ball.svg';
 import yugiohTcgLogo from '../assets/binders/yugioh-tcg-logo.png';
 import magicLogo from '../assets/binders/magic-logo.png';
 
