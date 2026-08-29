@@ -42,6 +42,12 @@ export function scannerMatchPrice(details = {}) {
     : 'Price unavailable';
 }
 
+export function scannerPrintingKey(card = {}) {
+  const identity = card.tcgplayerProductId || card.printingId || card.id
+    || [card.name, card.setName, card.number].filter(Boolean).join(':');
+  return [identity || 'unknown', card.form || 'normal', card.rarity || ''].join(':');
+}
+
 export function scannerBatchFormOptions(game, card = null) {
   return collectionFormOptions(game, card);
 }

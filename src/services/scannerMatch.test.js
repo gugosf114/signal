@@ -7,6 +7,7 @@ import {
   scannerMatchDetails,
   scannerMatchMeta,
   scannerMatchPrice,
+  scannerPrintingKey,
 } from './scannerMatch.js';
 
 describe('scanner match display', () => {
@@ -44,6 +45,12 @@ describe('scanner match display', () => {
 });
 
 describe('scanner batch', () => {
+  test('same card finishes remain different scanner choices', () => {
+    const normal = { printingId: 'pkm-1', form: 'normal', rarity: 'Uncommon' };
+    const reverse = { printingId: 'pkm-1', form: 'reverse', rarity: 'Uncommon' };
+    assert.notEqual(scannerPrintingKey(normal), scannerPrintingKey(reverse));
+  });
+
   test('one exact match becomes one near-mint queue entry', () => {
     const match = { pin: { name: 'Black Lotus', game: 'mtg', price: 1000 } };
     assert.deepEqual(createScannerBatchEntry(match, 'row-1'), {

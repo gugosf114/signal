@@ -14,6 +14,7 @@ import {
   scannerMatchDetails,
   scannerMatchMeta,
   scannerMatchPrice,
+  scannerPrintingKey,
 } from '../services/scannerMatch';
 import { setScannerOverlayProtection } from '../services/scannerDisplay';
 
@@ -443,7 +444,7 @@ const CardScanner = forwardRef(function CardScanner({
     ? { ...match, card: { ...(match.card || {}), name: candidates[0].name, game: candidates[0].game } }
     : match;
   const details = scannerMatchDetails(displayMatch || {});
-  const needsChoice = candidates.length > 1 && !match?.pin;
+  const needsChoice = candidates.length > 0 && !match?.pin;
   const cameraVisible = phase === 'opening' || phase === 'ready' || phase === 'capturing';
 
   return (
@@ -560,7 +561,7 @@ const CardScanner = forwardRef(function CardScanner({
           <section className="live-scan-match" aria-label="Matched card">
             <div className="live-match-heading">
               <span className={`live-match-chip ${details.exact ? 'live-match-chip--exact' : ''}`}>
-                {candidates.length > 1 ? (match.pin ? 'Printing selected' : 'Choose printing') : (details.exact ? 'Exact match' : 'Needs a check')}
+                {candidates.length > 0 ? (match.pin ? 'Printing selected' : 'Choose printing') : (details.exact ? 'Exact match' : 'Needs a check')}
               </span>
               <span>
                 {batchMode ? 'Batch price lookup' : priceOnly ? 'Price only' : 'Full Signal'}
@@ -578,20 +579,23 @@ const CardScanner = forwardRef(function CardScanner({
               </div>
               <b>{scannerMatchPrice(details)}</b>
             </div>
-            {candidates.length > 1 && (
+            {candidates.length > 0 && (
               <div className="live-match-options" role="group" aria-label="Choose the card printing">
                 {candidates.map((option) => {
                   const optionDetails = scannerMatchDetails({ card: match.card, pin: option });
-                  const selected = match.pin?.printingId === option.printingId;
+                  const selected = match.pin && scannerPrintingKey(match.pin) === scannerPrintingKey(option);
                   return (
                     <button
                       type="button"
-                      key={`${option.printingId}-${option.rarity}`}
+                      key={scannerPrintingKey(option)}
                       className={selected ? 'live-match-option live-match-option--selected' : 'live-match-option'}
                       onClick={() => chooseCandidate(option)}
                       aria-pressed={selected}
                     >
-                      <span><strong>{option.rarity || 'Unknown rarity'}</strong><small>{option.number || option.setName}</small></span>
+                      <span>
+                        <strong>{option.name || option.finish || option.rarity || 'Unknown printing'}</strong>
+                        <small>{[option.finish, option.rarity, option.number || option.setName].filter(Boolean).join(' · ')}</small>
+                      </span>
                       <b>{scannerMatchPrice(optionDetails)}</b>
                     </button>
                   );
@@ -599,7 +603,7 @@ const CardScanner = forwardRef(function CardScanner({
               </div>
             )}
             <p className="live-match-check">
-              {candidates.length > 1
+              {candidates.length > 0
                 ? 'Pick the printing that matches your card.'
                 : batchMode
                   ? 'Check the exact printing before keeping this card.'

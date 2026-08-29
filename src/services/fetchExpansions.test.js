@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   cardBrowserRowKey, cardNumberEndsWith, expandFinishRows, fetchYgoPrintingsByPasscode, mtgRow,
-  normalizeCardBrowserResults, pokemonRow,
+  namesCompatibleForCode, normalizeCardBrowserResults, pokemonRow,
   parseCardLookupQuery, parseExpansionCache, resolvePrinting,
   resolvePrintingOptions, searchCardsByName, selectRecentMtgSets, selectRecentYugiohSets,
   selectRecentTcgDexPokemonSets, suggestCards, ygoPrintingRows,
@@ -94,6 +94,24 @@ const witnessProducts = [
     number: 'CORI-EN081', rarityName: 'Ultra Rare', marketPrice: 10.67 },
   { productId: 702447, productName: 'Witness of the Ancient (Starlight Rare) (Extended Art)', setName: 'Chaos Origins',
     number: 'CORI-EN081', rarityName: 'Starlight Rare', marketPrice: 63.76 },
+];
+
+const chaosMagicalHats = {
+  id: 150000001,
+  name: 'Chaos Magical Hats',
+  card_prices: [{ tcgplayer_price: '0.29' }],
+  card_images: [{ image_url: 'chaos.jpg', image_url_small: 'chaos-small.jpg' }],
+  card_sets: [
+    { set_name: 'Chaos Origins', set_code: 'CORI-EN046', set_rarity: 'Super Rare', set_price: '0.29' },
+    { set_name: 'Chaos Origins', set_code: 'CORI-EN046', set_rarity: 'Starlight Rare', set_price: '18.33' },
+  ],
+};
+
+const chaosProducts = [
+  { productId: 702408, productName: 'Chaos Magical Hats', setName: 'Chaos Origins',
+    number: 'CORI-EN046', rarityName: 'Super Rare', marketPrice: 0.29 },
+  { productId: 702409, productName: 'Chaos Magical Hats (Starlight Rare)', setName: 'Chaos Origins',
+    number: 'CORI-EN046', rarityName: 'Starlight Rare', marketPrice: 18.33 },
 ];
 
 const rarityCollectionReinforcement = {
@@ -255,6 +273,33 @@ describe('live expansion shelf', () => {
 });
 
 describe('camera printing resolution', () => {
+  test('one bad code letter cannot turn Chaos Magical Hats into an unrelated card', async () => {
+    assert.equal(namesCompatibleForCode('Hydradius Harmonia', 'Fydraulis Harmonia'), true);
+    assert.equal(namesCompatibleForCode('Chaos Magical Hats', "D/D/D Oracle King d'Arc"), false);
+    globalThis.fetch = async (_url, init = {}) => {
+      const body = JSON.parse(init.body || '{}');
+      if (body.action === 'tcgplayerSearch') {
+        return { ok: true, status: 200, async json() { return { products: chaosProducts }; } };
+      }
+      if (body.action === 'catalogueFetch') {
+        return {
+          ok: true, status: 200,
+          async json() {
+            return { catalogue: true, ok: true, status: 200, data: { data: [chaosMagicalHats] } };
+          },
+        };
+      }
+      return { ok: false, status: 400, async json() { return {}; } };
+    };
+    const options = await resolvePrintingOptions({
+      name: 'Chaos Magical Hats', game: 'yugioh', number: 'CORE-EN046', set: 'Chaos Origins',
+    });
+    assert.deepEqual(options.map((row) => [row.name, row.number, row.price]), [
+      ['Chaos Magical Hats', 'CORI-EN046', 0.29],
+      ['Chaos Magical Hats (Starlight Rare)', 'CORI-EN046', 18.33],
+    ]);
+  });
+
   test('same-code full-art products keep their own image, price, and product id', async () => {
     globalThis.fetch = async (_url, init = {}) => {
       const body = JSON.parse(init.body || '{}');

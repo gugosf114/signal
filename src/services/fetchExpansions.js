@@ -158,6 +158,40 @@ function differsOnlyByIl(left, right) {
   return mismatches === 1;
 }
 
+function differsByOneGlyph(left, right) {
+  const scanned = normalizeYgoCode(left);
+  const catalogued = normalizeYgoCode(right);
+  if (!looksLikeSetCode(scanned) || !looksLikeSetCode(catalogued)
+    || scanned.length !== catalogued.length) return false;
+  let mismatches = 0;
+  for (let index = 0; index < scanned.length; index++) {
+    if (scanned[index] !== catalogued[index]) mismatches += 1;
+  }
+  return mismatches === 1;
+}
+
+function editDistance(left, right) {
+  const prior = [...Array(right.length + 1).keys()];
+  for (let i = 1; i <= left.length; i++) {
+    const next = [i];
+    for (let j = 1; j <= right.length; j++) {
+      next[j] = Math.min(next[j - 1] + 1, prior[j] + 1,
+        prior[j - 1] + (left[i - 1] === right[j - 1] ? 0 : 1));
+    }
+    prior.splice(0, prior.length, ...next);
+  }
+  return prior[right.length];
+}
+
+export function namesCompatibleForCode(left, right) {
+  const a = String(left || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const b = String(right || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const length = Math.max(a.length, b.length);
+  return length >= 8 && editDistance(a, b) / length <= 0.3;
+}
+
 export function ygoPrintingRows(card, wantedSet = null) {
   const prints = Array.isArray(card?.card_sets) ? card.card_sets : [];
   const wantedCode = normalizeYgoCode(wantedSet?.code || wantedSet?.id);
@@ -237,7 +271,8 @@ export async function resolvePrintingOptions(input = {}) {
       const narrowed = rows.filter((row) => {
         if (number) {
           return normalizeYgoCode(row.number) === number
-            || differsOnlyByIl(number, row.number);
+            || differsOnlyByIl(number, row.number)
+            || differsByOneGlyph(number, row.number);
         }
         if (!set) return true;
         const rowName = String(row.setName || '').trim().toLowerCase();
@@ -890,7 +925,8 @@ export async function resolvePrinting({ name, game, number, set, passcode, rarit
     // vision's name OCR: BLZD-EN024 is Fydraulis Harmonia even when foil text is
     // read as "Hydradius Harmonia". Requiring both strings to agree turned a
     // correct code into a dead Search matches button.
-    if (direct && (!game || direct.game === game)) return direct;
+    if (direct && (!game || direct.game === game)
+      && namesCompatibleForCode(n, direct.name)) return direct;
     // Foil glare can make a printed L look like I. Recover only that one glyph,
     // only for Yu-Gi-Oh, and only when the exact card name leaves one catalogue
     // code. Any wider or ambiguous mismatch must still stop instead of guessing.
@@ -902,7 +938,8 @@ export async function resolvePrinting({ name, game, number, set, passcode, rarit
         .filter((card) => String(card?.name || '').trim().toLowerCase() === n.toLowerCase());
       const candidates = exactCards
         .flatMap((card) => ygoPrintingRows(card))
-        .filter((card) => differsOnlyByIl(number, card.number));
+        .filter((card) => differsOnlyByIl(number, card.number)
+          || differsByOneGlyph(number, card.number));
       const correctedCodes = [...new Set(candidates.map((card) => normalizeYgoCode(card.number)))];
       if (correctedCodes.length === 1) {
         const corrected = await lookupBySetCode(correctedCodes[0]).catch(() => null);
