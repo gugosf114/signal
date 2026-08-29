@@ -23,42 +23,21 @@ const MIN_CHARS = 2;
 
 const GAME_LABEL = { pokemon: 'PKM', mtg: 'MTG', yugioh: 'YGO' };
 
-const LOOKUP_MODES = [
-  {
-    id: 'price',
-    label: 'Price only',
-    shortLabel: 'Price',
-    detail: 'Fast · no full-report charge',
-  },
-  {
-    id: 'full',
-    label: 'Run full Signal',
-    shortLabel: 'Full',
-    detail: 'About one minute · paid analysis',
-  },
-];
-
-function LookupModeChooser({ value, onChange, disabled }) {
+function LookupModeToggle({ value, onToggle, disabled }) {
+  const full = value === 'full';
   return (
-    <div className="lookup-mode-block">
-      <div className="lookup-mode-options" role="radiogroup" aria-label="Choose price only or full Signal">
-        {LOOKUP_MODES.map((mode) => (
-          <button
-            key={mode.id}
-            type="button"
-            role="radio"
-            aria-checked={value === mode.id}
-            aria-label={`${mode.label}. ${mode.detail}`}
-            title={mode.detail}
-            className={`lookup-mode-option lookup-mode-option--${mode.id}${value === mode.id ? ' lookup-mode-option--on' : ''}`}
-            disabled={disabled}
-            onClick={() => onChange(mode.id)}
-          >
-            <strong>{mode.shortLabel}</strong>
-          </button>
-        ))}
-      </div>
-    </div>
+    <button
+      type="button"
+      className={`lookup-mode-toggle lookup-mode-toggle--${value}`}
+      aria-pressed={full}
+      aria-label={`${full ? 'Full Signal' : 'Price only'} selected. Tap to switch.`}
+      title={full ? 'Full Signal · about one minute · paid analysis' : 'Price only · no full-report charge'}
+      disabled={disabled}
+      onClick={onToggle}
+    >
+      <span aria-hidden />
+      <strong>{full ? 'Full' : 'Price'}</strong>
+    </button>
   );
 }
 
@@ -109,7 +88,7 @@ async function withResolvedCardImage(pin, fallbackCard = null) {
 }
 
 export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd = null, onScannerBatch = null, loading = false }) {
-  const [lookupMode, setLookupMode] = useState(null);
+  const [lookupMode, setLookupMode] = useState('price');
   const [quickResult, setQuickResult] = useState(null);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
@@ -415,8 +394,8 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
 
   const busy = loading || resolving;
 
-  const chooseLookupMode = (mode) => {
-    setLookupMode(mode);
+  const toggleLookupMode = () => {
+    setLookupMode((current) => current === 'price' ? 'full' : 'price');
     setQuickResult(null);
     setScanError(null);
     setPhotoMenuOpen(false);
@@ -440,7 +419,6 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
       width: '100%',
       maxWidth: 580,
     }}>
-      <div className="lookup-entry-row">
       <div style={{ position: 'relative', width: '100%', minWidth: 0 }}>
         {/* Signal and Collection use this same two-choice photo menu. */}
         <button
@@ -519,7 +497,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
           enterKeyHint="search"
           style={{
             width: '100%',
-            padding: '16px 18px 16px 50px',
+            padding: '16px 94px 16px 50px',
             background: 'var(--signal-panel)',
             border: `1px solid ${focused ? '#2A2D34' : '#1A1D24'}`,
             borderRadius: 3,
@@ -533,6 +511,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
             boxSizing: 'border-box',
           }}
         />
+        <LookupModeToggle value={lookupMode} onToggle={toggleLookupMode} disabled={busy} />
 
         {open && suggestions.length > 0 && (
           <ul id="signal-card-suggestions" className="sb-list" role="listbox">
@@ -569,8 +548,6 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
             ))}
           </ul>
         )}
-      </div>
-      <LookupModeChooser value={lookupMode} onChange={chooseLookupMode} disabled={busy} />
       </div>
 
       <div style={{ marginTop: 6, fontSize: 9, color: '#605C54', fontFamily: "'JetBrains Mono', monospace", textAlign: 'left' }}>

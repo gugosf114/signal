@@ -1310,59 +1310,45 @@
    Dropdown under the main search bar. Sits above everything else on the
    page — the result card and the nav both use stacking contexts of their
    own, and a suggestion list that slides *behind* the page is useless. */
-.lookup-entry-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: stretch;
-  gap: 7px;
-}
-.lookup-mode-block { width: 106px; margin: 0; }
-.lookup-mode-options {
-  display: grid;
-  grid-template-columns: repeat(2, 50px);
-  height: 100%;
-  gap: 3px;
-  padding: 3px;
-  border: 0.5px solid #FFFFFF;
-  border-radius: 5px;
-  background: var(--signal-panel);
-}
-.lookup-mode-option {
-  min-width: 0;
-  min-height: 48px;
-  padding: 7px 4px;
-  border: 0;
-  border-radius: 3px;
-  background: transparent;
-  color: #C2BCB3;
-  text-align: center;
+.lookup-mode-toggle {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  right: 7px;
+  transform: translateY(-50%);
+  width: 76px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #5C5761;
+  border-radius: 999px;
+  background: var(--signal-raised);
+  color: #F1EDE5;
   cursor: pointer;
 }
-.lookup-mode-option strong {
-  display: block;
-  margin: 0;
-  color: #F1EDE5;
-  font: 700 9px 'Syne', sans-serif;
-  letter-spacing: 0.06em;
+.lookup-mode-toggle > span {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #608870;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.45);
+  transition: transform 0.16s ease, background 0.16s ease;
+}
+.lookup-mode-toggle > strong {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  transform: translateY(-50%);
+  font: 700 8px 'Syne', sans-serif;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
-.lookup-mode-option--price.lookup-mode-option--on {
-  background: rgba(96,136,112,0.16);
-  box-shadow: inset 0 0 0 1px #78A187;
-}
-.lookup-mode-option--full.lookup-mode-option--on {
-  background: rgba(196,64,64,0.16);
-  box-shadow: inset 0 0 0 1px #C44040;
-}
-.lookup-mode-option:focus-visible { outline: 2px solid #F1EDE5; outline-offset: 2px; }
-.lookup-mode-option:disabled { cursor: default; opacity: 0.45; }
-
-@media (max-width: 360px) {
-  .lookup-entry-row { gap: 5px; }
-  .lookup-mode-block { width: 96px; }
-  .lookup-mode-options { grid-template-columns: repeat(2, 45px); }
-  .lookup-mode-option strong { font-size: 8px; }
-}
+.lookup-mode-toggle--full > span { transform: translateX(40px); background: #C44040; }
+.lookup-mode-toggle--full > strong { left: 7px; right: auto; }
+.lookup-mode-toggle:focus-visible { outline: 2px solid #F1EDE5; outline-offset: 2px; }
+.lookup-mode-toggle:disabled { cursor: default; opacity: 0.45; }
 
 .quick-price-result {
   margin-top: 12px;
