@@ -12,6 +12,22 @@ const CACHE_TTL_MS = 60 * 60 * 1000;
 const COUNT = 12;
 const PAGE = 21;
 
+export function cardBrowserRowKey(card) {
+  const identity = card?.printingId || card?.id
+    || [card?.name, card?.setName, card?.number].filter(Boolean).join(':');
+  return [card?.game || 'unknown', identity || 'unknown', card?.rarity || ''].join(':');
+}
+
+export function normalizeCardBrowserResults(results, activeGame) {
+  const unique = new Map();
+  for (const card of Array.isArray(results) ? results : []) {
+    if (!card || card.game !== activeGame) continue;
+    const key = cardBrowserRowKey(card);
+    if (!unique.has(key)) unique.set(key, card);
+  }
+  return [...unique.values()];
+}
+
 export function looksLikeYgoPasscode(input) {
   return /^\d{8}$/.test(String(input || '').trim());
 }

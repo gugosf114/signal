@@ -2,7 +2,8 @@ import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  cardNumberEndsWith, fetchYgoPrintingsByPasscode, parseCardLookupQuery, parseExpansionCache, resolvePrinting,
+  cardBrowserRowKey, cardNumberEndsWith, fetchYgoPrintingsByPasscode, normalizeCardBrowserResults,
+  parseCardLookupQuery, parseExpansionCache, resolvePrinting,
   resolvePrintingOptions, searchCardsByName, selectRecentMtgSets, selectRecentYugiohSets,
   selectRecentTcgDexPokemonSets, suggestCards, ygoPrintingRows,
 } from './fetchExpansions.js';
@@ -65,6 +66,35 @@ const rarityCollectionReinforcement = {
     set_price: '0',
   })),
 };
+
+describe('card browser game isolation', () => {
+  test('removes duplicate old-game rows before Pokémon renders', () => {
+    const stuckYugioh = {
+      id: '22125101', printingId: '22125101:LAVD-ENO35', game: 'yugioh',
+      name: 'Beyond the Pendulum', rarity: 'Common',
+    };
+    const pokemon = {
+      id: 'me2-130', printingId: 'me2-130', game: 'pokemon',
+      name: 'Mega Charizard X ex', rarity: 'Double Rare',
+    };
+    assert.deepEqual(
+      normalizeCardBrowserResults([stuckYugioh, stuckYugioh, pokemon], 'pokemon'),
+      [pokemon],
+    );
+  });
+
+  test('keeps same-code Yu-Gi-Oh rarity variants under different keys', () => {
+    const base = {
+      id: '32807846', printingId: '32807846:L26D-ENS08', game: 'yugioh',
+      name: 'Reinforcement of the Army',
+    };
+    const common = { ...base, rarity: 'Common' };
+    const starlight = { ...base, rarity: 'Starlight Rare' };
+    const rows = normalizeCardBrowserResults([common, starlight, starlight], 'yugioh');
+    assert.equal(rows.length, 2);
+    assert.notEqual(cardBrowserRowKey(common), cardBrowserRowKey(starlight));
+  });
+});
 
 describe('Yu-Gi-Oh printing rows', () => {
   test('one card-level id expands into distinct printing identities', () => {

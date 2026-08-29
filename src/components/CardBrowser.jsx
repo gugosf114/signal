@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { GAME_LABELS } from '../config/signals';
 import { BrandIcon } from '../config/brandIcons';
-import { getExpansionSnapshot, getExpansions, fetchCardsBySet, fetchLatestCardsForGame, searchCardsByName } from '../services/fetchExpansions';
+import {
+  cardBrowserRowKey,
+  getExpansionSnapshot,
+  getExpansions,
+  fetchCardsBySet,
+  fetchLatestCardsForGame,
+  normalizeCardBrowserResults,
+  searchCardsByName,
+} from '../services/fetchExpansions';
 import CardLightbox from './CardLightbox';
 
 const GAME_BRAND = { pokemon: 'pokemon', mtg: 'mtg', yugioh: 'yugioh' };
@@ -82,7 +90,7 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
         : fetchLatestCardsForGame(activeGame, priceSort);
     fetcher.then((results) => {
       if (cancelled) return;
-      setCards(results);
+      setCards(normalizeCardBrowserResults(results, activeGame));
       setBrowsing(false);
     }).catch(() => {
       if (cancelled) return;
@@ -126,7 +134,12 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
           {TABS.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveGame(tab.id)}
+              onClick={() => {
+                if (tab.id === activeGame) return;
+                setCards([]);
+                setViewing(null);
+                setActiveGame(tab.id);
+              }}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -319,7 +332,7 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
         }}>
           {cards.map(card => (
             <button
-              key={card.printingId || card.id}
+              key={cardBrowserRowKey(card)}
               onClick={() => setViewing(card)}
               title={`${card.name}${card.setName ? ' · ' + card.setName : ''}`}
               style={{
