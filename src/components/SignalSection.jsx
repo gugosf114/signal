@@ -18,22 +18,19 @@ export default function SignalSection({ section, signals, baseDelay = 0 }) {
 
   return (
     <div style={{
-      marginBottom: 40,
+      marginBottom: 24,
       position: 'relative',
-      ...(isJapan ? {
-        background: 'rgba(196, 64, 64, 0.02)',
-        margin: '0 -24px 40px',
-        padding: '0 24px',
-        borderTop: '1px solid rgba(196, 64, 64, 0.08)',
-        borderBottom: '1px solid rgba(196, 64, 64, 0.08)',
-      } : {}),
+      padding: '18px 18px 4px',
+      background: 'var(--signal-panel)',
+      border: '1px solid #34373E',
+      borderRadius: 4,
     }}>
       {/* Section header */}
       <div style={{
         display: 'flex',
         alignItems: 'flex-start',
         gap: 10,
-        paddingTop: isJapan ? 20 : 0,
+        paddingTop: 0,
         marginBottom: 16,
       }}>
         {/* 2px colored lead-in bar */}
@@ -88,7 +85,7 @@ export default function SignalSection({ section, signals, baseDelay = 0 }) {
               ? 'repeat(auto-fit, minmax(240px, 1fr))'
               : '1fr',
         gap: isJapan ? 0 : '1px 20px',
-        paddingBottom: isJapan ? 20 : 0,
+        paddingBottom: 0,
       }}>
         {sectionSignals.map((signal, i) => (
           <SignalCard
