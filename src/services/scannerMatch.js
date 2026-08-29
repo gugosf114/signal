@@ -42,6 +42,11 @@ export function scannerMatchPrice(details = {}) {
     : 'Price unavailable';
 }
 
+export function scannerMatchDisplayPrice(details = {}, candidateCount = 0) {
+  if (details.exact) return scannerMatchPrice(details);
+  return candidateCount > 0 ? 'Choose below' : 'Not matched';
+}
+
 export function scannerPrintingKey(card = {}) {
   const identity = card.tcgplayerProductId || card.printingId || card.id
     || [card.name, card.setName, card.number].filter(Boolean).join(':');

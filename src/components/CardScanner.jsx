@@ -12,6 +12,7 @@ import {
   scannerBatchFormOptions,
   scannerBatchSummary,
   scannerMatchDetails,
+  scannerMatchDisplayPrice,
   scannerMatchMeta,
   scannerMatchPrice,
   scannerPrintingKey,
@@ -575,9 +576,9 @@ const CardScanner = forwardRef(function CardScanner({
               <div>
                 <strong>{details.name}</strong>
                 <span>{details.gameLabel}</span>
-                <p>{scannerMatchMeta(details)}</p>
+                <p>{needsChoice ? 'Choose an exact printing below' : scannerMatchMeta(details)}</p>
               </div>
-              <b>{scannerMatchPrice(details)}</b>
+              <b>{scannerMatchDisplayPrice(details, candidates.length)}</b>
             </div>
             {candidates.length > 0 && (
               <div className="live-match-options" role="group" aria-label="Choose the card printing">

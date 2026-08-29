@@ -5,6 +5,7 @@ import {
   scannerBatchFormOptions,
   scannerBatchSummary,
   scannerMatchDetails,
+  scannerMatchDisplayPrice,
   scannerMatchMeta,
   scannerMatchPrice,
   scannerPrintingKey,
@@ -41,6 +42,8 @@ describe('scanner match display', () => {
     assert.equal(details.name, 'Island');
     assert.equal(details.gameLabel, 'Magic');
     assert.equal(scannerMatchPrice(details), 'Price unavailable');
+    assert.equal(scannerMatchDisplayPrice(details, 2), 'Choose below');
+    assert.equal(scannerMatchDisplayPrice(details, 0), 'Not matched');
   });
 });
 
