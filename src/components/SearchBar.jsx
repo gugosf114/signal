@@ -130,6 +130,11 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
         setSuggestions(hits);
         setActive(-1);
         setOpen(hits.length > 0);
+        if (!hits.length) {
+          setScanError(`No cards match "${q}". Remove extra letters or type the set code.`);
+        } else {
+          setScanError(null);
+        }
         if (scanSearchFor.current === q) {
           setScanError(hits.length ? null : 'No exact printing was found. Type the set code.');
           scanSearchFor.current = null;
@@ -227,10 +232,37 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
         return;
       }
       if (!looksLikeSetCode(query.trim())) {
-        setScanError(suggestions.length > 1
-          ? 'Choose the exact printing from the list.'
-          : 'Wait for the catalogue, then choose the exact printing.');
-        setOpen(suggestions.length > 0);
+        if (suggestions.length > 1) {
+          setScanError('Choose the exact printing from the list.');
+          setOpen(true);
+          return;
+        }
+        const submitted = query.trim();
+        const myToken = ++reqToken.current;
+        setResolving(true);
+        try {
+          const hits = await suggestCards(submitted, 8);
+          if (myToken !== reqToken.current) return;
+          setSuggestions(hits);
+          setActive(-1);
+          if (hits.length === 1) {
+            await pick(hits[0]);
+          } else if (hits.length > 1) {
+            setOpen(true);
+            setScanError('Choose the exact printing from the list.');
+          } else {
+            setOpen(false);
+            setScanError(`No cards match "${submitted}". Remove extra letters or type the set code.`);
+          }
+        } catch {
+          if (myToken === reqToken.current) {
+            setSuggestions([]);
+            setOpen(false);
+            setScanError('Card catalogues could not load. Try again.');
+          }
+        } finally {
+          setResolving(false);
+        }
         return;
       }
       reqToken.current += 1;
