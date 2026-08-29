@@ -49,7 +49,6 @@
 }
 .signal-evidence.expanded { grid-template-rows: 1fr; }
 .signal-evidence > div { overflow: hidden; }
-.signal-evidence.expanded > div { padding: 0 12px 22px; }
 
 /* ─── Score ──────────────────────────────────────────────────────────────── */
 
@@ -830,53 +829,6 @@
 .signal-card-row:hover .signal-card-label {
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-.signal-card-row {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-.signal-card-toggle {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  transform-style: preserve-3d;
-}
-.signal-card-row .signal-evidence {
-  position: relative;
-  z-index: 2;
-}
-.signal-card-backdrop {
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  opacity: 0.24;
-  pointer-events: none;
-  transform: perspective(700px) translateZ(0) scale(1);
-  transition: opacity 0.25s ease, transform 0.35s ease, filter 0.35s ease;
-}
-.signal-card-backdrop img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.signal-card-toggle::before {
-  content: '';
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
-  background: linear-gradient(135deg, rgba(255,255,255,0.055), rgba(255,255,255,0.008) 48%, rgba(0,0,0,0.08));
-  -webkit-backdrop-filter: blur(1.5px);
-  backdrop-filter: blur(1.5px);
-  transition: opacity 0.28s ease;
-}
-.signal-card-toggle > :not(.signal-card-backdrop) { position: relative; z-index: 2; }
-.signal-card-row--expanded .signal-card-toggle::before { opacity: 1; }
-.signal-card-row--expanded .signal-card-backdrop {
-  animation: signalBackdropEngage 0.68s cubic-bezier(0.2, 0.78, 0.25, 1) both;
-}
-@keyframes signalBackdropEngage {
-  0% { opacity: 0.12; transform: perspective(700px) rotateX(4deg) translateZ(-24px) scale(0.96); filter: blur(1.5px); }
-  58% { opacity: 0.32; transform: perspective(700px) rotateX(-1deg) translateZ(9px) scale(1.025); filter: blur(0); }
-  100% { opacity: 0.24; transform: perspective(700px) rotateX(0) translateZ(0) scale(1); filter: blur(0); }
 }
 .signal-card-toggle:focus-visible {
   outline: 1px solid var(--signal-color, #A8A498);
@@ -2681,7 +2633,6 @@
     transition-duration: 0.01ms !important;
   }
   .ns-track { transform: none !important; }
-  .signal-card-row--expanded .signal-card-backdrop { animation: none !important; }
 }
 .col-name {
   margin-top: 5px;

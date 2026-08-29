@@ -3,14 +3,6 @@ import HeatBar from './HeatBar';
 import SourceCitation from './SourceCitation';
 import { SIGNAL_TYPES } from '../config/signals';
 import { extractYouTubeId, BrandIcon, brandFromUrl } from '../config/brandIcons';
-import creatorBackdrop from '../assets/signal-backdrops/creator.webp';
-import communityBackdrop from '../assets/signal-backdrops/community.webp';
-import franchiseBackdrop from '../assets/signal-backdrops/franchise.webp';
-import editorialBackdrop from '../assets/signal-backdrops/editorial.webp';
-import competitiveBackdrop from '../assets/signal-backdrops/competitive.webp';
-import scarcityBackdrop from '../assets/signal-backdrops/scarcity.webp';
-import jpHypeBackdrop from '../assets/signal-backdrops/jp-hype.webp';
-import jpReleaseBackdrop from '../assets/signal-backdrops/jp-release.webp';
 
 const MARKS = {
   creator: (c) => (
@@ -62,17 +54,6 @@ const MARKS = {
   ),
 };
 
-const BACKDROPS = {
-  creator: creatorBackdrop,
-  community: communityBackdrop,
-  ip_momentum: franchiseBackdrop,
-  editorial: editorialBackdrop,
-  competitive: competitiveBackdrop,
-  scarcity: scarcityBackdrop,
-  jp_hype: jpHypeBackdrop,
-  jp_release: jpReleaseBackdrop,
-};
-
 export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
   const [expanded, setExpanded] = useState(false);
   const [activeSourceIdx, setActiveSourceIdx] = useState(0);
@@ -82,7 +63,6 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
 
   const isHot = signal.level >= 4;
   const markFn = MARKS[signal.key];
-  const backdropImage = BACKDROPS[signal.key];
 
   const preview = signal.detail
     ? signal.detail.substring(0, 72) + (signal.detail.length > 72 ? '…' : '')
@@ -110,9 +90,9 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
   return (
     <div
       id={`signal-${signal.key}`}
-      className={`fade-slide-up fade-slide-up-${animDelay} signal-card-row ${expanded ? 'signal-card-row--expanded' : ''}`}
+      className={`fade-slide-up fade-slide-up-${animDelay} signal-card-row`}
       style={{
-        padding: 0,
+        padding: '20px 12px 22px',
         marginBottom: 8,
         borderBottom: `1px solid ${isJapan ? 'rgba(196,64,64,0.28)' : 'rgba(232,228,220,0.2)'}`,
         transition: 'background 0.12s',
@@ -130,9 +110,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
         style={{
           display: 'block',
           width: '100%',
-          minHeight: 102,
-          padding: '20px 12px 22px',
-          boxSizing: 'border-box',
+          padding: 0,
           border: 'none',
           background: 'transparent',
           color: 'inherit',
@@ -140,11 +118,6 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
           cursor: 'pointer',
         }}
       >
-      {backdropImage && (
-        <div className="signal-card-backdrop" aria-hidden="true">
-          <img src={backdropImage} alt="" />
-        </div>
-      )}
       {/* Row: mark + label + heatbar + chevron */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flexShrink: 0, width: 16, display: 'flex', alignItems: 'center' }}>
