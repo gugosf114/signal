@@ -8,14 +8,12 @@ import {
 import {
   parseCollectionBackup, saveCollectionBackup, saveCollectionCsv,
 } from '../services/collectionFiles';
-import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
-import { fetchCardImage } from '../services/fetchCardImage';
 import {
-  cropStoredScannedCardImage,
-  loadScannedCardImage,
-  scannedCardImageExists,
-  scannedCardImagePath,
-} from '../services/scannedCardImage';
+  addTcgplayerPrice,
+  fetchTcgplayerPrice,
+  tcgplayerProductImageUrl,
+} from '../services/fetchTcgplayerPrice';
+import { fetchCardImage } from '../services/fetchCardImage';
 import CardLightbox from './CardLightbox';
 import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
@@ -72,31 +70,29 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
   useEffect(() => {
     const unresolved = cards.filter((card) => (
       (!card.imageUrl && !card.imageLarge)
-      || (card.game === 'yugioh' && !['owner-crop', 'exact-catalogue'].includes(card.imageSource))
+      || (card.game === 'yugioh' && !['tcgplayer', 'exact-catalogue'].includes(card.imageSource))
     )).slice(0, 12);
     if (!unresolved.length) return undefined;
     let cancelled = false;
     Promise.all(unresolved.map(async (card) => {
-      const scanImagePath = scannedCardImagePath(card);
-      const hasOwnerImage = await scannedCardImageExists(scanImagePath);
-      const localImageUrl = hasOwnerImage ? await loadScannedCardImage(scanImagePath).catch(() => null) : null;
-      const pin = hasOwnerImage ? {
-        ...card,
-        scanImagePath,
-        preferExactOwnerArt: true,
-      } : {
-        ...card,
-        scanImagePath: null,
-        preferExactOwnerArt: card.game === 'yugioh',
-      };
-      let imageUrl = await fetchCardImage(card.name, card.game, pin).catch(() => null);
-      let imageSource = 'exact-catalogue';
-      if (hasOwnerImage && localImageUrl && (!imageUrl || imageUrl === localImageUrl)) {
-        await cropStoredScannedCardImage(scanImagePath, card).catch(() => null);
-        imageUrl = await loadScannedCardImage(scanImagePath).catch(() => localImageUrl);
-        imageSource = 'owner-crop';
+      let productId = null;
+      let imageUrl = null;
+      let imageSource = null;
+      if (card.game === 'yugioh') {
+        const exactProduct = await fetchTcgplayerPrice(card).catch(() => null);
+        productId = exactProduct?.productId || null;
+        imageUrl = tcgplayerProductImageUrl(productId);
+        if (imageUrl) imageSource = 'tcgplayer';
       }
-      return [cardKey(card), imageUrl ? { imageUrl, imageSource, scanImagePath } : null];
+      if (!imageUrl) {
+        imageUrl = await fetchCardImage(card.name, card.game, {
+          ...card,
+          scanImagePath: null,
+          preferExactOwnerArt: card.game === 'yugioh',
+        }).catch(() => null);
+        if (imageUrl) imageSource = 'exact-catalogue';
+      }
+      return [cardKey(card), imageUrl ? { imageUrl, imageSource, productId } : null];
     })).then((resolved) => {
       if (cancelled) return;
       const images = new Map(resolved.filter(([, value]) => value));
@@ -108,7 +104,9 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
           imageUrl: image.imageUrl,
           imageLarge: image.imageUrl,
           imageSource: image.imageSource,
-          scanImagePath: image.imageSource === 'owner-crop' ? image.scanImagePath : null,
+          scanImagePath: null,
+          tcgplayerProductId: image.productId || card.tcgplayerProductId || null,
+          tcgplayerImageUrl: image.imageSource === 'tcgplayer' ? image.imageUrl : null,
         } : card;
       })));
     });
@@ -287,7 +285,11 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
       <CardBrowser
         actionLabel="Add to collection"
         onCardSelect={async (_name, _game, options = {}) => {
-          if (options.pin) onAddCard?.(await addTcgplayerPrice(options.pin));
+          if (options.pin) onAddCard?.(await addTcgplayerPrice(
+            options.pin,
+            undefined,
+            { requireProductId: options.pin.game === 'yugioh' },
+          ));
         }}
       />
 

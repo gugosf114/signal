@@ -14,6 +14,13 @@ function positiveNumber(value) {
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
+export function tcgplayerProductImageUrl(productId) {
+  const id = Number(productId);
+  return Number.isInteger(id) && id > 0
+    ? `https://product-images.tcgplayer.com/${id}.jpg`
+    : null;
+}
+
 export function selectTcgplayerPrice(details, printing) {
   const wantedName = key(printing?.name);
   const wantedSet = key(printing?.setName);
@@ -132,17 +139,19 @@ export async function fetchTcgplayerPrice(printing, signal) {
   return selectTcgplayerPrice(details.filter(Boolean), printing);
 }
 
-export async function addTcgplayerPrice(printing, signal) {
-  if (!printing || positiveNumber(printing.price)) return printing;
+export async function addTcgplayerPrice(printing, signal, { requireProductId = false } = {}) {
+  if (!printing) return printing;
+  if (positiveNumber(printing.price) && (!requireProductId || printing.tcgplayerProductId)) return printing;
   try {
     const result = await fetchTcgplayerPrice(printing, signal);
     return result ? {
       ...printing,
-      price: result.price,
-      marketPrices: { ...(printing.marketPrices || {}), normal: result.price },
+      price: result.price || printing.price,
+      marketPrices: { ...(printing.marketPrices || {}), normal: result.price || printing.price },
       priceSource: result.source,
       priceUrl: result.url,
       tcgplayerProductId: result.productId,
+      tcgplayerImageUrl: tcgplayerProductImageUrl(result.productId),
     } : printing;
   } catch (error) {
     if (error?.name === 'AbortError') throw error;

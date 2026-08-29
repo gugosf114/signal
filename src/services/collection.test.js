@@ -178,6 +178,7 @@ describe('collection', () => {
       imageUrl: 'blob:https://localhost/uploaded-card',
       imageLarge: 'file:///data/user/0/signal-scan-art/card.jpg',
       scanImagePath: 'signal-scan-art/card.jpg',
+      imageSource: 'owner-crop',
     }]);
     const [card] = loadCollection();
     assert.equal(card.imageUrl, null);
@@ -185,18 +186,20 @@ describe('collection', () => {
     assert.equal(card.scanImagePath, null);
   });
 
-  test('an explicitly cropped exact-owner image is kept', () => {
-    const local = 'http://localhost/_capacitor_file_/data/user/0/signal-scan-art/card.jpg';
+  test('an exact TCGplayer product image is kept', () => {
+    const image = 'https://product-images.tcgplayer.com/683013.jpg';
     const [card] = addToCollection({
       ...RICH,
-      imageUrl: local,
-      imageLarge: local,
-      scanImagePath: 'signal-scan-art/card.jpg',
-      imageSource: 'owner-crop',
+      imageUrl: image,
+      imageLarge: image,
+      imageSource: 'tcgplayer',
+      tcgplayerProductId: 683013,
+      tcgplayerImageUrl: image,
     });
-    assert.equal(card.imageUrl, local);
-    assert.equal(card.scanImagePath, 'signal-scan-art/card.jpg');
-    assert.equal(card.imageSource, 'owner-crop');
+    assert.equal(card.imageUrl, image);
+    assert.equal(card.scanImagePath, null);
+    assert.equal(card.imageSource, 'tcgplayer');
+    assert.equal(card.tcgplayerProductId, 683013);
   });
 
   test('cardKey never merges different games', () => {

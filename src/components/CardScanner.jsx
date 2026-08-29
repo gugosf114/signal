@@ -283,7 +283,7 @@ const CardScanner = forwardRef(function CardScanner({
       if (!onIdentify) throw new Error('Card identification is unavailable.');
       const found = await onIdentify(file, { framed, signal: controller.signal });
       if (controller.signal.aborted) return;
-      setMatch({ ...found, file, framed });
+      setMatch({ ...found, file });
       setPhase('match');
     } catch (scanError) {
       if (controller.signal.aborted) return;

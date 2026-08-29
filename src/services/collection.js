@@ -43,12 +43,6 @@ function cleanCatalogueImage(value) {
   return image;
 }
 
-function cleanOwnerCropImage(value) {
-  const image = typeof value === 'string' ? value.trim() : '';
-  if (!image) return null;
-  return /\/_capacitor_file_\//i.test(image) || /^(?:file:|capacitor:)/i.test(image) ? image : null;
-}
-
 export function formatCollectionMoney(value) {
   const amount = cleanMoney(value);
   return amount === null ? '—' : `$${amount.toFixed(2)}`;
@@ -104,12 +98,15 @@ function normalizeEntry(card) {
   if (!card || !card.name) return null;
   const qty = cleanQty(card.qty);
   const paidPerCard = cleanMoney(card.paidPerCard);
-  const ownerCrop = card.imageSource === 'owner-crop' && Boolean(card.scanImagePath);
-  const smallImage = ownerCrop ? cleanOwnerCropImage(card.imageUrl) : cleanCatalogueImage(card.imageUrl);
-  const largeImage = ownerCrop ? cleanOwnerCropImage(card.imageLarge) : cleanCatalogueImage(card.imageLarge);
-  const imageSource = ownerCrop && (smallImage || largeImage)
-    ? 'owner-crop'
-    : (card.imageSource === 'exact-catalogue' ? 'exact-catalogue' : null);
+  const smallImage = cleanCatalogueImage(card.imageUrl);
+  const largeImage = cleanCatalogueImage(card.imageLarge);
+  const tcgplayerImageUrl = cleanCatalogueImage(card.tcgplayerImageUrl);
+  const rawProductId = Number(card.tcgplayerProductId);
+  const tcgplayerProductId = Number.isInteger(rawProductId) && rawProductId > 0 ? rawProductId : null;
+  const imageSource = (smallImage || largeImage)
+    && ['tcgplayer', 'exact-catalogue'].includes(card.imageSource)
+    ? card.imageSource
+    : null;
   return {
     id: card.id || null,
     printingId: card.printingId || card.id || null,
@@ -119,10 +116,12 @@ function normalizeEntry(card) {
     setId: card.setId || null,
     number: card.number || null,
     rarity: card.rarity || null,
-    scanImagePath: imageSource === 'owner-crop' ? card.scanImagePath : null,
+    scanImagePath: null,
     imageUrl: smallImage || largeImage,
     imageLarge: largeImage || smallImage,
     imageSource,
+    tcgplayerProductId,
+    tcgplayerImageUrl,
     form: cleanFormForGame(card.game, card.form),
     condition: cleanCondition(card.condition),
     qty,

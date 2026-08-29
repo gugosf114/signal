@@ -15,7 +15,6 @@
 
 import { fetchWithTimeout } from './http.js';
 import { getOfficialYugiohArt } from './signalGateway.js';
-import { loadScannedCardImage } from './scannedCardImage.js';
 
 // ─── Image URL cache ─────────────────────────────────────────────────────────
 // The same card's art is requested by up to four components at once —
@@ -186,20 +185,15 @@ async function fetchYuGiOhImage(name, pin = null) {
       const official = await getOfficialYugiohArt({ cardName: name, setCode, rarity: pin?.rarity || '' });
       const art = officialArtNumber(official?.imageUrl);
       if (art > 1) {
-        // The official source is the only source that knows which alternate
-        // art this printing uses, but every image it returns says SAMPLE. A
-        // saved scan is exact and clean. With no scan, show no image rather
-        // than a watermarked image or the wrong art.
-        return await loadScannedCardImage(pin?.scanImagePath) || null;
+        // TCGplayer's exact product image is clean and tied to this set/rarity.
+        // Without it, show no image rather than the owner's photo, Konami's
+        // SAMPLE image, or the wrong original artwork.
+        return pin?.tcgplayerImageUrl || (pin?.imageSource === 'tcgplayer' ? catalogue : null);
       }
-      if (!art && pin?.preferExactOwnerArt) {
-        return await loadScannedCardImage(pin?.scanImagePath) || null;
-      }
+      if (!art && pin?.preferExactOwnerArt) return null;
     } catch (error) {
       console.warn(`[fetchCardImage] official Yu-Gi-Oh art failed for "${name}"/${setCode}:`, error?.message || error);
-      if (pin?.preferExactOwnerArt) {
-        return await loadScannedCardImage(pin?.scanImagePath) || null;
-      }
+      if (pin?.preferExactOwnerArt) return null;
     }
   }
   return catalogue;

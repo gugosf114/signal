@@ -113,6 +113,20 @@ describe('fetchCardImage cache', () => {
     assert.equal(requestBody.rarity, 'Starlight Rare');
   });
 
+  test('exact TCGplayer product art wins for an alternate-art printing', async () => {
+    responder = (url) => String(url).includes('signal-gateway')
+      ? { ok: true, status: 200, json: async () => ({ imageUrl: 'https://official.example/card.png?cid=5328&ciid=3' }) }
+      : { ok: true, status: 200, json: async () => ({ data: [{ card_images: [{ image_url: 'wrong-original.png' }] }] }) };
+    const image = await fetchCardImage('Reinforcement Exact TCGplayer Test', 'yugioh', {
+      game: 'yugioh', printingId: '32807846:L26D-ENS08', number: 'L26D-ENS08', rarity: 'Starlight Rare',
+      imageSource: 'tcgplayer',
+      tcgplayerImageUrl: 'https://product-images.tcgplayer.com/683013.jpg',
+      imageUrl: 'https://product-images.tcgplayer.com/683013.jpg',
+      imageLarge: 'https://product-images.tcgplayer.com/683013.jpg',
+    });
+    assert.equal(image, 'https://product-images.tcgplayer.com/683013.jpg');
+  });
+
   test('standard Yu-Gi-Oh art uses the clean catalogue image', async () => {
     responder = (url) => String(url).includes('signal-gateway')
       ? { ok: true, status: 200, json: async () => ({ imageUrl: 'https://official.example/card.png?cid=21191&ciid=1' }) }
@@ -123,13 +137,12 @@ describe('fetchCardImage cache', () => {
     assert.equal(image, 'ai-connect-clean.png');
   });
 
-  test('an uncertain official-art lookup prefers exact owner art over a wrong catalogue substitute', async () => {
+  test('an uncertain official-art lookup refuses a wrong catalogue substitute', async () => {
     responder = (url) => String(url).includes('signal-gateway')
       ? { ok: false, status: 503, json: async () => ({ error: 'temporary failure' }) }
       : { ok: true, status: 200, json: async () => ({ data: [{ card_images: [{ image_url: 'wrong-original.png' }] }] }) };
     const image = await fetchCardImage('Collection Alternate Art Fallback Test', 'yugioh', {
       game: 'yugioh', printingId: '32807846:L26D-ENS08', number: 'L26D-ENS08', rarity: 'Starlight Rare',
-      scanImagePath: 'signal-scan-art/upload.jpg',
       preferExactOwnerArt: true,
     });
     assert.equal(image, null, 'the missing local test file does not fall through to the wrong artwork');

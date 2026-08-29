@@ -3,7 +3,6 @@ import { flushSync } from 'react-dom';
 import { scanCardImage } from '../services/scanCardImage';
 import { looksLikeYgoPasscode, resolvePrintingOptions, suggestCards } from '../services/fetchExpansions';
 import { looksLikeSetCode, lookupBySetCode } from '../services/lookupBySetCode';
-import { loadScannedCardImage, saveScannedCardImage } from '../services/scannedCardImage';
 import { withScanKeepAlive } from '../services/scanKeepAlive';
 import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
 import { fetchCardImage } from '../services/fetchCardImage';
@@ -106,7 +105,11 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
   const pick = async (card) => {
     setResolving(true);
     try {
-      const pricedCard = await addTcgplayerPrice(card);
+      const pricedCard = await addTcgplayerPrice(
+        card,
+        undefined,
+        { requireProductId: card.game === 'yugioh' },
+      );
       reqToken.current += 1;
       quietFor.current = pricedCard.name;
       setQuery(onCardFound ? '' : pricedCard.name);
@@ -152,7 +155,11 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
             setScanError('That exact card number was not found.');
             return;
           }
-          const priced = await addTcgplayerPrice(hit);
+          const priced = await addTcgplayerPrice(
+            hit,
+            undefined,
+            { requireProductId: hit.game === 'yugioh' },
+          );
           setQuery('');
           await onCardFound(priced);
         } catch {
@@ -183,7 +190,11 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
     // A camera guess is not yet a printing. Resolve it against the live card
     // catalogues, then show the match before spending money on the full report.
     const options = await resolvePrintingOptions(card).catch(() => []);
-    const candidates = await Promise.all(options.map((option) => addTcgplayerPrice(option, signal)));
+    const candidates = await Promise.all(options.map((option) => addTcgplayerPrice(
+      option,
+      signal,
+      { requireProductId: option.game === 'yugioh' },
+    )));
     return {
       card,
       pin: candidates.length === 1 ? candidates[0] : null,
@@ -224,46 +235,22 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
     scannerRef.current?.choosePhoto();
   };
 
-  const preparePhotoMatch = async ({ card, pin, file, framed = false }) => {
+  const preparePhotoMatch = async ({ card, pin }) => {
     if (!pin) return;
     const exactName = pin.name || card.name;
     const game = pin.game || card.game || null;
-    let scanImagePath = null;
-    let localImageUrl = null;
-
-    // Yu-Gi-Oh!'s catalogue can know the exact set/rarity while still serving
-    // the old artwork. Save an automatic card-only crop first, then let the
-    // official-art check choose: clean catalogue for standard art, exact owner
-    // crop for an alternate art. Other games use their exact catalogue IDs and
-    // need the crop only when their catalogue genuinely has no image.
-    if (file && game === 'yugioh') {
-      scanImagePath = await saveScannedCardImage(file, pin, { autoCrop: !framed }).catch(() => null);
-      localImageUrl = scanImagePath ? await loadScannedCardImage(scanImagePath).catch(() => null) : null;
-    }
-
-    const candidate = scanImagePath ? {
+    const tcgplayerImage = pin.tcgplayerImageUrl || null;
+    const catalogueImage = tcgplayerImage || await fetchCardImage(exactName, game, {
       ...pin,
-      scanImagePath,
-      preferExactOwnerArt: true,
-    } : { ...pin, scanImagePath: null };
-    let resolvedImage = await fetchCardImage(exactName, game, candidate).catch(() => null);
-
-    if (!resolvedImage && file && !scanImagePath) {
-      scanImagePath = await saveScannedCardImage(file, pin, { autoCrop: !framed }).catch(() => null);
-      localImageUrl = scanImagePath ? await loadScannedCardImage(scanImagePath).catch(() => null) : null;
-      resolvedImage = localImageUrl;
-    }
-
-    const usesOwnerCrop = Boolean(localImageUrl && resolvedImage === localImageUrl);
-    const exactYugioh = game === 'yugioh' && Boolean(pin.number || pin.setId);
-    const fallbackImage = exactYugioh ? null : (pin.imageLarge || pin.imageUrl || null);
-    const imageUrl = resolvedImage || fallbackImage;
+      scanImagePath: null,
+      preferExactOwnerArt: game === 'yugioh',
+    }).catch(() => null);
     const exactPin = {
       ...pin,
-      scanImagePath: usesOwnerCrop ? scanImagePath : null,
-      imageUrl,
-      imageLarge: imageUrl,
-      imageSource: usesOwnerCrop ? 'owner-crop' : 'exact-catalogue',
+      scanImagePath: null,
+      imageUrl: catalogueImage,
+      imageLarge: catalogueImage,
+      imageSource: tcgplayerImage ? 'tcgplayer' : (catalogueImage ? 'exact-catalogue' : null),
     };
     return { card, exactPin, exactName };
   };

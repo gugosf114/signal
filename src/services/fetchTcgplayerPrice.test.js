@@ -1,6 +1,10 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addTcgplayerPrice, selectTcgplayerPrice } from './fetchTcgplayerPrice.js';
+import {
+  addTcgplayerPrice,
+  selectTcgplayerPrice,
+  tcgplayerProductImageUrl,
+} from './fetchTcgplayerPrice.js';
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
@@ -123,6 +127,7 @@ describe('TCGplayer exact-print price', () => {
     assert.equal(result.price, 175.54);
     assert.equal(result.priceSource, 'TCGplayer');
     assert.equal(result.tcgplayerProductId, 692267);
+    assert.equal(result.tcgplayerImageUrl, 'https://product-images.tcgplayer.com/692267.jpg');
   });
 
   test('reads parenthetical rarity products from Rarity Collection', () => {
@@ -194,5 +199,26 @@ describe('TCGplayer exact-print price', () => {
     });
     assert.equal(result?.price, 262.45);
     assert.equal(result?.productId, 683013);
+  });
+
+  test('a priced L26D pin still fetches its exact clean product image', async () => {
+    globalThis.fetch = async (url) => {
+      assert.match(String(url), /\/search\/request/);
+      return {
+        ok: true,
+        async json() { return { results: [{ results: [l26dStarlight] }] }; },
+      };
+    };
+    const result = await addTcgplayerPrice({
+      name: 'Reinforcement of the Army',
+      game: 'yugioh',
+      setName: 'Legendary Modern Decks 2026',
+      number: 'L26D-ENS08',
+      rarity: 'Starlight Rare',
+      price: 262.45,
+    }, undefined, { requireProductId: true });
+    assert.equal(result.tcgplayerProductId, 683013);
+    assert.equal(result.tcgplayerImageUrl, 'https://product-images.tcgplayer.com/683013.jpg');
+    assert.equal(tcgplayerProductImageUrl(683013), result.tcgplayerImageUrl);
   });
 });
