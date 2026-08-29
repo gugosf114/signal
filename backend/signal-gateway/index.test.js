@@ -63,6 +63,18 @@ test('TCGplayer relay keeps separate art products and their exact prices', async
   ]);
 });
 
+test('TCGplayer relay searches the requested supported game', async () => {
+  await tcgplayerSearch({ query: 'Mega Clefable ex', game: 'pokemon' }, async (_url, init) => {
+    const request = JSON.parse(init.body);
+    assert.deepEqual(request.filters.term.productLineName, ['Pokemon']);
+    return Response.json({ results: [{ results: [] }] });
+  });
+  await assert.rejects(
+    tcgplayerSearch({ query: 'Test card', game: 'unknown' }),
+    /not allowed/,
+  );
+});
+
 test('official Yu-Gi-Oh pages map an exact set row to its artwork', () => {
   const search = `<div class="t_row"><input class="cnm" value='Reinforcement of the Army'><input class="link_value" value="/x?cid=5328"></div>`;
   const detail = `<div class="t_row"><div class="card_number">L26D-ENS08</div><input class="link_value" value="/x?pid=2000001598001"><span>Starlight Rare</span></div>`;

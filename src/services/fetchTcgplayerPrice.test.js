@@ -85,7 +85,40 @@ const l26dStarlight = {
   customAttributes: { number: 'L26D-ENS08' },
 };
 
+const megaClefable = {
+  productId: 684385,
+  productName: 'Mega Clefable ex - 119/088',
+  setName: 'ME03: Perfect Order',
+  rarityName: 'Special Illustration Rare',
+  marketPrice: 50.36,
+  lowestPrice: 48.25,
+  customAttributes: { number: '119/088' },
+};
+
 describe('TCGplayer exact-print price', () => {
+  test('matches Pokémon set prefixes and printed-total number suffixes', () => {
+    const result = selectTcgplayerPrice([megaClefable], {
+      name: 'Mega Clefable ex', game: 'pokemon', setName: 'Perfect Order',
+      number: '119', rarity: 'Special Illustration Rare',
+    });
+    assert.equal(result?.price, 50.36);
+    assert.equal(result?.productId, 684385);
+  });
+
+  test('fills a new Pokémon card price from its exact TCGplayer product', async () => {
+    globalThis.fetch = async (url) => {
+      assert.match(String(url), /\/search\/request/);
+      return { ok: true, async json() { return { results: [{ results: [megaClefable] }] }; } };
+    };
+    const result = await addTcgplayerPrice({
+      id: 'me3-119', printingId: 'me3-119', name: 'Mega Clefable ex', game: 'pokemon',
+      setName: 'Perfect Order', number: '119', rarity: 'Special Illustration Rare', price: null,
+    });
+    assert.equal(result.price, 50.36);
+    assert.equal(result.tcgplayerProductId, 684385);
+    assert.equal(result.tcgplayerImageUrl, 'https://product-images.tcgplayer.com/684385.jpg');
+  });
+
   test('keeps standard, extended-art, and Starlight products separate', () => {
     const standard = tcgplayerProductRow({
       productId: 702445, productName: 'Witness of the Ancient', setName: 'Chaos Origins',

@@ -26,6 +26,24 @@ export function baseTcgplayerName(value) {
   return clean(value).replace(/(?:\s*\([^)]*\))+\s*$/, '').trim();
 }
 
+function productCardName(value) {
+  return baseTcgplayerName(value)
+    .replace(/\s+-\s+[A-Za-z]*\d+[A-Za-z]?(?:\/[A-Za-z]*\d+[A-Za-z]?)?\s*$/i, '')
+    .trim();
+}
+
+function looseSetMatch(left, right) {
+  const a = key(left);
+  const b = key(right);
+  if (!a || !b) return true;
+  return a === b || a.endsWith(` ${b}`) || b.endsWith(` ${a}`);
+}
+
+function looseCardNumber(value) {
+  const first = clean(value).split('/')[0].replace(/^0+/, '') || '0';
+  return key(first);
+}
+
 export function tcgplayerProductRow(item, base = null) {
   const productId = Number(item?.productId);
   if (!Number.isInteger(productId) || productId <= 0) return null;
@@ -59,7 +77,9 @@ export function tcgplayerProductRow(item, base = null) {
 }
 
 export async function searchTcgplayerProducts(query, { setName = '', signal } = {}) {
-  const payload = await gateway({ action: 'tcgplayerSearch', query: clean(query), setName: clean(setName) }, signal, 0);
+  const payload = await gateway({
+    action: 'tcgplayerSearch', query: clean(query), setName: clean(setName), game: 'yugioh',
+  }, signal, 0);
   return (Array.isArray(payload?.products) ? payload.products : [])
     .map((item) => tcgplayerProductRow(item))
     .filter(Boolean);
@@ -77,14 +97,20 @@ export function selectTcgplayerPrice(details, printing) {
     // products: "Card (Platinum Secret Rare)", "Card (QCSR)", "Card (PCR)".
     // Compare the exact title first, then the same title without one trailing
     // parenthetical. The set code and rarity checks below still guard identity.
-    const baseProductName = key(String(item?.productName || '').replace(/(?:\s*\([^)]*\))+\s*$/, ''));
-    const number = key(item?.customAttributes?.number);
+    const baseProductName = key(productCardName(item?.productName));
+    const rawNumber = item?.number || item?.customAttributes?.number;
+    const number = key(rawNumber);
     const rarity = key(item?.rarityName || item?.customAttributes?.rarityDbName);
     const rarityWithoutPrismatic = rarity.replace(/^prismatic /, '');
     const wantedWithoutPrismatic = wantedRarity.replace(/^prismatic /, '');
+    const numberMatches = !wantedNumber || number === wantedNumber
+      || (printing?.game !== 'yugioh'
+        && looseCardNumber(rawNumber) === looseCardNumber(printing?.number || printing?.setCode));
+    const setMatches = !wantedSet || key(item?.setName) === wantedSet
+      || (printing?.game !== 'yugioh' && looseSetMatch(item?.setName, printing?.setName));
     return (productName === wantedName || baseProductName === wantedName)
-      && (!wantedSet || key(item?.setName) === wantedSet)
-      && (!wantedNumber || number === wantedNumber)
+      && setMatches
+      && numberMatches
       && (!wantedRarity || rarity === wantedRarity || rarityWithoutPrismatic === wantedWithoutPrismatic);
   });
 
@@ -149,6 +175,19 @@ export async function fetchTcgplayerPrice(printing, signal) {
   } catch (error) {
     if (error?.name === 'AbortError') throw error;
     // Keep the autocomplete/detail path below as a live fallback.
+  }
+
+  try {
+    const payload = await gateway({
+      action: 'tcgplayerSearch',
+      query: name,
+      setName: clean(printing.setName),
+      game: printing.game,
+    }, signal, 0);
+    const exact = selectTcgplayerPrice(payload?.products || [], printing);
+    if (exact) return exact;
+  } catch (error) {
+    if (error?.name === 'AbortError') throw error;
   }
 
   const autocomplete = await fetchWithTimeout(

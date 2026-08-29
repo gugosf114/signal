@@ -101,8 +101,11 @@ async function catalogueFetch(body, fetcher = fetch) {
 async function tcgplayerSearch(body, fetcher = fetch) {
   const query = safeText(body.query, 180);
   const setName = safeText(body.setName, 180);
+  const game = safeText(body.game, 20).toLowerCase() || 'yugioh';
+  const productLine = { pokemon: 'Pokemon', mtg: 'Magic', yugioh: 'YuGiOh' }[game];
   if (query.length < 2) throw Object.assign(new Error('Card name is required.'), { status: 400 });
-  const terms = { productLineName: ['YuGiOh'] };
+  if (!productLine) throw Object.assign(new Error('Card game is not allowed.'), { status: 400 });
+  const terms = { productLineName: [productLine] };
   if (setName) terms.setName = [setName];
   const response = await fetcher(
     `https://mp-search-api.tcgplayer.com/v1/search/request?q=${encodeURIComponent(query)}&isList=false`,
