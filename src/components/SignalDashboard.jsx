@@ -426,7 +426,7 @@ export default function SignalDashboard() {
             alignItems: 'baseline',
             gap: isMobile ? 10 : 14,
             padding: isMobile ? '10px 20px 12px' : '12px 26px 14px',
-            border: '1px solid #FFFFFF',
+            border: '1px solid #C44040',
             borderRadius: 8,
             marginBottom: 10,
             cursor: 'pointer',

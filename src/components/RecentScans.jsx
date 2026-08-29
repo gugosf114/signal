@@ -58,7 +58,7 @@ export default function RecentScans({ onSelect, loading }) {
     <div style={{
       width: '100%',
       marginTop: 18,
-      border: '0.5px solid #C44040',
+      border: '0.5px solid #FFFFFF',
       borderRadius: 4,
       padding: '14px 16px 12px',
       background: 'var(--signal-panel)',
