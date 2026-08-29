@@ -1,0 +1,47 @@
+name: Design Preview Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "design-previews/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the preview
+        uses: actions/checkout@v4
+
+      - name: Set up GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepare the preview site
+        run: |
+          mkdir -p _site
+          cp design-previews/signal-outdoor-contrast.html _site/index.html
+          cp design-previews/signal-outdoor-contrast.html _site/signal-outdoor-contrast.html
+
+      - name: Upload the preview site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Publish the preview site
+        id: deployment
+        uses: actions/deploy-pages@v4
