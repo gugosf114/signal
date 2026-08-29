@@ -70,6 +70,7 @@ const CardScanner = forwardRef(function CardScanner({
   onBatchAdd,
   onManualSearch,
   mode = 'single',
+  lookupMode = 'price',
 }, ref) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -100,6 +101,7 @@ const CardScanner = forwardRef(function CardScanner({
   const [launchAction, setLaunchAction] = useState(null);
   const [batch, setBatch] = useState([]);
   const batchMode = mode === 'batch';
+  const priceOnly = !batchMode && lookupMode === 'price';
   const batchSummary = scannerBatchSummary(batch);
 
   const clearPreview = useCallback(() => {
@@ -478,7 +480,7 @@ const CardScanner = forwardRef(function CardScanner({
 
         <div className="live-scanner-topbar">
           <button type="button" onClick={cancel}>Cancel</button>
-          <strong>{batchMode ? 'Batch scan' : 'Scan card'}</strong>
+          <strong>{batchMode ? 'Batch scan' : priceOnly ? 'Price only' : 'Full Signal'}</strong>
           {batchMode ? (
             <button type="button" className="live-batch-count" onClick={reviewBatch} disabled={!batch.length}>
               {batchSummary.cards} saved
@@ -560,7 +562,10 @@ const CardScanner = forwardRef(function CardScanner({
               <span className={`live-match-chip ${details.exact ? 'live-match-chip--exact' : ''}`}>
                 {candidates.length > 1 ? (match.pin ? 'Printing selected' : 'Choose printing') : (details.exact ? 'Exact match' : 'Needs a check')}
               </span>
-              <span>{details.confidence ? `${details.confidence} photo confidence` : 'Card found'}</span>
+              <span>
+                {batchMode ? 'Batch price lookup' : priceOnly ? 'Price only' : 'Full Signal'}
+                {details.confidence ? ` · ${details.confidence} confidence` : ''}
+              </span>
             </div>
             <div className="live-match-card">
               {details.imageUrl || previewUrl
@@ -594,7 +599,13 @@ const CardScanner = forwardRef(function CardScanner({
               </div>
             )}
             <p className="live-match-check">
-              {candidates.length > 1 ? 'Pick the printing that matches your card.' : 'Check the set, number, and rarity before opening the report.'}
+              {candidates.length > 1
+                ? 'Pick the printing that matches your card.'
+                : batchMode
+                  ? 'Check the exact printing before keeping this card.'
+                  : priceOnly
+                    ? 'Price lookup complete. No full Signal report has run.'
+                    : 'Check the exact printing before starting the paid full report.'}
             </p>
             <div className={`live-match-actions ${details.exact ? 'live-match-actions--complete' : ''}`}>
               {details.exact ? (
@@ -604,10 +615,16 @@ const CardScanner = forwardRef(function CardScanner({
                     <button type="button" className="live-match-add" onClick={() => keepForBatch('review')}>Keep & review</button>
                     <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
                   </>
+                ) : priceOnly ? (
+                  <>
+                    <button type="button" className="live-match-add" onClick={() => launch('add')}>Add to collection</button>
+                    <button type="button" className="live-match-done" onClick={cancel}>Done · Price only</button>
+                    <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
+                  </>
                 ) : (
                   <>
                     <button type="button" className="live-match-add" onClick={() => launch('add')}>Add to collection</button>
-                    <button type="button" className="live-match-primary" onClick={() => launch('run')}>Run full Signal</button>
+                    <button type="button" className="live-match-primary" onClick={() => launch('run')}>Confirm & run full Signal</button>
                     <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
                   </>
                 )

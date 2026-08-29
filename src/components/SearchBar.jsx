@@ -6,6 +6,7 @@ import { looksLikeSetCode, lookupBySetCode } from '../services/lookupBySetCode';
 import { withScanKeepAlive } from '../services/scanKeepAlive';
 import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
 import { fetchCardImage } from '../services/fetchCardImage';
+import { scannerMatchDetails, scannerMatchMeta, scannerMatchPrice } from '../services/scannerMatch';
 import CardScanner from './CardScanner';
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
@@ -22,7 +23,73 @@ const MIN_CHARS = 2;
 
 const GAME_LABEL = { pokemon: 'PKM', mtg: 'MTG', yugioh: 'YGO' };
 
+const LOOKUP_MODES = [
+  {
+    id: 'price',
+    label: 'Price only',
+    detail: 'Fast · no full-report charge',
+  },
+  {
+    id: 'full',
+    label: 'Run full Signal',
+    detail: 'About one minute · paid analysis',
+  },
+];
+
+function LookupModeChooser({ value, onChange, disabled }) {
+  return (
+    <div className="lookup-mode-block">
+      <div className="lookup-mode-label">Choose lookup</div>
+      <div className="lookup-mode-options" role="radiogroup" aria-label="Choose price only or full Signal">
+        {LOOKUP_MODES.map((mode) => (
+          <button
+            key={mode.id}
+            type="button"
+            role="radio"
+            aria-checked={value === mode.id}
+            className={`lookup-mode-option lookup-mode-option--${mode.id}${value === mode.id ? ' lookup-mode-option--on' : ''}`}
+            disabled={disabled}
+            onClick={() => onChange(mode.id)}
+          >
+            <strong>{mode.label}</strong>
+            <span>{mode.detail}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function QuickPriceResult({ card, onAdd, onDone }) {
+  const details = scannerMatchDetails({ card, pin: card });
+  return (
+    <section className="quick-price-result" aria-label="Price lookup complete" aria-live="polite">
+      <div className="quick-price-heading">
+        <strong>Price lookup complete</strong>
+        <span>No full Signal report ran</span>
+      </div>
+      <div className="quick-price-card">
+        {details.imageUrl
+          ? <img src={details.imageUrl} alt={details.name} />
+          : <span className="quick-price-noart" aria-hidden>?</span>}
+        <div>
+          <strong>{details.name}</strong>
+          <span>{details.gameLabel}</span>
+          <small>{scannerMatchMeta(details)}</small>
+        </div>
+        <b>{scannerMatchPrice(details)}</b>
+      </div>
+      <div className="quick-price-actions">
+        {onAdd && <button type="button" className="quick-price-add" onClick={onAdd}>Add to collection</button>}
+        <button type="button" className="quick-price-done" onClick={onDone}>Done · Price only</button>
+      </div>
+    </section>
+  );
+}
+
 export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd = null, onScannerBatch = null, loading = false }) {
+  const [lookupMode, setLookupMode] = useState(null);
+  const [quickResult, setQuickResult] = useState(null);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [scanError, setScanError] = useState(null);
@@ -102,7 +169,34 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
     };
   }, [photoMenuOpen]);
 
+  const routeResolvedCard = async (pricedCard) => {
+    reqToken.current += 1;
+    quietFor.current = pricedCard.name;
+    setSuggestions([]);
+    setOpen(false);
+    setActive(-1);
+    if (lookupMode === 'price') {
+      setQuery('');
+      setQuickResult(pricedCard);
+      return;
+    }
+    if (lookupMode !== 'full') {
+      setScanError('Choose Price Only or Run Full Signal first.');
+      return;
+    }
+    if (!onSearch) throw new Error('Full Signal is unavailable.');
+    setQuery(pricedCard.name);
+    await onSearch(pricedCard.name, pricedCard.game, {
+      pin: pricedCard,
+      force: pricedCard.priceSource === 'TCGplayer',
+    });
+  };
+
   const pick = async (card) => {
+    if (!lookupMode) {
+      setScanError('Choose Price Only or Run Full Signal first.');
+      return;
+    }
     setResolving(true);
     try {
       const pricedCard = await addTcgplayerPrice(
@@ -110,17 +204,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
         undefined,
         { requireProductId: card.game === 'yugioh' },
       );
-      reqToken.current += 1;
-      quietFor.current = pricedCard.name;
-      setQuery(onCardFound ? '' : pricedCard.name);
-      setSuggestions([]);
-      setOpen(false);
-      setActive(-1);
-      if (onCardFound) await onCardFound(pricedCard);
-      else onSearch?.(pricedCard.name, pricedCard.game, {
-        pin: pricedCard,
-        force: pricedCard.priceSource === 'TCGplayer',
-      });
+      await routeResolvedCard(pricedCard);
     } finally {
       setResolving(false);
     }
@@ -128,6 +212,10 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!lookupMode) {
+      setScanError('Choose Price Only or Run Full Signal first.');
+      return;
+    }
     if (open && active >= 0 && suggestions[active]) {
       pick(suggestions[active]);
       return;
@@ -147,27 +235,24 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
       reqToken.current += 1;
       quietFor.current = query.trim();
       setOpen(false);
-      if (onCardFound) {
-        setResolving(true);
-        try {
-          const hit = await lookupBySetCode(query.trim());
-          if (!hit) {
-            setScanError('That exact card number was not found.');
-            return;
-          }
-          const priced = await addTcgplayerPrice(
-            hit,
-            undefined,
-            { requireProductId: hit.game === 'yugioh' },
-          );
-          setQuery('');
-          await onCardFound(priced);
-        } catch {
-          setScanError('The card catalogues could not load. Try again.');
-        } finally {
-          setResolving(false);
+      setResolving(true);
+      try {
+        const hit = await lookupBySetCode(query.trim());
+        if (!hit) {
+          setScanError('That exact card number was not found.');
+          return;
         }
-      } else onSearch?.(query.trim());
+        const priced = await addTcgplayerPrice(
+          hit,
+          undefined,
+          { requireProductId: hit.game === 'yugioh' },
+        );
+        await routeResolvedCard(priced);
+      } catch {
+        setScanError('The card catalogues could not load. Try again.');
+      } finally {
+        setResolving(false);
+      }
     }
   };
 
@@ -204,6 +289,10 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
   });
 
   const openPhotoMenu = () => {
+    if (!lookupMode) {
+      setScanError('Choose Price Only or Run Full Signal first.');
+      return;
+    }
     setScanError(null);
     setOpen(false);
     setPhotoMenuOpen((value) => !value);
@@ -317,18 +406,38 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
 
   const busy = loading || resolving;
 
+  const chooseLookupMode = (mode) => {
+    setLookupMode(mode);
+    setQuickResult(null);
+    setScanError(null);
+    setPhotoMenuOpen(false);
+  };
+
+  const addQuickResult = async () => {
+    const add = onScannerAdd || onCardFound;
+    if (!add || !quickResult) return;
+    setResolving(true);
+    try {
+      await add(quickResult);
+      setQuickResult(null);
+    } finally {
+      setResolving(false);
+    }
+  };
+
   return (
     <form ref={formRef} onSubmit={handleSubmit} style={{
       position: 'relative',
       width: '100%',
       maxWidth: 580,
     }}>
+      <LookupModeChooser value={lookupMode} onChange={chooseLookupMode} disabled={busy} />
       <div style={{ position: 'relative', width: '100%' }}>
         {/* Signal and Collection use this same two-choice photo menu. */}
         <button
           type="button"
           onClick={openPhotoMenu}
-          disabled={busy}
+          disabled={busy || !lookupMode}
           aria-label="Choose scan or upload"
           aria-expanded={photoMenuOpen}
           aria-haspopup="menu"
@@ -347,7 +456,8 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
             alignItems: 'center',
             justifyContent: 'center',
             color: '#A8A498',
-            cursor: busy ? 'not-allowed' : 'pointer',
+            cursor: busy || !lookupMode ? 'not-allowed' : 'pointer',
+            opacity: lookupMode ? 1 : 0.35,
             transition: 'color 0.15s',
           }}
           onMouseEnter={(e) => { if (!busy) e.currentTarget.style.color = '#C44040'; }}
@@ -383,7 +493,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
         <input
           type="text"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setScanError(null); }}
+          onChange={(e) => { setQuery(e.target.value); setQuickResult(null); setScanError(null); }}
           onKeyDown={handleKeyDown}
           onFocus={() => { setFocused(true); if (suggestions.length) setOpen(true); }}
           onBlur={() => setFocused(false)}
@@ -395,8 +505,8 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
           aria-autocomplete="list"
           aria-controls="signal-card-suggestions"
           aria-activedescendant={active >= 0 ? `signal-card-option-${active}` : undefined}
-          placeholder="Card name, number, or name + last digits"
-          disabled={busy}
+          placeholder={lookupMode ? 'Card name, number, or name + last digits' : 'Choose a lookup above first'}
+          disabled={busy || !lookupMode}
           enterKeyHint="search"
           style={{
             width: '100%',
@@ -453,8 +563,20 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
       </div>
 
       <div style={{ marginTop: 6, fontSize: 9, color: '#605C54', fontFamily: "'JetBrains Mono', monospace", textAlign: 'left' }}>
-        Scan a card, or type a name, number, or name + last digits.
+        {!lookupMode
+          ? 'Choose the fast price lane or the full Signal report first.'
+          : lookupMode === 'price'
+            ? 'Price Only: exact printing and current market price.'
+            : 'Full Signal: confirm the exact printing before the paid report runs.'}
       </div>
+
+      {quickResult && (
+        <QuickPriceResult
+          card={quickResult}
+          onAdd={(onScannerAdd || onCardFound) ? addQuickResult : null}
+          onDone={() => setQuickResult(null)}
+        />
+      )}
 
       {scanError && (
         <div style={{
@@ -477,6 +599,7 @@ export default function SearchBar({ onSearch, onCardFound = null, onScannerAdd =
         ref={scannerRef}
         open={scannerOpen}
         mode={scannerMode}
+        lookupMode={lookupMode}
         onCancel={() => setScannerOpen(false)}
         onIdentify={identifyPhoto}
         onAdd={(match) => finishPhotoMatch(match, 'add')}
