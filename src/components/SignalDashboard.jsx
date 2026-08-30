@@ -509,6 +509,7 @@ export default function SignalDashboard() {
             onScannerAdd={(card) => setAddCard(card)}
             onScannerBatch={addScannerBatch}
             loading={loading}
+            accentBorder
           />
           <QuickPicks onSelect={handleSearch} loading={loading} />
           <RecentScans onSelect={handleSearch} loading={loading} />
@@ -906,7 +907,7 @@ export default function SignalDashboard() {
           <WatchedCards onSelect={handleSearch} />
           <NewsStrip />
           <EmptyState />
-          <CardBrowser onCardSelect={handleSearch} />
+          <CardBrowser onCardSelect={handleSearch} accentBorder />
         </>
       )}
       </div>

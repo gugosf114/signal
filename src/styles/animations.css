@@ -1294,6 +1294,8 @@
   transition: border-color 0.2s;
 }
 .cb-search:focus-within { border-color: #2A2D34; }
+.cb-search--accent,
+.cb-search--accent:focus-within { border-color: #C44040; }
 
 .cb-search-icon {
   position: absolute;
@@ -2138,7 +2140,7 @@
   min-height: 40px;
   padding: 8px 8px;
   background: transparent;
-  border: 1px solid transparent;
+  border: 0.5px solid #FFFFFF;
   border-radius: 3px;
   color: #6E6A62;
   font-family: 'Syne', sans-serif;
@@ -2152,7 +2154,7 @@
 .pt-tab:hover { color: #A8A498; }
 .pt-tab--on {
   color: #E8E4DC;
-  border-color: #2A2D34;
+  border-color: #FFFFFF;
   background: var(--signal-panel);
 }
 

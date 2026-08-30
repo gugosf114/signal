@@ -20,7 +20,7 @@ const TABS = [
   { id: 'yugioh',  label: 'Yu-Gi-Oh!', color: '#7080A0' },
 ];
 
-export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this card' }) {
+export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this card', accentBorder = false }) {
   const [activeGame, setActiveGame] = useState('pokemon');
   const [expansions, setExpansions] = useState({ pokemon: [], mtg: [], yugioh: [] });
   const [activeSet, setActiveSet] = useState(null);
@@ -167,7 +167,7 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
       {/* Name search — looks the card up in the same catalogue the grid browses.
           This does NOT run a scan; tapping a result does, same as tapping any
           browsed card. */}
-      <div className="cb-search">
+      <div className={`cb-search${accentBorder ? ' cb-search--accent' : ''}`}>
         <svg className="cb-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
           <circle cx="11" cy="11" r="7" />
