@@ -151,6 +151,7 @@ async function fetchTcgDexPokemonData(cardId) {
     name: card.name,
     setName: card.set?.name || null,
     setId: card.set?.id || null,
+    setLogoUrl: card.set?.logo ? `${card.set.logo}/high.webp` : null,
     number: card.localId || null,
     printedTotal: card.set?.cardCount?.official || card.set?.cardCount?.total || null,
     rarity: card.rarity || null,
@@ -210,6 +211,7 @@ function shapePokemon(card) {
     name: card.name,
     setName: card.set?.name,
     setId: card.set?.id,
+    setLogoUrl: card.set?.images?.logo || null,
     number: card.number,
     // The number printed on a Pokémon card is "161/131", not "161". Showing
     // half of it means the reader still has to go and check.

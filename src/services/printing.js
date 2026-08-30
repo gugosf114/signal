@@ -55,6 +55,7 @@ export function toPrinting(game, pin, cardData) {
     printingId: pin?.printingId || (pin?.id && normalizedGame !== 'yugioh' ? pin.id : null) || src.printingId || null,
     setName: pin?.setName || src.setName || null,
     setId: pin?.setId || src.setId || null,
+    setLogoUrl: pin?.setLogoUrl || src.setLogoUrl || null,
     number: pin?.number || src.number || null,
     printedTotal: pin?.printedTotal || (mayEnrichPin ? src.printedTotal : null) || null,
     rarity: pin?.rarity || (mayEnrichPin ? src.rarity : null) || null,

@@ -18,6 +18,7 @@ import PageTabs from './PageTabs';
 import Collection from './Collection';
 import Dossier from './Dossier';
 import AddToCollectionDialog from './AddToCollectionDialog';
+import SignalAmbient from './SignalAmbient';
 import { SIGNAL_SECTIONS, calculateScoreDetails } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { exportReportToPdf, shareReportAsPdf, imageUrlToDataUrl } from '../services/exportReport';
@@ -404,12 +405,13 @@ export default function SignalDashboard() {
   };
 
   return (
-    <div style={{
+    <div className="signal-dashboard" style={{
       maxWidth: 800,
       margin: '0 auto',
       padding: isMobile ? '24px 16px 60px' : '32px 24px 60px',
       position: 'relative',
     }}>
+      <SignalAmbient active={page === 'signal' && !result && !loading && !error} />
       {/* Header — wordmark inside a hairline red border. */}
       {/* Kanji slightly smaller than "Signal"; Signal in Syne, no italic. */}
       {/* Click anywhere on the wordmark to go home — aborts an in-flight scan

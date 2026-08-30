@@ -5,6 +5,7 @@ import { useWatchedCards } from './WatchedCards';
 import CardImage from './CardImage';
 import CardLightbox from './CardLightbox';
 import { printingLabel } from '../services/printing';
+import PrintingIdentity from './PrintingIdentity';
 
 export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, expectedSignalCount = 8, coveragePct = 0, evidencePct = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null }) {
   const { label, color, blurb } = getScoreLabel(score);
@@ -117,16 +118,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
                 hundreds of prices; the name alone never said which one the
                 numbers below belong to. */}
             {printingLabel(printing) && (
-              <div style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 11,
-                color: '#7A7368',
-                marginBottom: 10,
-                letterSpacing: '0.02em',
-                lineHeight: 1.4,
-              }}>
-                {printingLabel(printing)}
-              </div>
+              <PrintingIdentity printing={printing} />
             )}
             {!printingLabel(printing) && (
               <div style={{

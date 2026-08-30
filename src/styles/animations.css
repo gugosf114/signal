@@ -6,6 +6,131 @@
   --signal-raised: #333139;
 }
 
+/* One ambient layer behind the existing first-screen layout. */
+.signal-dashboard { isolation: isolate; }
+.signal-ambient {
+  --ambient-x: 0px;
+  --ambient-y: 0px;
+  position: absolute;
+  z-index: -1;
+  top: -40px;
+  left: -18px;
+  right: -18px;
+  height: min(940px, 100svh);
+  overflow: hidden;
+  pointer-events: none;
+  transform: translate3d(var(--ambient-x), var(--ambient-y), 0);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
+}
+.signal-ambient-field {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: blur(44px);
+  will-change: transform;
+}
+.signal-ambient-field--red {
+  top: -10%;
+  right: -26%;
+  width: 82%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(196, 64, 64, 0.34) 0%, rgba(124, 34, 38, 0.19) 38%, transparent 72%);
+  animation: signalAmbientRed 15s ease-in-out infinite alternate;
+}
+.signal-ambient-field--gold {
+  top: 8%;
+  left: -22%;
+  width: 74%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(232, 199, 132, 0.22) 0%, rgba(160, 144, 96, 0.11) 42%, transparent 72%);
+  animation: signalAmbientGold 18s ease-in-out infinite alternate;
+}
+.signal-ambient-field--cool {
+  top: 42%;
+  right: 4%;
+  width: 62%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(78, 102, 112, 0.2) 0%, rgba(56, 76, 82, 0.08) 48%, transparent 74%);
+  animation: signalAmbientCool 21s ease-in-out infinite alternate;
+}
+.signal-ambient-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(circle at 50% 35%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(circle at 50% 35%, #000 0%, transparent 72%);
+}
+@keyframes signalAmbientRed {
+  from { transform: translate3d(-8%, -4%, 0) scale(0.94); }
+  to { transform: translate3d(10%, 10%, 0) scale(1.1); }
+}
+@keyframes signalAmbientGold {
+  from { transform: translate3d(-8%, 4%, 0) scale(1); }
+  to { transform: translate3d(16%, -8%, 0) scale(1.12); }
+}
+@keyframes signalAmbientCool {
+  from { transform: translate3d(7%, -5%, 0) scale(0.96); }
+  to { transform: translate3d(-12%, 12%, 0) scale(1.08); }
+}
+
+.printing-identity {
+  display: inline-grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  max-width: 100%;
+  margin: 0 0 11px;
+  padding: 4px 9px 4px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-left: 2px solid var(--printing-accent, #A09060);
+  border-radius: 3px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--printing-accent, #A09060) 12%, transparent), transparent 74%);
+}
+.printing-identity--pokemon { --printing-accent: #D8C14B; }
+.printing-identity--yugioh { --printing-accent: #C85C4F; }
+.printing-identity--mtg { --printing-accent: #C46643; }
+.printing-identity-art {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 31px;
+}
+.printing-identity-art img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+.printing-identity-game-mark { opacity: 0.82; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45)); }
+.printing-identity--pokemon .printing-identity-game-mark { width: 28px; }
+.printing-identity--mtg .printing-identity-set-logo {
+  filter: brightness(0) saturate(100%) invert(67%) sepia(27%) saturate(884%) hue-rotate(334deg) brightness(94%) contrast(86%);
+}
+.printing-identity-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.printing-identity-copy strong {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #D7D2C8;
+  font: 700 11px/1.2 'Syne', sans-serif;
+  letter-spacing: 0.025em;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.printing-identity--pokemon .printing-identity-copy strong { color: #E1D47A; }
+.printing-identity--yugioh .printing-identity-copy strong { color: #D69A8B; font-family: 'Instrument Serif', serif; font-size: 14px; font-style: italic; }
+.printing-identity--mtg .printing-identity-copy strong { color: #D2A184; text-transform: uppercase; letter-spacing: 0.08em; }
+.printing-identity-copy small {
+  overflow: hidden;
+  color: #777169;
+  font: 8px/1.25 'JetBrains Mono', monospace;
+  letter-spacing: 0.035em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @property --signal-border-beam-angle {
   syntax: '<angle>';
   inherits: false;
@@ -2752,6 +2877,8 @@
   .ns-track { transform: none !important; }
   .signal-card-backdrop { transition: none !important; transform: none !important; }
   .signal-logo-frame::after { animation: none !important; }
+  .signal-ambient { transform: none !important; transition: none !important; }
+  .signal-ambient-field { animation: none !important; }
 }
 .col-name {
   margin-top: 5px;
