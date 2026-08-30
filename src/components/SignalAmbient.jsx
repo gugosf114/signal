@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { ambientParallax, ambientPointerOffset, ambientTiltOffset } from '../services/ambientMotion';
 
-export default function SignalAmbient({ active }) {
+export default function SignalAmbient({ active, page = 'signal' }) {
   const fieldRef = useRef(null);
 
   useEffect(() => {
@@ -43,12 +43,13 @@ export default function SignalAmbient({ active }) {
 
   if (!active) return null;
   return (
-    <div ref={fieldRef} className="signal-ambient" aria-hidden="true">
+    <div ref={fieldRef} className={`signal-ambient signal-ambient--${page}`} aria-hidden="true">
       <span className="signal-ambient-field signal-ambient-field--red" />
       <span className="signal-ambient-field signal-ambient-field--gold" />
       <span className="signal-ambient-field signal-ambient-field--cool" />
       <span className="signal-ambient-field signal-ambient-field--lower-red" />
       <span className="signal-ambient-field signal-ambient-field--lower-gold" />
+      <span className="signal-ambient-field signal-ambient-field--lower-cool" />
       <span className="signal-ambient-grid" />
     </div>
   );

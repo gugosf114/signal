@@ -47,32 +47,51 @@
   animation: signalAmbientGold 18s ease-in-out infinite alternate;
 }
 .signal-ambient-field--cool {
-  top: 28%;
+  top: 30%;
   right: 4%;
-  width: 62%;
+  width: 70%;
   aspect-ratio: 1;
-  background: radial-gradient(circle, rgba(78, 102, 112, 0.2) 0%, rgba(56, 76, 82, 0.08) 48%, transparent 74%);
+  background: radial-gradient(circle, rgba(78, 102, 112, 0.29) 0%, rgba(56, 76, 82, 0.13) 48%, transparent 74%);
   translate: var(--ambient-cool-x, 0px) var(--ambient-cool-y, 0px);
   animation: signalAmbientCool 21s ease-in-out infinite alternate;
 }
 .signal-ambient-field--lower-red {
-  top: 55%;
+  top: 53%;
   left: -24%;
-  width: 76%;
+  width: 84%;
   aspect-ratio: 1;
-  background: radial-gradient(circle, rgba(155, 47, 55, 0.2) 0%, rgba(105, 31, 39, 0.1) 44%, transparent 74%);
+  background: radial-gradient(circle, rgba(155, 47, 55, 0.3) 0%, rgba(105, 31, 39, 0.15) 44%, transparent 74%);
   translate: var(--ambient-lowerRed-x, 0px) var(--ambient-lowerRed-y, 0px);
   animation: signalAmbientGold 22s ease-in-out infinite alternate-reverse;
 }
 .signal-ambient-field--lower-gold {
-  top: 79%;
+  top: 75%;
   right: -20%;
-  width: 68%;
+  width: 78%;
   aspect-ratio: 1;
-  background: radial-gradient(circle, rgba(190, 157, 91, 0.17) 0%, rgba(116, 96, 61, 0.08) 46%, transparent 74%);
+  background: radial-gradient(circle, rgba(190, 157, 91, 0.27) 0%, rgba(116, 96, 61, 0.13) 46%, transparent 74%);
   translate: var(--ambient-lowerGold-x, 0px) var(--ambient-lowerGold-y, 0px);
   animation: signalAmbientRed 25s ease-in-out infinite alternate;
 }
+.signal-ambient-field--lower-cool {
+  top: 91%;
+  left: 8%;
+  width: 72%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(66, 94, 105, 0.25) 0%, rgba(45, 67, 74, 0.11) 48%, transparent 74%);
+  translate: var(--ambient-cool-x, 0px) var(--ambient-cool-y, 0px);
+  animation: signalAmbientCool 24s ease-in-out infinite alternate-reverse;
+}
+
+/* The same palette, with a different orbit map on each page. */
+.signal-ambient--collection .signal-ambient-field--cool { left: -18%; right: auto; top: 27%; }
+.signal-ambient--collection .signal-ambient-field--lower-red { left: auto; right: -27%; top: 50%; }
+.signal-ambient--collection .signal-ambient-field--lower-gold { left: -20%; right: auto; top: 72%; }
+.signal-ambient--collection .signal-ambient-field--lower-cool { left: auto; right: 2%; top: 89%; }
+.signal-ambient--dossier .signal-ambient-field--cool { left: 6%; right: auto; top: 34%; }
+.signal-ambient--dossier .signal-ambient-field--lower-red { left: -30%; top: 59%; }
+.signal-ambient--dossier .signal-ambient-field--lower-gold { right: -28%; top: 80%; }
+.signal-ambient--dossier .signal-ambient-field--lower-cool { left: 18%; top: 93%; }
 .signal-ambient-grid {
   position: absolute;
   inset: 0;

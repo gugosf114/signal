@@ -411,7 +411,7 @@ export default function SignalDashboard() {
       padding: isMobile ? '24px 16px 60px' : '32px 24px 60px',
       position: 'relative',
     }}>
-      <SignalAmbient active={page === 'signal' && !result && !loading && !error} />
+      <SignalAmbient active={!loading} page={page} />
       {/* Header — wordmark inside a hairline red border. */}
       {/* Kanji slightly smaller than "Signal"; Signal in Syne, no italic. */}
       {/* Click anywhere on the wordmark to go home — aborts an in-flight scan
