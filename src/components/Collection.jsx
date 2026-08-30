@@ -17,6 +17,7 @@ import { fetchCardImage } from '../services/fetchCardImage';
 import CardLightbox from './CardLightbox';
 import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
+import CollectionCurrencies from './CollectionCurrencies';
 import pokeBallMark from '../assets/binders/poke-ball.svg';
 import yugiohTcgLogo from '../assets/binders/yugioh-tcg-logo.png';
 import magicLogo from '../assets/binders/magic-logo.png';
@@ -228,9 +229,14 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
           <span className="col-summary-label">{activeBinder.label} · cards</span>
           <strong>{total}</strong>
         </div>
-        <div>
+        <div className="col-summary-market">
           <span className="col-summary-label">{activeBinder.label} · market total</span>
           <strong>{marketDisplay}</strong>
+          <CollectionCurrencies
+            usdTotal={market.total}
+            hasKnownValue={market.pricedQty > 0 || market.unpricedQty === 0}
+            partial={market.unpricedQty > 0}
+          />
           {market.unpricedQty > 0 && (
             <small className="col-summary-note">{market.unpricedQty} unpriced</small>
           )}
