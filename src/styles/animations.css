@@ -7,13 +7,17 @@
 }
 
 /* One ambient layer behind the existing first-screen layout. */
-.signal-dashboard { isolation: isolate; }
+.signal-dashboard {
+  isolation: isolate;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
 .signal-ambient {
   position: absolute;
   z-index: -1;
   top: -40px;
-  left: -18px;
-  right: -18px;
+  left: 0;
+  right: 0;
   bottom: -60px;
   min-height: 1600px;
   overflow: hidden;
