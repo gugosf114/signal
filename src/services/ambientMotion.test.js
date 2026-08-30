@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ambientPointerOffset, ambientTiltOffset } from './ambientMotion.js';
+import { ambientParallax, ambientPointerOffset, ambientTiltOffset } from './ambientMotion.js';
 
 test('ambient tilt centers a normally held phone', () => {
   assert.deepEqual(ambientTiltOffset(45, 0), { x: 0, y: 0 });
@@ -21,4 +21,11 @@ test('ambient tilt follows movement from the first phone position', () => {
 test('ambient pointer maps the viewport edges to a small parallax range', () => {
   assert.deepEqual(ambientPointerOffset(0, 0, 1000, 500), { x: -18, y: -12 });
   assert.deepEqual(ambientPointerOffset(1000, 500, 1000, 500), { x: 18, y: 12 });
+});
+
+test('ambient lights move against each other instead of as one flat layer', () => {
+  const layers = ambientParallax({ x: 10, y: -8 });
+  assert.deepEqual(layers.red, { x: 14, y: -9.6 });
+  assert.deepEqual(layers.gold, { x: -8.5, y: 6 });
+  assert.ok(layers.red.x > 0 && layers.gold.x < 0);
 });

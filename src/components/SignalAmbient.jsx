@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ambientPointerOffset, ambientTiltOffset } from '../services/ambientMotion';
+import { ambientParallax, ambientPointerOffset, ambientTiltOffset } from '../services/ambientMotion';
 
 export default function SignalAmbient({ active }) {
   const fieldRef = useRef(null);
@@ -10,9 +10,12 @@ export default function SignalAmbient({ active }) {
     if (!field) return undefined;
     let origin = null;
 
-    const move = ({ x, y }) => {
-      field.style.setProperty('--ambient-x', `${x.toFixed(2)}px`);
-      field.style.setProperty('--ambient-y', `${y.toFixed(2)}px`);
+    const move = (offset) => {
+      const layers = ambientParallax(offset);
+      for (const [name, value] of Object.entries(layers)) {
+        field.style.setProperty(`--ambient-${name}-x`, `${value.x.toFixed(2)}px`);
+        field.style.setProperty(`--ambient-${name}-y`, `${value.y.toFixed(2)}px`);
+      }
     };
     const onOrientation = (event) => {
       if (event.beta == null || event.gamma == null
@@ -44,6 +47,8 @@ export default function SignalAmbient({ active }) {
       <span className="signal-ambient-field signal-ambient-field--red" />
       <span className="signal-ambient-field signal-ambient-field--gold" />
       <span className="signal-ambient-field signal-ambient-field--cool" />
+      <span className="signal-ambient-field signal-ambient-field--lower-red" />
+      <span className="signal-ambient-field signal-ambient-field--lower-gold" />
       <span className="signal-ambient-grid" />
     </div>
   );

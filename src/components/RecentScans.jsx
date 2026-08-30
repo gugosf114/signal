@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GAME_LABELS, SCORE_VERSION, calculateOverallScore } from '../config/signals';
 import { getCachedScan } from '../services/scanCache';
 import { recentPrintingLine, sanitizeRecentScans } from '../services/recentScans';
+import GameMark from './GameMark';
 
 // Distinct from QuickPicks: this is YOUR trace through the app.
 // Visual cue: hairline divider + label, then log-style rows
@@ -53,9 +54,8 @@ export default function RecentScans({ onSelect, loading }) {
   }, [scans]);
 
   if (scans.length === 0) return null;
-
   return (
-    <div style={{
+    <div className="recent-scans-panel" style={{
       width: '100%',
       marginTop: 18,
       border: '0.5px solid #FFFFFF',
@@ -156,15 +156,17 @@ export default function RecentScans({ onSelect, loading }) {
               <span style={{
                 minWidth: 0,
                 overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
                 textAlign: 'left',
                 fontFamily: "'Instrument Serif', serif",
                 fontStyle: 'italic',
                 fontSize: 15,
                 lineHeight: 1.2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 7,
               }}>
-                {s.name}
+                <GameMark game={s.game} compact />
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
               </span>
               <small style={{
                 minWidth: 0,

@@ -21,3 +21,15 @@ export function ambientPointerOffset(clientX, clientY, width, height) {
     y: clamp((Number(clientY) || 0) / safeHeight - 0.5, -0.5, 0.5) * 24,
   };
 }
+
+export function ambientParallax(offset) {
+  const x = Number(offset?.x) || 0;
+  const y = Number(offset?.y) || 0;
+  return {
+    red: { x: x * 1.4, y: y * 1.2 },
+    gold: { x: x * -0.85, y: y * -0.75 },
+    cool: { x: x * 0.55, y: y * -0.45 },
+    lowerRed: { x: x * -0.65, y: y * 0.5 },
+    lowerGold: { x: x * 0.9, y: y * -0.6 },
+  };
+}

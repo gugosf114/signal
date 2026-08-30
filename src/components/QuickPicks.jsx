@@ -1,13 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { SAMPLE_CARDS, GAME_LABELS } from '../config/signals';
-import { BrandIcon } from '../config/brandIcons';
 import { getTopTrending } from '../services/fetchTopTrending';
-
-const GAME_BRAND = {
-  pokemon: 'pokemon',
-  mtg: 'mtg',
-  yugioh: 'yugioh',
-};
+import GameMark from './GameMark';
 
 // While the API call is in flight (and as the last-ditch fallback), show a
 // handful of curated reseller targets so the strip is never empty.
@@ -41,7 +35,7 @@ export default function QuickPicks({ onSelect, loading }) {
   }, [trending]);
 
   return (
-    <div style={{
+    <div className="quick-picks-panel" style={{
       width: '100%',
       border: '0.5px solid #FFFFFF',
       borderRadius: 4,
@@ -144,7 +138,7 @@ export default function QuickPicks({ onSelect, loading }) {
                 e.currentTarget.style.color = '#7A7368';
               }}
             >
-              <BrandIcon brand={GAME_BRAND[card.game]} size={11} style={{ opacity: 0.7, flexShrink: 0 }} />
+              <GameMark game={card.game} compact />
               <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.name}</span>
               {/* Only shown when the source article was specifically about price
                   spikes — a mixed "biggest movers" list carries no arrow rather
