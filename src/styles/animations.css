@@ -2490,30 +2490,13 @@
   max-height: 52px;
   aspect-ratio: 1;
 }
-.col-binder-art-stack {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
+.col-binder--all .col-binder-art {
+  inset: -3px 4px -3px 48%;
+  opacity: 0.7;
 }
-.col-binder-art-stack .col-binder-mark { position: absolute; object-fit: contain; }
-.col-binder-art-stack .col-binder-mark--pokemon {
-  top: 2%;
-  left: 0;
-  width: 38%;
-  height: 44%;
-}
-.col-binder-art-stack .col-binder-mark--yugioh {
-  top: 0;
-  right: -1%;
-  width: 68%;
-  height: 47%;
-}
-.col-binder-art-stack .col-binder-mark--mtg {
-  right: 1%;
-  bottom: 0;
-  width: 82%;
-  height: 48%;
+.col-binder-mark--all {
+  object-position: center 42%;
+  filter: drop-shadow(0 3px 7px rgba(0, 0, 0, 0.58));
 }
 .col-binder strong {
   position: relative;

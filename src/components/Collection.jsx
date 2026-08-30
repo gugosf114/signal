@@ -20,6 +20,7 @@ import SearchBar from './SearchBar';
 import pokeBallMark from '../assets/binders/poke-ball.svg';
 import yugiohTcgLogo from '../assets/binders/yugioh-tcg-logo.png';
 import magicLogo from '../assets/binders/magic-logo.png';
+import gollumRing from '../assets/binders/gollum-ring.png';
 
 const CONDITION_LABEL = {
   near_mint: 'Near mint',
@@ -44,11 +45,7 @@ function BinderArt({ id }) {
   };
 
   if (id === 'all') return (
-    <span className="col-binder-art-stack">
-      <img className="col-binder-mark col-binder-mark--pokemon" src={pokeBallMark} alt="" />
-      <img className="col-binder-mark col-binder-mark--yugioh" src={yugiohTcgLogo} alt="" />
-      <img className="col-binder-mark col-binder-mark--mtg" src={magicLogo} alt="" />
-    </span>
+    <img className="col-binder-mark col-binder-mark--all" src={gollumRing} alt="" />
   );
 
   return <img className={`col-binder-mark col-binder-mark--${id}`} src={marks[id].src} alt={marks[id].alt} />;
