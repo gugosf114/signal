@@ -9,11 +9,11 @@ const MARKS = {
   mtg: magicLogo,
 };
 
-export default function GameMark({ game, compact = false }) {
+export default function GameMark({ game, compact = false, alive = false }) {
   const src = MARKS[game];
   if (!src) return null;
   return (
-    <span className={`game-row-mark game-row-mark--${game}${compact ? ' game-row-mark--compact' : ''}`} aria-hidden="true">
+    <span className={`game-row-mark game-row-mark--${game}${compact ? ' game-row-mark--compact' : ''}${alive ? ' game-row-mark--alive' : ''}`} aria-hidden="true">
       <img src={src} alt="" />
     </span>
   );

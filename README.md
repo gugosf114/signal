@@ -1191,3 +1191,18 @@ its temporary export files were removed afterward.
 Android jobs passed for `e17d7ea`. The APK was checked for embedded Anthropic
 keys (zero), signed with the existing phone key, installed over 2.9, and
 published privately as `signal-v2.9`.
+
+---
+
+## Session log — 2026-09-03 homepage attention pass
+
+George chose four code-native motion ideas for the existing home screen: the
+logo signal travels through the search border and game tiles; the game marks
+wake in their own way; the current quick-pick tiles deal into place once; and
+the existing news cards throw a slow foil light above their strip. The launch
+pass moves from top to bottom once. The news foil returns slowly. No panel was
+added and no section moved. Reduced-motion users receive the same layout with
+every new effect disabled.
+
+**Pinned for later, deliberately not built:** the giant ghost-card image behind
+the top half of the home screen.

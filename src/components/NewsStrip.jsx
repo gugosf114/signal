@@ -20,7 +20,7 @@ function timeAgo(d) {
 // The complete card = image above (sticking out) + pocket below (always visible)
 // On hover: image section rises 28px into the headroom above the strip.
 // The pocket never moves. The gap that appears IS the pocket interior / dark fabric.
-function ArticleCard({ article }) {
+function ArticleCard({ article, foilActive = false }) {
   const [imgSrc, setImgSrc] = useState(article.imageUrl || null);
   const c = article.source.color;
 
@@ -78,7 +78,10 @@ function ArticleCard({ article }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="npc-outer"
+      className={`npc-outer${foilActive ? ' npc-outer--foil-active' : ''}`}
+      style={{
+        '--news-card-accent': c,
+      }}
     >
       {/* ── CARD IMAGE — the part sticking out of the pocket ──────── */}
       {/* The picture owns the whole tile width. The old centered portrait
@@ -299,47 +302,59 @@ export default function NewsStrip() {
   if (!articles.length) return null;
 
   const tripled = reducedMotion ? articles : [...articles, ...articles, ...articles];
+  const activeAccent = articles[activeIdx]?.source?.color || '#C44040';
 
   return (
-    <div style={{ marginTop: 40, overflow: 'hidden' }}>
-      <div className="ns-header">
-        <span className="ns-label">TCG Intelligence</span>
-        <div className="ns-dots">
-          {articles.map((a, i) => (
-            <button
-              key={i}
-              className={`ns-dot ${i === activeIdx ? 'ns-dot--on' : ''}`}
-              style={{ '--dc': a.source.color }}
-              onClick={() => jumpTo(i)}
-              title={a.title?.slice(0, 60)}
-              aria-label={`Show article ${i + 1}: ${a.title || 'untitled'}`}
-            />
-          ))}
+    <div
+      className="news-strip-shell news-strip-shell--foil"
+      style={{ marginTop: 40, '--news-active-accent': activeAccent }}
+    >
+      <div className="news-strip-clip">
+        <div className="ns-header">
+          <span className="ns-label">TCG Intelligence</span>
+          <div className="ns-dots">
+            {articles.map((a, i) => (
+              <button
+                key={i}
+                className={`ns-dot ${i === activeIdx ? 'ns-dot--on' : ''}`}
+                style={{ '--dc': a.source.color }}
+                onClick={() => jumpTo(i)}
+                title={a.title?.slice(0, 60)}
+                aria-label={`Show article ${i + 1}: ${a.title || 'untitled'}`}
+              />
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Outer container — 32px headroom above cards + card height below */}
-      <div
-        className="ns-track-outer"
-        style={{
-          paddingTop: 32,
-          overflow: 'visible',
-          touchAction: 'pan-y',
-          cursor: isDraggingRef.current ? 'grabbing' : 'grab',
-          userSelect: 'none',
-        }}
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerEnd}
-        onPointerCancel={onPointerEnd}
-        onClickCapture={onClickCapture}
-      >
-        <div className="ns-fade-l" />
-        <div className="ns-fade-r" />
-        <div ref={trackRef} className="ns-track">
-          {tripled.map((article, index) => <ArticleCard key={index} article={article} />)}
+        {/* Outer container — 32px headroom above cards + card height below */}
+        <div
+          className="ns-track-outer"
+          style={{
+            paddingTop: 32,
+            overflow: 'visible',
+            touchAction: 'pan-y',
+            cursor: isDraggingRef.current ? 'grabbing' : 'grab',
+            userSelect: 'none',
+          }}
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerEnd}
+          onPointerCancel={onPointerEnd}
+          onClickCapture={onClickCapture}
+        >
+          <div className="ns-fade-l" />
+          <div className="ns-fade-r" />
+          <div ref={trackRef} className="ns-track">
+            {tripled.map((article, index) => (
+              <ArticleCard
+                key={index}
+                article={article}
+                foilActive={index % articles.length === activeIdx}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>

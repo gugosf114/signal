@@ -11,6 +11,7 @@ export default function QuickPicks({ onSelect, loading }) {
   const [trending, setTrending] = useState(FALLBACK_TRENDING);
   const [isLive, setIsLive] = useState(false);
   const [showFade, setShowFade] = useState(false);
+  const [introPhase, setIntroPhase] = useState('waiting');
   const listRef = useRef(null);
 
   const updateFade = () => {
@@ -34,8 +35,19 @@ export default function QuickPicks({ onSelect, loading }) {
     return () => cancelAnimationFrame(frame);
   }, [trending]);
 
+  // One opening pass. Stable slot keys keep a later live-data refresh from
+  // dealing the same five tiles a second time.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setIntroPhase('active'));
+    const timer = setTimeout(() => setIntroPhase('done'), 2200);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
+  }, []);
+
   return (
-    <div className="quick-picks-panel" style={{
+    <div className={`quick-picks-panel quick-picks-panel--intro-${introPhase}`} style={{
       width: '100%',
       border: '0.5px solid #FFFFFF',
       borderRadius: 4,
@@ -99,13 +111,19 @@ export default function QuickPicks({ onSelect, loading }) {
           }}
         >
           {trending.map((card, idx) => {
-          const game = GAME_LABELS[card.game] || { color: '#605C54', label: card.game || '?' };
-          return (
-            <button
-              key={`${card.game}-${card.name}-${idx}`}
+            const game = GAME_LABELS[card.game] || { color: '#605C54', label: card.game || '?' };
+            const dealDelay = 0.58 + (idx * 0.085);
+            return (
+              <button
+              key={`quick-pick-${idx}`}
+              className={`quick-pick-card quick-pick-card--${card.game || 'unknown'}`}
               onClick={() => !loading && onSelect(card.name, card.game, { pin: card.id ? card : null })}
               disabled={loading}
               style={{
+                '--deal-delay': `${dealDelay}s`,
+                '--deal-x': idx % 2 === 0 ? '-18px' : '18px',
+                '--deal-angle': idx % 2 === 0 ? '-2.4deg' : '2.4deg',
+                '--game-color': game.color,
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
@@ -138,7 +156,7 @@ export default function QuickPicks({ onSelect, loading }) {
                 e.currentTarget.style.color = '#7A7368';
               }}
             >
-              <GameMark game={card.game} compact />
+              <GameMark game={card.game} compact alive />
               <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.name}</span>
               {/* Only shown when the source article was specifically about price
                   spikes — a mixed "biggest movers" list carries no arrow rather
@@ -155,8 +173,8 @@ export default function QuickPicks({ onSelect, loading }) {
                   }}
                 >▲</span>
               )}
-            </button>
-          );
+              </button>
+            );
           })}
         </div>
         {showFade && <div className="compact-scroll-fade" aria-hidden />}

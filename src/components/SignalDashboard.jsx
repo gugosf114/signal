@@ -405,7 +405,7 @@ export default function SignalDashboard() {
   };
 
   return (
-    <div className="signal-dashboard" style={{
+    <div className={`signal-dashboard${page === 'signal' && !result && !loading && !error ? ' signal-dashboard--home-launch' : ''}`} style={{
       maxWidth: 800,
       margin: '0 auto',
       padding: isMobile ? '24px 16px 60px' : '32px 24px 60px',
@@ -418,7 +418,7 @@ export default function SignalDashboard() {
           if one is running, drops result/error state otherwise. */}
       <div style={{ textAlign: 'center', marginBottom: 32, marginTop: isMobile ? 28 : 0 }}>
         <div
-          className="signal-logo-frame"
+          className={`signal-logo-frame${page === 'signal' && !result && !loading && !error ? ' signal-logo-frame--launch' : ''}`}
           role="button"
           tabIndex={0}
           aria-label="Go to home"
@@ -512,6 +512,7 @@ export default function SignalDashboard() {
             onScannerBatch={addScannerBatch}
             loading={loading}
             accentBorder
+            homePulse
           />
           <QuickPicks onSelect={handleSearch} loading={loading} />
           <RecentScans onSelect={handleSearch} loading={loading} />
