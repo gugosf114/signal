@@ -434,7 +434,8 @@
 
 @keyframes recentSlabDust {
   0% { opacity: 0; transform: translate3d(0, 1px, 0) rotate(0deg) scale(0.42); }
-  24% { opacity: 0.64; transform: translate3d(var(--dust-drift), -2px, 0) rotate(var(--dust-turn)) scale(0.82); }
+  /* 0.64 × 1.20 = 0.768: George's exact 20% dust-density increase. */
+  24% { opacity: 0.768; transform: translate3d(var(--dust-drift), -2px, 0) rotate(var(--dust-turn)) scale(0.82); }
   100% { opacity: 0; transform: translate3d(var(--dust-drift-end), -13px, 0) rotate(var(--dust-turn)) scale(1.15); }
 }
 

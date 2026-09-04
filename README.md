@@ -1216,4 +1216,5 @@ trending-card deal. Each row drops like a heavy slab, compresses on impact,
 throws one short warm-gray dust puff across its lower edge, and settles. The
 rows land one at a time. Older rows below the scroll stay still. The effect
 runs again when Signal is re-entered from Collection or Dossier and is fully
-disabled by reduced-motion preference.
+disabled by reduced-motion preference. George then raised only the peak dust
+density by exactly 20% (`0.64` → `0.768`); spread and timing stayed fixed.

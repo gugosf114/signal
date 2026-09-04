@@ -39,6 +39,7 @@ test('only the first three recent scans receive the slab impact', () => {
   assert.match(css, /@keyframes recentSlabDrop/);
   assert.match(css, /@keyframes recentSlabImpact/);
   assert.match(css, /@keyframes recentSlabDust/);
+  assert.match(css, /24% \{ opacity: 0\.768;/);
 });
 
 test('home attention motion has a reduced-motion exit', () => {
