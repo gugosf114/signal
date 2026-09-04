@@ -481,6 +481,9 @@ export default function SearchBar({
         width: '100%',
         maxWidth: 580,
       }}>
+      {homePulse && (
+        <span className="cascade-border-runner cascade-border-runner--search" aria-hidden="true" />
+      )}
       <div style={{ position: 'relative', width: '100%', minWidth: 0 }}>
         {/* Signal and Collection use this same two-choice photo menu. */}
         <button

@@ -1234,14 +1234,18 @@ or the selected binder changes.
 
 ## Session log — 2026-09-04 unified page-light cascade
 
-The orbiting light around the Signal logo remains continuous. On the first
-visit to each page in one app session, one teardrop breaks from the logo,
-curves through the active page tab, returns to the center, and falls through
-that page in under two seconds. Returning to a page does not replay it.
+The orbiting light around the Signal logo remains continuous at a nine-second
+lap. On the first visit to each page in one app session, a thin streak of that
+same light hands itself to the active page tab. There is no falling object or
+teardrop shape. Each lower border finishes one calm lap before a short light
+streak carries the shine to the next border. Returning to a page does not
+replay the sequence.
 
-On Signal, the drop coordinates the existing search-border light, trending
-card deal, living game marks, three recent-scan slab impacts, and news foil.
-On Collection, it wakes the binder tiles, lights the summary, then splits over
-the three highest-value card images. On Dossier, it draws one thin seal around
-the opening research panel and wakes the method list. Reduced-motion mode
-shows every item immediately and suppresses the complete cascade.
+The lap rhythm after the logo is `6s → 8s → 4s → 9s`, then repeats where a
+page has another border. Signal runs around the active tab, search, trending
+panel, recent scans, and news. Collection uses the tab, search, binder group,
+summary, then splits into six-second laps around the three highest-value card
+images. Dossier uses the tab, opening research panel, method block, and sample
+panel. The existing deal, game-mark, slab/dust, and foil effects remain.
+Reduced-motion mode shows every item immediately and suppresses every handoff
+and border lap.

@@ -492,7 +492,7 @@ export default function SignalDashboard() {
         </div>
       </div>
 
-      <PageTabs page={page} onChange={changePage} />
+      <PageTabs page={page} onChange={changePage} cascadeActive={activeCascade} />
 
       {page === 'dossier' && (
         <div id="panel-dossier" role="tabpanel" aria-labelledby="tab-dossier">

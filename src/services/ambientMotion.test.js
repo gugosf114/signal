@@ -43,5 +43,5 @@ test('each page cascade can be claimed only once per app session', () => {
   assert.equal(claimPageCascade(visited, 'collection'), false);
   assert.equal(claimPageCascade(visited, 'dossier'), true);
   assert.equal(claimPageCascade(visited, 'unknown'), false);
-  assert.ok(PAGE_CASCADE_DURATION_MS >= 2500);
+  assert.equal(PAGE_CASCADE_DURATION_MS, 36000);
 });

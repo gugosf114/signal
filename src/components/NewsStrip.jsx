@@ -309,6 +309,9 @@ export default function NewsStrip({ cascadeActive = false }) {
       className={`news-strip-shell news-strip-shell--foil${cascadeActive ? ' news-strip-shell--cascade' : ''}`}
       style={{ marginTop: 40, '--news-active-accent': activeAccent }}
     >
+      {cascadeActive && (
+        <span className="cascade-border-runner cascade-border-runner--news" aria-hidden="true" />
+      )}
       <div className="news-strip-clip">
         <div className="ns-header">
           <span className="ns-label">TCG Intelligence</span>

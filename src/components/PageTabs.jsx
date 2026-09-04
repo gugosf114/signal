@@ -9,7 +9,7 @@ const TABS = [
   { key: 'dossier', label: 'Dossier' },
 ];
 
-export default function PageTabs({ page, onChange }) {
+export default function PageTabs({ page, onChange, cascadeActive = false }) {
   const onKeyDown = (event) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
@@ -36,6 +36,9 @@ export default function PageTabs({ page, onChange }) {
           onClick={() => onChange(t.key)}
         >
           {t.label}
+          {cascadeActive && page === t.key && (
+            <span className="cascade-border-runner cascade-border-runner--tab" aria-hidden="true" />
+          )}
         </button>
       ))}
     </div>

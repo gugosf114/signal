@@ -63,6 +63,9 @@ export default function RecentScans({ onSelect, loading, introActive = false }) 
       padding: '14px 16px 12px',
       background: 'var(--signal-panel)',
     }}>
+      {introActive && (
+        <span className="cascade-border-runner cascade-border-runner--recent-scans" aria-hidden="true" />
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
         <div style={{
           flex: 1,

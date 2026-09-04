@@ -42,6 +42,9 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
       padding: '14px 16px 12px',
       background: 'var(--signal-panel)',
     }}>
+      {introActive && (
+        <span className="cascade-border-runner cascade-border-runner--quick-picks" aria-hidden="true" />
+      )}
       {/* Header — TOP TRENDING / weekly · TCGplayer */}
       <div style={{
         display: 'flex',

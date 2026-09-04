@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const css = readFileSync(new URL('./animations.css', import.meta.url), 'utf8');
 const dashboardSource = readFileSync(new URL('../components/SignalDashboard.jsx', import.meta.url), 'utf8');
+const pageTabsSource = readFileSync(new URL('../components/PageTabs.jsx', import.meta.url), 'utf8');
 const searchSource = readFileSync(new URL('../components/SearchBar.jsx', import.meta.url), 'utf8');
 const quickPicksSource = readFileSync(new URL('../components/QuickPicks.jsx', import.meta.url), 'utf8');
 const recentScansSource = readFileSync(new URL('../components/RecentScans.jsx', import.meta.url), 'utf8');
@@ -34,18 +35,29 @@ test('home attention pass reuses the existing logo, search, tiles, marks, and ne
   assert.match(css, /\.npc-outer--foil-active \.npc-above::after/);
 });
 
-test('one teardrop coordinates the first visit to all three pages', () => {
+test('one border shine coordinates the first visit to all three pages', () => {
   assert.match(dashboardSource, /claimPageCascade/);
   assert.match(dashboardSource, /signal-dashboard--cascade-/);
   assert.match(dashboardSource, /introActive=\{activeCascade\}/);
+  assert.match(pageTabsSource, /cascade-border-runner--tab/);
+  assert.match(searchSource, /cascade-border-runner--search/);
   assert.match(quickPicksSource, /introActive = false/);
+  assert.match(quickPicksSource, /cascade-border-runner--quick-picks/);
   assert.match(recentScansSource, /introActive = false/);
+  assert.match(recentScansSource, /cascade-border-runner--recent-scans/);
   assert.match(newsSource, /cascadeActive = false/);
+  assert.match(newsSource, /cascade-border-runner--news/);
   assert.match(collectionSource, /collection-page--cascade/);
+  assert.match(collectionSource, /cascade-border-runner--top-card/);
   assert.match(dossierSource, /dos-page--cascade/);
-  assert.match(css, /@keyframes signalTeardropFall/);
+  assert.match(dossierSource, /cascade-border-runner--dossier-hero/);
+  assert.match(css, /@keyframes cascadeBorderLap/);
+  assert.match(css, /@keyframes cascadeLogoHandoff/);
+  assert.doesNotMatch(css, /signalTeardropFall/);
   assert.match(css, /@keyframes topCardSplitLight/);
-  assert.match(css, /@keyframes dossierSealDraw/);
+  for (const duration of ['4s', '6s', '8s', '9s']) {
+    assert.match(css, new RegExp(`--cascade-runner-duration: ${duration}`));
+  }
 });
 
 test('only the first three recent scans receive the slab impact', () => {
@@ -61,13 +73,12 @@ test('only the first three recent scans receive the slab impact', () => {
 test('home attention motion has a reduced-motion exit', () => {
   const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
   assert.match(reduced, /signal-logo-frame--launch::before/);
-  assert.match(reduced, /signal-search-form--home::after/);
+  assert.match(reduced, /cascade-border-runner::after/);
   assert.match(reduced, /quick-picks-panel--intro-active/);
   assert.match(reduced, /news-strip-shell--foil/);
   assert.match(reduced, /npc-above::after/);
   assert.match(reduced, /recent-scans-panel--intro-active/);
   assert.match(reduced, /recent-scan-slab::after/);
-  assert.match(reduced, /signal-dashboard--cascade::before/);
   assert.match(reduced, /collection-page--cascade/);
   assert.match(reduced, /dos-page--cascade/);
 });

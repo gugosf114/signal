@@ -211,6 +211,9 @@ export default function Collection({ onLookup, onAddCard, onAddBatch, introActiv
       <input ref={importRef} type="file" accept="application/json,.json" onChange={restoreBackup} hidden />
 
       <div className="col-binders" role="tablist" aria-label="Collection binders">
+        {introActive && (
+          <span className="cascade-border-runner cascade-border-runner--collection-binders" aria-hidden="true" />
+        )}
         {BINDERS.map((item) => (
           <button
             key={item.id}
@@ -228,6 +231,9 @@ export default function Collection({ onLookup, onAddCard, onAddBatch, introActiv
       </div>
 
       <div className="col-summary">
+        {introActive && (
+          <span className="cascade-border-runner cascade-border-runner--collection-summary" aria-hidden="true" />
+        )}
         <div className="col-summary-count">
           <span className="col-summary-label">{activeBinder.label} · cards</span>
           <strong>{total}</strong>
@@ -240,9 +246,15 @@ export default function Collection({ onLookup, onAddCard, onAddBatch, introActiv
                     className="col-top-card"
                     key={cardKey(card)}
                     title={`${index + 1}. ${card.name} — ${formatCollectionMoney(marketPriceFor(card))}`}
-                    style={{ '--top-card-index': index }}
+                    style={{
+                      '--top-card-index': index,
+                      '--top-card-runner-delay': `${28.85 + (index * 0.1)}s`,
+                    }}
                   >
                     <div className="col-top-card-art">
+                      {introActive && (
+                        <span className="cascade-border-runner cascade-border-runner--top-card" aria-hidden="true" />
+                      )}
                       <span className="col-top-card-noart" aria-hidden="true">?</span>
                       {imageUrl && (
                         <img

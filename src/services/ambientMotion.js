@@ -3,7 +3,7 @@ function clamp(value, min, max) {
 }
 
 const CASCADE_PAGES = new Set(['signal', 'collection', 'dossier']);
-export const PAGE_CASCADE_DURATION_MS = 2700;
+export const PAGE_CASCADE_DURATION_MS = 36000;
 
 export function claimPageCascade(visited, page) {
   const key = String(page || '').toLowerCase();

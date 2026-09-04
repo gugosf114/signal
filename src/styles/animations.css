@@ -244,18 +244,18 @@
   content: '';
   position: absolute;
   z-index: 3;
-  left: 8%;
-  bottom: -2px;
-  width: 34px;
-  height: 2px;
+  left: 50%;
+  bottom: -3px;
+  width: 2px;
+  height: 24px;
   border-radius: 999px;
   pointer-events: none;
   opacity: 0;
-  background: linear-gradient(90deg, transparent 0%, #FFE6AE 48%, #FFFFFF 66%, transparent 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFE6AE 42%, rgba(196, 64, 64, 0.46) 78%, transparent 100%);
   box-shadow: 0 0 7px rgba(255, 237, 196, 0.95), 0 0 18px rgba(196, 64, 64, 0.7);
-  transform: translateX(0) scaleX(0.35);
-  transform-origin: 50% 50%;
-  animation: signalLogoSpark 0.62s cubic-bezier(0.25, 0.75, 0.2, 1) 0.08s 1 both;
+  transform: translate3d(-50%, -2px, 0) scaleY(0.16);
+  transform-origin: 50% 0%;
+  animation: cascadeLogoHandoff 0.42s ease-in 0.03s 1 both;
 }
 
 @keyframes homeLogoWake {
@@ -264,106 +264,145 @@
   100% { filter: drop-shadow(0 0 0 transparent); }
 }
 
-@keyframes signalLogoSpark {
-  0% { opacity: 0; transform: translateX(0) scaleX(0.35); }
-  16% { opacity: 1; }
-  78% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(360%) scaleX(0.65); }
+@keyframes cascadeLogoHandoff {
+  0% { opacity: 0; transform: translate3d(-50%, -2px, 0) scaleY(0.16); }
+  18% { opacity: 1; }
+  76% { opacity: 1; transform: translate3d(calc(-50% + var(--cascade-tab-x)), 44px, 0) scaleY(1); }
+  100% { opacity: 0; transform: translate3d(calc(-50% + var(--cascade-tab-x)), 58px, 0) scaleY(0.28); }
 }
 
 .signal-dashboard--cascade {
   --cascade-tab-x: 0px;
-  --cascade-y1: 58px;
-  --cascade-y2: 128px;
-  --cascade-y3: 245px;
-  --cascade-y4: 405px;
-  --cascade-y5: 610px;
 }
 .signal-dashboard--cascade-signal { --cascade-tab-x: -31vw; }
-.signal-dashboard--cascade-collection {
-  --cascade-y1: 60px;
-  --cascade-y2: 170px;
-  --cascade-y3: 300px;
-  --cascade-y4: 410px;
-  --cascade-y5: 520px;
-}
-.signal-dashboard--cascade-dossier {
-  --cascade-tab-x: 31vw;
-  --cascade-y1: 60px;
-  --cascade-y2: 155px;
-  --cascade-y3: 270px;
-  --cascade-y4: 390px;
-  --cascade-y5: 520px;
-}
-.signal-dashboard--cascade::before {
-  content: '';
-  position: absolute;
-  z-index: 30;
-  top: 104px;
-  left: 50%;
-  width: 9px;
-  height: 14px;
-  pointer-events: none;
-  opacity: 0;
-  clip-path: polygon(50% 0%, 88% 52%, 82% 79%, 68% 94%, 50% 100%, 32% 94%, 18% 79%, 12% 52%);
-  background: linear-gradient(180deg, #FFFFFF 0%, #FFE2A5 42%, #C44040 100%);
-  filter: drop-shadow(0 0 5px rgba(255, 235, 193, 0.95)) drop-shadow(0 0 13px rgba(196, 64, 64, 0.72));
-  transform: translate3d(-50%, 0, 0) scale(0.35);
-  animation: signalTeardropFall 1.85s cubic-bezier(0.28, 0.62, 0.24, 1) 0.12s 1 both;
-}
-
-@keyframes signalTeardropFall {
-  0% { opacity: 0; transform: translate3d(-50%, 0, 0) scale(0.35); }
-  7% { opacity: 1; }
-  18% { opacity: 1; transform: translate3d(calc(-50% + var(--cascade-tab-x)), var(--cascade-y1), 0) scale(1); }
-  30% { transform: translate3d(calc(-50% - 3px), var(--cascade-y2), 0) scaleX(1.18) scaleY(0.78); }
-  48% { transform: translate3d(calc(-50% + 3px), var(--cascade-y3), 0) scale(0.94); }
-  70% { transform: translate3d(calc(-50% - 2px), var(--cascade-y4), 0) scaleX(1.12) scaleY(0.86); }
-  92% { opacity: 1; transform: translate3d(-50%, var(--cascade-y5), 0) scale(0.82); }
-  100% { opacity: 0; transform: translate3d(-50%, var(--cascade-y5), 0) scale(0.35); }
-}
+.signal-dashboard--cascade-dossier { --cascade-tab-x: 31vw; }
 
 @media (min-width: 640px) {
-  .signal-dashboard--cascade::before { top: 94px; }
   .signal-dashboard--cascade-signal { --cascade-tab-x: -143px; }
   .signal-dashboard--cascade-dossier { --cascade-tab-x: 143px; }
-}
-
-.signal-dashboard--cascade .pt-tab--on {
-  animation: homeTabReceive 0.5s ease-out 0.34s 1 both;
-}
-
-@keyframes homeTabReceive {
-  0%, 100% { box-shadow: 0 0 0 transparent; }
-  48% { border-color: #FFE3A8; box-shadow: 0 0 12px rgba(255, 221, 154, 0.34); }
 }
 
 .signal-search-form--home {
   isolation: isolate;
 }
 
-.signal-search-form--home::after {
+.cascade-border-runner {
+  --cascade-runner-delay: 0s;
+  --cascade-runner-duration: 6s;
+  --cascade-arrival-delay: 0s;
+  --cascade-arrival-x: 0px;
+  --cascade-runner-radius: 4px;
+  position: absolute;
+  z-index: 12;
+  inset: 0;
+  display: block;
+  overflow: visible;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.cascade-border-runner::after {
   content: '';
   position: absolute;
-  z-index: 5;
+  z-index: 2;
   left: 0;
-  top: -1px;
-  width: 30%;
-  height: 2px;
+  top: 0;
+  width: 28px;
+  height: 3px;
   border-radius: 999px;
   pointer-events: none;
   opacity: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(196, 64, 64, 0.38) 22%, #FFE1A6 58%, #FFFFFF 70%, transparent 100%);
-  transform: translateX(-18%);
-  animation: signalSearchReceive 0.82s ease-out 0.54s 1 both;
+  background: linear-gradient(90deg, transparent 0%, rgba(240, 199, 122, 0.22) 18%, #FFE4AD 48%, #FFFFFF 62%, rgba(255, 228, 173, 0.72) 76%, transparent 100%);
+  box-shadow: 0 0 4px rgba(255, 236, 196, 0.82), 0 0 10px rgba(196, 64, 64, 0.38);
+  offset-path: inset(1px round var(--cascade-runner-radius));
+  offset-distance: 0%;
+  offset-rotate: auto;
+  animation: cascadeBorderLap var(--cascade-runner-duration) linear var(--cascade-runner-delay) 1 both;
 }
 
-@keyframes signalSearchReceive {
-  0% { opacity: 0; transform: translateX(-18%); filter: drop-shadow(0 0 0 transparent); }
-  18% { opacity: 1; }
-  66% { opacity: 0.96; filter: drop-shadow(0 0 7px rgba(255, 221, 154, 0.75)); }
-  100% { opacity: 0; transform: translateX(235%); filter: drop-shadow(0 0 0 transparent); }
+.cascade-border-runner::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: -26px;
+  width: 2px;
+  height: 26px;
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(196, 64, 64, 0.38) 22%, #FFE4AD 58%, #FFFFFF 78%, transparent 100%);
+  box-shadow: 0 0 5px rgba(255, 236, 196, 0.72);
+  transform: translate3d(calc(-50% + var(--cascade-arrival-x)), -20px, 0) scaleY(0.18);
+  transform-origin: 50% 100%;
+  animation: cascadeShineHandoff 0.35s ease-in var(--cascade-arrival-delay) 1 both;
 }
+
+.cascade-border-runner--tab {
+  --cascade-runner-delay: 0.45s;
+  --cascade-runner-duration: 6s;
+  --cascade-runner-radius: 3px;
+}
+.cascade-border-runner--tab::before { display: none; }
+.cascade-border-runner--search {
+  --cascade-runner-delay: 6.8s;
+  --cascade-runner-duration: 8s;
+  --cascade-arrival-delay: 6.45s;
+  --cascade-arrival-x: var(--cascade-tab-x);
+  --cascade-runner-radius: 3px;
+  bottom: auto;
+  height: 52px;
+}
+.cascade-border-runner--quick-picks {
+  --cascade-runner-delay: 15.15s;
+  --cascade-runner-duration: 4s;
+  --cascade-arrival-delay: 14.8s;
+}
+.cascade-border-runner--recent-scans {
+  --cascade-runner-delay: 19.5s;
+  --cascade-runner-duration: 9s;
+  --cascade-arrival-delay: 19.15s;
+}
+.cascade-border-runner--news {
+  --cascade-runner-delay: 28.85s;
+  --cascade-runner-duration: 6s;
+  --cascade-arrival-delay: 28.5s;
+  --cascade-runner-radius: 7px;
+}
+
+@keyframes cascadeBorderLap {
+  0% { opacity: 0; offset-distance: 0%; }
+  2% { opacity: 1; }
+  96% { opacity: 1; }
+  100% { opacity: 0; offset-distance: 100%; }
+}
+
+@keyframes cascadeShineHandoff {
+  0% { opacity: 0; transform: translate3d(calc(-50% + var(--cascade-arrival-x)), -20px, 0) scaleY(0.18); }
+  22% { opacity: 1; }
+  76% { opacity: 1; transform: translate3d(-50%, -3px, 0) scaleY(1); }
+  100% { opacity: 0; transform: translate3d(-50%, 0, 0) scaleY(0.24); }
+}
+
+@supports not (offset-path: inset(1px round 4px)) {
+  .cascade-border-runner::after {
+    inset: -1px;
+    width: auto;
+    height: auto;
+    border: 1px solid #FFE4AD;
+    border-radius: inherit;
+    background: transparent;
+    animation: cascadeBorderFallback var(--cascade-runner-duration) ease-in-out var(--cascade-runner-delay) 1 both;
+  }
+}
+
+@keyframes cascadeBorderFallback {
+  0%, 100% { opacity: 0; box-shadow: 0 0 0 transparent; }
+  18%, 82% { opacity: 0.72; box-shadow: 0 0 9px rgba(255, 226, 168, 0.48); }
+}
+
+.quick-picks-panel,
+.recent-scans-panel { position: relative; isolation: isolate; }
 
 .quick-pick-card {
   position: relative;
@@ -2731,6 +2770,9 @@
   margin-right: auto;
 }
 .pt-tab {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
   min-height: 40px;
   padding: 8px 8px;
   background: transparent;
@@ -2772,28 +2814,9 @@
 .dos-page--cascade .dos-hero {
   animation: dossierHeroWake 0.7s ease-out 0.62s 1 both;
 }
-.dos-page--cascade .dos-hero::before {
-  content: '';
-  position: absolute;
-  z-index: 3;
-  inset: 0;
-  pointer-events: none;
-  border: 1px solid #FFE1A6;
-  border-radius: inherit;
-  opacity: 0;
-  clip-path: inset(0 100% 100% 0);
-  filter: drop-shadow(0 0 5px rgba(255, 221, 154, 0.58));
-  animation: dossierSealDraw 0.92s ease-out 0.86s 1 both;
-}
 @keyframes dossierHeroWake {
   0%, 100% { box-shadow: 0 0 0 transparent; }
   52% { box-shadow: 0 0 20px rgba(196, 64, 64, 0.2); }
-}
-@keyframes dossierSealDraw {
-  0% { opacity: 0; clip-path: inset(0 100% 100% 0); }
-  18% { opacity: 1; }
-  72% { opacity: 0.86; clip-path: inset(0 0 0 0); }
-  100% { opacity: 0; clip-path: inset(0 0 0 0); }
 }
 .dos-hero::after {
   content: 'DOSSIER';
@@ -2842,7 +2865,7 @@
   text-transform: uppercase;
 }
 .dos-rule i { width: 16px; height: 1px; background: #3A2525; }
-.dos-method { margin-top: 34px; }
+.dos-method { position: relative; margin-top: 34px; }
 .dos-page--cascade .dos-method {
   animation: dossierMethodWake 0.56s ease-out 1.28s 1 both;
 }
@@ -2890,11 +2913,29 @@
   font: 12px/1.6 'Syne', sans-serif;
 }
 .dos-sample {
+  position: relative;
   margin-top: 34px;
   padding: 22px;
   border: 0.5px solid #FFFFFF;
   border-radius: 3px;
   background: var(--signal-panel);
+}
+.cascade-border-runner--dossier-hero {
+  --cascade-runner-delay: 6.8s;
+  --cascade-runner-duration: 8s;
+  --cascade-arrival-delay: 6.45s;
+  --cascade-arrival-x: var(--cascade-tab-x);
+}
+.cascade-border-runner--dossier-method {
+  --cascade-runner-delay: 15.15s;
+  --cascade-runner-duration: 4s;
+  --cascade-arrival-delay: 14.8s;
+}
+.cascade-border-runner--dossier-sample {
+  --cascade-runner-delay: 19.5s;
+  --cascade-runner-duration: 9s;
+  --cascade-arrival-delay: 19.15s;
+  --cascade-runner-radius: 3px;
 }
 .dos-sample-top {
   display: flex;
@@ -3045,6 +3086,7 @@
 }
 
 .col-binders {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 7px;
@@ -3181,6 +3223,7 @@
 }
 
 .col-summary {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 10px 0;
@@ -3255,6 +3298,22 @@
   transform: scale(0.22);
   animation: topCardSplitLight 0.62s ease-out calc(1.42s + (var(--top-card-index) * 0.1s)) 1 both;
 }
+.cascade-border-runner--collection-binders {
+  --cascade-runner-delay: 15.15s;
+  --cascade-runner-duration: 4s;
+  --cascade-arrival-delay: 14.8s;
+}
+.cascade-border-runner--collection-summary {
+  --cascade-runner-delay: 19.5s;
+  --cascade-runner-duration: 9s;
+  --cascade-arrival-delay: 19.15s;
+}
+.cascade-border-runner--top-card {
+  --cascade-runner-delay: var(--top-card-runner-delay);
+  --cascade-runner-duration: 6s;
+  --cascade-runner-radius: 3px;
+}
+.cascade-border-runner--top-card::before { display: none; }
 @keyframes topCardSplitLight {
   0% { opacity: 0; transform: scale(0.22); }
   38% { opacity: 0.9; transform: scale(0.72); }
@@ -3535,13 +3594,12 @@
   .signal-card-backdrop { transition: none !important; transform: none !important; }
   .signal-logo-frame::after { animation: none !important; }
   .signal-logo-frame--launch::before,
-  .signal-search-form--home::after,
-  .npc-above::after { animation: none !important; opacity: 0 !important; }
+  .npc-above::after,
+  .cascade-border-runner::before,
+  .cascade-border-runner::after { animation: none !important; opacity: 0 !important; }
   .news-strip-shell--foil::before { animation: none !important; opacity: 0 !important; }
-  .signal-dashboard--cascade::before,
   .news-strip-shell--cascade::after,
-  .collection-page--cascade .col-top-card-art::after,
-  .dos-page--cascade .dos-hero::before {
+  .collection-page--cascade .col-top-card-art::after {
     animation: none !important;
     opacity: 0 !important;
   }
