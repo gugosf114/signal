@@ -276,6 +276,28 @@ export function collectionValueSummary(list) {
   return summary;
 }
 
+// Rank physical printings/forms by one-card market price. Quantity never
+// changes the order. Different condition rows for the same printing/form are
+// shown once so the small summary does not repeat the same card.
+export function topPricedCollectionCards(list, limit = 3) {
+  const max = Math.max(0, Math.min(10, Math.floor(Number(limit) || 0)));
+  if (!max) return [];
+  const seen = new Set();
+  return (Array.isArray(list) ? [...list] : [])
+    .filter((card) => card?.name && marketPriceFor(card) !== null)
+    .sort((a, b) => (
+      marketPriceFor(b) - marketPriceFor(a)
+      || String(a.name).localeCompare(String(b.name))
+    ))
+    .filter((card) => {
+      const key = `${baseCardKey(card)}::${cleanFormForGame(card.game, card.form)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, max);
+}
+
 function addedTime(card) {
   const value = Date.parse(card?.addedAt || '');
   return Number.isFinite(value) ? value : 0;

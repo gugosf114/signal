@@ -3082,6 +3082,73 @@
   font-size: 18px;
 }
 .col-summary strong sup { color: #A09060; font-size: 10px; }
+.col-summary-count { overflow: hidden; }
+.col-top-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 5px;
+  margin-top: 7px;
+}
+.col-top-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.col-top-card-art {
+  position: relative;
+  width: min(100%, 46px);
+  aspect-ratio: 0.716;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 3px;
+  background: #101116;
+  box-shadow: 0 4px 9px rgba(0, 0, 0, 0.34);
+}
+.col-top-card-art img,
+.col-top-card-noart {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.col-top-card-art img {
+  z-index: 1;
+  display: block;
+  object-fit: cover;
+}
+.col-top-card-noart {
+  display: grid;
+  place-items: center;
+  color: #3E3A34;
+  font: 700 15px 'Instrument Serif', serif;
+}
+.col-top-card-art b {
+  position: absolute;
+  z-index: 2;
+  top: 2px;
+  left: 2px;
+  display: grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  border: 1px solid rgba(255, 235, 194, 0.34);
+  border-radius: 50%;
+  background: rgba(8, 9, 10, 0.86);
+  color: #E8D8B5;
+  font: 700 7px/1 'JetBrains Mono', monospace;
+}
+.col-top-card-price {
+  max-width: 100%;
+  overflow: hidden;
+  color: #C8C3B9;
+  font: 700 7px/1.2 'JetBrains Mono', monospace;
+  letter-spacing: -0.035em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .col-summary-note {
   color: #A09060;
   font: 8px 'JetBrains Mono', monospace;

@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   loadCollection, saveCollection, importCollection, addOne, removeOne, removeAll,
   countCards, collectionValueSummary, cardKey,
-  collectionFormLabel, formatCollectionMoney,
+  collectionFormLabel, formatCollectionMoney, marketPriceFor,
+  topPricedCollectionCards,
   collectionView,
 } from '../services/collection';
 import {
@@ -174,6 +175,7 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
   const activeBinder = BINDERS.find((item) => item.id === binder) || BINDERS[0];
   const total = countCards(visibleCards);
   const market = collectionValueSummary(visibleCards);
+  const topPricedCards = useMemo(() => topPricedCollectionCards(visibleCards, 3), [visibleCards]);
   const marketDisplay = market.pricedQty > 0
     ? `${formatCollectionMoney(market.total)}${market.unpricedQty > 0 ? '+' : ''}`
     : (market.unpricedQty > 0 ? '—' : '$0.00');
@@ -225,9 +227,38 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
       </div>
 
       <div className="col-summary">
-        <div>
+        <div className="col-summary-count">
           <span className="col-summary-label">{activeBinder.label} · cards</span>
           <strong>{total}</strong>
+          {topPricedCards.length > 0 && (
+            <div className="col-top-cards" aria-label={`${activeBinder.label}: three highest unit-price cards`}>
+              {topPricedCards.map((card, index) => {
+                const imageUrl = card.imageUrl || card.imageLarge;
+                return (
+                  <div
+                    className="col-top-card"
+                    key={cardKey(card)}
+                    title={`${index + 1}. ${card.name} — ${formatCollectionMoney(marketPriceFor(card))}`}
+                  >
+                    <div className="col-top-card-art">
+                      <span className="col-top-card-noart" aria-hidden="true">?</span>
+                      {imageUrl && (
+                        <img
+                          src={imageUrl}
+                          alt={card.name}
+                          loading="eager"
+                          referrerPolicy="no-referrer"
+                          onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                        />
+                      )}
+                      <b aria-hidden="true">{index + 1}</b>
+                    </div>
+                    <span className="col-top-card-price">{formatCollectionMoney(marketPriceFor(card))}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div className="col-summary-market">
           <span className="col-summary-label">{activeBinder.label} · market total</span>

@@ -1218,3 +1218,14 @@ rows land one at a time. Older rows below the scroll stay still. The effect
 runs again when Signal is re-entered from Collection or Dossier and is fully
 disabled by reduced-motion preference. George then raised only the peak dust
 density by exactly 20% (`0.64` → `0.768`); spread and timing stayed fixed.
+
+---
+
+## Session log — 2026-09-04 Collection top-three value strip
+
+The empty space below the active binder's card count now shows its three
+highest unit-price cards, ranked from left to right. Each entry uses the saved
+catalogue image, a visible rank, and the USD unit price. Quantity does not
+inflate rank, unpriced cards stay out, and duplicate condition rows for the
+same printing/form appear once. The strip recomputes whenever Collection data
+or the selected binder changes.

@@ -19,6 +19,7 @@ const {
   loadCollection, addToCollection, importCollection, addOne, removeOne, removeAll,
   countCards, collectionValue, collectionValueSummary, cardKey, marketPriceFor,
   formatCollectionMoney, collectionFormLabel, collectionFormOptions, collectionView,
+  topPricedCollectionCards,
 } = await import('./collection.js');
 
 const RICH = {
@@ -238,6 +239,26 @@ describe('collection', () => {
       pricedQty: 1,
       unpricedQty: 2,
     });
+  });
+
+  test('top cards rank by one-card price, ignore quantity, and skip duplicate conditions', () => {
+    const list = [
+      { id: 'cheap-many', game: 'pokemon', name: 'Cheap Many', marketPrice: 12, qty: 99 },
+      { id: 'highest', game: 'mtg', name: 'Highest', marketPrice: 240, qty: 1 },
+      { id: 'middle', game: 'yugioh', name: 'Middle', marketPrice: 85, qty: 1 },
+      { id: 'highest', game: 'mtg', name: 'Highest', marketPrice: 240, qty: 1, condition: 'damaged' },
+      { id: 'unpriced', game: 'pokemon', name: 'Unpriced', marketPrice: null, qty: 1 },
+      { id: 'low', game: 'pokemon', name: 'Low', marketPrice: 4, qty: 1 },
+    ];
+    assert.deepEqual(
+      topPricedCollectionCards(list, 3).map((card) => card.name),
+      ['Highest', 'Middle', 'Cheap Many'],
+    );
+    assert.deepEqual(
+      topPricedCollectionCards(collectionView(list, 'pokemon'), 3).map((card) => card.name),
+      ['Cheap Many', 'Low'],
+    );
+    assert.equal(list[0].name, 'Cheap Many');
   });
 
   test('form labels follow the game instead of calling every finish reverse', () => {
