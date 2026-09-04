@@ -1215,9 +1215,9 @@ The first three visible rows in **Your Last Scans** now arrive after the
 trending-card deal. Each row drops like a heavy slab, compresses on impact,
 throws one short warm-gray dust puff across its lower edge, and settles. The
 rows land one at a time. Older rows below the scroll stay still. The effect
-runs again when Signal is re-entered from Collection or Dossier and is fully
-disabled by reduced-motion preference. George then raised only the peak dust
-density by exactly 20% (`0.64` → `0.768`); spread and timing stayed fixed.
+runs on Signal's first visit in an app session and is fully disabled by
+reduced-motion preference. George then raised only the peak dust density by
+exactly 20% (`0.64` → `0.768`); spread and timing stayed fixed.
 
 ---
 
@@ -1229,3 +1229,19 @@ catalogue image, a visible rank, and the USD unit price. Quantity does not
 inflate rank, unpriced cards stay out, and duplicate condition rows for the
 same printing/form appear once. The strip recomputes whenever Collection data
 or the selected binder changes.
+
+---
+
+## Session log — 2026-09-04 unified page-light cascade
+
+The orbiting light around the Signal logo remains continuous. On the first
+visit to each page in one app session, one teardrop breaks from the logo,
+curves through the active page tab, returns to the center, and falls through
+that page in under two seconds. Returning to a page does not replay it.
+
+On Signal, the drop coordinates the existing search-border light, trending
+card deal, living game marks, three recent-scan slab impacts, and news foil.
+On Collection, it wakes the binder tiles, lights the summary, then splits over
+the three highest-value card images. On Dossier, it draws one thin seal around
+the opening research panel and wakes the method list. Reduced-motion mode
+shows every item immediately and suppresses the complete cascade.

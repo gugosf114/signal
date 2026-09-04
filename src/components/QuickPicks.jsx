@@ -7,11 +7,10 @@ import GameMark from './GameMark';
 // handful of curated reseller targets so the strip is never empty.
 const FALLBACK_TRENDING = SAMPLE_CARDS.slice(0, 5);
 
-export default function QuickPicks({ onSelect, loading }) {
+export default function QuickPicks({ onSelect, loading, introActive = false }) {
   const [trending, setTrending] = useState(FALLBACK_TRENDING);
   const [isLive, setIsLive] = useState(false);
   const [showFade, setShowFade] = useState(false);
-  const [introPhase, setIntroPhase] = useState('waiting');
   const listRef = useRef(null);
 
   const updateFade = () => {
@@ -35,19 +34,8 @@ export default function QuickPicks({ onSelect, loading }) {
     return () => cancelAnimationFrame(frame);
   }, [trending]);
 
-  // One opening pass. Stable slot keys keep a later live-data refresh from
-  // dealing the same five tiles a second time.
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setIntroPhase('active'));
-    const timer = setTimeout(() => setIntroPhase('done'), 2200);
-    return () => {
-      cancelAnimationFrame(frame);
-      clearTimeout(timer);
-    };
-  }, []);
-
   return (
-    <div className={`quick-picks-panel quick-picks-panel--intro-${introPhase}`} style={{
+    <div className={`quick-picks-panel quick-picks-panel--intro-${introActive ? 'active' : 'done'}`} style={{
       width: '100%',
       border: '0.5px solid #FFFFFF',
       borderRadius: 4,

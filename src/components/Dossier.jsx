@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DOSSIER_METHOD, DOSSIER_SAMPLE, DOSSIER_SCOPE } from '../config/dossier';
 import { downloadSampleDossier } from '../services/sampleDossier';
 
-export default function Dossier() {
+export default function Dossier({ introActive = false }) {
   const [sampleOpen, setSampleOpen] = useState(false);
   const [status, setStatus] = useState(null);
   const [downloading, setDownloading] = useState(false);
@@ -30,7 +30,7 @@ export default function Dossier() {
   };
 
   return (
-    <div className="dos-page">
+    <div className={`dos-page${introActive ? ' dos-page--cascade' : ''}`}>
       <section className="dos-hero" aria-labelledby="dossier-title">
         <div className="dos-eyebrow">
           Private research · {DOSSIER_SCOPE.map((game) => game.label).join(' / ')}

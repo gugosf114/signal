@@ -66,7 +66,7 @@ function addedLabel(value) {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function Collection({ onLookup, onAddCard, onAddBatch }) {
+export default function Collection({ onLookup, onAddCard, onAddBatch, introActive = false }) {
   const [cards, setCards] = useState(() => loadCollection());
   const [status, setStatus] = useState(null);
   const [viewing, setViewing] = useState(null);
@@ -189,7 +189,7 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
   };
 
   return (
-    <div>
+    <div className={`collection-page${introActive ? ' collection-page--cascade' : ''}`}>
       <div className="col-intro">
         Scan or search an exact printing, then add your copy here.
       </div>
@@ -200,6 +200,7 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
           onCardFound={(card) => onAddCard?.(card)}
           onScannerAdd={(card) => onAddCard?.(card)}
           onScannerBatch={onAddBatch}
+          homePulse={introActive}
         />
       </div>
 
@@ -239,6 +240,7 @@ export default function Collection({ onLookup, onAddCard, onAddBatch }) {
                     className="col-top-card"
                     key={cardKey(card)}
                     title={`${index + 1}. ${card.name} — ${formatCollectionMoney(marketPriceFor(card))}`}
+                    style={{ '--top-card-index': index }}
                   >
                     <div className="col-top-card-art">
                       <span className="col-top-card-noart" aria-hidden="true">?</span>

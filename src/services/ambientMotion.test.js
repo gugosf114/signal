@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ambientParallax, ambientPointerOffset, ambientTiltOffset } from './ambientMotion.js';
+import {
+  PAGE_CASCADE_DURATION_MS,
+  ambientParallax,
+  ambientPointerOffset,
+  ambientTiltOffset,
+  claimPageCascade,
+} from './ambientMotion.js';
 
 test('ambient tilt centers a normally held phone', () => {
   assert.deepEqual(ambientTiltOffset(45, 0), { x: 0, y: 0 });
@@ -28,4 +34,14 @@ test('ambient lights move against each other instead of as one flat layer', () =
   assert.deepEqual(layers.red, { x: 14, y: -9.6 });
   assert.deepEqual(layers.gold, { x: -8.5, y: 6 });
   assert.ok(layers.red.x > 0 && layers.gold.x < 0);
+});
+
+test('each page cascade can be claimed only once per app session', () => {
+  const visited = new Set(['signal']);
+  assert.equal(claimPageCascade(visited, 'signal'), false);
+  assert.equal(claimPageCascade(visited, 'collection'), true);
+  assert.equal(claimPageCascade(visited, 'collection'), false);
+  assert.equal(claimPageCascade(visited, 'dossier'), true);
+  assert.equal(claimPageCascade(visited, 'unknown'), false);
+  assert.ok(PAGE_CASCADE_DURATION_MS >= 2500);
 });

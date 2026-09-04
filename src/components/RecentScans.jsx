@@ -7,12 +7,10 @@ import GameMark from './GameMark';
 // Distinct from QuickPicks: this is YOUR trace through the app.
 // Visual cue: hairline divider + label, then log-style rows
 // (left-border accent, monospace score, italic name) instead of pill chips.
-export default function RecentScans({ onSelect, loading }) {
+export default function RecentScans({ onSelect, loading, introActive = false }) {
   const [scans, setScans] = useState([]);
   const [showFade, setShowFade] = useState(false);
-  const [introPhase, setIntroPhase] = useState('waiting');
   const listRef = useRef(null);
-  const introStartedRef = useRef(false);
 
   const updateFade = () => {
     const list = listRef.current;
@@ -55,20 +53,9 @@ export default function RecentScans({ onSelect, loading }) {
     return () => cancelAnimationFrame(frame);
   }, [scans]);
 
-  useEffect(() => {
-    if (!scans.length || introStartedRef.current) return undefined;
-    introStartedRef.current = true;
-    const frame = requestAnimationFrame(() => setIntroPhase('active'));
-    const timer = setTimeout(() => setIntroPhase('done'), 2800);
-    return () => {
-      cancelAnimationFrame(frame);
-      clearTimeout(timer);
-    };
-  }, [scans.length]);
-
   if (scans.length === 0) return null;
   return (
-    <div className={`recent-scans-panel recent-scans-panel--intro-${introPhase}`} style={{
+    <div className={`recent-scans-panel recent-scans-panel--intro-${introActive ? 'active' : 'done'}`} style={{
       width: '100%',
       marginTop: 18,
       border: '0.5px solid #FFFFFF',

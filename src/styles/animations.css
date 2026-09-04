@@ -271,7 +271,65 @@
   100% { opacity: 0; transform: translateX(360%) scaleX(0.65); }
 }
 
-.signal-dashboard--home-launch .pt-tab--on {
+.signal-dashboard--cascade {
+  --cascade-tab-x: 0px;
+  --cascade-y1: 58px;
+  --cascade-y2: 128px;
+  --cascade-y3: 245px;
+  --cascade-y4: 405px;
+  --cascade-y5: 610px;
+}
+.signal-dashboard--cascade-signal { --cascade-tab-x: -31vw; }
+.signal-dashboard--cascade-collection {
+  --cascade-y1: 60px;
+  --cascade-y2: 170px;
+  --cascade-y3: 300px;
+  --cascade-y4: 410px;
+  --cascade-y5: 520px;
+}
+.signal-dashboard--cascade-dossier {
+  --cascade-tab-x: 31vw;
+  --cascade-y1: 60px;
+  --cascade-y2: 155px;
+  --cascade-y3: 270px;
+  --cascade-y4: 390px;
+  --cascade-y5: 520px;
+}
+.signal-dashboard--cascade::before {
+  content: '';
+  position: absolute;
+  z-index: 30;
+  top: 104px;
+  left: 50%;
+  width: 9px;
+  height: 14px;
+  pointer-events: none;
+  opacity: 0;
+  clip-path: polygon(50% 0%, 88% 52%, 82% 79%, 68% 94%, 50% 100%, 32% 94%, 18% 79%, 12% 52%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFE2A5 42%, #C44040 100%);
+  filter: drop-shadow(0 0 5px rgba(255, 235, 193, 0.95)) drop-shadow(0 0 13px rgba(196, 64, 64, 0.72));
+  transform: translate3d(-50%, 0, 0) scale(0.35);
+  animation: signalTeardropFall 1.85s cubic-bezier(0.28, 0.62, 0.24, 1) 0.12s 1 both;
+}
+
+@keyframes signalTeardropFall {
+  0% { opacity: 0; transform: translate3d(-50%, 0, 0) scale(0.35); }
+  7% { opacity: 1; }
+  18% { opacity: 1; transform: translate3d(calc(-50% + var(--cascade-tab-x)), var(--cascade-y1), 0) scale(1); }
+  30% { transform: translate3d(calc(-50% - 3px), var(--cascade-y2), 0) scaleX(1.18) scaleY(0.78); }
+  48% { transform: translate3d(calc(-50% + 3px), var(--cascade-y3), 0) scale(0.94); }
+  70% { transform: translate3d(calc(-50% - 2px), var(--cascade-y4), 0) scaleX(1.12) scaleY(0.86); }
+  92% { opacity: 1; transform: translate3d(-50%, var(--cascade-y5), 0) scale(0.82); }
+  100% { opacity: 0; transform: translate3d(-50%, var(--cascade-y5), 0) scale(0.35); }
+}
+
+@media (min-width: 640px) {
+  .signal-dashboard--cascade::before { top: 94px; }
+  .signal-dashboard--cascade-signal { --cascade-tab-x: -143px; }
+  .signal-dashboard--cascade-dossier { --cascade-tab-x: 143px; }
+}
+
+.signal-dashboard--cascade .pt-tab--on {
   animation: homeTabReceive 0.5s ease-out 0.34s 1 both;
 }
 
@@ -1418,6 +1476,29 @@
   filter: blur(14px);
   background: color-mix(in srgb, var(--news-active-accent) 68%, #FFE7B4);
   animation: newsFoilLeak 7.2s ease-in-out 1.75s infinite;
+}
+
+.news-strip-shell--cascade::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: -18px;
+  left: 16%;
+  width: 68%;
+  height: 38px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse, rgba(255, 230, 178, 0.62) 0%, color-mix(in srgb, var(--news-active-accent) 42%, transparent) 38%, transparent 74%);
+  filter: blur(9px);
+  transform: scaleX(0.18) translateY(-7px);
+  animation: newsCascadeArrival 0.78s ease-out 1.64s 1 both;
+}
+
+@keyframes newsCascadeArrival {
+  0% { opacity: 0; transform: scaleX(0.18) translateY(-7px); }
+  36% { opacity: 0.78; transform: scaleX(0.72) translateY(0); }
+  100% { opacity: 0; transform: scaleX(1.22) translateY(5px); }
 }
 
 .news-strip-clip {
@@ -2688,6 +2769,32 @@
     radial-gradient(circle at 88% 8%, rgba(196,64,64,0.13), transparent 34%),
     var(--signal-panel);
 }
+.dos-page--cascade .dos-hero {
+  animation: dossierHeroWake 0.7s ease-out 0.62s 1 both;
+}
+.dos-page--cascade .dos-hero::before {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+  border: 1px solid #FFE1A6;
+  border-radius: inherit;
+  opacity: 0;
+  clip-path: inset(0 100% 100% 0);
+  filter: drop-shadow(0 0 5px rgba(255, 221, 154, 0.58));
+  animation: dossierSealDraw 0.92s ease-out 0.86s 1 both;
+}
+@keyframes dossierHeroWake {
+  0%, 100% { box-shadow: 0 0 0 transparent; }
+  52% { box-shadow: 0 0 20px rgba(196, 64, 64, 0.2); }
+}
+@keyframes dossierSealDraw {
+  0% { opacity: 0; clip-path: inset(0 100% 100% 0); }
+  18% { opacity: 1; }
+  72% { opacity: 0.86; clip-path: inset(0 0 0 0); }
+  100% { opacity: 0; clip-path: inset(0 0 0 0); }
+}
 .dos-hero::after {
   content: 'DOSSIER';
   position: absolute;
@@ -2736,6 +2843,13 @@
 }
 .dos-rule i { width: 16px; height: 1px; background: #3A2525; }
 .dos-method { margin-top: 34px; }
+.dos-page--cascade .dos-method {
+  animation: dossierMethodWake 0.56s ease-out 1.28s 1 both;
+}
+@keyframes dossierMethodWake {
+  0% { opacity: 0.58; transform: translateY(7px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
 .dos-section-heading { margin-bottom: 12px; }
 .dos-section-heading h2 {
   margin: 5px 0 0;
@@ -3043,6 +3157,20 @@
 .col-binder--on .col-binder-art { opacity: 0.78; transform: scale(1.035); }
 .col-binder:active .col-binder-art { transform: scale(1.07); opacity: 0.9; }
 
+.collection-page--cascade .col-binder {
+  animation: collectionBinderWake 0.52s cubic-bezier(0.2, 0.78, 0.22, 1.08) 1 both;
+}
+.collection-page--cascade .col-binder:nth-child(1) { animation-delay: 0.68s; }
+.collection-page--cascade .col-binder:nth-child(2) { animation-delay: 0.76s; }
+.collection-page--cascade .col-binder:nth-child(3) { animation-delay: 0.84s; }
+.collection-page--cascade .col-binder:nth-child(4) { animation-delay: 0.92s; }
+
+@keyframes collectionBinderWake {
+  0% { opacity: 0.38; transform: translateY(8px) scale(0.975); filter: brightness(0.72); }
+  58% { opacity: 1; transform: translateY(-2px) scale(1.012); filter: brightness(1.24); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: brightness(1); }
+}
+
 .col-count {
   margin: 22px 0 10px;
   font-family: 'JetBrains Mono', monospace;
@@ -3059,6 +3187,13 @@
   border: 0.5px solid #FFFFFF;
   border-radius: 4px;
   background: var(--signal-panel);
+}
+.collection-page--cascade .col-summary {
+  animation: collectionSummaryWake 0.68s ease-out 1.08s 1 both;
+}
+@keyframes collectionSummaryWake {
+  0%, 100% { border-color: #FFFFFF; box-shadow: 0 0 0 transparent; }
+  48% { border-color: #FFE1A6; box-shadow: 0 0 18px rgba(214, 181, 119, 0.28); }
 }
 .col-summary > div {
   min-width: 0;
@@ -3106,6 +3241,24 @@
   border-radius: 3px;
   background: #101116;
   box-shadow: 0 4px 9px rgba(0, 0, 0, 0.34);
+}
+.collection-page--cascade .col-top-card-art::after {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  inset: -28%;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 246, 220, 0.92) 0%, rgba(255, 215, 137, 0.5) 28%, transparent 68%);
+  mix-blend-mode: screen;
+  transform: scale(0.22);
+  animation: topCardSplitLight 0.62s ease-out calc(1.42s + (var(--top-card-index) * 0.1s)) 1 both;
+}
+@keyframes topCardSplitLight {
+  0% { opacity: 0; transform: scale(0.22); }
+  38% { opacity: 0.9; transform: scale(0.72); }
+  100% { opacity: 0; transform: scale(1.26); }
 }
 .col-top-card-art img,
 .col-top-card-noart {
@@ -3385,6 +3538,13 @@
   .signal-search-form--home::after,
   .npc-above::after { animation: none !important; opacity: 0 !important; }
   .news-strip-shell--foil::before { animation: none !important; opacity: 0 !important; }
+  .signal-dashboard--cascade::before,
+  .news-strip-shell--cascade::after,
+  .collection-page--cascade .col-top-card-art::after,
+  .dos-page--cascade .dos-hero::before {
+    animation: none !important;
+    opacity: 0 !important;
+  }
   .quick-picks-panel--intro-waiting .quick-pick-card,
   .quick-picks-panel--intro-active .quick-pick-card {
     animation: none !important;
@@ -3408,6 +3568,16 @@
   .recent-scans-panel--intro-active .recent-scan-slab::after {
     animation: none !important;
     opacity: 0 !important;
+  }
+  .collection-page--cascade .col-binder,
+  .collection-page--cascade .col-summary,
+  .dos-page--cascade .dos-hero,
+  .dos-page--cascade .dos-method {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    box-shadow: none !important;
   }
   .signal-ambient { transform: none !important; transition: none !important; }
   .signal-ambient-field { animation: none !important; translate: none !important; transition: none !important; }

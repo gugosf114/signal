@@ -7,6 +7,8 @@ const dashboardSource = readFileSync(new URL('../components/SignalDashboard.jsx'
 const searchSource = readFileSync(new URL('../components/SearchBar.jsx', import.meta.url), 'utf8');
 const quickPicksSource = readFileSync(new URL('../components/QuickPicks.jsx', import.meta.url), 'utf8');
 const recentScansSource = readFileSync(new URL('../components/RecentScans.jsx', import.meta.url), 'utf8');
+const collectionSource = readFileSync(new URL('../components/Collection.jsx', import.meta.url), 'utf8');
+const dossierSource = readFileSync(new URL('../components/Dossier.jsx', import.meta.url), 'utf8');
 const gameMarkSource = readFileSync(new URL('../components/GameMark.jsx', import.meta.url), 'utf8');
 const newsSource = readFileSync(new URL('../components/NewsStrip.jsx', import.meta.url), 'utf8');
 
@@ -32,6 +34,20 @@ test('home attention pass reuses the existing logo, search, tiles, marks, and ne
   assert.match(css, /\.npc-outer--foil-active \.npc-above::after/);
 });
 
+test('one teardrop coordinates the first visit to all three pages', () => {
+  assert.match(dashboardSource, /claimPageCascade/);
+  assert.match(dashboardSource, /signal-dashboard--cascade-/);
+  assert.match(dashboardSource, /introActive=\{activeCascade\}/);
+  assert.match(quickPicksSource, /introActive = false/);
+  assert.match(recentScansSource, /introActive = false/);
+  assert.match(newsSource, /cascadeActive = false/);
+  assert.match(collectionSource, /collection-page--cascade/);
+  assert.match(dossierSource, /dos-page--cascade/);
+  assert.match(css, /@keyframes signalTeardropFall/);
+  assert.match(css, /@keyframes topCardSplitLight/);
+  assert.match(css, /@keyframes dossierSealDraw/);
+});
+
 test('only the first three recent scans receive the slab impact', () => {
   assert.match(recentScansSource, /const isSlab = i < 3/);
   assert.match(recentScansSource, /recent-scans-panel--intro-/);
@@ -51,4 +67,7 @@ test('home attention motion has a reduced-motion exit', () => {
   assert.match(reduced, /npc-above::after/);
   assert.match(reduced, /recent-scans-panel--intro-active/);
   assert.match(reduced, /recent-scan-slab::after/);
+  assert.match(reduced, /signal-dashboard--cascade::before/);
+  assert.match(reduced, /collection-page--cascade/);
+  assert.match(reduced, /dos-page--cascade/);
 });

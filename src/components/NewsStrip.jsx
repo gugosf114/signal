@@ -186,7 +186,7 @@ function ArticleCard({ article, foilActive = false }) {
   );
 }
 
-export default function NewsStrip() {
+export default function NewsStrip({ cascadeActive = false }) {
   const [articles, setArticles]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -306,7 +306,7 @@ export default function NewsStrip() {
 
   return (
     <div
-      className="news-strip-shell news-strip-shell--foil"
+      className={`news-strip-shell news-strip-shell--foil${cascadeActive ? ' news-strip-shell--cascade' : ''}`}
       style={{ marginTop: 40, '--news-active-accent': activeAccent }}
     >
       <div className="news-strip-clip">
