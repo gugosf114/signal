@@ -6,6 +6,7 @@ const css = readFileSync(new URL('./animations.css', import.meta.url), 'utf8');
 const dashboardSource = readFileSync(new URL('../components/SignalDashboard.jsx', import.meta.url), 'utf8');
 const searchSource = readFileSync(new URL('../components/SearchBar.jsx', import.meta.url), 'utf8');
 const quickPicksSource = readFileSync(new URL('../components/QuickPicks.jsx', import.meta.url), 'utf8');
+const recentScansSource = readFileSync(new URL('../components/RecentScans.jsx', import.meta.url), 'utf8');
 const gameMarkSource = readFileSync(new URL('../components/GameMark.jsx', import.meta.url), 'utf8');
 const newsSource = readFileSync(new URL('../components/NewsStrip.jsx', import.meta.url), 'utf8');
 
@@ -31,6 +32,15 @@ test('home attention pass reuses the existing logo, search, tiles, marks, and ne
   assert.match(css, /\.npc-outer--foil-active \.npc-above::after/);
 });
 
+test('only the first three recent scans receive the slab impact', () => {
+  assert.match(recentScansSource, /const isSlab = i < 3/);
+  assert.match(recentScansSource, /recent-scans-panel--intro-/);
+  assert.match(recentScansSource, /recent-scan-slab/);
+  assert.match(css, /@keyframes recentSlabDrop/);
+  assert.match(css, /@keyframes recentSlabImpact/);
+  assert.match(css, /@keyframes recentSlabDust/);
+});
+
 test('home attention motion has a reduced-motion exit', () => {
   const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
   assert.match(reduced, /signal-logo-frame--launch::before/);
@@ -38,4 +48,6 @@ test('home attention motion has a reduced-motion exit', () => {
   assert.match(reduced, /quick-picks-panel--intro-active/);
   assert.match(reduced, /news-strip-shell--foil/);
   assert.match(reduced, /npc-above::after/);
+  assert.match(reduced, /recent-scans-panel--intro-active/);
+  assert.match(reduced, /recent-scan-slab::after/);
 });

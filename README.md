@@ -1206,3 +1206,14 @@ every new effect disabled.
 
 **Pinned for later, deliberately not built:** the giant ghost-card image behind
 the top half of the home screen.
+
+---
+
+## Session log — 2026-09-04 recent-scan slab entrance
+
+The first three visible rows in **Your Last Scans** now arrive after the
+trending-card deal. Each row drops like a heavy slab, compresses on impact,
+throws one short warm-gray dust puff across its lower edge, and settles. The
+rows land one at a time. Older rows below the scroll stay still. The effect
+runs again when Signal is re-entered from Collection or Dossier and is fully
+disabled by reduced-motion preference.

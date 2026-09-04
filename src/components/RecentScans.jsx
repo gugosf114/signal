@@ -10,7 +10,9 @@ import GameMark from './GameMark';
 export default function RecentScans({ onSelect, loading }) {
   const [scans, setScans] = useState([]);
   const [showFade, setShowFade] = useState(false);
+  const [introPhase, setIntroPhase] = useState('waiting');
   const listRef = useRef(null);
+  const introStartedRef = useRef(false);
 
   const updateFade = () => {
     const list = listRef.current;
@@ -53,9 +55,20 @@ export default function RecentScans({ onSelect, loading }) {
     return () => cancelAnimationFrame(frame);
   }, [scans]);
 
+  useEffect(() => {
+    if (!scans.length || introStartedRef.current) return undefined;
+    introStartedRef.current = true;
+    const frame = requestAnimationFrame(() => setIntroPhase('active'));
+    const timer = setTimeout(() => setIntroPhase('done'), 2800);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
+  }, [scans.length]);
+
   if (scans.length === 0) return null;
   return (
-    <div className="recent-scans-panel" style={{
+    <div className={`recent-scans-panel recent-scans-panel--intro-${introPhase}`} style={{
       width: '100%',
       marginTop: 18,
       border: '0.5px solid #FFFFFF',
@@ -106,14 +119,22 @@ export default function RecentScans({ onSelect, loading }) {
           const gameMeta = GAME_LABELS[s.game];
           const color = gameMeta?.color || '#A8A498';
           const printing = recentPrintingLine(s);
+          const isSlab = i < 3;
+          const slabDelay = 1.08 + (i * 0.17);
           return (
             <button
               key={`${s.game}:${s.pin?.printingId || s.pin?.id || s.name}:${i}`}
+              className={`recent-scan-row${isSlab ? ' recent-scan-slab' : ''}`}
               title={[s.name, printing].filter(Boolean).join(' — ')}
               aria-label={`Open recent scan: ${[s.name, printing].filter(Boolean).join(' — ')}`}
               onClick={() => !loading && onSelect(s.name, s.game, { pin: s.pin || null })}
               disabled={loading}
               style={{
+                '--slab-delay': `${slabDelay}s`,
+                '--slab-tilt': i % 2 === 0 ? '-0.7deg' : '0.7deg',
+                '--dust-drift': i === 0 ? '-7px' : (i === 1 ? '8px' : '-3px'),
+                '--dust-drift-end': i === 0 ? '-14px' : (i === 1 ? '16px' : '-7px'),
+                '--dust-turn': i === 0 ? '-1.2deg' : (i === 1 ? '1.4deg' : '-0.5deg'),
                 display: 'grid',
                 gridTemplateColumns: '72px minmax(0, 1.25fr) minmax(0, 0.75fr)',
                 alignItems: 'center',
