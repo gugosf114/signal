@@ -280,12 +280,6 @@
   48% { border-color: #FFE3A8; box-shadow: 0 0 12px rgba(255, 221, 154, 0.34); }
 }
 
-@property --home-search-beam-angle {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 210deg;
-}
-
 .signal-search-form--home {
   isolation: isolate;
 }
@@ -294,35 +288,23 @@
   content: '';
   position: absolute;
   z-index: 5;
-  left: -2px;
-  right: -2px;
-  top: -2px;
-  height: 56px;
-  padding: 2px;
-  border-radius: 5px;
+  left: 0;
+  top: -1px;
+  width: 30%;
+  height: 2px;
+  border-radius: 999px;
   pointer-events: none;
   opacity: 0;
-  background: conic-gradient(
-    from var(--home-search-beam-angle),
-    transparent 0deg,
-    transparent 306deg,
-    rgba(196, 64, 64, 0.24) 326deg,
-    rgba(255, 225, 166, 0.92) 342deg,
-    #FFFFFF 348deg,
-    transparent 360deg
-  );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
+  background: linear-gradient(90deg, transparent 0%, rgba(196, 64, 64, 0.38) 22%, #FFE1A6 58%, #FFFFFF 70%, transparent 100%);
+  transform: translateX(-18%);
   animation: signalSearchReceive 0.82s ease-out 0.54s 1 both;
 }
 
 @keyframes signalSearchReceive {
-  0% { opacity: 0; --home-search-beam-angle: 210deg; filter: drop-shadow(0 0 0 transparent); }
+  0% { opacity: 0; transform: translateX(-18%); filter: drop-shadow(0 0 0 transparent); }
   18% { opacity: 1; }
   66% { opacity: 0.96; filter: drop-shadow(0 0 7px rgba(255, 221, 154, 0.75)); }
-  100% { opacity: 0; --home-search-beam-angle: 570deg; filter: drop-shadow(0 0 0 transparent); }
+  100% { opacity: 0; transform: translateX(235%); filter: drop-shadow(0 0 0 transparent); }
 }
 
 .quick-pick-card {
