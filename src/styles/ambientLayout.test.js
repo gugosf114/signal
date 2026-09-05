@@ -30,9 +30,8 @@ test('ambient art cannot widen the page horizontally', () => {
 });
 
 test('home attention pass reuses the existing logo, search, tiles, marks, and news', () => {
-  assert.match(dashboardSource, /signal-logo-frame--launch/);
-  assert.match(dashboardSource, /homePulse/);
-  assert.match(searchSource, /signal-search-form--home/);
+  assert.match(dashboardSource, /className="signal-logo-frame"/);
+  assert.match(searchSource, /className="signal-search-form"/);
   assert.match(quickPicksSource, /quick-pick-card/);
   assert.match(quickPicksSource, /<GameMark game=\{card\.game\} compact alive \/>/);
   assert.match(gameMarkSource, /game-row-mark--alive/);
@@ -42,38 +41,33 @@ test('home attention pass reuses the existing logo, search, tiles, marks, and ne
   assert.match(css, /\.npc-outer--foil-active \.npc-above::after/);
 });
 
-test('one border shine coordinates the first visit to all three pages', () => {
-  assert.match(dashboardSource, /claimPageCascade/);
-  assert.match(dashboardSource, /signal-dashboard--cascade-/);
-  assert.match(dashboardSource, /introActive=\{activeCascade\}/);
-  assert.match(pageTabsSource, /cascade-border-runner--tab/);
-  assert.match(searchSource, /cascade-border-runner--search/);
-  assert.match(quickPicksSource, /introActive = false/);
-  assert.match(quickPicksSource, /cascade-border-runner--quick-picks/);
-  assert.match(recentScansSource, /introActive = false/);
-  assert.match(recentScansSource, /cascade-border-runner--recent-scans/);
-  assert.match(newsSource, /cascadeActive = false/);
-  assert.match(newsSource, /cascade-border-runner--news/);
-  assert.match(collectionSource, /collection-page--cascade/);
-  assert.match(collectionSource, /cascade-border-runner--top-card/);
-  assert.match(dossierSource, /dos-page--cascade/);
-  assert.match(dossierSource, /cascade-border-runner--dossier-hero/);
-  assert.match(css, /\.signal-logo-frame::after,\s*\.cascade-border-runner::after/);
-  assert.match(css, /@keyframes cascadeBorderOrbit/);
-  assert.match(css, /@keyframes cascadeLogoHandoff/);
-  assert.doesNotMatch(css, /signalTeardropFall/);
-  assert.doesNotMatch(css, /offset-path/);
-  assert.match(css, /@keyframes topCardSplitLight/);
-  for (const duration of ['4s', '6s', '8s', '9s']) {
-    assert.match(css, new RegExp(`--cascade-runner-duration: ${duration}`));
+test('the traveling shine stays on the Signal logo and has no handoff path', () => {
+  assert.match(css, /\.signal-logo-frame::after\s*\{/);
+  assert.match(css, /animation:\s*signalBorderOrbit 9s linear infinite/);
+  assert.match(css, /@keyframes signalBorderOrbit/);
+  assert.doesNotMatch(dashboardSource, /claimPageCascade|cascadePage|activeCascade|signal-logo-frame--launch/);
+  for (const source of [pageTabsSource, searchSource, quickPicksSource, recentScansSource, newsSource, collectionSource, dossierSource]) {
+    assert.doesNotMatch(source, /cascade-border-runner|cascadeActive|homePulse|--cascade/);
+  }
+  for (const removed of [
+    'cascadeLogoHandoff',
+    'cascadeShineHandoff',
+    'cascadeBorderOrbit',
+    'newsCascadeArrival',
+    'topCardSplitLight',
+    'signal-logo-frame--launch',
+    'collection-page--cascade',
+    'dos-page--cascade',
+  ]) {
+    assert.doesNotMatch(css, new RegExp(removed));
   }
 });
 
 test('Signal and Collection tile entrances replay on each tab mount', () => {
   assert.match(dashboardSource, /introActive=\{signalHomeReady\}/);
   assert.match(dashboardSource, /entryActive/);
-  assert.match(quickPicksSource, /cascadeActive = false/);
-  assert.match(recentScansSource, /cascadeActive = false/);
+  assert.match(quickPicksSource, /introActive = false/);
+  assert.match(recentScansSource, /introActive = false/);
   assert.match(collectionSource, /entryActive = false/);
   assert.match(collectionSource, /collection-page--entry/);
   for (const name of [
@@ -137,16 +131,13 @@ test('only the first three recent scans receive the slab impact', () => {
 
 test('home attention motion has a reduced-motion exit', () => {
   const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
-  assert.match(reduced, /signal-logo-frame--launch::before/);
-  assert.match(reduced, /cascade-border-runner::after/);
+  assert.match(reduced, /signal-logo-frame::after/);
   assert.match(reduced, /quick-picks-panel--intro-active/);
   assert.match(reduced, /news-strip-shell--foil/);
   assert.match(reduced, /npc-above::after/);
   assert.match(reduced, /recent-scans-panel--intro-active/);
   assert.match(reduced, /recent-scan-slab::after/);
-  assert.match(reduced, /collection-page--cascade/);
   assert.match(reduced, /collection-page--entry/);
-  assert.match(reduced, /dos-page--cascade/);
   assert.match(reduced, /price-cell/);
   assert.match(reduced, /col-summary-count-value/);
   assert.match(reduced, /dos-page--entry \.dos-sample-mark/);

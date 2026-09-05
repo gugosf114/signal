@@ -1284,3 +1284,16 @@ dialogs, and the card viewer use the same restrained tap language.
 Every effect is short and tied to a page entry, state change, or touch. Nothing
 loops. Reduced-motion mode shows the final state at once and removes every new
 press transform.
+
+---
+
+## Session log — 2026-09-04 logo-only traveling light
+
+The page-light cascade was retired after phone review. The bright handoff below
+the logo, the trip to the page tabs, every lower-border lap, and all related
+36-second timing state were removed. The Signal logo keeps its original thin
+red frame and its continuous nine-second traveling border light.
+
+This removal does not touch the trending-card deal, recent-scan slab and dust,
+Collection binder entrances, news foil, Dossier detail entrances, or the small
+tap responses. Those effects remain independent.

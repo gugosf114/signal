@@ -7,7 +7,7 @@ import GameMark from './GameMark';
 // Distinct from QuickPicks: this is YOUR trace through the app.
 // Visual cue: hairline divider + label, then log-style rows
 // (left-border accent, monospace score, italic name) instead of pill chips.
-export default function RecentScans({ onSelect, loading, introActive = false, cascadeActive = false }) {
+export default function RecentScans({ onSelect, loading, introActive = false }) {
   const [scans, setScans] = useState([]);
   const [showFade, setShowFade] = useState(false);
   const listRef = useRef(null);
@@ -63,9 +63,6 @@ export default function RecentScans({ onSelect, loading, introActive = false, ca
       padding: '14px 16px 12px',
       background: 'var(--signal-panel)',
     }}>
-      {cascadeActive && (
-        <span className="cascade-border-runner cascade-border-runner--recent-scans" aria-hidden="true" />
-      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
         <div style={{
           flex: 1,

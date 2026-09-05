@@ -94,7 +94,6 @@ export default function SearchBar({
   onScannerBatch = null,
   loading = false,
   accentBorder = false,
-  homePulse = false,
 }) {
   const [lookupMode, setLookupMode] = useState('price');
   const [quickResult, setQuickResult] = useState(null);
@@ -475,15 +474,12 @@ export default function SearchBar({
     <form
       ref={formRef}
       onSubmit={handleSubmit}
-      className={`signal-search-form${homePulse ? ' signal-search-form--home' : ''}`}
+      className="signal-search-form"
       style={{
         position: 'relative',
         width: '100%',
         maxWidth: 580,
       }}>
-      {homePulse && (
-        <span className="cascade-border-runner cascade-border-runner--search" aria-hidden="true" />
-      )}
       <div style={{ position: 'relative', width: '100%', minWidth: 0 }}>
         {/* Signal and Collection use this same two-choice photo menu. */}
         <button

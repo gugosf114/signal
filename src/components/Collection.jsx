@@ -70,7 +70,6 @@ export default function Collection({
   onLookup,
   onAddCard,
   onAddBatch,
-  cascadeActive = false,
   entryActive = false,
 }) {
   const [cards, setCards] = useState(() => loadCollection());
@@ -195,7 +194,7 @@ export default function Collection({
   };
 
   return (
-    <div className={`collection-page${cascadeActive ? ' collection-page--cascade' : ''}${entryActive ? ' collection-page--entry' : ''}`}>
+    <div className={`collection-page${entryActive ? ' collection-page--entry' : ''}`}>
       <div className="col-intro">
         Scan or search an exact printing, then add your copy here.
       </div>
@@ -206,7 +205,6 @@ export default function Collection({
           onCardFound={(card) => onAddCard?.(card)}
           onScannerAdd={(card) => onAddCard?.(card)}
           onScannerBatch={onAddBatch}
-          homePulse={cascadeActive}
         />
       </div>
 
@@ -217,9 +215,6 @@ export default function Collection({
       <input ref={importRef} type="file" accept="application/json,.json" onChange={restoreBackup} hidden />
 
       <div className="col-binders" role="tablist" aria-label="Collection binders">
-        {cascadeActive && (
-          <span className="cascade-border-runner cascade-border-runner--collection-binders" aria-hidden="true" />
-        )}
         {BINDERS.map((item) => (
           <button
             key={item.id}
@@ -237,9 +232,6 @@ export default function Collection({
       </div>
 
       <div className="col-summary">
-        {cascadeActive && (
-          <span className="cascade-border-runner cascade-border-runner--collection-summary" aria-hidden="true" />
-        )}
         <div className="col-summary-count">
           <span className="col-summary-label">{activeBinder.label} · cards</span>
           <strong className="col-summary-count-value">{total}</strong>
@@ -253,15 +245,10 @@ export default function Collection({
                     key={cardKey(card)}
                     title={`${index + 1}. ${card.name} — ${formatCollectionMoney(marketPriceFor(card))}`}
                     style={{
-                      '--top-card-index': index,
-                      '--top-card-runner-delay': `${28.85 + (index * 0.1)}s`,
                       '--top-card-entry-delay': `${0.72 + (index * 0.09)}s`,
                     }}
                   >
                     <div className="col-top-card-art">
-                      {cascadeActive && (
-                        <span className="cascade-border-runner cascade-border-runner--top-card" aria-hidden="true" />
-                      )}
                       <span className="col-top-card-noart" aria-hidden="true">?</span>
                       {imageUrl && (
                         <img

@@ -2,16 +2,6 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-const CASCADE_PAGES = new Set(['signal', 'collection', 'dossier']);
-export const PAGE_CASCADE_DURATION_MS = 36000;
-
-export function claimPageCascade(visited, page) {
-  const key = String(page || '').toLowerCase();
-  if (!(visited instanceof Set) || !CASCADE_PAGES.has(key) || visited.has(key)) return false;
-  visited.add(key);
-  return true;
-}
-
 export function ambientTiltOffset(beta, gamma, originBeta = 45, originGamma = 0) {
   const safeBeta = beta != null && Number.isFinite(Number(beta)) ? Number(beta) : 45;
   const safeGamma = gamma != null && Number.isFinite(Number(gamma)) ? Number(gamma) : 0;

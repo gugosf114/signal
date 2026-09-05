@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DOSSIER_METHOD, DOSSIER_SAMPLE, DOSSIER_SCOPE } from '../config/dossier';
 import { downloadSampleDossier } from '../services/sampleDossier';
 
-export default function Dossier({ introActive = false, entryActive = false }) {
+export default function Dossier({ entryActive = false }) {
   const [sampleOpen, setSampleOpen] = useState(false);
   const [status, setStatus] = useState(null);
   const [downloading, setDownloading] = useState(false);
@@ -30,11 +30,8 @@ export default function Dossier({ introActive = false, entryActive = false }) {
   };
 
   return (
-    <div className={`dos-page${introActive ? ' dos-page--cascade' : ''}${entryActive ? ' dos-page--entry' : ''}`}>
+    <div className={`dos-page${entryActive ? ' dos-page--entry' : ''}`}>
       <section className="dos-hero" aria-labelledby="dossier-title">
-        {introActive && (
-          <span className="cascade-border-runner cascade-border-runner--dossier-hero" aria-hidden="true" />
-        )}
         <div className="dos-eyebrow">
           Private research · {DOSSIER_SCOPE.map((game) => game.label).join(' / ')}
         </div>
@@ -46,9 +43,6 @@ export default function Dossier({ introActive = false, entryActive = false }) {
       </section>
 
       <section className="dos-method" aria-labelledby="dossier-method-title">
-        {introActive && (
-          <span className="cascade-border-runner cascade-border-runner--dossier-method" aria-hidden="true" />
-        )}
         <div className="dos-section-heading">
           <span>Research method</span>
           <h2 id="dossier-method-title">What goes into the file</h2>
@@ -67,9 +61,6 @@ export default function Dossier({ introActive = false, entryActive = false }) {
       </section>
 
       <section className="dos-sample" aria-labelledby="dossier-sample-title">
-        {introActive && (
-          <span className="cascade-border-runner cascade-border-runner--dossier-sample" aria-hidden="true" />
-        )}
         <div className="dos-sample-label">Sample dossier</div>
         <div className="dos-sample-top">
           <div>

@@ -19,7 +19,6 @@ import Collection from './Collection';
 import Dossier from './Dossier';
 import AddToCollectionDialog from './AddToCollectionDialog';
 import SignalAmbient from './SignalAmbient';
-import { PAGE_CASCADE_DURATION_MS, claimPageCascade } from '../services/ambientMotion';
 import { SIGNAL_SECTIONS, calculateScoreDetails } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { exportReportToPdf, shareReportAsPdf, imageUrlToDataUrl } from '../services/exportReport';
@@ -58,12 +57,9 @@ function firstDollar(value) {
 
 export default function SignalDashboard() {
   const [initialScanSession] = useState(() => loadRecoverableScanSession());
-  const startsOnHome = !initialScanSession;
   // Which page is showing. The header and tab strip are shared; everything
   // below them belongs to one page or the other.
   const [page, setPage] = useState('signal');
-  const cascadeVisitsRef = useRef(new Set(startsOnHome ? ['signal'] : []));
-  const [cascadePage, setCascadePage] = useState(startsOnHome ? 'signal' : null);
   const [result, setResult] = useState(() =>
     initialScanSession?.status === 'complete' ? initialScanSession.result : null
   );
@@ -87,19 +83,7 @@ export default function SignalDashboard() {
   const [addCard, setAddCard] = useState(null);
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    if (!cascadePage) return undefined;
-    const timer = setTimeout(() => {
-      setCascadePage((current) => current === cascadePage ? null : current);
-    }, PAGE_CASCADE_DURATION_MS);
-    return () => clearTimeout(timer);
-  }, [cascadePage]);
-
-  const openPage = (nextPage, { cascade = true } = {}) => {
-    const play = cascade && claimPageCascade(cascadeVisitsRef.current, nextPage);
-    setCascadePage(play ? nextPage : null);
-    setPage(nextPage);
-  };
+  const openPage = (nextPage) => setPage(nextPage);
 
   const flashSaveMsg = (msg) => {
     setSaveMsg(msg);
@@ -191,7 +175,7 @@ export default function SignalDashboard() {
     const { force = false, pin = null, resumeStartedAt = null } = opts;
     let resolvedPin = pin;
     setError(null);
-    openPage('signal', { cascade: false });
+    openPage('signal');
 
     // A name can claim "Starlight Rare" while carrying no catalogue identity.
     // That is how an exact-looking recent row launched a broad ROTA scan. Make
@@ -376,7 +360,7 @@ export default function SignalDashboard() {
       if (document.visibilityState !== 'visible') return;
       const session = loadRecoverableScanSession();
       if (session?.status !== 'complete') return;
-      openPage('signal', { cascade: false });
+      openPage('signal');
       setResult(session.result);
       setLastSearched({ name: session.name, game: session.game, pin: session.pin || null });
       setLoading(false);
@@ -414,7 +398,6 @@ export default function SignalDashboard() {
     : null;
   const score = scoreDetails?.score ?? null;
   const signalHomeReady = page === 'signal' && !result && !loading && !error;
-  const activeCascade = cascadePage === page && (page !== 'signal' || signalHomeReady);
 
   const changePage = (nextPage) => {
     // A saved answer remains the first thing on the next app opening until the
@@ -425,7 +408,7 @@ export default function SignalDashboard() {
   };
 
   return (
-    <div className={`signal-dashboard${activeCascade ? ` signal-dashboard--cascade signal-dashboard--cascade-${page}` : ''}`} style={{
+    <div className="signal-dashboard" style={{
       maxWidth: 800,
       margin: '0 auto',
       padding: isMobile ? '24px 16px 60px' : '32px 24px 60px',
@@ -438,7 +421,7 @@ export default function SignalDashboard() {
           if one is running, drops result/error state otherwise. */}
       <div style={{ textAlign: 'center', marginBottom: 32, marginTop: isMobile ? 28 : 0 }}>
         <div
-          className={`signal-logo-frame${activeCascade ? ' signal-logo-frame--launch' : ''}`}
+          className="signal-logo-frame"
           role="button"
           tabIndex={0}
           aria-label="Go to home"
@@ -492,23 +475,22 @@ export default function SignalDashboard() {
         </div>
       </div>
 
-      <PageTabs page={page} onChange={changePage} cascadeActive={activeCascade} />
+      <PageTabs page={page} onChange={changePage} />
 
       {page === 'dossier' && (
         <div id="panel-dossier" role="tabpanel" aria-labelledby="tab-dossier">
-          <Dossier introActive={activeCascade} entryActive />
+          <Dossier entryActive />
         </div>
       )}
 
       {page === 'collection' && (
         <div id="panel-collection" role="tabpanel" aria-labelledby="tab-collection">
           <Collection
-            cascadeActive={activeCascade}
             entryActive
             onAddCard={(card) => setAddCard(card)}
             onAddBatch={addScannerBatch}
             onLookup={(name, game, opts) => {
-              openPage('signal', { cascade: false });
+              openPage('signal');
               handleSearch(name, game, opts);
             }}
           />
@@ -534,19 +516,16 @@ export default function SignalDashboard() {
             onScannerBatch={addScannerBatch}
             loading={loading}
             accentBorder
-            homePulse={activeCascade}
           />
           <QuickPicks
             onSelect={handleSearch}
             loading={loading}
             introActive={signalHomeReady}
-            cascadeActive={activeCascade}
           />
           <RecentScans
             onSelect={handleSearch}
             loading={loading}
             introActive={signalHomeReady}
-            cascadeActive={activeCascade}
           />
         </div>
       )}
@@ -945,7 +924,7 @@ export default function SignalDashboard() {
       {!result && !loading && !error && (
         <>
           <WatchedCards onSelect={handleSearch} />
-          <NewsStrip cascadeActive={activeCascade} />
+          <NewsStrip />
           <EmptyState />
           <CardBrowser onCardSelect={handleSearch} accentBorder />
         </>
