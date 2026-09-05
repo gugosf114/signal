@@ -191,6 +191,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               </span>
               {/* Watch / unwatch button */}
               <button
+                className={`score-watch-button${watched ? ' score-watch-button--on' : ''}`}
                 onClick={() => toggleWatch({ name: cardName, game, score, enPrice, pin })}
                 title={watched ? 'Unwatch this card' : 'Watch this card'}
                 aria-label={watched ? `Stop watching ${cardName}` : `Watch ${cardName}`}
@@ -287,6 +288,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
                 </span>
                 {onRetry && (
                   <button
+                    className="score-retry-button"
                     onClick={(e) => { e.stopPropagation(); onRetry(); }}
                     style={{
                       background: 'none',

@@ -1265,3 +1265,22 @@ up and catches a gold glint. Pokémon rolls and bounces its Poké Ball with one
 center flash. Yu-Gi-Oh! flips in and receives one red slash. MTG rises from
 shadow while its mark catches an ember glow. The slow shared border-beam
 cascade remains a separate first-visit-per-session effect.
+
+---
+
+## Session log — 2026-09-04 micro-detail pass
+
+The layout stayed fixed. Small parts now answer the hand: page tabs settle,
+the camera and lookup switch press, search takes a soft focus glow, card rows
+and news cards give under a tap, result actions move in the direction of their
+icons, and saved-card quantity changes tick into place.
+
+Collection totals, exchange rows, and the three highest-value cards now finish
+the binder entrance in a short stagger. Card-browser filters lock when chosen.
+Dossier rules draw in, method numbers arrive in order, and the sample mark
+stamps into place. Watch stars, source dots, jump buttons, scanner controls,
+dialogs, and the card viewer use the same restrained tap language.
+
+Every effect is short and tied to a page entry, state change, or touch. Nothing
+loops. Reduced-motion mode shows the final state at once and removes every new
+press transform.

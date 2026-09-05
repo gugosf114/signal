@@ -134,6 +134,7 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
           {TABS.map(tab => (
             <button
               key={tab.id}
+              className={`cb-game-tab${activeGame === tab.id ? ' cb-game-tab--on' : ''}`}
               onClick={() => {
                 if (tab.id === activeGame) return;
                 setCards([]);
@@ -219,6 +220,7 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
           return (
             <button
               key={opt.label}
+              className={`cb-sort-chip${selected ? ' cb-sort-chip--on' : ''}`}
               onClick={() => setPriceSort(opt.key)}
               title={opt.label}
               style={{
@@ -260,6 +262,7 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
             return (
               <button
                 key={`${set.game}-${set.id}`}
+                className={`cb-set-chip${selected ? ' cb-set-chip--on' : ''}`}
                 onClick={() => setActiveSet(set)}
                 title={set.name + (set.releaseDate ? ` · ${set.releaseDate}` : '')}
                 style={{
@@ -333,6 +336,7 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
           {cards.map(card => (
             <button
               key={cardBrowserRowKey(card)}
+              className="cb-card"
               onClick={() => setViewing(card)}
               title={`${card.name}${card.setName ? ' · ' + card.setName : ''}`}
               style={{

@@ -488,6 +488,7 @@ export default function SearchBar({
         {/* Signal and Collection use this same two-choice photo menu. */}
         <button
           type="button"
+          className="signal-photo-trigger"
           onClick={openPhotoMenu}
           disabled={busy || !lookupMode}
           aria-label="Choose scan or upload"
@@ -515,7 +516,7 @@ export default function SearchBar({
           onMouseEnter={(e) => { if (!busy) e.currentTarget.style.color = '#C44040'; }}
           onMouseLeave={(e) => { if (!busy) e.currentTarget.style.color = '#A8A498'; }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg className="signal-photo-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
             <circle cx="12" cy="13" r="4" />
           </svg>
@@ -543,6 +544,7 @@ export default function SearchBar({
             "SCAN" submit button duplicated the camera affordance and made the
             two distinct entry paths read as one. */}
         <input
+          className="signal-main-input"
           type="text"
           value={query}
           onChange={(e) => { setQuery(e.target.value); setQuickResult(null); setScanError(null); }}
@@ -571,7 +573,7 @@ export default function SearchBar({
             fontFamily: "'Syne', sans-serif",
             fontWeight: 400,
             outline: 'none',
-            transition: 'border-color 0.2s',
+            transition: 'border-color 0.2s, box-shadow 0.2s, background 0.2s',
             letterSpacing: '0.01em',
             boxSizing: 'border-box',
           }}

@@ -40,6 +40,7 @@ export default function SignalNav({ signals }) {
         return (
           <button
             key={signal.key}
+            className="signal-jump-button"
             onClick={() => handleJump(signal.key)}
             style={{
               display: 'inline-flex',

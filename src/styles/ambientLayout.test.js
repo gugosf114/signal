@@ -12,6 +12,13 @@ const collectionSource = readFileSync(new URL('../components/Collection.jsx', im
 const dossierSource = readFileSync(new URL('../components/Dossier.jsx', import.meta.url), 'utf8');
 const gameMarkSource = readFileSync(new URL('../components/GameMark.jsx', import.meta.url), 'utf8');
 const newsSource = readFileSync(new URL('../components/NewsStrip.jsx', import.meta.url), 'utf8');
+const browserSource = readFileSync(new URL('../components/CardBrowser.jsx', import.meta.url), 'utf8');
+const scoreSource = readFileSync(new URL('../components/OverallScore.jsx', import.meta.url), 'utf8');
+const priceSource = readFileSync(new URL('../components/PriceComparison.jsx', import.meta.url), 'utf8');
+const signalCardSource = readFileSync(new URL('../components/SignalCard.jsx', import.meta.url), 'utf8');
+const watchedSource = readFileSync(new URL('../components/WatchedCards.jsx', import.meta.url), 'utf8');
+const signalNavSource = readFileSync(new URL('../components/SignalNav.jsx', import.meta.url), 'utf8');
+const citationSource = readFileSync(new URL('../components/SourceCitation.jsx', import.meta.url), 'utf8');
 
 test('ambient art cannot widen the page horizontally', () => {
   const dashboard = css.match(/\.signal-dashboard\s*\{([^}]*)\}/)?.[1] || '';
@@ -79,6 +86,45 @@ test('Signal and Collection tile entrances replay on each tab mount', () => {
   }
 });
 
+test('micro-detail pass gives quiet controls a fitting response without changing layout', () => {
+  assert.match(searchSource, /signal-photo-trigger/);
+  assert.match(searchSource, /signal-main-input/);
+  assert.match(scoreSource, /score-watch-button--on/);
+  assert.match(priceSource, /price-cell--market/);
+  assert.match(signalCardSource, /signal-card-chevron--open/);
+  assert.match(signalCardSource, /signal-source-dot--on/);
+  assert.match(signalNavSource, /signal-jump-button/);
+  assert.match(watchedSource, /watched-chip-open/);
+  assert.match(watchedSource, /watched-chip-remove/);
+  assert.match(citationSource, /yt-play-button/);
+  assert.match(collectionSource, /col-summary-count-value/);
+  assert.match(collectionSource, /--top-card-entry-delay/);
+  assert.match(collectionSource, /key=\{card\.qty\} className="col-qty-value"/);
+  assert.match(browserSource, /cb-sort-chip--on/);
+  assert.match(browserSource, /cb-set-chip--on/);
+  assert.match(browserSource, /cb-game-tab--on/);
+  assert.match(browserSource, /className="cb-card"/);
+  assert.match(dossierSource, /entryActive = false/);
+  assert.match(dossierSource, /dos-page--entry/);
+  for (const name of [
+    'microTabSettle',
+    'microNewsDotLock',
+    'microErrorArrive',
+    'microWatchLock',
+    'microSourceDotLock',
+    'microDataCellSettle',
+    'microNumberLock',
+    'microCurrencyTick',
+    'microTopCardPodium',
+    'microQuantityTick',
+    'microChipLock',
+    'microRuleDraw',
+    'microDossierStamp',
+  ]) {
+    assert.match(css, new RegExp(`@keyframes ${name}`));
+  }
+});
+
 test('only the first three recent scans receive the slab impact', () => {
   assert.match(recentScansSource, /const isSlab = i < 3/);
   assert.match(recentScansSource, /recent-scans-panel--intro-/);
@@ -101,4 +147,10 @@ test('home attention motion has a reduced-motion exit', () => {
   assert.match(reduced, /collection-page--cascade/);
   assert.match(reduced, /collection-page--entry/);
   assert.match(reduced, /dos-page--cascade/);
+  assert.match(reduced, /price-cell/);
+  assert.match(reduced, /col-summary-count-value/);
+  assert.match(reduced, /dos-page--entry \.dos-sample-mark/);
+  assert.match(reduced, /result-action-button:active/);
+  assert.match(reduced, /live-shutter:active/);
+  assert.match(reduced, /watched-chip-remove:active/);
 });

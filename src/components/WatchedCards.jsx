@@ -73,6 +73,7 @@ export default function WatchedCards({ onSelect }) {
           return (
             <div
               key={i}
+              className="watched-chip"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -84,6 +85,7 @@ export default function WatchedCards({ onSelect }) {
               }}
             >
               <button
+                className="watched-chip-open"
                 onClick={() => onSelect(card.name, card.game, { pin: card.pin || null })}
                 style={{
                   display: 'inline-flex',
@@ -111,6 +113,7 @@ export default function WatchedCards({ onSelect }) {
                 <span style={{ color: '#92897C' }}>{card.name}</span>
               </button>
               <button
+                className="watched-chip-remove"
                 onClick={() => toggle(card)}
                 title="Unwatch"
                 aria-label={`Stop watching ${card.name}`}

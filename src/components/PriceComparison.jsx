@@ -60,21 +60,21 @@ export default function PriceComparison({ data }) {
   };
 
   return (
-    <div className="fade-slide-up" style={outerStyle}>
+    <div className="price-strip fade-slide-up" style={outerStyle}>
       {/* Market price. The provider varies by game, so this row does not stamp
           a marketplace logo onto a number that may have come from elsewhere. */}
-      <div style={{
+      <div className="price-cell price-cell--market" style={{
         ...(isMobile ? { gridColumn: '1 / 3' } : { flex: '1.4' }),
         padding: isMobile ? '12px 14px' : '14px 16px',
       }}>
         <div style={{ ...labelStyle, color: '#7A7368' }}>Market Price</div>
-        <div style={{ ...valStyle, fontSize: 16, color: '#E8E4DC' }}>
+        <div className="price-value" style={{ ...valStyle, fontSize: 16, color: '#E8E4DC' }}>
           {data.en_price || '—'}
         </div>
       </div>
 
       {/* 30-DAY TREND (was 30D) */}
-      <div style={{
+      <div className="price-cell price-cell--trend" style={{
         ...(isMobile ? { gridColumn: '1 / 2', borderTop: '1px solid #1A1D24', borderRight: '1px solid #1A1D24' } : { flex: '0.8' }),
         padding: isMobile ? '10px 10px' : '14px 16px',
       }}>
@@ -95,7 +95,7 @@ export default function PriceComparison({ data }) {
       {!isMobile && <div style={{ width: 1, background: '#1A1D24' }} />}
 
       {/* ALIGNMENT (was Sig·Mkt) */}
-      <div style={{
+      <div className="price-cell price-cell--alignment" style={{
         ...(isMobile ? { gridColumn: '2 / 3', borderTop: '1px solid #1A1D24' } : { flex: '0.8' }),
         padding: isMobile ? '10px 10px' : '14px 16px',
       }}>

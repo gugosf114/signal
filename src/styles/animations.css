@@ -388,7 +388,7 @@
 }
 
 .quick-picks-panel--intro-active .quick-pick-card {
-  animation: quickPickDeal 0.68s cubic-bezier(0.18, 0.86, 0.22, 1.12) var(--deal-delay) 1 both;
+  animation: quickPickDeal 0.68s cubic-bezier(0.18, 0.86, 0.22, 1.12) var(--deal-delay) 1 backwards;
 }
 
 @keyframes quickPickDeal {
@@ -424,7 +424,7 @@
 }
 
 .recent-scans-panel--intro-active .recent-scan-slab {
-  animation: recentSlabDrop 0.74s cubic-bezier(0.2, 0.78, 0.22, 1.08) var(--slab-delay) 1 both;
+  animation: recentSlabDrop 0.74s cubic-bezier(0.2, 0.78, 0.22, 1.08) var(--slab-delay) 1 backwards;
 }
 
 .recent-scan-slab::before,
@@ -3173,17 +3173,17 @@
 .col-binder:active .col-binder-art { transform: scale(1.07); opacity: 0.9; }
 
 .collection-page--entry .col-binder--all {
-  animation: collectionAllTileIn 0.72s cubic-bezier(0.18, 0.82, 0.22, 1.08) 0.08s 1 both;
+  animation: collectionAllTileIn 0.72s cubic-bezier(0.18, 0.82, 0.22, 1.08) 0.08s 1 backwards;
 }
 .collection-page--entry .col-binder--pokemon {
-  animation: collectionPokemonTileIn 0.78s cubic-bezier(0.18, 0.82, 0.22, 1.08) 0.2s 1 both;
+  animation: collectionPokemonTileIn 0.78s cubic-bezier(0.18, 0.82, 0.22, 1.08) 0.2s 1 backwards;
 }
 .collection-page--entry .col-binder--yugioh {
-  animation: collectionYgoTileIn 0.72s cubic-bezier(0.2, 0.76, 0.2, 1) 0.32s 1 both;
+  animation: collectionYgoTileIn 0.72s cubic-bezier(0.2, 0.76, 0.2, 1) 0.32s 1 backwards;
   transform-origin: 0% 50%;
 }
 .collection-page--entry .col-binder--mtg {
-  animation: collectionMtgTileIn 0.78s cubic-bezier(0.18, 0.82, 0.22, 1.06) 0.44s 1 both;
+  animation: collectionMtgTileIn 0.78s cubic-bezier(0.18, 0.82, 0.22, 1.06) 0.44s 1 backwards;
 }
 
 .collection-page--entry .col-binder--all .col-binder-mark--all {
@@ -3662,6 +3662,293 @@
   font: 600 12px 'JetBrains Mono', monospace;
 }
 
+/* ─── Micro-detail pass — small responses, unchanged layout ───────────── */
+
+.signal-logo-frame,
+.pt-tab,
+.signal-photo-trigger,
+.lookup-mode-toggle,
+.quick-pick-card,
+.recent-scan-row,
+.npc-outer,
+.result-action-button,
+.result-add-button,
+.signal-error-retry,
+.score-watch-button,
+.score-retry-button,
+.signal-jump-button,
+.signal-source-dot,
+.yt-play-button,
+.watched-chip-open,
+.watched-chip-remove,
+.col-binder,
+.cb-game-tab,
+.cb-sort-chip,
+.cb-set-chip,
+.cb-card,
+.col-tools button,
+.col-count-control button,
+.dos-button,
+.ac-close,
+.ac-segment,
+.ac-stepper button,
+.ac-actions button,
+.cl-close,
+.cl-btn,
+.photo-choice-menu button,
+.quick-price-actions button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.signal-logo-frame { transition: transform 0.14s ease, filter 0.14s ease; }
+.signal-logo-frame:active { transform: scale(0.985); filter: brightness(1.08); }
+
+.pt-tab {
+  transition: color 0.15s, border-color 0.15s, transform 0.13s ease, box-shadow 0.13s ease;
+}
+.pt-tab:active { transform: translateY(1px) scale(0.985); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); }
+.pt-tab--on { animation: microTabSettle 0.28s cubic-bezier(0.2, 0.78, 0.22, 1.12); }
+@keyframes microTabSettle {
+  0% { transform: scale(0.965); }
+  62% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+.signal-photo-trigger {
+  isolation: isolate;
+  transition: transform 0.14s ease, color 0.14s ease !important;
+}
+.signal-photo-trigger::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 230, 180, 0.34), transparent 68%);
+  opacity: 0;
+  transform: scale(0.45);
+  transition: opacity 0.16s ease, transform 0.2s ease;
+}
+.signal-photo-trigger:active { transform: translateY(-50%) scale(0.92) !important; color: #FFE2A5 !important; }
+.signal-photo-trigger:active::after { opacity: 1; transform: scale(1.35); }
+.signal-photo-icon { transition: transform 0.16s cubic-bezier(0.2, 0.78, 0.22, 1.16); }
+.signal-photo-trigger:active .signal-photo-icon { transform: rotate(-7deg) scale(0.88); }
+.signal-main-input:focus {
+  box-shadow: inset 0 0 0 1px rgba(255, 226, 166, 0.08), 0 0 14px rgba(196, 64, 64, 0.11);
+  background: color-mix(in srgb, var(--signal-panel) 96%, #C44040);
+}
+.lookup-mode-toggle { transition: transform 0.14s ease, border-color 0.14s ease, filter 0.14s ease; }
+.lookup-mode-toggle:active { transform: translateY(-50%) scale(0.96); filter: brightness(1.12); }
+.lookup-mode-toggle:active > span { transform: scale(0.88); }
+.lookup-mode-toggle--full:active > span { transform: translateX(40px) scale(0.88); }
+
+.quick-pick-card:active {
+  transform: translateY(1px) scale(0.972) !important;
+  filter: brightness(1.16);
+}
+.recent-scan-row:active {
+  transform: translateX(2px) scale(0.99) !important;
+  filter: brightness(1.14);
+}
+.ns-dot--on::after { animation: microNewsDotLock 0.38s cubic-bezier(0.2, 0.78, 0.22, 1.2); }
+@keyframes microNewsDotLock {
+  0% { transform: translate(-50%, -50%) scale(0.72); box-shadow: 0 0 0 transparent; }
+  60% { transform: translate(-50%, -50%) scale(1.62); box-shadow: 0 0 8px var(--dc); }
+  100% { transform: translate(-50%, -50%) scale(1.3); box-shadow: 0 0 0 transparent; }
+}
+.npc-outer:active .npc-above { transform: translateY(-10px) scale(0.985); box-shadow: 0 8px 22px rgba(0,0,0,0.62); }
+.npc-outer:active .npc-pocket { border-color: color-mix(in srgb, var(--c) 38%, #2A2D34); }
+
+.signal-error-panel { animation: microErrorArrive 0.34s cubic-bezier(0.2, 0.75, 0.25, 1); }
+@keyframes microErrorArrive {
+  0% { opacity: 0; transform: translateX(-8px); }
+  58% { opacity: 1; transform: translateX(2px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.signal-error-retry,
+.result-action-button,
+.result-add-button,
+.score-retry-button { transition: transform 0.13s ease, filter 0.13s ease, border-color 0.15s ease; }
+.signal-error-retry:active,
+.result-action-button:active,
+.result-add-button:active,
+.score-retry-button:active { transform: translateY(1px) scale(0.965); filter: brightness(1.18); }
+.result-action-button svg { transition: transform 0.16s cubic-bezier(0.2, 0.78, 0.22, 1.15); }
+.result-action-button--back:active svg { transform: translateX(-2px); }
+.result-action-button--save:active svg { transform: translateY(2px); }
+.result-action-button--share:active svg { transform: scale(1.18); }
+.result-action-button--rescan:active svg { transform: rotate(-38deg); }
+.result-add-button:active > span { transform: rotate(90deg) scale(1.12); }
+.result-add-button > span { display: inline-block; transition: transform 0.18s ease; }
+
+.score-watch-button { transition: transform 0.15s ease, opacity 0.15s ease !important; }
+.score-watch-button:active { transform: scale(0.82); }
+.score-watch-button--on svg { animation: microWatchLock 0.42s cubic-bezier(0.2, 0.78, 0.22, 1.22); }
+@keyframes microWatchLock {
+  0% { transform: rotate(-18deg) scale(0.58); }
+  64% { transform: rotate(8deg) scale(1.3); }
+  100% { transform: rotate(0) scale(1); }
+}
+.signal-card-toggle { transition: transform 0.14s ease; }
+.signal-card-toggle:active { transform: translateX(2px) scale(0.995); }
+.signal-card-chevron { display: inline-block; transform: rotate(0); transition: transform 0.22s cubic-bezier(0.2, 0.78, 0.22, 1.12), color 0.18s ease; }
+.signal-card-chevron--open { transform: rotate(90deg); color: var(--signal-color); }
+.signal-jump-button,
+.signal-source-dot,
+.watched-chip-open,
+.watched-chip-remove { transition: transform 0.13s ease, filter 0.13s ease !important; }
+.signal-jump-button:active { transform: translateX(2px) scale(0.96); filter: brightness(1.18); }
+.signal-source-dot:active { transform: scale(1.55); filter: brightness(1.25); }
+.signal-source-dot--on { animation: microSourceDotLock 0.3s cubic-bezier(0.2,0.78,0.22,1.2); }
+@keyframes microSourceDotLock {
+  0% { transform: scale(0.62); }
+  66% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.watched-chip { transition: border-color 0.15s ease, background 0.15s ease; }
+.watched-chip:active { background: rgba(255,255,255,0.025) !important; }
+.watched-chip-open:active { transform: translateX(2px) scale(0.97); filter: brightness(1.18); }
+.watched-chip-remove:active { transform: rotate(90deg) scale(0.88); filter: brightness(1.3); }
+.yt-play-button { transition: transform 0.14s ease, filter 0.14s ease; }
+.yt-play-button:active { transform: scale(0.985); filter: brightness(1.12); }
+.yt-play-button:active > div > div { transform: scale(0.88); }
+.yt-play-button > div > div { transition: transform 0.16s cubic-bezier(0.2,0.78,0.22,1.16); }
+
+.price-cell { animation: microDataCellSettle 0.38s cubic-bezier(0.2, 0.78, 0.22, 1.1) backwards; }
+.price-cell--market { animation-delay: 0.08s; }
+.price-cell--trend { animation-delay: 0.16s; }
+.price-cell--alignment { animation-delay: 0.24s; }
+@keyframes microDataCellSettle {
+  0% { opacity: 0.45; transform: translateY(5px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.price-value { animation: microPriceLock 0.42s ease-out 0.18s backwards; }
+@keyframes microPriceLock {
+  0% { letter-spacing: 0.06em; text-shadow: 0 0 10px rgba(255,226,166,0.5); }
+  100% { letter-spacing: normal; text-shadow: 0 0 0 transparent; }
+}
+
+.collection-page--entry .col-summary-count-value { animation: microNumberLock 0.42s cubic-bezier(0.2,0.78,0.22,1.18) 0.56s backwards; }
+.collection-page--entry .col-summary-market-value { animation: microNumberLock 0.42s cubic-bezier(0.2,0.78,0.22,1.18) 0.66s backwards; }
+@keyframes microNumberLock {
+  0% { opacity: 0.35; transform: translateY(5px) scale(0.9); }
+  62% { opacity: 1; transform: translateY(-1px) scale(1.08); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.collection-page--entry .col-currency-row { animation: microCurrencyTick 0.36s ease-out backwards; }
+.collection-page--entry .col-currency-row:nth-child(1) { animation-delay: 0.74s; }
+.collection-page--entry .col-currency-row:nth-child(2) { animation-delay: 0.82s; }
+.collection-page--entry .col-currency-row:nth-child(3) { animation-delay: 0.9s; }
+@keyframes microCurrencyTick {
+  0% { opacity: 0; transform: translateX(-5px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.collection-page--entry .col-top-card { animation: microTopCardPodium 0.42s cubic-bezier(0.2,0.78,0.22,1.12) var(--top-card-entry-delay) backwards; }
+@keyframes microTopCardPodium {
+  0% { opacity: 0; transform: translateY(8px) scale(0.94); }
+  68% { opacity: 1; transform: translateY(-2px) scale(1.025); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.col-card::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset: -45% -90%;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(112deg, transparent 43%, rgba(255,255,255,0.34) 50%, transparent 57%);
+  transform: translateX(-38%);
+  transition: opacity 0.14s ease, transform 0.34s ease;
+}
+.col-binder { transition: transform 0.13s ease, filter 0.13s ease, box-shadow 0.15s ease; }
+.col-binder:active { transform: translateY(1px) scale(0.982); filter: brightness(1.12); }
+.col-card:active { transform: scale(0.985) !important; box-shadow: 0 3px 10px rgba(0,0,0,0.48) !important; }
+.col-card:active::after { opacity: 0.72; transform: translateX(38%); }
+.col-count-control button { transition: transform 0.11s ease, background 0.14s ease, color 0.14s ease; }
+.col-count-control button:active { transform: scale(0.88); background: #242832; color: #FFE4AD; }
+.col-qty-value { animation: microQuantityTick 0.28s cubic-bezier(0.2,0.78,0.22,1.2); }
+@keyframes microQuantityTick {
+  0% { transform: scale(0.65); color: #FFE4AD; }
+  70% { transform: scale(1.18); }
+  100% { transform: scale(1); color: #D8D4CC; }
+}
+.col-tools button { transition: transform 0.13s ease, color 0.15s ease, border-color 0.15s ease; }
+.col-tools button:active { transform: translateY(1px) scale(0.965); color: #FFE4AD; }
+.col-view-controls select:active { transform: translateY(1px); }
+
+.cb-search-icon { transition: transform 0.18s ease, color 0.18s ease; }
+.cb-search:focus-within .cb-search-icon { transform: scale(1.12); color: #A09060; }
+.cb-search-clear { transition: transform 0.16s ease, color 0.16s ease; }
+.cb-search-clear:active { transform: rotate(90deg) scale(0.86); }
+.cb-game-tab,
+.cb-sort-chip,
+.cb-set-chip,
+.cb-card { transition: transform 0.13s ease, box-shadow 0.13s ease, filter 0.13s ease; }
+.cb-game-tab:active,
+.cb-sort-chip:active,
+.cb-set-chip:active { transform: translateY(1px) scale(0.94); filter: brightness(1.16); }
+.cb-game-tab--on,
+.cb-sort-chip--on,
+.cb-set-chip--on { animation: microChipLock 0.28s cubic-bezier(0.2,0.78,0.22,1.15); }
+@keyframes microChipLock {
+  0% { transform: scale(0.9); }
+  68% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.cb-card:active { transform: scale(0.975) !important; filter: brightness(1.12); box-shadow: 0 4px 14px rgba(0,0,0,0.5) !important; }
+.cb-retry:active { transform: translateY(1px) scale(0.96); }
+
+.dos-page--entry .dos-eyebrow { animation: microInkArrive 0.46s ease-out 0.08s backwards; }
+.dos-page--entry .dos-rule i { transform-origin: 0 50%; animation: microRuleDraw 0.44s ease-out backwards; }
+.dos-page--entry .dos-rule i:nth-of-type(1) { animation-delay: 0.34s; }
+.dos-page--entry .dos-rule i:nth-of-type(2) { animation-delay: 0.48s; }
+.dos-page--entry .dos-number { animation: microMethodNumber 0.38s ease-out backwards; }
+.dos-page--entry .dos-method li:nth-child(1) .dos-number { animation-delay: 0.54s; }
+.dos-page--entry .dos-method li:nth-child(2) .dos-number { animation-delay: 0.66s; }
+.dos-page--entry .dos-method li:nth-child(3) .dos-number { animation-delay: 0.78s; }
+.dos-page--entry .dos-method li:nth-child(4) .dos-number { animation-delay: 0.9s; }
+.dos-page--entry .dos-method li:nth-child(5) .dos-number { animation-delay: 1.02s; }
+.dos-page--entry .dos-sample-mark { animation: microDossierStamp 0.5s cubic-bezier(0.2,0.78,0.22,1.18) 1.08s backwards; }
+@keyframes microInkArrive {
+  0% { opacity: 0; letter-spacing: 0.28em; }
+  100% { opacity: 1; letter-spacing: 0.18em; }
+}
+@keyframes microRuleDraw {
+  0% { opacity: 0; transform: scaleX(0); }
+  100% { opacity: 1; transform: scaleX(1); }
+}
+@keyframes microMethodNumber {
+  0% { opacity: 0; transform: translateX(-5px); text-shadow: 0 0 9px #C44040; }
+  100% { opacity: 1; transform: translateX(0); text-shadow: 0 0 0 transparent; }
+}
+@keyframes microDossierStamp {
+  0% { opacity: 0; transform: rotate(-7deg) scale(1.22); }
+  68% { opacity: 1; transform: rotate(2deg) scale(0.97); }
+  100% { opacity: 1; transform: rotate(0) scale(1); }
+}
+.dos-button { transition: transform 0.13s ease, filter 0.15s ease, border-color 0.15s ease; }
+.dos-button:active { transform: translateY(1px) scale(0.97); filter: brightness(1.18); }
+
+.photo-choice-menu button:active,
+.quick-price-actions button:active,
+.sb-item:active,
+.lt-cancel:active,
+.live-tool-button:active,
+.live-batch-count:active,
+.live-match-primary:active,
+.live-match-add:active,
+.live-match-secondary:active,
+.live-match-done:active,
+.live-error button:active,
+.ac-close:active,
+.ac-segment:active,
+.ac-stepper button:active,
+.ac-actions button:active,
+.cl-close:active,
+.cl-btn:active { transform: translateY(1px) scale(0.965); filter: brightness(1.16); }
+.live-shutter { transition: transform 0.13s ease, filter 0.13s ease, box-shadow 0.14s ease; }
+.live-shutter:active { transform: scale(0.88); filter: brightness(1.18); box-shadow: 0 0 0 5px rgba(255,255,255,0.08); }
+
 @media (max-height: 620px) {
   .cl-img { max-height: 54vh; width: auto; max-width: 72vw; }
   .cl-actions { bottom: 16px; }
@@ -3727,9 +4014,86 @@
     opacity: 1 !important;
     transform: none !important;
   }
+  .pt-tab--on,
+  .ns-dot--on::after,
+  .signal-error-panel,
+  .score-watch-button--on svg,
+  .signal-source-dot--on,
+  .price-cell,
+  .price-value,
+  .collection-page--entry .col-summary-count-value,
+  .collection-page--entry .col-summary-market-value,
+  .collection-page--entry .col-currency-row,
+  .collection-page--entry .col-top-card,
+  .col-qty-value,
+  .cb-game-tab--on,
+  .cb-sort-chip--on,
+  .cb-set-chip--on,
+  .dos-page--entry .dos-eyebrow,
+  .dos-page--entry .dos-rule i,
+  .dos-page--entry .dos-number,
+  .dos-page--entry .dos-sample-mark {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
   .collection-page--entry .col-binder::after {
     animation: none !important;
     opacity: 0 !important;
+  }
+  .signal-logo-frame:active,
+  .pt-tab:active,
+  .signal-photo-trigger:active,
+  .lookup-mode-toggle:active,
+  .lookup-mode-toggle:active > span,
+  .lookup-mode-toggle--full:active > span,
+  .quick-pick-card:active,
+  .recent-scan-row:active,
+  .npc-outer:active .npc-above,
+  .signal-error-retry:active,
+  .result-action-button:active,
+  .result-action-button:active svg,
+  .result-add-button:active,
+  .result-add-button:active > span,
+  .score-watch-button:active,
+  .signal-card-toggle:active,
+  .signal-jump-button:active,
+  .signal-source-dot:active,
+  .watched-chip-open:active,
+  .watched-chip-remove:active,
+  .yt-play-button:active,
+  .yt-play-button:active > div > div,
+  .col-binder:active,
+  .col-card:active,
+  .col-card:active::after,
+  .col-count-control button:active,
+  .col-tools button:active,
+  .cb-search-clear:active,
+  .cb-game-tab:active,
+  .cb-sort-chip:active,
+  .cb-set-chip:active,
+  .cb-card:active,
+  .dos-button:active,
+  .photo-choice-menu button:active,
+  .quick-price-actions button:active,
+  .sb-item:active,
+  .lt-cancel:active,
+  .live-tool-button:active,
+  .live-batch-count:active,
+  .live-match-primary:active,
+  .live-match-add:active,
+  .live-match-secondary:active,
+  .live-match-done:active,
+  .live-error button:active,
+  .live-shutter:active,
+  .ac-close:active,
+  .ac-segment:active,
+  .ac-stepper button:active,
+  .ac-actions button:active,
+  .cl-close:active,
+  .cl-btn:active {
+    transform: none !important;
+    filter: none !important;
   }
   .signal-ambient { transform: none !important; transition: none !important; }
   .signal-ambient-field { animation: none !important; translate: none !important; transition: none !important; }

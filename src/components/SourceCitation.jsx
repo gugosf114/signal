@@ -126,6 +126,7 @@ function YouTubeEmbed({ videoId, title }) {
       ) : (
         <button
           type="button"
+          className="yt-play-button"
           onClick={(event) => { event.stopPropagation(); setPlaying(true); }}
           aria-label="Play video"
           style={{

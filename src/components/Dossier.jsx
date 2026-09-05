@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DOSSIER_METHOD, DOSSIER_SAMPLE, DOSSIER_SCOPE } from '../config/dossier';
 import { downloadSampleDossier } from '../services/sampleDossier';
 
-export default function Dossier({ introActive = false }) {
+export default function Dossier({ introActive = false, entryActive = false }) {
   const [sampleOpen, setSampleOpen] = useState(false);
   const [status, setStatus] = useState(null);
   const [downloading, setDownloading] = useState(false);
@@ -30,7 +30,7 @@ export default function Dossier({ introActive = false }) {
   };
 
   return (
-    <div className={`dos-page${introActive ? ' dos-page--cascade' : ''}`}>
+    <div className={`dos-page${introActive ? ' dos-page--cascade' : ''}${entryActive ? ' dos-page--entry' : ''}`}>
       <section className="dos-hero" aria-labelledby="dossier-title">
         {introActive && (
           <span className="cascade-border-runner cascade-border-runner--dossier-hero" aria-hidden="true" />

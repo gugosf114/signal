@@ -242,7 +242,7 @@ export default function Collection({
         )}
         <div className="col-summary-count">
           <span className="col-summary-label">{activeBinder.label} · cards</span>
-          <strong>{total}</strong>
+          <strong className="col-summary-count-value">{total}</strong>
           {topPricedCards.length > 0 && (
             <div className="col-top-cards" aria-label={`${activeBinder.label}: three highest unit-price cards`}>
               {topPricedCards.map((card, index) => {
@@ -255,6 +255,7 @@ export default function Collection({
                     style={{
                       '--top-card-index': index,
                       '--top-card-runner-delay': `${28.85 + (index * 0.1)}s`,
+                      '--top-card-entry-delay': `${0.72 + (index * 0.09)}s`,
                     }}
                   >
                     <div className="col-top-card-art">
@@ -282,7 +283,7 @@ export default function Collection({
         </div>
         <div className="col-summary-market">
           <span className="col-summary-label">{activeBinder.label} · market total</span>
-          <strong>{marketDisplay}</strong>
+          <strong className="col-summary-market-value">{marketDisplay}</strong>
           <CollectionCurrencies
             usdTotal={market.total}
             hasKnownValue={market.pricedQty > 0 || market.unpricedQty === 0}
@@ -345,7 +346,7 @@ export default function Collection({
                   aria-label={`Remove one ${card.name}`}
                   onClick={() => setCards(removeOne(card))}
                 >−</button>
-                <span aria-live="polite">{card.qty}</span>
+                <span key={card.qty} className="col-qty-value" aria-live="polite">{card.qty}</span>
                 <button
                   type="button"
                   aria-label={`Add one ${card.name}`}

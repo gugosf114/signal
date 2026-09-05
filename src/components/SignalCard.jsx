@@ -260,11 +260,9 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
           );
         })()}
 
-        <span style={{
+        <span className={`signal-card-chevron${expanded ? ' signal-card-chevron--open' : ''}`} style={{
           fontSize: 14,
           color: '#92897C',
-          transform: expanded ? 'rotate(90deg)' : 'none',
-          transition: 'transform 0.15s',
           fontFamily: "'JetBrains Mono'",
           flexShrink: 0,
         }}>&#9658;</span>
@@ -334,6 +332,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
                       {sources.map((_, idx) => (
                         <button
                           key={idx}
+                          className={`signal-source-dot${idx === activeSourceIdx ? ' signal-source-dot--on' : ''}`}
                           onClick={(e) => { e.stopPropagation(); navigateToSource(idx); }}
                           title={`Source ${idx + 1} of ${sources.length}`}
                           style={{

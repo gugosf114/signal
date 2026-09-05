@@ -496,7 +496,7 @@ export default function SignalDashboard() {
 
       {page === 'dossier' && (
         <div id="panel-dossier" role="tabpanel" aria-labelledby="tab-dossier">
-          <Dossier introActive={activeCascade} />
+          <Dossier introActive={activeCascade} entryActive />
         </div>
       )}
 
@@ -553,7 +553,7 @@ export default function SignalDashboard() {
 
       {/* Error */}
       {error && (
-        <div style={{
+        <div className="signal-error-panel" style={{
           borderLeft: '3px solid #C44040',
           background: 'rgba(196, 64, 64, 0.04)',
           padding: '16px 20px',
@@ -590,6 +590,7 @@ export default function SignalDashboard() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
             <button
+              className="signal-error-retry"
               onClick={() => lastSearched && handleSearch(lastSearched.name, lastSearched.game, { force: true, pin: lastSearched.pin || null })}
               style={{
                 background: 'none',
@@ -641,8 +642,9 @@ export default function SignalDashboard() {
         <>
           {/* Result-page actions: back to dashboard + save as PDF.
               Save PDF captures the #signal-report-capture wrapper below. */}
-          <div ref={resultTopRef} style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+          <div ref={resultTopRef} className="result-actions" style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
             <button
+              className="result-action-button result-action-button--back"
               onClick={() => {
                 clearScanSession();
                 setResult(null);
@@ -709,6 +711,7 @@ export default function SignalDashboard() {
             </button>
 
             <button
+              className="result-action-button result-action-button--save"
               onClick={async () => {
                 try {
                   setPdfRendering(true);
@@ -773,6 +776,7 @@ export default function SignalDashboard() {
             {/* Share — opens system share sheet (email, Messages, etc.) with the
                 generated PDF as an attachment. Falls back to download. */}
             <button
+              className="result-action-button result-action-button--share"
               onClick={async () => {
                 try {
                   setPdfRendering(true);
@@ -834,6 +838,7 @@ export default function SignalDashboard() {
             {/* Re-scan — bypasses the local cache and burns a fresh Anthropic
                 run when the cached data is stale. */}
             <button
+              className="result-action-button result-action-button--rescan"
               onClick={() => {
                 if (!result?.card_name) return;
                 const resultPin = resultCardPin(result);
