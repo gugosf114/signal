@@ -1322,3 +1322,19 @@ The red one-pixel border around the large search box on the Signal home page
 was removed. The field now uses the same quiet dark edge as the Collection
 search. Its size, camera, Price/Full switch, focus glow, and behavior stay the
 same. The separate Browse Cards search style was not changed.
+
+---
+
+## Session log — 2026-09-04 compact Latest Signal panel
+
+The home page's three sparse preview boxes were replaced by one labeled
+**Latest Signal** panel. It keeps the game, card name and image, score, market
+price, 30-day trend, Creator Attention headline, evidence note, strength dots,
+and direction. The sample state uses the same shape with a clear Sample Signal
+label.
+
+The market facts now share one short row. Creator Attention is a compact footer
+with its detail clamped to two lines. The panel starts 22px below the news strip,
+and the home-page Browse Cards section now begins 18px after the panel. The
+Collection browser keeps its original 40px spacing. Phone widths of 360px and
+390px and the 800px layout render with zero horizontal overflow.

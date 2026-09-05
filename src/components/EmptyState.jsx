@@ -80,222 +80,74 @@ function trendSym(trend) {
   return { sym: '►', color: '#A09060' };
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
-
-const label = {
-  fontSize: 8,
-  fontWeight: 700,
-  letterSpacing: '0.16em',
-  fontFamily: "'Syne', sans-serif",
-  textTransform: 'uppercase',
-  marginBottom: 4,
-};
-
 // ─── Tiles ───────────────────────────────────────────────────────────────────
 
-function ScoreTile({ data, isSample }) {
+function LatestSignalPanel({ data, isSample }) {
   const gameMeta = GAME_LABELS[data.game] || GAME_LABELS.pokemon;
   const scoreMeta = getScoreLabel(data.score ?? 50);
-
-  return (
-    <div style={{
-      position: 'relative',
-      flex: 1,
-      background: 'var(--signal-panel)',
-      border: '0.5px solid #FFFFFF',
-      borderRadius: 3,
-      padding: '18px 20px',
-      display: 'flex',
-      gap: 16,
-      alignItems: 'center',
-      minWidth: 0,
-      overflow: 'hidden',
-    }}>
-      {isSample && (
-        <div style={{
-          position: 'absolute',
-          top: 10,
-          right: 12,
-          fontFamily: "'Syne', sans-serif",
-          fontSize: 7,
-          fontWeight: 700,
-          letterSpacing: '0.22em',
-          textTransform: 'uppercase',
-          color: '#92897C',
-          border: '1px solid #494640',
-          background: 'rgba(196,64,64,0.04)',
-          padding: '3px 8px 2px',
-          borderRadius: 2,
-          zIndex: 2,
-          pointerEvents: 'none',
-        }}>
-          Sample
-        </div>
-      )}
-
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-        minWidth: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <BrandIcon brand={data.game} size={12} style={{ opacity: 0.6 }} />
-          <span style={{
-            fontSize: 9,
-            fontFamily: "'Syne', sans-serif",
-            color: gameMeta.color,
-            letterSpacing: '0.14em',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-          }}>{gameMeta.label}</span>
-        </div>
-        <div style={{
-          fontFamily: "'Instrument Serif', serif",
-          fontSize: 18,
-          fontStyle: 'italic',
-          color: '#E8E4DC',
-          lineHeight: 1.1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}>
-          {data.name}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-          <span style={{
-            fontSize: 44,
-            fontWeight: 700,
-            fontFamily: "'JetBrains Mono', monospace",
-            color: scoreMeta.color,
-            lineHeight: 1,
-            letterSpacing: '-0.04em',
-          }}>{data.score}</span>
-          <span style={{
-            fontSize: 14,
-            fontFamily: "'JetBrains Mono', monospace",
-            color: '#2A2D34',
-          }}>/100</span>
-        </div>
-        <div style={{
-          fontSize: 9,
-          fontFamily: "'Syne', sans-serif",
-          letterSpacing: '0.14em',
-          color: scoreMeta.color,
-          fontWeight: 700,
-          textTransform: 'uppercase',
-        }}>{scoreMeta.label}</div>
-      </div>
-
-      <CardImage
-        cardName={data.name}
-        game={data.game}
-        size={132}
-        glowColor={scoreMeta.color}
-      />
-    </div>
-  );
-}
-
-function PriceTile({ prices }) {
+  const prices = data.prices || {};
   const trend = trendSym(prices.trend_30d);
+  const creator = data.creator;
+
   return (
-    <div style={{
-      flex: 1,
-      background: 'var(--signal-panel)',
-      border: '0.5px solid #FFFFFF',
-      borderRadius: 3,
-      overflow: 'hidden',
-      minWidth: 0,
-    }}>
-      <div style={{ display: 'flex', borderBottom: '1px solid #1A1D24' }}>
-        <div style={{ flex: 1, padding: '12px 14px' }}>
-          <div style={{ ...label, color: '#7A7368' }}>EN Price</div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 600, color: '#E8E4DC' }}>
-            {prices.en_price || '—'}
+    <section
+      className="latest-signal fade-slide-up"
+      style={{ '--latest-signal-color': scoreMeta.color }}
+      aria-label={`${isSample ? 'Sample' : 'Latest'} Signal for ${data.name}`}
+    >
+      <header className="latest-signal-head">
+        <span>{isSample ? 'Sample Signal' : 'Latest Signal'}</span>
+        <span className="latest-signal-game" style={{ color: gameMeta.color }}>
+          <BrandIcon brand={data.game} size={11} style={{ opacity: 0.78 }} />
+          {gameMeta.label}
+        </span>
+      </header>
+
+      <div className="latest-signal-main">
+        <div className="latest-signal-identity">
+          <h2>{data.name}</h2>
+          <div className="latest-signal-score">
+            <strong style={{ color: scoreMeta.color }}>{data.score}</strong>
+            <span>/100</span>
+            <b style={{ color: scoreMeta.color }}>{scoreMeta.label}</b>
           </div>
+        </div>
+        <CardImage cardName={data.name} game={data.game} size={104} glowColor={scoreMeta.color} />
+      </div>
+
+      <div className="latest-signal-market">
+        <div>
+          <span>EN price</span>
+          <strong>{prices.en_price || '—'}</strong>
+        </div>
+        <div>
+          <span>30-day trend</span>
+          <strong style={{ color: trend.color }}>{trend.sym}</strong>
+          <small style={{ color: trend.color }}>{prices.trend_30d || '—'}</small>
         </div>
       </div>
 
-      <div style={{ display: 'flex' }}>
-        <div style={{ flex: 1, padding: '10px 14px' }}>
-          <div style={{ ...label, color: '#7A7368' }}>30-Day Trend</div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 16, color: trend.color, fontWeight: 700 }}>
-            {trend.sym}
+      <div className="latest-signal-creator">
+        <div className="latest-signal-creator-head">
+          <span>Creator Attention</span>
+          <div aria-label={`Creator signal ${creator?.level || 0} of 5`}>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <i key={value} className={value <= (creator?.level || 0) ? 'is-on' : ''} />
+            ))}
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function SignalTile({ creator }) {
-  return (
-    <div style={{
-      flex: 1,
-      background: 'var(--signal-panel)',
-      border: '0.5px solid #FFFFFF',
-      borderRadius: 3,
-      padding: '18px 20px',
-      minWidth: 0,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-        <span style={{
-          fontFamily: "'Syne', sans-serif",
-          fontSize: 11,
-          color: '#B08060',
-          letterSpacing: '0.04em',
-          fontWeight: 500,
-          flex: 1,
-        }}>Creator Attention</span>
-        <div style={{ display: 'flex', gap: 3 }} aria-label={`Creator signal ${creator?.level || 0} of 5`}>
-          {[1,2,3,4,5].map((value) => (
-            <div key={value} style={{ width: 6, height: 6, borderRadius: '50%', background: value <= (creator?.level || 0) ? '#B08060' : '#1A1D24' }} />
-          ))}
+        <div className="latest-signal-creator-line">
+          <BrandIcon brand="youtube" size={13} />
+          <strong>{creator?.headline || 'No saved creator signal'}</strong>
+          {creator && (
+            <b style={{ color: creator.implication === 'up' ? '#608870' : creator.implication === 'down' ? '#C44040' : '#A09060' }}>
+              {creator.implication === 'up' ? '▲ Bullish' : creator.implication === 'down' ? '▼ Bearish' : '► Neutral'}
+            </b>
+          )}
         </div>
+        {creator?.detail && <p>{creator.detail}</p>}
       </div>
-      <div style={{ paddingLeft: 12, borderLeft: '1px solid #1A1D24' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-          <BrandIcon brand="youtube" size={12} />
-          <span style={{
-            fontFamily: "'Instrument Serif', serif",
-            fontSize: 13,
-            fontStyle: 'italic',
-            color: '#E8E4DC',
-          }}>
-            {creator?.headline || '—'}
-          </span>
-        </div>
-        <div style={{
-          fontSize: 11,
-          fontFamily: "'Syne', sans-serif",
-          color: '#92897C',
-          lineHeight: 1.5,
-        }}>
-          {creator?.detail || ''}
-        </div>
-        {creator && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
-            <span style={{
-              fontSize: 11,
-              fontFamily: "'JetBrains Mono'",
-              color: creator.implication === 'up' ? '#608870' : creator.implication === 'down' ? '#C44040' : '#A09060',
-              fontWeight: 700,
-            }}>{creator.implication === 'up' ? '▲' : creator.implication === 'down' ? '▼' : '►'}</span>
-            <span style={{
-              fontSize: 7,
-              fontFamily: "'Syne', sans-serif",
-              letterSpacing: '0.14em',
-              color: creator.implication === 'up' ? '#608870' : creator.implication === 'down' ? '#C44040' : '#A09060',
-              opacity: 0.7,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-            }}>{creator.implication === 'up' ? 'Bullish' : creator.implication === 'down' ? 'Bearish' : 'Neutral'}</span>
-          </div>
-        )}
-      </div>
-    </div>
+    </section>
   );
 }
 
@@ -306,25 +158,10 @@ export default function EmptyState() {
   const data = featured || SAMPLE_DATA;
 
   return (
-    <div style={{ padding: '40px 0 20px' }}>
-      <div className="empty-state-tiles">
-        <ScoreTile data={data} isSample={isSample} />
-        <PriceTile prices={data.prices || {}} />
-        <SignalTile creator={data.creator} />
-      </div>
+    <div className="latest-signal-wrap">
+      <LatestSignalPanel data={data} isSample={isSample} />
       {isSample && (
-        <p style={{
-          marginTop: 20,
-          textAlign: 'center',
-          fontFamily: "'Syne', sans-serif",
-          fontSize: 12,
-          color: '#605C54',
-          lineHeight: 1.7,
-          maxWidth: 520,
-          marginLeft: 'auto',
-          marginRight: 'auto',
-          letterSpacing: '0.01em',
-        }}>
+        <p className="latest-signal-note">
           Compare the exact printing, verified sources, and eight market signals. A full scan can take up to two minutes.
         </p>
       )}

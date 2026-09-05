@@ -20,7 +20,7 @@ const TABS = [
   { id: 'yugioh',  label: 'Yu-Gi-Oh!', color: '#7080A0' },
 ];
 
-export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this card', accentBorder = false }) {
+export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this card', accentBorder = false, compactTop = false }) {
   const [activeGame, setActiveGame] = useState('pokemon');
   const [expansions, setExpansions] = useState({ pokemon: [], mtg: [], yugioh: [] });
   const [activeSet, setActiveSet] = useState(null);
@@ -108,7 +108,7 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
   const activeExpansions = expansions[activeGame] || [];
 
   return (
-    <div style={{ marginTop: 40 }}>
+    <div className="card-browser" style={{ marginTop: compactTop ? 18 : 40 }}>
       {/* Section header */}
       <div style={{
         display: 'flex',

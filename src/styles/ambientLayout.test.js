@@ -19,6 +19,7 @@ const signalCardSource = readFileSync(new URL('../components/SignalCard.jsx', im
 const watchedSource = readFileSync(new URL('../components/WatchedCards.jsx', import.meta.url), 'utf8');
 const signalNavSource = readFileSync(new URL('../components/SignalNav.jsx', import.meta.url), 'utf8');
 const citationSource = readFileSync(new URL('../components/SourceCitation.jsx', import.meta.url), 'utf8');
+const emptyStateSource = readFileSync(new URL('../components/EmptyState.jsx', import.meta.url), 'utf8');
 
 test('ambient art cannot widen the page horizontally', () => {
   const dashboard = css.match(/\.signal-dashboard\s*\{([^}]*)\}/)?.[1] || '';
@@ -127,6 +128,18 @@ test('micro-detail pass gives quiet controls a fitting response without changing
   ]) {
     assert.match(css, new RegExp(`@keyframes ${name}`));
   }
+});
+
+test('home uses one compact latest Signal panel before Browse Cards', () => {
+  assert.match(emptyStateSource, /function LatestSignalPanel/);
+  assert.match(emptyStateSource, /className="latest-signal fade-slide-up"/);
+  assert.match(emptyStateSource, /className="latest-signal-market"/);
+  assert.match(emptyStateSource, /className="latest-signal-creator"/);
+  assert.doesNotMatch(emptyStateSource, /empty-state-tiles|ScoreTile|PriceTile|SignalTile/);
+  assert.match(dashboardSource, /<CardBrowser onCardSelect=\{handleSearch\} accentBorder compactTop \/>/);
+  assert.match(browserSource, /marginTop: compactTop \? 18 : 40/);
+  assert.match(css, /\.latest-signal-wrap \{ padding: 22px 0 0; \}/);
+  assert.match(css, /\.latest-signal-market/);
 });
 
 test('only the first three recent scans receive the slab impact', () => {

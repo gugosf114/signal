@@ -925,7 +925,7 @@ export default function SignalDashboard() {
           <WatchedCards onSelect={handleSearch} />
           <NewsStrip />
           <EmptyState />
-          <CardBrowser onCardSelect={handleSearch} accentBorder />
+          <CardBrowser onCardSelect={handleSearch} accentBorder compactTop />
         </>
       )}
       </div>
