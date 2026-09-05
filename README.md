@@ -1338,3 +1338,17 @@ with its detail clamped to two lines. The panel starts 22px below the news strip
 and the home-page Browse Cards section now begins 18px after the panel. The
 Collection browser keeps its original 40px spacing. Phone widths of 360px and
 390px and the 800px layout render with zero horizontal overflow.
+
+---
+
+## Session log — 2026-09-05 outdoor-visible ambient orbs
+
+George's phone showed the moving red, gold, and blue background fields indoors,
+but outdoor shade flattened them into the black page even at high brightness.
+The fields were using a 44px blur with core alpha values as low as `0.22`.
+
+The six orb cores and the page-length color wash are now brighter, and the orb
+blur is tightened to `36px` with mild saturation. Panels, text, borders, motion,
+and orb positions are unchanged. A matched gray-glare comparison keeps all
+three colors distinct after the change, while normal Signal, Collection, and
+Dossier renders remain dark with zero horizontal overflow.

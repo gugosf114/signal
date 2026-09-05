@@ -30,6 +30,23 @@ test('ambient art cannot widen the page horizontally', () => {
   assert.match(ambient, /right:\s*0;/);
 });
 
+test('ambient orbs keep enough contrast for bright surroundings', () => {
+  const field = css.match(/\.signal-ambient-field\s*\{([^}]*)\}/)?.[1] || '';
+  assert.match(field, /filter:\s*blur\(36px\) saturate\(1\.18\)/);
+  assert.doesNotMatch(field, /blur\(44px\)/);
+  for (const [selector, opacity] of [
+    ['signal-ambient-field--red', '0.52'],
+    ['signal-ambient-field--gold', '0.4'],
+    ['signal-ambient-field--cool', '0.46'],
+    ['signal-ambient-field--lower-red', '0.46'],
+    ['signal-ambient-field--lower-gold', '0.44'],
+    ['signal-ambient-field--lower-cool', '0.42'],
+  ]) {
+    const rule = css.match(new RegExp(`\\.${selector}\\s*\\{([^}]*)\\}`))?.[1] || '';
+    assert.match(rule, new RegExp(`rgba\\([^)]*, ${opacity.replace('.', '\\.')}\\)`));
+  }
+});
+
 test('home attention pass reuses the existing logo, search, tiles, marks, and news', () => {
   assert.match(dashboardSource, /className="signal-logo-frame"/);
   assert.match(searchSource, /className="signal-search-form"/);
