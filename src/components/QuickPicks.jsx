@@ -7,7 +7,7 @@ import GameMark from './GameMark';
 // handful of curated reseller targets so the strip is never empty.
 const FALLBACK_TRENDING = SAMPLE_CARDS.slice(0, 5);
 
-export default function QuickPicks({ onSelect, loading, introActive = false }) {
+export default function QuickPicks({ onSelect, loading, introActive = false, cascadeActive = false }) {
   const [trending, setTrending] = useState(FALLBACK_TRENDING);
   const [isLive, setIsLive] = useState(false);
   const [showFade, setShowFade] = useState(false);
@@ -42,7 +42,7 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
       padding: '14px 16px 12px',
       background: 'var(--signal-panel)',
     }}>
-      {introActive && (
+      {cascadeActive && (
         <span className="cascade-border-runner cascade-border-runner--quick-picks" aria-hidden="true" />
       )}
       {/* Header — TOP TRENDING / weekly · TCGplayer */}

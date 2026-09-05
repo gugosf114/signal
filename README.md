@@ -1198,11 +1198,11 @@ published privately as `signal-v2.9`.
 
 George chose four code-native motion ideas for the existing home screen: the
 logo signal travels through the search border and game tiles; the game marks
-wake in their own way; the current quick-pick tiles deal into place once; and
-the existing news cards throw a slow foil light above their strip. The launch
-pass moves from top to bottom once. The news foil returns slowly. No panel was
-added and no section moved. Reduced-motion users receive the same layout with
-every new effect disabled.
+wake in their own way; the current quick-pick tiles deal into place; and the
+existing news cards throw a slow foil light above their strip. The quick-pick
+and recent-scan entrances replay once whenever Signal is entered. The news foil
+returns slowly. No panel was added and no section moved. Reduced-motion users
+receive the same layout with every new effect disabled.
 
 **Pinned for later, deliberately not built:** the giant ghost-card image behind
 the top half of the home screen.
@@ -1215,9 +1215,9 @@ The first three visible rows in **Your Last Scans** now arrive after the
 trending-card deal. Each row drops like a heavy slab, compresses on impact,
 throws one short warm-gray dust puff across its lower edge, and settles. The
 rows land one at a time. Older rows below the scroll stay still. The effect
-runs on Signal's first visit in an app session and is fully disabled by
-reduced-motion preference. George then raised only the peak dust density by
-exactly 20% (`0.64` → `0.768`); spread and timing stayed fixed.
+runs once whenever Signal is entered and is fully disabled by reduced-motion
+preference. George then raised only the peak dust density by exactly 20%
+(`0.64` → `0.768`); spread and timing stayed fixed.
 
 ---
 
@@ -1253,3 +1253,15 @@ images. Dossier uses the tab, opening research panel, method block, and sample
 panel. The existing deal, game-mark, slab/dust, and foil effects remain.
 Reduced-motion mode shows every item immediately and suppresses every handoff
 and border lap.
+
+---
+
+## Session log — 2026-09-04 Collection binder entrances
+
+The four binder tiles now run one entrance each time Collection is entered;
+they do not loop while the page stays open. The entrances are staggered by
+roughly 120ms and settle within 1.4 seconds. All cards rises while Gollum peeks
+up and catches a gold glint. Pokémon rolls and bounces its Poké Ball with one
+center flash. Yu-Gi-Oh! flips in and receives one red slash. MTG rises from
+shadow while its mark catches an ember glow. The slow shared border-beam
+cascade remains a separate first-visit-per-session effect.

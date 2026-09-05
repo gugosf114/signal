@@ -66,7 +66,13 @@ function addedLabel(value) {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function Collection({ onLookup, onAddCard, onAddBatch, introActive = false }) {
+export default function Collection({
+  onLookup,
+  onAddCard,
+  onAddBatch,
+  cascadeActive = false,
+  entryActive = false,
+}) {
   const [cards, setCards] = useState(() => loadCollection());
   const [status, setStatus] = useState(null);
   const [viewing, setViewing] = useState(null);
@@ -189,7 +195,7 @@ export default function Collection({ onLookup, onAddCard, onAddBatch, introActiv
   };
 
   return (
-    <div className={`collection-page${introActive ? ' collection-page--cascade' : ''}`}>
+    <div className={`collection-page${cascadeActive ? ' collection-page--cascade' : ''}${entryActive ? ' collection-page--entry' : ''}`}>
       <div className="col-intro">
         Scan or search an exact printing, then add your copy here.
       </div>
@@ -200,7 +206,7 @@ export default function Collection({ onLookup, onAddCard, onAddBatch, introActiv
           onCardFound={(card) => onAddCard?.(card)}
           onScannerAdd={(card) => onAddCard?.(card)}
           onScannerBatch={onAddBatch}
-          homePulse={introActive}
+          homePulse={cascadeActive}
         />
       </div>
 
@@ -211,7 +217,7 @@ export default function Collection({ onLookup, onAddCard, onAddBatch, introActiv
       <input ref={importRef} type="file" accept="application/json,.json" onChange={restoreBackup} hidden />
 
       <div className="col-binders" role="tablist" aria-label="Collection binders">
-        {introActive && (
+        {cascadeActive && (
           <span className="cascade-border-runner cascade-border-runner--collection-binders" aria-hidden="true" />
         )}
         {BINDERS.map((item) => (
@@ -231,7 +237,7 @@ export default function Collection({ onLookup, onAddCard, onAddBatch, introActiv
       </div>
 
       <div className="col-summary">
-        {introActive && (
+        {cascadeActive && (
           <span className="cascade-border-runner cascade-border-runner--collection-summary" aria-hidden="true" />
         )}
         <div className="col-summary-count">
@@ -252,7 +258,7 @@ export default function Collection({ onLookup, onAddCard, onAddBatch, introActiv
                     }}
                   >
                     <div className="col-top-card-art">
-                      {introActive && (
+                      {cascadeActive && (
                         <span className="cascade-border-runner cascade-border-runner--top-card" aria-hidden="true" />
                       )}
                       <span className="col-top-card-noart" aria-hidden="true">?</span>

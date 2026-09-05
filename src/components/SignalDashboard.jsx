@@ -503,7 +503,8 @@ export default function SignalDashboard() {
       {page === 'collection' && (
         <div id="panel-collection" role="tabpanel" aria-labelledby="tab-collection">
           <Collection
-            introActive={activeCascade}
+            cascadeActive={activeCascade}
+            entryActive
             onAddCard={(card) => setAddCard(card)}
             onAddBatch={addScannerBatch}
             onLookup={(name, game, opts) => {
@@ -535,8 +536,18 @@ export default function SignalDashboard() {
             accentBorder
             homePulse={activeCascade}
           />
-          <QuickPicks onSelect={handleSearch} loading={loading} introActive={activeCascade} />
-          <RecentScans onSelect={handleSearch} loading={loading} introActive={activeCascade} />
+          <QuickPicks
+            onSelect={handleSearch}
+            loading={loading}
+            introActive={signalHomeReady}
+            cascadeActive={activeCascade}
+          />
+          <RecentScans
+            onSelect={handleSearch}
+            loading={loading}
+            introActive={signalHomeReady}
+            cascadeActive={activeCascade}
+          />
         </div>
       )}
 

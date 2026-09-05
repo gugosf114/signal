@@ -62,6 +62,23 @@ test('one border shine coordinates the first visit to all three pages', () => {
   }
 });
 
+test('Signal and Collection tile entrances replay on each tab mount', () => {
+  assert.match(dashboardSource, /introActive=\{signalHomeReady\}/);
+  assert.match(dashboardSource, /entryActive/);
+  assert.match(quickPicksSource, /cascadeActive = false/);
+  assert.match(recentScansSource, /cascadeActive = false/);
+  assert.match(collectionSource, /entryActive = false/);
+  assert.match(collectionSource, /collection-page--entry/);
+  for (const name of [
+    'collectionGollumPeek',
+    'collectionPokeballRoll',
+    'collectionYgoReveal',
+    'collectionMtgIgnite',
+  ]) {
+    assert.match(css, new RegExp(`@keyframes ${name}`));
+  }
+});
+
 test('only the first three recent scans receive the slab impact', () => {
   assert.match(recentScansSource, /const isSlab = i < 3/);
   assert.match(recentScansSource, /recent-scans-panel--intro-/);
@@ -82,5 +99,6 @@ test('home attention motion has a reduced-motion exit', () => {
   assert.match(reduced, /recent-scans-panel--intro-active/);
   assert.match(reduced, /recent-scan-slab::after/);
   assert.match(reduced, /collection-page--cascade/);
+  assert.match(reduced, /collection-page--entry/);
   assert.match(reduced, /dos-page--cascade/);
 });
