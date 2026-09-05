@@ -1313,3 +1313,12 @@ gold-white band, and throws one short color-matched glow upward. A dot tap
 centers its article. Each sweep lasts about 1.15 seconds and repeats only when
 a new card becomes active or the row comes back into view. Reduced-motion mode
 renders no foil elements or foil animation.
+
+---
+
+## Session log — 2026-09-04 neutral main search edge
+
+The red one-pixel border around the large search box on the Signal home page
+was removed. The field now uses the same quiet dark edge as the Collection
+search. Its size, camera, Price/Full switch, focus glow, and behavior stay the
+same. The separate Browse Cards search style was not changed.

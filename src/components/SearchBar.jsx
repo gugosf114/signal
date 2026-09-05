@@ -93,7 +93,6 @@ export default function SearchBar({
   onScannerAdd = null,
   onScannerBatch = null,
   loading = false,
-  accentBorder = false,
 }) {
   const [lookupMode, setLookupMode] = useState('price');
   const [quickResult, setQuickResult] = useState(null);
@@ -562,7 +561,7 @@ export default function SearchBar({
             width: '100%',
             padding: '16px 94px 16px 50px',
             background: 'var(--signal-panel)',
-            border: `1px solid ${accentBorder ? '#C44040' : (focused ? '#2A2D34' : '#1A1D24')}`,
+            border: `1px solid ${focused ? '#2A2D34' : '#1A1D24'}`,
             borderRadius: 3,
             color: '#E8E4DC',
             fontSize: 15,

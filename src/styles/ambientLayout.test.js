@@ -32,6 +32,9 @@ test('ambient art cannot widen the page horizontally', () => {
 test('home attention pass reuses the existing logo, search, tiles, marks, and news', () => {
   assert.match(dashboardSource, /className="signal-logo-frame"/);
   assert.match(searchSource, /className="signal-search-form"/);
+  assert.doesNotMatch(searchSource, /accentBorder/);
+  assert.doesNotMatch(dashboardSource, /<SearchBar[\s\S]{0,400}accentBorder/);
+  assert.match(searchSource, /border: `1px solid \$\{focused \? '#2A2D34' : '#1A1D24'\}`/);
   assert.match(quickPicksSource, /quick-pick-card/);
   assert.match(quickPicksSource, /<GameMark game=\{card\.game\} compact alive \/>/);
   assert.match(gameMarkSource, /game-row-mark--alive/);

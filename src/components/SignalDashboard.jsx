@@ -515,7 +515,6 @@ export default function SignalDashboard() {
             onScannerAdd={(card) => setAddCard(card)}
             onScannerBatch={addScannerBatch}
             loading={loading}
-            accentBorder
           />
           <QuickPicks
             onSelect={handleSearch}
