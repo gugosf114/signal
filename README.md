@@ -1297,3 +1297,19 @@ red frame and its continuous nine-second traveling border light.
 This removal does not touch the trending-card deal, recent-scan slab and dust,
 Collection binder entrances, news foil, Dossier detail entrances, or the small
 tap responses. Those effects remain independent.
+
+---
+
+## Session log — 2026-09-04 visible news foil repair
+
+The original news foil existed in CSS but failed on the phone. Its first sweep
+finished while the news row was below the screen. Later sweeps followed the
+card leaving through the left edge fade, and the narrow band was too faint to
+read against article art.
+
+The foil now waits until at least 35% of the news-card row is visible. It tracks
+the card nearest the middle of the row, crosses that full card with one clear
+gold-white band, and throws one short color-matched glow upward. A dot tap
+centers its article. Each sweep lasts about 1.15 seconds and repeats only when
+a new card becomes active or the row comes back into view. Reduced-motion mode
+renders no foil elements or foil animation.

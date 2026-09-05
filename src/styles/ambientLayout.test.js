@@ -37,8 +37,15 @@ test('home attention pass reuses the existing logo, search, tiles, marks, and ne
   assert.match(gameMarkSource, /game-row-mark--alive/);
   assert.match(newsSource, /news-strip-shell--foil/);
   assert.match(newsSource, /--news-card-accent/);
-  assert.match(newsSource, /foilActive=\{index % articles\.length === activeIdx\}/);
-  assert.match(css, /\.npc-outer--foil-active \.npc-above::after/);
+  assert.match(newsSource, /IntersectionObserver/);
+  assert.match(newsSource, /centeredNewsIndex/);
+  assert.match(newsSource, /foilActive=\{!reducedMotion && foilVisible/);
+  assert.match(newsSource, /npc-foil-bloom/);
+  assert.match(newsSource, /npc-foil-sweep/);
+  assert.match(css, /@keyframes newsFoilBloom/);
+  assert.match(css, /@keyframes newsCardFoil/);
+  assert.match(css, /\.npc-foil-sweep::before/);
+  assert.doesNotMatch(css, /\.npc-above::after/);
 });
 
 test('the traveling shine stays on the Signal logo and has no handoff path', () => {
@@ -133,8 +140,8 @@ test('home attention motion has a reduced-motion exit', () => {
   const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
   assert.match(reduced, /signal-logo-frame::after/);
   assert.match(reduced, /quick-picks-panel--intro-active/);
-  assert.match(reduced, /news-strip-shell--foil/);
-  assert.match(reduced, /npc-above::after/);
+  assert.match(reduced, /npc-foil-bloom/);
+  assert.match(reduced, /npc-foil-sweep/);
   assert.match(reduced, /recent-scans-panel--intro-active/);
   assert.match(reduced, /recent-scan-slab::after/);
   assert.match(reduced, /collection-page--entry/);

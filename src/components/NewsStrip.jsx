@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { fetchTCGNews } from '../services/fetchTCGNews';
 import { fetchCardImage } from '../services/fetchCardImage';
 import { extractCardNames } from '../services/articleCardName';
+import { centeredNewsIndex, centeredNewsPosition } from '../services/newsMotion';
 
 const CARD_W = 178;
 const GAP = 14;
@@ -83,6 +84,12 @@ function ArticleCard({ article, foilActive = false }) {
         '--news-card-accent': c,
       }}
     >
+      {foilActive && (
+        <>
+          <span className="npc-foil-bloom" aria-hidden="true" />
+          <span className="npc-foil-sweep" aria-hidden="true" />
+        </>
+      )}
       {/* ── CARD IMAGE — the part sticking out of the pocket ──────── */}
       {/* The picture owns the whole tile width. The old centered portrait
           sub-frame left black gutters on both sides after news sources began
@@ -192,8 +199,10 @@ export default function NewsStrip() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [paused, setPaused]       = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [foilVisible, setFoilVisible] = useState(false);
 
   const trackRef       = useRef(null);
+  const trackViewportRef = useRef(null);
   const posRef         = useRef(0);
   const rafRef         = useRef(null);
   const pausedRef      = useRef(false);
@@ -222,6 +231,20 @@ export default function NewsStrip() {
   }, []);
 
   useEffect(() => {
+    const node = trackViewportRef.current;
+    if (!node || !articles.length) return undefined;
+    if (typeof IntersectionObserver !== 'function') {
+      setFoilVisible(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      setFoilVisible(entry.isIntersecting && entry.intersectionRatio >= 0.35);
+    }, { threshold: [0, 0.35, 0.7] });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [articles.length, loading]);
+
+  useEffect(() => {
     if (!articles.length || reducedMotion) return;
     const total = articles.length * STEP;
     const tick = () => {
@@ -229,7 +252,13 @@ export default function NewsStrip() {
         posRef.current = (posRef.current + SPEED) % total;
         if (trackRef.current) {
           trackRef.current.style.transform = `translateX(-${posRef.current}px)`;
-          const nextActive = Math.floor(posRef.current / STEP) % articles.length;
+          const nextActive = centeredNewsIndex(
+            posRef.current,
+            trackViewportRef.current?.clientWidth || CARD_W,
+            articles.length,
+            CARD_W,
+            GAP,
+          );
           if (nextActive !== activeRef.current) {
             activeRef.current = nextActive;
             setActiveIdx(nextActive);
@@ -245,7 +274,13 @@ export default function NewsStrip() {
   useEffect(() => () => { if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current); }, []);
 
   const jumpTo = (idx) => {
-    posRef.current = idx * STEP;
+    posRef.current = centeredNewsPosition(
+      idx,
+      trackViewportRef.current?.clientWidth || CARD_W,
+      articles.length,
+      CARD_W,
+      GAP,
+    );
     activeRef.current = idx;
     if (trackRef.current) {
       trackRef.current.style.transform = `translateX(-${posRef.current}px)`;
@@ -277,8 +312,15 @@ export default function NewsStrip() {
     if (next < 0) next += total;
     posRef.current = next;
     trackRef.current.style.transform = `translateX(-${next}px)`;
-    setActiveIdx(Math.floor(next / STEP) % articles.length);
-    activeRef.current = Math.floor(next / STEP) % articles.length;
+    const centered = centeredNewsIndex(
+      next,
+      trackViewportRef.current?.clientWidth || CARD_W,
+      articles.length,
+      CARD_W,
+      GAP,
+    );
+    setActiveIdx(centered);
+    activeRef.current = centered;
   };
 
   const onPointerEnd = (e) => {
@@ -302,12 +344,11 @@ export default function NewsStrip() {
   if (!articles.length) return null;
 
   const tripled = reducedMotion ? articles : [...articles, ...articles, ...articles];
-  const activeAccent = articles[activeIdx]?.source?.color || '#C44040';
 
   return (
     <div
       className="news-strip-shell news-strip-shell--foil"
-      style={{ marginTop: 40, '--news-active-accent': activeAccent }}
+      style={{ marginTop: 40 }}
     >
       <div className="news-strip-clip">
         <div className="ns-header">
@@ -328,6 +369,7 @@ export default function NewsStrip() {
 
         {/* Outer container — 32px headroom above cards + card height below */}
         <div
+          ref={trackViewportRef}
           className="ns-track-outer"
           style={{
             paddingTop: 32,
@@ -351,7 +393,7 @@ export default function NewsStrip() {
               <ArticleCard
                 key={index}
                 article={article}
-                foilActive={index % articles.length === activeIdx}
+                foilActive={!reducedMotion && foilVisible && index % articles.length === activeIdx}
               />
             ))}
           </div>
