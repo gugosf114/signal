@@ -1241,6 +1241,10 @@ teardrop shape. Each lower border finishes one calm lap before a short light
 streak carries the shine to the next border. Returning to a page does not
 replay the sequence.
 
+The logo and every lower border use the same shared conic gradient, mask,
+width, colors, and glow. Only each lap's duration changes. A separate
+motion-path pill was tried, looked wrong on the phone, and was removed.
+
 The lap rhythm after the logo is `6s → 8s → 4s → 9s`, then repeats where a
 page has another border. Signal runs around the active tab, search, trending
 panel, recent scans, and news. Collection uses the tab, search, binder group,

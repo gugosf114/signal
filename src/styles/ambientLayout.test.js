@@ -51,9 +51,11 @@ test('one border shine coordinates the first visit to all three pages', () => {
   assert.match(collectionSource, /cascade-border-runner--top-card/);
   assert.match(dossierSource, /dos-page--cascade/);
   assert.match(dossierSource, /cascade-border-runner--dossier-hero/);
-  assert.match(css, /@keyframes cascadeBorderLap/);
+  assert.match(css, /\.signal-logo-frame::after,\s*\.cascade-border-runner::after/);
+  assert.match(css, /@keyframes cascadeBorderOrbit/);
   assert.match(css, /@keyframes cascadeLogoHandoff/);
   assert.doesNotMatch(css, /signalTeardropFall/);
+  assert.doesNotMatch(css, /offset-path/);
   assert.match(css, /@keyframes topCardSplitLight/);
   for (const duration of ['4s', '6s', '8s', '9s']) {
     assert.match(css, new RegExp(`--cascade-runner-duration: ${duration}`));

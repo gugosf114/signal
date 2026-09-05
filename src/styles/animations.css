@@ -205,13 +205,13 @@
   position: relative;
   isolation: isolate;
 }
-.signal-logo-frame::after {
+.signal-logo-frame::after,
+.cascade-border-runner::after {
   content: '';
   position: absolute;
   z-index: 2;
   inset: -2px;
   padding: 2px;
-  border-radius: 10px;
   pointer-events: none;
   background: conic-gradient(
     from var(--signal-border-beam-angle),
@@ -228,6 +228,9 @@
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
   filter: drop-shadow(0 0 4px rgba(255, 226, 168, 0.72));
+}
+.signal-logo-frame::after {
+  border-radius: 10px;
   animation: signalBorderOrbit 9s linear infinite;
 }
 @keyframes signalBorderOrbit {
@@ -302,22 +305,9 @@
 }
 
 .cascade-border-runner::after {
-  content: '';
-  position: absolute;
-  z-index: 2;
-  left: 0;
-  top: 0;
-  width: 28px;
-  height: 3px;
-  border-radius: 999px;
-  pointer-events: none;
+  border-radius: calc(var(--cascade-runner-radius) + 2px);
   opacity: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(240, 199, 122, 0.22) 18%, #FFE4AD 48%, #FFFFFF 62%, rgba(255, 228, 173, 0.72) 76%, transparent 100%);
-  box-shadow: 0 0 4px rgba(255, 236, 196, 0.82), 0 0 10px rgba(196, 64, 64, 0.38);
-  offset-path: inset(1px round var(--cascade-runner-radius));
-  offset-distance: 0%;
-  offset-rotate: auto;
-  animation: cascadeBorderLap var(--cascade-runner-duration) linear var(--cascade-runner-delay) 1 both;
+  animation: cascadeBorderOrbit var(--cascade-runner-duration) linear var(--cascade-runner-delay) 1 both;
 }
 
 .cascade-border-runner::before {
@@ -370,11 +360,11 @@
   --cascade-runner-radius: 7px;
 }
 
-@keyframes cascadeBorderLap {
-  0% { opacity: 0; offset-distance: 0%; }
+@keyframes cascadeBorderOrbit {
+  0% { opacity: 0; --signal-border-beam-angle: 0deg; }
   2% { opacity: 1; }
   96% { opacity: 1; }
-  100% { opacity: 0; offset-distance: 100%; }
+  100% { opacity: 0; --signal-border-beam-angle: 360deg; }
 }
 
 @keyframes cascadeShineHandoff {
@@ -382,23 +372,6 @@
   22% { opacity: 1; }
   76% { opacity: 1; transform: translate3d(-50%, -3px, 0) scaleY(1); }
   100% { opacity: 0; transform: translate3d(-50%, 0, 0) scaleY(0.24); }
-}
-
-@supports not (offset-path: inset(1px round 4px)) {
-  .cascade-border-runner::after {
-    inset: -1px;
-    width: auto;
-    height: auto;
-    border: 1px solid #FFE4AD;
-    border-radius: inherit;
-    background: transparent;
-    animation: cascadeBorderFallback var(--cascade-runner-duration) ease-in-out var(--cascade-runner-delay) 1 both;
-  }
-}
-
-@keyframes cascadeBorderFallback {
-  0%, 100% { opacity: 0; box-shadow: 0 0 0 transparent; }
-  18%, 82% { opacity: 0.72; box-shadow: 0 0 9px rgba(255, 226, 168, 0.48); }
 }
 
 .quick-picks-panel,
