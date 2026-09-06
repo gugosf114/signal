@@ -1414,5 +1414,5 @@ sheet keep their own touch gestures. A completed swipe also blocks the button
 click that could otherwise fire under the lifted finger.
 
 The incoming page moves 24px from the swipe direction over 0.34 seconds. The
-transition does not change page layout, saved state, or tab behavior. Reduced
-motion switches pages immediately.
+new page opens at its top. The transition does not change page layout, saved
+state, or tab behavior. Reduced motion switches pages immediately.

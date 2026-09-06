@@ -454,6 +454,7 @@ export default function SignalDashboard() {
     const nextPage = pageAfterSwipe(page, direction);
     if (nextPage === page) return;
     changePage(nextPage, direction);
+    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
   };
 
   const cancelPageSwipe = () => {
