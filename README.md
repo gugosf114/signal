@@ -1430,3 +1430,15 @@ The old blue ambient family is now the same muted green as the Price toggle:
 the first-page gaps. The solid cards block it where they sit, while their clear
 gaps expose it. Red and gold remain unchanged, and green replaces blue rather
 than adding a fourth ambient color.
+
+---
+
+## Session log — 2026-09-06 middle green removed
+
+Phone review rejected the green light across the middle of the first page. The
+broad gap bridge, upper green orb, and mid-page green wash are removed together.
+The transparent gaps and solid cards are unchanged.
+
+Red and gold remain at the top. The separate lower green orb remains near the
+bottom of the long page, using the Price toggle's `#608870`. Page swipes, text
+contrast, news foil, and every other approved effect are unchanged.

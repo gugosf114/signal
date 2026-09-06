@@ -38,13 +38,12 @@ test('ambient orbs keep enough contrast for bright surroundings', () => {
   const field = css.match(/\.signal-ambient-field\s*\{([^}]*)\}/)?.[1] || '';
   assert.match(field, /filter:\s*blur\(36px\) saturate\(1\.18\)/);
   assert.doesNotMatch(field, /blur\(44px\)/);
-  for (const opacity of ['0.066', '0.084', '0.072']) {
+  for (const opacity of ['0.066', '0.072']) {
     assert.match(ambient, new RegExp(`rgba\\([^;\\n]*, ${opacity.replace('.', '\\.')}\\)`));
   }
   for (const [selector, opacity] of [
     ['signal-ambient-field--red', '0.624'],
     ['signal-ambient-field--gold', '0.48'],
-    ['signal-ambient-field--green', '0.552'],
     ['signal-ambient-field--lower-red', '0.552'],
     ['signal-ambient-field--lower-gold', '0.528'],
     ['signal-ambient-field--lower-green', '0.504'],
@@ -54,7 +53,7 @@ test('ambient orbs keep enough contrast for bright surroundings', () => {
   }
 });
 
-test('transparent gaps expose toggle-green ambient light while panels stay solid', () => {
+test('transparent gaps stay clear while the upper and middle green light stays removed', () => {
   const root = css.match(/:root\s*\{([^}]*)\}/)?.[1] || '';
   const dashboard = css.match(/\.signal-dashboard\s*\{([^}]*)\}/)?.[1] || '';
   const ambient = css.match(/\.signal-ambient\s*\{([^}]*)\}/)?.[1] || '';
@@ -63,15 +62,15 @@ test('transparent gaps expose toggle-green ambient light while panels stay solid
 
   assert.match(root, /--signal-toggle-green:\s*#608870/);
   assert.match(root, /--signal-toggle-green-rgb:\s*96, 136, 112/);
-  assert.match(ambient, /radial-gradient\(ellipse 76% 13% at 58% 27%/);
-  assert.match(ambient, /rgba\(var\(--signal-toggle-green-rgb\), 0\.18\)/);
+  assert.doesNotMatch(ambient, /signal-toggle-green-rgb|radial-gradient/);
   assert.doesNotMatch(dashboard, /background:/);
   assert.doesNotMatch(reveal, /background:/);
   assert.match(quickPicksSource, /background:\s*'var\(--signal-panel\)'/);
   assert.match(recentScansSource, /background:\s*'var\(--signal-panel\)'/);
-  assert.match(ambientSource, /signal-ambient-field--green/);
   assert.match(ambientSource, /signal-ambient-field--lower-green/);
+  assert.doesNotMatch(ambientSource, /signal-ambient-field--green"/);
   assert.match(ambientMotionSource, /green:\s*\{/);
+  assert.doesNotMatch(ambientCss, /\.signal-ambient-field--green\s*\{/);
   assert.doesNotMatch(ambientCss, /signal-ambient-field--cool|signalAmbientCool/);
   assert.doesNotMatch(ambientCss, /rgba\((?:83, 113, 126|55, 82, 91|73, 107, 121|47, 75, 84),/);
   assert.match(css, /\.lookup-mode-toggle > span\s*\{[^}]*background:\s*var\(--signal-toggle-green\)/);
