@@ -4,6 +4,7 @@ import { fetchCardImage } from '../services/fetchCardImage';
 import { extractCardNames } from '../services/articleCardName';
 import { centeredNewsIndex, centeredNewsPosition } from '../services/newsMotion';
 import ScrollReveal from './ScrollReveal';
+import SignalGridSignature from './SignalGridSignature';
 
 const CARD_W = 178;
 const GAP = 14;
@@ -201,6 +202,7 @@ export default function NewsStrip() {
   const [paused, setPaused]       = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [foilVisible, setFoilVisible] = useState(false);
+  const [gridPlayed, setGridPlayed] = useState(false);
 
   const trackRef       = useRef(null);
   const trackViewportRef = useRef(null);
@@ -244,6 +246,12 @@ export default function NewsStrip() {
     observer.observe(node);
     return () => observer.disconnect();
   }, [articles.length, loading]);
+
+  // One local signature moment per Signal-page visit. It begins only when the
+  // news area is actually on screen, then leaves the faint wordmark behind.
+  useEffect(() => {
+    if (foilVisible) setGridPlayed(true);
+  }, [foilVisible]);
 
   useEffect(() => {
     if (!articles.length || reducedMotion) return;
@@ -367,6 +375,8 @@ export default function NewsStrip() {
             ))}
           </div>
         </div>
+
+        <SignalGridSignature active={gridPlayed} />
 
         {/* Outer container — 32px headroom above cards + card height below */}
         <div

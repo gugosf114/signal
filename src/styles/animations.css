@@ -1547,7 +1547,63 @@
   overflow: hidden;
 }
 
-.ns-track-outer { position: relative; }
+.news-grid-signature {
+  --news-grid-rain-peak-opacity: 0.78;
+  --news-grid-settled-opacity: 0.36;
+  position: absolute;
+  z-index: 1;
+  top: 38px;
+  left: 55%;
+  width: min(74%, 290px);
+  height: 58px;
+  pointer-events: none;
+  transform: translateX(-50%);
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 76%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 0%, #000 76%, transparent 100%);
+}
+.news-grid-signature svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.news-grid-rain-cell {
+  fill: #C44040;
+  opacity: 0;
+  transform: translateY(-38px);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.news-grid-rain-cell--accent { fill: #E8D8B5; }
+.news-grid-word {
+  opacity: 0;
+  transform: translateY(-8px);
+  transform-box: fill-box;
+  transform-origin: center;
+  filter: drop-shadow(0 0 4px rgba(196, 64, 64, 0.28));
+}
+.news-grid-signature--active .news-grid-rain-cell {
+  animation: newsGridCellFall 1s cubic-bezier(0.16, 0.76, 0.22, 1)
+    var(--grid-rain-delay) 1 both;
+}
+.news-grid-signature--active .news-grid-word {
+  animation: newsGridWordSettle 0.9s cubic-bezier(0.16, 0.82, 0.22, 1)
+    0.55s 1 both;
+}
+@keyframes newsGridCellFall {
+  0% { opacity: 0; transform: translateY(-38px); }
+  18% { opacity: 0.34; }
+  48% { opacity: var(--news-grid-rain-peak-opacity); }
+  100% { opacity: 0; transform: translateY(var(--grid-rain-travel)); }
+}
+@keyframes newsGridWordSettle {
+  0% { opacity: 0; transform: translateY(-8px); clip-path: inset(0 0 100% 0); }
+  62% { opacity: 0.48; transform: translateY(1px); clip-path: inset(0 0 0 0); }
+  100% { opacity: var(--news-grid-settled-opacity); transform: translateY(0); clip-path: inset(0 0 0 0); }
+}
+
+.ns-header { position: relative; z-index: 3; }
+.ns-track-outer { position: relative; z-index: 2; }
 .ns-fade-l {
   position: absolute; left: 0; top: 0; bottom: 0; width: 40px;
   background: linear-gradient(90deg, #08090A, transparent);
@@ -3989,6 +4045,13 @@
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+  .news-grid-rain-cell { display: none !important; }
+  .news-grid-signature--active .news-grid-word {
+    animation: none !important;
+    opacity: var(--news-grid-settled-opacity) !important;
+    transform: none !important;
+    clip-path: none !important;
   }
   .npc-foil-bloom,
   .npc-foil-sweep { display: none !important; }
