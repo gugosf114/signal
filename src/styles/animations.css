@@ -6,6 +6,8 @@
   --signal-raised: #333139;
   --signal-text-secondary: #A8A498;
   --signal-text-muted: #92897C;
+  --signal-toggle-green: #608870;
+  --signal-toggle-green-rgb: 96, 136, 112;
 }
 
 /* One ambient layer behind the existing first-screen layout. */
@@ -24,7 +26,9 @@
   min-height: 1600px;
   overflow: hidden;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(196, 64, 64, 0.066), transparent 24%, rgba(64, 87, 94, 0.084) 48%, rgba(160, 144, 96, 0.072) 72%, transparent 100%);
+  background:
+    radial-gradient(ellipse 76% 13% at 58% 27%, rgba(var(--signal-toggle-green-rgb), 0.18) 0%, rgba(var(--signal-toggle-green-rgb), 0.09) 48%, transparent 78%),
+    linear-gradient(180deg, rgba(196, 64, 64, 0.066), transparent 24%, rgba(var(--signal-toggle-green-rgb), 0.084) 48%, rgba(160, 144, 96, 0.072) 72%, transparent 100%);
 }
 .signal-ambient-field {
   position: absolute;
@@ -52,14 +56,14 @@
   translate: var(--ambient-gold-x, 0px) var(--ambient-gold-y, 0px);
   animation: signalAmbientGold 18s ease-in-out infinite alternate;
 }
-.signal-ambient-field--cool {
+.signal-ambient-field--green {
   top: 30%;
   right: 4%;
   width: 70%;
   aspect-ratio: 1;
-  background: radial-gradient(circle, rgba(83, 113, 126, 0.552) 0%, rgba(55, 82, 91, 0.276) 48%, transparent 74%);
-  translate: var(--ambient-cool-x, 0px) var(--ambient-cool-y, 0px);
-  animation: signalAmbientCool 21s ease-in-out infinite alternate;
+  background: radial-gradient(circle, rgba(var(--signal-toggle-green-rgb), 0.552) 0%, rgba(62, 100, 78, 0.276) 48%, transparent 74%);
+  translate: var(--ambient-green-x, 0px) var(--ambient-green-y, 0px);
+  animation: signalAmbientGreen 21s ease-in-out infinite alternate;
 }
 .signal-ambient-field--lower-red {
   top: 53%;
@@ -79,25 +83,25 @@
   translate: var(--ambient-lowerGold-x, 0px) var(--ambient-lowerGold-y, 0px);
   animation: signalAmbientRed 25s ease-in-out infinite alternate;
 }
-.signal-ambient-field--lower-cool {
+.signal-ambient-field--lower-green {
   top: 91%;
   left: 8%;
   width: 72%;
   aspect-ratio: 1;
-  background: radial-gradient(circle, rgba(73, 107, 121, 0.504) 0%, rgba(47, 75, 84, 0.24) 48%, transparent 74%);
-  translate: var(--ambient-cool-x, 0px) var(--ambient-cool-y, 0px);
-  animation: signalAmbientCool 24s ease-in-out infinite alternate-reverse;
+  background: radial-gradient(circle, rgba(var(--signal-toggle-green-rgb), 0.504) 0%, rgba(62, 100, 78, 0.24) 48%, transparent 74%);
+  translate: var(--ambient-green-x, 0px) var(--ambient-green-y, 0px);
+  animation: signalAmbientGreen 24s ease-in-out infinite alternate-reverse;
 }
 
 /* The same palette, with a different orbit map on each page. */
-.signal-ambient--collection .signal-ambient-field--cool { left: -18%; right: auto; top: 27%; }
+.signal-ambient--collection .signal-ambient-field--green { left: -18%; right: auto; top: 27%; }
 .signal-ambient--collection .signal-ambient-field--lower-red { left: auto; right: -27%; top: 50%; }
 .signal-ambient--collection .signal-ambient-field--lower-gold { left: -20%; right: auto; top: 72%; }
-.signal-ambient--collection .signal-ambient-field--lower-cool { left: auto; right: 2%; top: 89%; }
-.signal-ambient--dossier .signal-ambient-field--cool { left: 6%; right: auto; top: 34%; }
+.signal-ambient--collection .signal-ambient-field--lower-green { left: auto; right: 2%; top: 89%; }
+.signal-ambient--dossier .signal-ambient-field--green { left: 6%; right: auto; top: 34%; }
 .signal-ambient--dossier .signal-ambient-field--lower-red { left: -30%; top: 59%; }
 .signal-ambient--dossier .signal-ambient-field--lower-gold { right: -28%; top: 80%; }
-.signal-ambient--dossier .signal-ambient-field--lower-cool { left: 18%; top: 93%; }
+.signal-ambient--dossier .signal-ambient-field--lower-green { left: 18%; top: 93%; }
 .signal-ambient-grid {
   position: absolute;
   inset: 0;
@@ -117,7 +121,7 @@
   from { transform: translate3d(-8%, 4%, 0) scale(1); }
   to { transform: translate3d(16%, -8%, 0) scale(1.12); }
 }
-@keyframes signalAmbientCool {
+@keyframes signalAmbientGreen {
   from { transform: translate3d(7%, -5%, 0) scale(0.96); }
   to { transform: translate3d(-12%, 12%, 0) scale(1.08); }
 }
@@ -2060,7 +2064,7 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #608870;
+  background: var(--signal-toggle-green);
   box-shadow: 0 1px 5px rgba(0,0,0,0.45);
   transition: transform 0.16s ease, background 0.16s ease;
 }

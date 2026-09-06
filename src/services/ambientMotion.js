@@ -28,7 +28,7 @@ export function ambientParallax(offset) {
   return {
     red: { x: x * 1.4, y: y * 1.2 },
     gold: { x: x * -0.85, y: y * -0.75 },
-    cool: { x: x * 0.55, y: y * -0.45 },
+    green: { x: x * 0.55, y: y * -0.45 },
     lowerRed: { x: x * -0.65, y: y * 0.5 },
     lowerGold: { x: x * 0.9, y: y * -0.6 },
   };

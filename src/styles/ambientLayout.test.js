@@ -21,6 +21,8 @@ const signalNavSource = readFileSync(new URL('../components/SignalNav.jsx', impo
 const citationSource = readFileSync(new URL('../components/SourceCitation.jsx', import.meta.url), 'utf8');
 const emptyStateSource = readFileSync(new URL('../components/EmptyState.jsx', import.meta.url), 'utf8');
 const scrollRevealSource = readFileSync(new URL('../components/ScrollReveal.jsx', import.meta.url), 'utf8');
+const ambientSource = readFileSync(new URL('../components/SignalAmbient.jsx', import.meta.url), 'utf8');
+const ambientMotionSource = readFileSync(new URL('../services/ambientMotion.js', import.meta.url), 'utf8');
 
 test('ambient art cannot widen the page horizontally', () => {
   const dashboard = css.match(/\.signal-dashboard\s*\{([^}]*)\}/)?.[1] || '';
@@ -37,19 +39,42 @@ test('ambient orbs keep enough contrast for bright surroundings', () => {
   assert.match(field, /filter:\s*blur\(36px\) saturate\(1\.18\)/);
   assert.doesNotMatch(field, /blur\(44px\)/);
   for (const opacity of ['0.066', '0.084', '0.072']) {
-    assert.match(ambient, new RegExp(`rgba\\([^)]*, ${opacity.replace('.', '\\.')}\\)`));
+    assert.match(ambient, new RegExp(`rgba\\([^;\\n]*, ${opacity.replace('.', '\\.')}\\)`));
   }
   for (const [selector, opacity] of [
     ['signal-ambient-field--red', '0.624'],
     ['signal-ambient-field--gold', '0.48'],
-    ['signal-ambient-field--cool', '0.552'],
+    ['signal-ambient-field--green', '0.552'],
     ['signal-ambient-field--lower-red', '0.552'],
     ['signal-ambient-field--lower-gold', '0.528'],
-    ['signal-ambient-field--lower-cool', '0.504'],
+    ['signal-ambient-field--lower-green', '0.504'],
   ]) {
     const rule = css.match(new RegExp(`\\.${selector}\\s*\\{([^}]*)\\}`))?.[1] || '';
-    assert.match(rule, new RegExp(`rgba\\([^)]*, ${opacity.replace('.', '\\.')}\\)`));
+    assert.match(rule, new RegExp(`rgba\\([^;\\n]*, ${opacity.replace('.', '\\.')}\\)`));
   }
+});
+
+test('transparent gaps expose toggle-green ambient light while panels stay solid', () => {
+  const root = css.match(/:root\s*\{([^}]*)\}/)?.[1] || '';
+  const dashboard = css.match(/\.signal-dashboard\s*\{([^}]*)\}/)?.[1] || '';
+  const ambient = css.match(/\.signal-ambient\s*\{([^}]*)\}/)?.[1] || '';
+  const reveal = css.match(/\.scroll-reveal\s*\{([^}]*)\}/)?.[1] || '';
+  const ambientCss = css.slice(0, css.indexOf('.game-row-mark'));
+
+  assert.match(root, /--signal-toggle-green:\s*#608870/);
+  assert.match(root, /--signal-toggle-green-rgb:\s*96, 136, 112/);
+  assert.match(ambient, /radial-gradient\(ellipse 76% 13% at 58% 27%/);
+  assert.match(ambient, /rgba\(var\(--signal-toggle-green-rgb\), 0\.18\)/);
+  assert.doesNotMatch(dashboard, /background:/);
+  assert.doesNotMatch(reveal, /background:/);
+  assert.match(quickPicksSource, /background:\s*'var\(--signal-panel\)'/);
+  assert.match(recentScansSource, /background:\s*'var\(--signal-panel\)'/);
+  assert.match(ambientSource, /signal-ambient-field--green/);
+  assert.match(ambientSource, /signal-ambient-field--lower-green/);
+  assert.match(ambientMotionSource, /green:\s*\{/);
+  assert.doesNotMatch(ambientCss, /signal-ambient-field--cool|signalAmbientCool/);
+  assert.doesNotMatch(ambientCss, /rgba\((?:83, 113, 126|55, 82, 91|73, 107, 121|47, 75, 84),/);
+  assert.match(css, /\.lookup-mode-toggle > span\s*\{[^}]*background:\s*var\(--signal-toggle-green\)/);
 });
 
 test('three-page text hierarchy brightens useful copy without washing out decoration', () => {

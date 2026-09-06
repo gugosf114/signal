@@ -46,10 +46,10 @@ export default function SignalAmbient({ active, page = 'signal' }) {
     <div ref={fieldRef} className={`signal-ambient signal-ambient--${page}`} aria-hidden="true">
       <span className="signal-ambient-field signal-ambient-field--red" />
       <span className="signal-ambient-field signal-ambient-field--gold" />
-      <span className="signal-ambient-field signal-ambient-field--cool" />
+      <span className="signal-ambient-field signal-ambient-field--green" />
       <span className="signal-ambient-field signal-ambient-field--lower-red" />
       <span className="signal-ambient-field signal-ambient-field--lower-gold" />
-      <span className="signal-ambient-field signal-ambient-field--lower-cool" />
+      <span className="signal-ambient-field signal-ambient-field--lower-green" />
       <span className="signal-ambient-grid" />
     </div>
   );

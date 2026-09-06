@@ -31,5 +31,6 @@ test('ambient lights move against each other instead of as one flat layer', () =
   const layers = ambientParallax({ x: 10, y: -8 });
   assert.deepEqual(layers.red, { x: 14, y: -9.6 });
   assert.deepEqual(layers.gold, { x: -8.5, y: 6 });
+  assert.deepEqual(layers.green, { x: 5.5, y: 3.6 });
   assert.ok(layers.red.x > 0 && layers.gold.x < 0);
 });

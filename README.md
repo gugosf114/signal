@@ -1416,3 +1416,17 @@ click that could otherwise fire under the lifted finger.
 The incoming page moves 24px from the swipe direction over 0.34 seconds. The
 new page opens at its top. The transition does not change page layout, saved
 state, or tab behavior. Reduced motion switches pages immediately.
+
+---
+
+## Session log — 2026-09-06 green light through clear gaps
+
+The open space between Top Trending, Your Last Scans, and TCG Intelligence was
+already transparent. The two cards themselves remain fully opaque. No panel,
+tile, border, or text opacity changed.
+
+The old blue ambient family is now the same muted green as the Price toggle:
+`#608870`. A broad, shallow green field sits in the ambient background behind
+the first-page gaps. The solid cards block it where they sit, while their clear
+gaps expose it. Red and gold remain unchanged, and green replaces blue rather
+than adding a fourth ambient color.
