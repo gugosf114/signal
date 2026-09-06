@@ -3,6 +3,7 @@ import { BrandIcon } from '../config/brandIcons';
 import { GAME_LABELS, getScoreLabel, calculateOverallScore } from '../config/signals';
 import { getCachedScan } from '../services/scanCache';
 import CardImage from './CardImage';
+import ScrollReveal from './ScrollReveal';
 
 // ─── Featured-scan loader ────────────────────────────────────────────────────
 // On first render, pull the user's most recent scan out of localStorage.
@@ -158,13 +159,13 @@ export default function EmptyState() {
   const data = featured || SAMPLE_DATA;
 
   return (
-    <div className="latest-signal-wrap">
+    <ScrollReveal delay={70} className="latest-signal-wrap">
       <LatestSignalPanel data={data} isSample={isSample} />
       {isSample && (
         <p className="latest-signal-note">
           Compare the exact printing, verified sources, and eight market signals. A full scan can take up to two minutes.
         </p>
       )}
-    </div>
+    </ScrollReveal>
   );
 }

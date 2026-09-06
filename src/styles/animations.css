@@ -120,6 +120,23 @@
   to { transform: translate3d(-12%, 12%, 0) scale(1.08); }
 }
 
+/* Sections wake as they enter the screen. `translate` stays separate from the
+   transform animations used by cards, binders, slabs, and foil light. */
+.scroll-reveal {
+  display: flow-root;
+  opacity: 0;
+  translate: 0 14px;
+  transition:
+    opacity 0.56s cubic-bezier(0.2, 0.72, 0.22, 1) var(--scroll-reveal-delay, 0ms),
+    translate 0.56s cubic-bezier(0.2, 0.72, 0.22, 1) var(--scroll-reveal-delay, 0ms);
+}
+.scroll-reveal--pending { will-change: opacity, translate; }
+.scroll-reveal--visible {
+  opacity: 1;
+  translate: none;
+  will-change: auto;
+}
+
 .game-row-mark {
   display: inline-grid;
   place-items: center;
@@ -3937,6 +3954,11 @@
   .ns-track { transform: none !important; }
   .signal-card-backdrop { transition: none !important; transform: none !important; }
   .signal-logo-frame::after { animation: none !important; }
+  .scroll-reveal {
+    opacity: 1 !important;
+    translate: none !important;
+    transition: none !important;
+  }
   .npc-foil-bloom,
   .npc-foil-sweep { display: none !important; }
   .quick-picks-panel--intro-waiting .quick-pick-card,

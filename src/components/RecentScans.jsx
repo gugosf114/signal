@@ -3,6 +3,7 @@ import { GAME_LABELS, SCORE_VERSION, calculateOverallScore } from '../config/sig
 import { getCachedScan } from '../services/scanCache';
 import { recentPrintingLine, sanitizeRecentScans } from '../services/recentScans';
 import GameMark from './GameMark';
+import ScrollReveal from './ScrollReveal';
 
 // Distinct from QuickPicks: this is YOUR trace through the app.
 // Visual cue: hairline divider + label, then log-style rows
@@ -55,7 +56,7 @@ export default function RecentScans({ onSelect, loading, introActive = false }) 
 
   if (scans.length === 0) return null;
   return (
-    <div className={`recent-scans-panel recent-scans-panel--intro-${introActive ? 'active' : 'done'}`} style={{
+    <ScrollReveal delay={70} className={`recent-scans-panel recent-scans-panel--intro-${introActive ? 'active' : 'done'}`} style={{
       width: '100%',
       marginTop: 18,
       border: '0.5px solid #FFFFFF',
@@ -194,6 +195,6 @@ export default function RecentScans({ onSelect, loading, introActive = false }) 
         </div>
         {showFade && <div className="compact-scroll-fade" aria-hidden />}
       </div>
-    </div>
+    </ScrollReveal>
   );
 }

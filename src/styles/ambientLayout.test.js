@@ -20,6 +20,7 @@ const watchedSource = readFileSync(new URL('../components/WatchedCards.jsx', imp
 const signalNavSource = readFileSync(new URL('../components/SignalNav.jsx', import.meta.url), 'utf8');
 const citationSource = readFileSync(new URL('../components/SourceCitation.jsx', import.meta.url), 'utf8');
 const emptyStateSource = readFileSync(new URL('../components/EmptyState.jsx', import.meta.url), 'utf8');
+const scrollRevealSource = readFileSync(new URL('../components/ScrollReveal.jsx', import.meta.url), 'utf8');
 
 test('ambient art cannot widen the page horizontally', () => {
   const dashboard = css.match(/\.signal-dashboard\s*\{([^}]*)\}/)?.[1] || '';
@@ -157,6 +158,27 @@ test('home uses one compact latest Signal panel before Browse Cards', () => {
   assert.match(browserSource, /marginTop: compactTop \? 18 : 40/);
   assert.match(css, /\.latest-signal-wrap \{ padding: 22px 0 0; \}/);
   assert.match(css, /\.latest-signal-market/);
+});
+
+test('all page sections reveal once on scroll without taking over child transforms', () => {
+  assert.match(scrollRevealSource, /IntersectionObserver/);
+  assert.match(scrollRevealSource, /observer\.disconnect\(\)/);
+  assert.match(scrollRevealSource, /rootMargin: '0px 0px 14% 0px'/);
+  assert.match(scrollRevealSource, /scroll-reveal--\$\{visible \? 'visible' : 'pending'\}/);
+  assert.ok((dashboardSource.match(/<ScrollReveal/g) || []).length >= 7);
+  assert.match(dashboardSource, /SIGNAL_SECTIONS\.map[\s\S]{0,100}<ScrollReveal key=\{section\.id\}/);
+  assert.ok((collectionSource.match(/<ScrollReveal/g) || []).length >= 6);
+  assert.ok((dossierSource.match(/<ScrollReveal/g) || []).length >= 4);
+  for (const source of [quickPicksSource, recentScansSource, newsSource, emptyStateSource, browserSource, watchedSource]) {
+    assert.match(source, /<ScrollReveal/);
+  }
+  const revealRule = css.match(/\.scroll-reveal\s*\{([^}]*)\}/)?.[1] || '';
+  assert.match(revealRule, /translate:\s*0 14px/);
+  assert.doesNotMatch(revealRule, /transform:/);
+  const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
+  assert.match(reduced, /\.scroll-reveal/);
+  assert.match(reduced, /opacity:\s*1 !important/);
+  assert.match(dashboardSource, /<div id="pdf-report-capture">\s*<PdfReport/);
 });
 
 test('only the first three recent scans receive the slab impact', () => {

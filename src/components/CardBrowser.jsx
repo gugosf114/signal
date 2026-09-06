@@ -11,6 +11,7 @@ import {
   searchCardsByName,
 } from '../services/fetchExpansions';
 import CardLightbox from './CardLightbox';
+import ScrollReveal from './ScrollReveal';
 
 const GAME_BRAND = { pokemon: 'pokemon', mtg: 'mtg', yugioh: 'yugioh' };
 
@@ -20,7 +21,12 @@ const TABS = [
   { id: 'yugioh',  label: 'Yu-Gi-Oh!', color: '#7080A0' },
 ];
 
-export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this card', accentBorder = false, compactTop = false }) {
+export default function CardBrowser({
+  onCardSelect,
+  actionLabel = 'Scan this card',
+  accentBorder = false,
+  compactTop = false,
+}) {
   const [activeGame, setActiveGame] = useState('pokemon');
   const [expansions, setExpansions] = useState({ pokemon: [], mtg: [], yugioh: [] });
   const [activeSet, setActiveSet] = useState(null);
@@ -108,7 +114,7 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
   const activeExpansions = expansions[activeGame] || [];
 
   return (
-    <div className="card-browser" style={{ marginTop: compactTop ? 18 : 40 }}>
+    <ScrollReveal className="card-browser" style={{ marginTop: compactTop ? 18 : 40 }}>
       {/* Section header */}
       <div style={{
         display: 'flex',
@@ -432,6 +438,6 @@ export default function CardBrowser({ onCardSelect, actionLabel = 'Scan this car
           onCardSelect(c.name, c.game, { pin: c });
         }}
       />
-    </div>
+    </ScrollReveal>
   );
 }

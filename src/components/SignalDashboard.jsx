@@ -19,6 +19,7 @@ import Collection from './Collection';
 import Dossier from './Dossier';
 import AddToCollectionDialog from './AddToCollectionDialog';
 import SignalAmbient from './SignalAmbient';
+import ScrollReveal from './ScrollReveal';
 import { SIGNAL_SECTIONS, calculateScoreDetails } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { exportReportToPdf, shareReportAsPdf, imageUrlToDataUrl } from '../services/exportReport';
@@ -861,50 +862,61 @@ export default function SignalDashboard() {
           <div id="signal-report-capture">
 
           {score !== null && (
-            <OverallScore
-              score={score}
-              cardName={result.card_name}
-              game={result.game}
-              summary={result.summary}
-              truncated={result._truncated}
-              signalCount={(result.signals || []).length}
-              expectedSignalCount={8}
-              coveragePct={scoreDetails?.coveragePct || 0}
-              evidencePct={scoreDetails?.evidencePct || 0}
-              onRetry={() => handleSearch(result.card_name, result.game, { force: true, pin: resultCardPin(result) })}
-              signals={result.signals || []}
-              enPrice={result.prices?.en_price}
-              onCardImageLoaded={setCardImageUrl}
-              printing={result.printing}
-              pin={resultCardPin(result)}
-            />
+            <ScrollReveal>
+              <OverallScore
+                score={score}
+                cardName={result.card_name}
+                game={result.game}
+                summary={result.summary}
+                truncated={result._truncated}
+                signalCount={(result.signals || []).length}
+                expectedSignalCount={8}
+                coveragePct={scoreDetails?.coveragePct || 0}
+                evidencePct={scoreDetails?.evidencePct || 0}
+                onRetry={() => handleSearch(result.card_name, result.game, { force: true, pin: resultCardPin(result) })}
+                signals={result.signals || []}
+                enPrice={result.prices?.en_price}
+                onCardImageLoaded={setCardImageUrl}
+                printing={result.printing}
+                pin={resultCardPin(result)}
+              />
+            </ScrollReveal>
           )}
 
-          <PriceComparison
-            data={{
-              ...result.prices,
-              trend_30d: result.prices?.trend_30d,
-              signal_vs_market: result.prices?.signal_vs_market,
-            }}
-          />
+          <ScrollReveal delay={70}>
+            <PriceComparison
+              data={{
+                ...result.prices,
+                trend_30d: result.prices?.trend_30d,
+                signal_vs_market: result.prices?.signal_vs_market,
+              }}
+            />
+          </ScrollReveal>
 
-          <EbayListings data={result.ebay_listings} cachedAt={result._scannedAt} stale={result._relatedPriceDataStale} />
+          <ScrollReveal>
+            <EbayListings data={result.ebay_listings} cachedAt={result._scannedAt} stale={result._relatedPriceDataStale} />
+          </ScrollReveal>
 
-          <GradingROI data={result.grading_roi} />
+          <ScrollReveal delay={70}>
+            <GradingROI data={result.grading_roi} />
+          </ScrollReveal>
 
           {/* Signal navigation — jump to any section */}
-          <SignalNav signals={result.signals || []} />
+          <ScrollReveal>
+            <SignalNav signals={result.signals || []} />
+          </ScrollReveal>
 
           {SIGNAL_SECTIONS.map((section, sIdx) => (
-            <SignalSection
-              key={section.id}
-              section={section}
-              signals={result.signals || []}
-              baseDelay={sIdx * 3}
-            />
+            <ScrollReveal key={section.id}>
+              <SignalSection
+                section={section}
+                signals={result.signals || []}
+                baseDelay={sIdx * 3}
+              />
+            </ScrollReveal>
           ))}
 
-          <div className="fade-slide-up fade-slide-up-9" style={{
+          <ScrollReveal style={{
             marginTop: 40,
             paddingTop: 16,
             borderTop: '1px solid #14161A',
@@ -915,7 +927,7 @@ export default function SignalDashboard() {
             letterSpacing: '0.06em',
           }}>
             Signal data is for informational purposes only. Not financial advice.
-          </div>
+          </ScrollReveal>
           </div>{/* /#signal-report-capture */}
         </>
       )}

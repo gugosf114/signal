@@ -3,6 +3,7 @@ import { fetchTCGNews } from '../services/fetchTCGNews';
 import { fetchCardImage } from '../services/fetchCardImage';
 import { extractCardNames } from '../services/articleCardName';
 import { centeredNewsIndex, centeredNewsPosition } from '../services/newsMotion';
+import ScrollReveal from './ScrollReveal';
 
 const CARD_W = 178;
 const GAP = 14;
@@ -346,7 +347,7 @@ export default function NewsStrip() {
   const tripled = reducedMotion ? articles : [...articles, ...articles, ...articles];
 
   return (
-    <div
+    <ScrollReveal
       className="news-strip-shell news-strip-shell--foil"
       style={{ marginTop: 40 }}
     >
@@ -399,6 +400,6 @@ export default function NewsStrip() {
           </div>
         </div>
       </div>
-    </div>
+    </ScrollReveal>
   );
 }

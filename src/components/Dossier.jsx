@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DOSSIER_METHOD, DOSSIER_SAMPLE, DOSSIER_SCOPE } from '../config/dossier';
 import { downloadSampleDossier } from '../services/sampleDossier';
+import ScrollReveal from './ScrollReveal';
 
 export default function Dossier({ entryActive = false }) {
   const [sampleOpen, setSampleOpen] = useState(false);
@@ -31,7 +32,7 @@ export default function Dossier({ entryActive = false }) {
 
   return (
     <div className={`dos-page${entryActive ? ' dos-page--entry' : ''}`}>
-      <section className="dos-hero" aria-labelledby="dossier-title">
+      <ScrollReveal as="section" className="dos-hero" aria-labelledby="dossier-title">
         <div className="dos-eyebrow">
           Private research · {DOSSIER_SCOPE.map((game) => game.label).join(' / ')}
         </div>
@@ -40,9 +41,9 @@ export default function Dossier({ entryActive = false }) {
           A human-reviewed brief for the exact printing you own and the decision you are already considering.
         </p>
         <div className="dos-rule"><span>Retain</span><i /><span>Reallocate</span><i /><span>Revisit</span></div>
-      </section>
+      </ScrollReveal>
 
-      <section className="dos-method" aria-labelledby="dossier-method-title">
+      <ScrollReveal as="section" delay={70} className="dos-method" aria-labelledby="dossier-method-title">
         <div className="dos-section-heading">
           <span>Research method</span>
           <h2 id="dossier-method-title">What goes into the file</h2>
@@ -58,9 +59,9 @@ export default function Dossier({ entryActive = false }) {
             </li>
           ))}
         </ol>
-      </section>
+      </ScrollReveal>
 
-      <section className="dos-sample" aria-labelledby="dossier-sample-title">
+      <ScrollReveal as="section" className="dos-sample" aria-labelledby="dossier-sample-title">
         <div className="dos-sample-label">Sample dossier</div>
         <div className="dos-sample-top">
           <div>
@@ -106,9 +107,11 @@ export default function Dossier({ entryActive = false }) {
             {status.text}
           </div>
         )}
-      </section>
+      </ScrollReveal>
 
-      <p className="dos-footnote">One deliberate request. No automatic background research.</p>
+      <ScrollReveal as="p" className="dos-footnote">
+        One deliberate request. No automatic background research.
+      </ScrollReveal>
     </div>
   );
 }

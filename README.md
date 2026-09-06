@@ -1352,3 +1352,20 @@ blur is tightened to `36px` with mild saturation. Panels, text, borders, motion,
 and orb positions are unchanged. A matched gray-glare comparison keeps all
 three colors distinct after the change, while normal Signal, Collection, and
 Dossier renders remain dark with zero horizontal overflow.
+
+---
+
+## Session log — 2026-09-05 page-wide scroll reveals
+
+Signal, Collection, Dossier, and the full on-screen scan result now reveal
+their lower sections as those sections enter the viewport. One shared observer
+starts each reveal slightly early, at a 14% lower-viewport margin. A section
+fades in and rises 14px over 0.56 seconds, then stays visible for the rest of
+that page visit. Only neighboring blocks use short 70ms steps; far sections do
+not wait after a fast scroll.
+
+The logo, page tabs, main search, result actions, errors, and loading theater
+remain immediate. The reveal uses the independent CSS `translate` property, so
+the existing card deals, slab dust, binder entrances, news foil, and inner
+signal animations keep their own transforms. Reduced-motion mode shows every
+section at once. The separate PDF report tree is never wrapped or hidden.

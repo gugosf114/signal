@@ -19,6 +19,7 @@ import CardLightbox from './CardLightbox';
 import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
 import CollectionCurrencies from './CollectionCurrencies';
+import ScrollReveal from './ScrollReveal';
 import pokeBallMark from '../assets/binders/poke-ball.svg';
 import yugiohTcgLogo from '../assets/binders/yugioh-tcg-logo.png';
 import magicLogo from '../assets/binders/magic-logo.png';
@@ -214,7 +215,7 @@ export default function Collection({
 
       <input ref={importRef} type="file" accept="application/json,.json" onChange={restoreBackup} hidden />
 
-      <div className="col-binders" role="tablist" aria-label="Collection binders">
+      <ScrollReveal className="col-binders" role="tablist" aria-label="Collection binders">
         {BINDERS.map((item) => (
           <button
             key={item.id}
@@ -229,9 +230,9 @@ export default function Collection({
             <span>{binderCounts[item.id]} card{binderCounts[item.id] === 1 ? '' : 's'}</span>
           </button>
         ))}
-      </div>
+      </ScrollReveal>
 
-      <div className="col-summary">
+      <ScrollReveal delay={70} className="col-summary">
         <div className="col-summary-count">
           <span className="col-summary-label">{activeBinder.label} · cards</span>
           <strong className="col-summary-count-value">{total}</strong>
@@ -280,9 +281,9 @@ export default function Collection({
             <small className="col-summary-note">{market.unpricedQty} unpriced</small>
           )}
         </div>
-      </div>
+      </ScrollReveal>
 
-      <div className="col-view-controls">
+      <ScrollReveal delay={140} className="col-view-controls">
         <div>
           <span>Viewing</span>
           <strong>{activeBinder.label}</strong>
@@ -293,28 +294,28 @@ export default function Collection({
             {SORTS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
           </select>
         </label>
-      </div>
+      </ScrollReveal>
 
-      <div className="col-tools">
+      <ScrollReveal delay={210} className="col-tools">
         <button type="button" onClick={() => saveFile('backup')} disabled={!cards.length}>Backup</button>
         <button type="button" onClick={() => saveFile('csv')} disabled={!cards.length}>Export CSV</button>
         <button type="button" onClick={() => importRef.current?.click()}>Restore</button>
-      </div>
+      </ScrollReveal>
 
       {cards.length === 0 ? (
-        <div className="col-empty">
+        <ScrollReveal className="col-empty">
           <div className="col-empty-mark" aria-hidden="true"><span /><span /></div>
           <strong>No cards saved yet</strong>
           <p>Use the scanner or search above to add your first card.</p>
-        </div>
+        </ScrollReveal>
       ) : visibleCards.length === 0 ? (
-        <div className="col-empty col-empty--binder">
+        <ScrollReveal className="col-empty col-empty--binder">
           <div className="col-empty-mark" aria-hidden="true"><span /><span /></div>
           <strong>No {activeBinder.label} cards yet</strong>
           <p>Cards from this game will appear in this binder after you add them.</p>
-        </div>
+        </ScrollReveal>
       ) : (
-        <div className="col-grid">
+        <ScrollReveal className="col-grid">
           {visibleCards.map((card) => (
             <div className="col-cell" key={cardKey(card)}>
               <button
@@ -349,7 +350,7 @@ export default function Collection({
               </div>
             </div>
           ))}
-        </div>
+        </ScrollReveal>
       )}
 
       <CardBrowser

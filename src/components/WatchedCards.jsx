@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GAME_LABELS, getScoreLabel } from '../config/signals';
+import ScrollReveal from './ScrollReveal';
 
 export function useWatchedCards() {
   const [watched, setWatched] = useState([]);
@@ -54,7 +55,7 @@ export default function WatchedCards({ onSelect }) {
   if (watched.length === 0) return null;
 
   return (
-    <div style={{ marginBottom: 12 }}>
+    <ScrollReveal style={{ marginBottom: 12 }}>
       <div style={{
         fontSize: 8,
         fontFamily: "'Syne', sans-serif",
@@ -136,6 +137,6 @@ export default function WatchedCards({ onSelect }) {
           );
         })}
       </div>
-    </div>
+    </ScrollReveal>
   );
 }

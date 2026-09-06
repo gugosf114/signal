@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { SAMPLE_CARDS, GAME_LABELS } from '../config/signals';
 import { getTopTrending } from '../services/fetchTopTrending';
 import GameMark from './GameMark';
+import ScrollReveal from './ScrollReveal';
 
 // While the API call is in flight (and as the last-ditch fallback), show a
 // handful of curated reseller targets so the strip is never empty.
@@ -35,7 +36,7 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
   }, [trending]);
 
   return (
-    <div className={`quick-picks-panel quick-picks-panel--intro-${introActive ? 'active' : 'done'}`} style={{
+    <ScrollReveal className={`quick-picks-panel quick-picks-panel--intro-${introActive ? 'active' : 'done'}`} style={{
       width: '100%',
       border: '0.5px solid #FFFFFF',
       borderRadius: 4,
@@ -167,6 +168,6 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
         </div>
         {showFade && <div className="compact-scroll-fade" aria-hidden />}
       </div>
-    </div>
+    </ScrollReveal>
   );
 }
