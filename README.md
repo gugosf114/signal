@@ -1369,3 +1369,16 @@ remain immediate. The reveal uses the independent CSS `translate` property, so
 the existing card deals, slab dust, binder entrances, news foil, and inner
 signal animations keep their own transforms. Reduced-motion mode shows every
 section at once. The separate PDF report tree is never wrapped or hidden.
+
+---
+
+## Session log — 2026-09-06 direct-sun glow and slower reveal
+
+Phone review found the ambient fields visible in outdoor shade but still hard
+to see in direct sunlight. Every orb core, outer color, and the page-length
+wash is now exactly 20% more opaque. Blur, saturation, positions, motion,
+panels, and text are unchanged.
+
+The page reveal also moves from `0.56s` to `0.75s`. Its 14px rise, early
+viewport trigger, short neighbor steps, one-play rule, and reduced-motion exit
+are unchanged. This makes the motion easier to see without delaying the page.

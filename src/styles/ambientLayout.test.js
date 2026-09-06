@@ -32,16 +32,20 @@ test('ambient art cannot widen the page horizontally', () => {
 });
 
 test('ambient orbs keep enough contrast for bright surroundings', () => {
+  const ambient = css.match(/\.signal-ambient\s*\{([^}]*)\}/)?.[1] || '';
   const field = css.match(/\.signal-ambient-field\s*\{([^}]*)\}/)?.[1] || '';
   assert.match(field, /filter:\s*blur\(36px\) saturate\(1\.18\)/);
   assert.doesNotMatch(field, /blur\(44px\)/);
+  for (const opacity of ['0.066', '0.084', '0.072']) {
+    assert.match(ambient, new RegExp(`rgba\\([^)]*, ${opacity.replace('.', '\\.')}\\)`));
+  }
   for (const [selector, opacity] of [
-    ['signal-ambient-field--red', '0.52'],
-    ['signal-ambient-field--gold', '0.4'],
-    ['signal-ambient-field--cool', '0.46'],
-    ['signal-ambient-field--lower-red', '0.46'],
-    ['signal-ambient-field--lower-gold', '0.44'],
-    ['signal-ambient-field--lower-cool', '0.42'],
+    ['signal-ambient-field--red', '0.624'],
+    ['signal-ambient-field--gold', '0.48'],
+    ['signal-ambient-field--cool', '0.552'],
+    ['signal-ambient-field--lower-red', '0.552'],
+    ['signal-ambient-field--lower-gold', '0.528'],
+    ['signal-ambient-field--lower-cool', '0.504'],
   ]) {
     const rule = css.match(new RegExp(`\\.${selector}\\s*\\{([^}]*)\\}`))?.[1] || '';
     assert.match(rule, new RegExp(`rgba\\([^)]*, ${opacity.replace('.', '\\.')}\\)`));
@@ -174,6 +178,9 @@ test('all page sections reveal once on scroll without taking over child transfor
   }
   const revealRule = css.match(/\.scroll-reveal\s*\{([^}]*)\}/)?.[1] || '';
   assert.match(revealRule, /translate:\s*0 14px/);
+  assert.match(revealRule, /opacity 0\.75s/);
+  assert.match(revealRule, /translate 0\.75s/);
+  assert.doesNotMatch(revealRule, /0\.56s/);
   assert.doesNotMatch(revealRule, /transform:/);
   const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
   assert.match(reduced, /\.scroll-reveal/);
