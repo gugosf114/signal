@@ -41,7 +41,7 @@ describe('fetchCardData exact-print contract', () => {
     };
 
     const result = await fetchCardData('Mega Darkrai ex', 'pokemon', {
-      id: 'me05-120', game: 'pokemon', source: 'tcgdex',
+      id: 'me05-120', game: 'pokemon', source: 'tcgdex', form: 'holo', finish: 'Holo',
     });
     assert.equal(result.setName, 'Pitch Black');
     assert.deepEqual(result.priceLines, ['Holofoil: $214.69 market / $190.00 low / $250.00 high']);
@@ -62,6 +62,36 @@ describe('fetchCardData exact-print contract', () => {
     assert.deepEqual(cardData.priceLines, ['TCGplayer exact-print market price: $175.54']);
     assert.equal(cardData.priceScope, 'exact-print TCGplayer market price');
     assert.equal(applyTrustedMarketPrice({}, cardData, 175.54).en_price, '$175.54');
+  });
+
+  test('Pokemon full reports use only the chosen finish price', async () => {
+    globalThis.fetch = async () => response(200, {
+      data: {
+        id: 'card-1', name: 'Testmon', number: '7', rarity: 'Rare',
+        set: { id: 'set-1', name: 'Test Set', printedTotal: 100 },
+        tcgplayer: { prices: {
+          holofoil: { market: 40 },
+          reverseHolofoil: { market: 12 },
+        } },
+      },
+    });
+    const result = await fetchCardData('Testmon', 'pokemon', {
+      id: 'card-1', printingId: 'card-1', game: 'pokemon', form: 'reverse', finish: 'Reverse Holo',
+    });
+    assert.deepEqual(result.priceLines, ['Reverse Holo: $12.00 market']);
+    assert.equal(result.priceScope, 'exact finish');
+  });
+
+  test('Magic full reports use only the chosen finish price', async () => {
+    globalThis.fetch = async () => response(200, {
+      object: 'card', id: 'mtg-1', name: 'Test Mage', set: 'tst', set_name: 'Test Set',
+      collector_number: '4', rarity: 'rare', prices: { usd: '3.00', usd_foil: '9.50' }, legalities: {},
+    });
+    const result = await fetchCardData('Test Mage', 'mtg', {
+      id: 'mtg-1', printingId: 'mtg-1', game: 'mtg', form: 'foil', finish: 'Foil',
+    });
+    assert.deepEqual(result.priceLines, ['Foil: $9.50']);
+    assert.equal(result.priceScope, 'exact finish');
   });
 
   test('a dead pin does not fall back to a different name match', async () => {
@@ -134,7 +164,9 @@ describe('fetchCardData exact-print contract', () => {
 
     assert.equal(result.priceLines, null);
     assert.equal(result.priceScope, 'exact-print price unavailable');
-    assert.equal(applyTrustedMarketPrice({ en_price: '$0.13' }, result, null).en_price, '');
+    const trusted = applyTrustedMarketPrice({ en_price: '$0.13', trend_30d: 'up 30%' }, result, null);
+    assert.equal(trusted.en_price, '');
+    assert.equal(trusted.trend_30d, '');
     const cleaned = applyTrustedPriceNarrative({
       summary: 'Strong scarcity, though the all-printing market price of $0.13 is misleading.',
       signals: [{ detail: 'The market price is $0.13.', sources: [] }],

@@ -4,6 +4,7 @@ import { GAME_LABELS, getScoreLabel, calculateOverallScore } from '../config/sig
 import { getCachedScan } from '../services/scanCache';
 import CardImage from './CardImage';
 import ScrollReveal from './ScrollReveal';
+import { sanitizeRecentScans } from '../services/recentScans';
 
 // ─── Featured-scan loader ────────────────────────────────────────────────────
 // On first render, pull the user's most recent scan out of localStorage.
@@ -31,8 +32,8 @@ function loadFeaturedScan() {
   try {
     const raw = localStorage.getItem('signal_recent_scans');
     if (!raw) return null;
-    const scans = JSON.parse(raw);
-    if (!Array.isArray(scans) || scans.length === 0) return null;
+    const scans = sanitizeRecentScans(JSON.parse(raw));
+    if (scans.length === 0) return null;
     const top = scans[0];
     if (!top?.name) return null;
     const cached = getCachedScan(top.name, top.game, top.pin || null);
@@ -43,6 +44,7 @@ function loadFeaturedScan() {
         name: top.name,
         game: top.game,
         score: typeof top.score === 'number' ? top.score : 0,
+        pin: top.pin || null,
         prices: {},
         creator: null,
       };
@@ -54,6 +56,7 @@ function loadFeaturedScan() {
       name: top.name,
       game: top.game,
       score,
+      pin: top.pin || cached._pin || cached.printing || null,
       prices: cached.prices || {},
       creator: creatorSrc
         ? {
@@ -113,18 +116,18 @@ function LatestSignalPanel({ data, isSample }) {
             <b style={{ color: scoreMeta.color }}>{scoreMeta.label}</b>
           </div>
         </div>
-        <CardImage cardName={data.name} game={data.game} size={104} glowColor={scoreMeta.color} />
+        <CardImage cardName={data.name} game={data.game} pin={data.pin || null} size={104} glowColor={scoreMeta.color} />
       </div>
 
       <div className="latest-signal-market">
         <div>
           <span>EN price</span>
-          <strong>{prices.en_price || '—'}</strong>
+          <strong>{prices.en_price || 'No exact price'}</strong>
         </div>
         <div>
           <span>30-day trend</span>
           <strong style={{ color: trend.color }}>{trend.sym}</strong>
-          <small style={{ color: trend.color }}>{prices.trend_30d || '—'}</small>
+          <small style={{ color: trend.color }}>{prices.trend_30d || 'No exact data'}</small>
         </div>
       </div>
 
@@ -139,7 +142,7 @@ function LatestSignalPanel({ data, isSample }) {
         </div>
         <div className="latest-signal-creator-line">
           <BrandIcon brand="youtube" size={13} />
-          <strong>{creator?.headline || 'No saved creator signal'}</strong>
+          <strong>{creator?.headline || 'No exact-print creator source'}</strong>
           {creator && (
             <b style={{ color: creator.implication === 'up' ? '#608870' : creator.implication === 'down' ? '#C44040' : '#A09060' }}>
               {creator.implication === 'up' ? '▲ Bullish' : creator.implication === 'down' ? '▼ Bearish' : '► Neutral'}

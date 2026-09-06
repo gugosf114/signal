@@ -69,7 +69,7 @@ export default function PriceComparison({ data }) {
       }}>
         <div style={{ ...labelStyle, color: 'var(--signal-text-secondary)' }}>Market Price</div>
         <div className="price-value" style={{ ...valStyle, fontSize: 16, color: '#E8E4DC' }}>
-          {data.en_price || '—'}
+          {data.en_price || 'No exact price'}
         </div>
       </div>
 
@@ -88,7 +88,7 @@ export default function PriceComparison({ data }) {
           </span>
         </div>
         <div style={{ fontSize: 9, color: trend.color, marginTop: 2, fontFamily: "'JetBrains Mono', monospace", opacity: 0.7 }}>
-          {data.trend_30d || '—'}
+          {data.trend_30d || 'No exact data'}
         </div>
       </div>
 

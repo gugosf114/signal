@@ -7,12 +7,13 @@
 // Returns null only if BOTH fail.
 
 import { fetchWithTimeout } from './http.js';
+import { exactCreatorQuery, filterExactVideos } from './sourceRelevance.js';
 
-async function jpHype(cardName) {
+async function jpHype(cardName, pin = null) {
   const key = import.meta.env.VITE_YOUTUBE_API_KEY;
-  if (!key) return null;
+  if (!key || !pin) return null;
   try {
-    const q = encodeURIComponent(cardName);
+    const q = encodeURIComponent(exactCreatorQuery(cardName, pin?.game, pin));
     const url =
       `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video` +
       `&order=date&maxResults=5&regionCode=JP&relevanceLanguage=ja&q=${q}&key=${key}`;
@@ -23,11 +24,13 @@ async function jpHype(cardName) {
       .filter((it) => it.id?.videoId)
       .map((it) => ({
         title: it.snippet?.title,
+        description: it.snippet?.description,
         channel: it.snippet?.channelTitle,
         date: it.snippet?.publishedAt ? it.snippet.publishedAt.slice(0, 10) : null,
         url: `https://www.youtube.com/watch?v=${it.id.videoId}`,
       }));
-    return vids.length ? vids : null;
+    const exactVideos = filterExactVideos(vids, cardName, pin);
+    return exactVideos.length ? exactVideos : null;
   } catch {
     return null;
   }
@@ -66,9 +69,9 @@ async function jpVsUsTrend(term) {
   }
 }
 
-export async function fetchJpSignal(cardName) {
+export async function fetchJpSignal(cardName, pin = null) {
   const [jpVideos, trend] = await Promise.all([
-    jpHype(cardName).catch(() => null),
+    jpHype(cardName, pin).catch(() => null),
     jpVsUsTrend(cardName).catch(() => null),
   ]);
   if (!jpVideos && !trend) return null;

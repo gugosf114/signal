@@ -412,7 +412,7 @@ function PhasePips({ phases, activeIdx }) {
 
 function CardSlate({ cardName, game, pin, onImageLoad }) {
   const [imgUrl, setImgUrl] = useState(null);
-  const pinKey = [pin?.printingId || pin?.id || '', pin?.scanImagePath || ''].join(':');
+  const pinKey = [pin?.printingId || pin?.id || '', pin?.form || '', pin?.scanImagePath || ''].join(':');
   const exactPrinting = printingLabel(pin);
   useEffect(() => {
     let cancelled = false;

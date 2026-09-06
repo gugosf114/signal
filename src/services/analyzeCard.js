@@ -13,7 +13,7 @@ import {
   fetchCardData,
   buildCardDataBlock,
 } from './fetchCardData';
-import { toPrinting } from './printing';
+import { printingIdentity, toPrinting } from './printing';
 import { fetchCommunity, communityBlock } from './fetchCommunity';
 import { fetchCreators, creatorsBlock } from './fetchCreators';
 import { fetchEbayListings, ebayBlock } from './fetchEbayListings';
@@ -26,6 +26,8 @@ import {
 } from './citations';
 import { tryParseSignalJSON } from './jsonRepair';
 import { normalizeAnalysis } from './validateAnalysis';
+import { enforceExactCreatorSources } from './sourceRelevance';
+import { isExactScanTarget } from './scanIdentity';
 import { recordSignalMeasurement, sharedAnalyze } from './signalGateway';
 import {
   ANALYSIS_MAX_TOKENS,
@@ -39,7 +41,7 @@ import {
 const ANALYSIS_MODEL = 'claude-haiku-4-5';
 
 function sharedCacheKey(cardName, game, pin) {
-  const identity = pin?.printingId || pin?.id || '';
+  const identity = printingIdentity(pin) || '';
   return [SCORE_VERSION, game || 'auto', String(cardName || '').trim().toLowerCase(), identity].join('::');
 }
 
@@ -105,6 +107,10 @@ RULES:
 ${creatorBlocks}
 For "creator": use the directory only to recognize a matched channel. Cite the strongest verified hit. Never claim a creator was silent unless a creator-specific search was actually run.
 For "jp_hype": JP creators from the directory when present.
+For creator and JP YouTube evidence, a card-family video is not evidence for this printing. Use only a video that names the exact set, set code, or printed card number. Otherwise leave sources empty and level 0.
+
+PRICE HISTORY:
+- Return trend_30d as an empty string unless the pre-fetched block explicitly supplies exact-print 30-day history. Never infer it from one current price, an article, or memory.
 
 GRADING ROI:
 - This app has no verified graded-sales feed. Return verdict and confidence as insufficient_data.
@@ -113,6 +119,9 @@ GRADING ROI:
 
 export async function analyzeCard(cardName, game = null, opts = {}) {
   const pin = opts.pin || null;
+  if (!isExactScanTarget(game, pin)) {
+    throw new Error('Choose one exact printing from the card list before running Full Signal.');
+  }
   const cacheKey = sharedCacheKey(cardName, game, pin);
 
   // Pre-fetch structured data in PARALLEL — direct APIs instead of slow, sequential
@@ -123,12 +132,12 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   const [cardData, community, creators, ebay, jp, catalysts] = await Promise.all([
     fetchCardData(cardName, game, pin).catch(() => null),
     fetchCommunity(cardName, game).catch(() => null),
-    fetchCreators(cardName, game).catch(() => null),
+    fetchCreators(cardName, game, pin).catch(() => null),
     fetchEbayListings(cardName, game, pin).catch(() => null),
-    game === 'mtg' ? Promise.resolve(null) : fetchJpSignal(cardName).catch(() => null),
+    game === 'mtg' ? Promise.resolve(null) : fetchJpSignal(cardName, pin).catch(() => null),
     fetchCatalysts(cardName, game).catch(() => null),
   ]);
-  if (pin?.id && !cardData) {
+  if (printingIdentity(pin) && !cardData) {
     throw new Error('The exact printing could not be loaded. Pick it again from the catalogue and retry.');
   }
   const dataBlock = buildCardDataBlock(cardData);
@@ -262,13 +271,18 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
         cardName: cardData?.name || cardName,
         game: resolvedGame || parsed.game,
       });
-      const clean = applyTrustedPriceNarrative(
-        filterHallucinatedSources(normalized, realUrls),
-        cardData,
-      );
+      const verified = filterHallucinatedSources(normalized, realUrls);
+      const exactCreators = enforceExactCreatorSources(verified, {
+        cardName: cardData?.name || cardName,
+        pin: printingInfo || pin,
+        creatorVideos: creators?.videos || [],
+        jpVideos: jp?.jpVideos || [],
+      });
+      const clean = applyTrustedPriceNarrative(exactCreators, cardData);
       if (printingInfo) clean.printing = printingInfo;
       const currentPrice = firstMarketPrice(cardData?.priceLines);
       clean.prices = applyTrustedMarketPrice(clean.prices, cardData, currentPrice);
+      clean._trend30dVerified = Boolean(cardData?.trend30d);
       const score = calculateOverallScore(clean.signals, clean.game);
       clean._signalScore = score;
       clean._sharedCache = Boolean(shared.cached);
@@ -278,7 +292,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
         measurement: {
           cardName: clean.card_name,
           game: clean.game,
-          cardId: pin?.printingId || pin?.id || cardData?.printingId || cardData?.catalogId || null,
+          cardId: printingIdentity(pin) || cardData?.printingId || cardData?.catalogId || null,
           score,
           scoreVersion: SCORE_VERSION,
           direction: score >= 56 ? 'up' : score < 45 ? 'down' : 'mixed',

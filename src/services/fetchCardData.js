@@ -16,14 +16,14 @@ import { fetchWithTimeout } from './http.js';
 // different price. With it we fetch that exact card by catalogue id.
 export async function fetchCardData(cardName, game, pin = null) {
   try {
-    if (pin?.id) {
+    if (pin?.printingId || pin?.id) {
       const exact = await fetchPinned(pin);
       if (exact) return exact;
       // A chosen catalogue row is a hard identity boundary. Falling back to a
       // name search can join the pin's set/number to another printing's price,
       // rarity, and set total. A dead pin is therefore a miss, not permission
       // to guess.
-      return null;
+      return cardDataFromPin(cardName, game, pin);
     }
     if (game === 'pokemon') return await fetchPokemonData(cardName);
     if (game === 'mtg')     return await fetchMTGData(cardName);
@@ -38,6 +38,31 @@ export async function fetchCardData(cardName, game, pin = null) {
   } catch {
     return null;
   }
+}
+
+function cardDataFromPin(cardName, game, pin) {
+  const trustedSource = ['TCGplayer', 'Scryfall', 'YGOPRODeck'].includes(pin?.priceSource);
+  if (!pin?.setName || !pin?.number || (!pin?.imageUrl && !pin?.imageLarge && !trustedSource)) return null;
+  const price = Number(pin.price);
+  const hasPrice = trustedSource && Number.isFinite(price) && price > 0;
+  return {
+    game: game || pin.game || null,
+    catalogId: pin.id || null,
+    printingId: pin.printingId || pin.id || null,
+    name: pin.baseName || pin.name || cardName,
+    setName: pin.setName,
+    setId: pin.setId || null,
+    number: pin.number,
+    printedTotal: pin.printedTotal || null,
+    rarity: pin.rarity || null,
+    form: pin.form || null,
+    finish: pin.finish || null,
+    priceLines: hasPrice ? [`${pin.priceSource} exact-print market price: $${price.toFixed(2)}`] : null,
+    priceScope: hasPrice ? `exact-print ${pin.priceSource} market price` : 'exact-print price unavailable',
+    priceSource: hasPrice ? pin.priceSource : null,
+    priceUrl: pin.priceUrl || null,
+    imageUrl: pin.imageLarge || pin.imageUrl || null,
+  };
 }
 
 // ─── Exact printing, by catalogue id ─────────────────────────────────────────
@@ -70,27 +95,34 @@ async function retryFetch(url, init, tries = 3) {
 async function fetchPinned(pin) {
   try {
     if (pin.game === 'pokemon') {
-      if (pin.source === 'tcgdex') return fetchTcgDexPokemonData(pin.id);
+      const id = pin.id || pin.catalogId || pin.printingId;
+      if (!id) return null;
+      if (pin.source === 'tcgdex') return fetchTcgDexPokemonData(id, pin);
       try {
-        const res = await retryFetch(`https://api.pokemontcg.io/v2/cards/${encodeURIComponent(pin.id)}`);
+        const res = await retryFetch(`https://api.pokemontcg.io/v2/cards/${encodeURIComponent(id)}`);
         if (res.ok) {
           const data = await res.json();
-          if (data.data) return shapePokemon(data.data);
+          if (data.data) return applyTrustedPinMarketPrice(shapePokemon(data.data, pin), pin);
         }
       } catch {}
-      return fetchTcgDexPokemonData(pin.id);
+      return fetchTcgDexPokemonData(id, pin);
     }
     if (pin.game === 'mtg') {
-      const res = await retryFetch(`https://api.scryfall.com/cards/${encodeURIComponent(pin.id)}`, {
+      const id = pin.id || pin.catalogId || pin.printingId;
+      if (!id) return null;
+      const res = await retryFetch(`https://api.scryfall.com/cards/${encodeURIComponent(id)}`, {
         headers: SCRYFALL_HEADERS,
       });
       if (!res.ok) return null;
       const card = await res.json();
-      return card.object === 'error' ? null : shapeMTG(card);
+      return card.object === 'error' ? null : applyTrustedPinMarketPrice(shapeMTG(card, pin), pin);
     }
     if (pin.game === 'yugioh') {
+      const lookup = pin.id
+        ? `id=${encodeURIComponent(pin.id)}`
+        : `name=${encodeURIComponent(pin.baseName || pin.name || '')}`;
       const res = await retryFetch(
-        `https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${encodeURIComponent(pin.id)}`
+        `https://db.ygoprodeck.com/api/v7/cardinfo.php?${lookup}`
       );
       if (!res.ok) return null;
       const data = await res.json();
@@ -105,19 +137,22 @@ async function fetchPinned(pin) {
 
 export function applyTrustedPinMarketPrice(cardData, pin) {
   const price = Number(pin?.price);
-  if (!cardData || pin?.priceSource !== 'TCGplayer' || !Number.isFinite(price) || price <= 0) return cardData;
+  const trusted = ['TCGplayer', 'Scryfall', 'YGOPRODeck'].includes(pin?.priceSource);
+  const exactFreshPrice = cardData?.priceScope === 'exact finish' && cardData?.priceLines?.length;
+  if (!cardData || !trusted || !Number.isFinite(price) || price <= 0 || exactFreshPrice) return cardData;
+  const finish = pin?.finish ? ` ${pin.finish}` : '';
   return {
     ...cardData,
-    priceLines: [`TCGplayer exact-print market price: $${price.toFixed(2)}`],
-    priceScope: 'exact-print TCGplayer market price',
-    priceSource: 'TCGplayer',
+    priceLines: [`${pin.priceSource} exact-print${finish} market price: $${price.toFixed(2)}`],
+    priceScope: `exact-print ${pin.priceSource} market price`,
+    priceSource: pin.priceSource,
     priceUrl: pin.priceUrl || null,
   };
 }
 
 // ─── Pokémon TCG API ──────────────────────────────────────────────────────────
 
-async function fetchTcgDexPokemonData(cardId) {
+async function fetchTcgDexPokemonData(cardId, pin = null) {
   const res = await retryFetch(`https://api.tcgdex.net/v2/en/cards/${encodeURIComponent(cardId)}`, {}, 2);
   if (!res.ok) return null;
   const card = await res.json();
@@ -130,7 +165,18 @@ async function fetchTcgDexPokemonData(cardId) {
     '1st-edition-holofoil': '1st Ed Holo',
     'unlimited-holofoil': 'Unlimited Holo',
   };
+  const formKeys = {
+    normal: ['normal'],
+    holo: ['holofoil'],
+    reverse: ['reverse-holofoil'],
+    first_edition_normal: ['1st-edition-normal'],
+    first_edition_holo: ['1st-edition-holofoil'],
+    unlimited_normal: ['unlimited-normal'],
+    unlimited_holo: ['unlimited-holofoil'],
+  };
   for (const [variant, value] of Object.entries(card.pricing?.tcgplayer || {})) {
+    const allowed = pin?.form ? formKeys[pin.form] || [] : null;
+    if (allowed && !allowed.includes(variant)) continue;
     const market = Number(value?.marketPrice);
     if (!Number.isFinite(market) || market <= 0) continue;
     const parts = [`$${market.toFixed(2)} market`];
@@ -144,7 +190,7 @@ async function fetchTcgDexPokemonData(cardId) {
   const legalFormats = Object.entries(card.legal || {})
     .filter(([, value]) => String(value).toLowerCase() === 'legal')
     .map(([format]) => format);
-  return {
+  return applyTrustedPinMarketPrice({
     game: 'pokemon',
     catalogId: card.id,
     printingId: card.id,
@@ -155,12 +201,16 @@ async function fetchTcgDexPokemonData(cardId) {
     number: card.localId || null,
     printedTotal: card.set?.cardCount?.official || card.set?.cardCount?.total || null,
     rarity: card.rarity || null,
+    form: pin?.form || null,
+    finish: pin?.finish || null,
     priceLines: priceLines.length ? priceLines : null,
+    priceScope: pin?.form ? (priceLines.length ? 'exact finish' : 'exact-print price unavailable') : null,
+    priceSource: 'TCGplayer',
     euTrend: Number.isFinite(eu) && eu > 0 ? `€${eu.toFixed(2)} (EU 30-day avg)` : null,
     legalFormats,
     tcgplayerUrl: null,
     imageUrl: card.image ? `${card.image}/high.webp` : null,
-  };
+  }, pin);
 }
 
 async function fetchPokemonData(cardName) {
@@ -178,17 +228,31 @@ async function fetchPokemonData(cardName) {
   return shapePokemon(card);
 }
 
-function shapePokemon(card) {
+const POKEMON_FORM_KEYS = {
+  normal: ['normal'],
+  holo: ['holofoil'],
+  reverse: ['reverseHolofoil'],
+  first_edition_normal: ['1stEditionNormal'],
+  first_edition_holo: ['1stEditionHolofoil'],
+  unlimited_normal: ['unlimitedNormal'],
+  unlimited_holo: ['unlimitedHolofoil'],
+};
+
+function shapePokemon(card, pin = null) {
   const p = card.tcgplayer?.prices || {};
   const priceLines = [];
   const variants = [
     ['holofoil', 'Holofoil'],
     ['reverseHolofoil', 'Reverse Holo'],
     ['normal', 'Normal'],
+    ['1stEditionNormal', '1st Ed Normal'],
     ['1stEditionHolofoil', '1st Ed Holo'],
+    ['unlimitedNormal', 'Unlimited Normal'],
     ['unlimitedHolofoil', 'Unlimited Holo'],
   ];
   for (const [key, label] of variants) {
+    const allowed = pin?.form ? POKEMON_FORM_KEYS[pin.form] || [] : null;
+    if (allowed && !allowed.includes(key)) continue;
     const v = p[key];
     if (!v?.market) continue;
     const parts = [`$${v.market.toFixed(2)} market`];
@@ -217,7 +281,11 @@ function shapePokemon(card) {
     // half of it means the reader still has to go and check.
     printedTotal: card.set?.printedTotal || card.set?.total || null,
     rarity: card.rarity,
+    form: pin?.form || null,
+    finish: pin?.finish || null,
     priceLines: priceLines.length ? priceLines : null,
+    priceScope: pin?.form ? (priceLines.length ? 'exact finish' : 'exact-print price unavailable') : null,
+    priceSource: 'TCGplayer',
     euTrend,
     legalFormats,
     tcgplayerUrl: card.tcgplayer?.url,
@@ -239,14 +307,21 @@ async function fetchMTGData(cardName) {
   return shapeMTG(card);
 }
 
-function shapeMTG(card) {
+function shapeMTG(card, pin = null) {
   const prices = card.prices || {};
   const priceLines = [];
-  if (prices.usd)       priceLines.push(`Non-foil: $${prices.usd}`);
-  if (prices.usd_foil)  priceLines.push(`Foil: $${prices.usd_foil}`);
-  if (prices.eur)       priceLines.push(`EUR: €${prices.eur}`);
-  if (prices.eur_foil)  priceLines.push(`EUR Foil: €${prices.eur_foil}`);
-  if (prices.tix)       priceLines.push(`MTGO: ${prices.tix} tix`);
+  if (!pin?.form || pin.form === 'normal') {
+    if (prices.usd) priceLines.push(`Non-foil: $${prices.usd}`);
+    if (prices.eur) priceLines.push(`EUR: €${prices.eur}`);
+  }
+  if (!pin?.form || pin.form === 'foil') {
+    if (prices.usd_foil) priceLines.push(`Foil: $${prices.usd_foil}`);
+    if (prices.eur_foil) priceLines.push(`EUR Foil: €${prices.eur_foil}`);
+  }
+  if (!pin?.form || pin.form === 'etched') {
+    if (prices.usd_etched) priceLines.push(`Etched: $${prices.usd_etched}`);
+  }
+  if (!pin?.form && prices.tix) priceLines.push(`MTGO: ${prices.tix} tix`);
 
   const legalFormats = Object.entries(card.legalities || {})
     .filter(([, v]) => v === 'legal')
@@ -261,8 +336,12 @@ function shapeMTG(card) {
     setId: card.set,
     number: card.collector_number,
     rarity: card.rarity,
+    form: pin?.form || null,
+    finish: pin?.finish || null,
     typeLine: card.type_line,
     priceLines: priceLines.length ? priceLines : null,
+    priceScope: pin?.form ? (priceLines.length ? 'exact finish' : 'exact-print price unavailable') : null,
+    priceSource: 'Scryfall',
     legalFormats,
     edhrecRank: card.edhrec_rank,
     imageUrl: card.image_uris?.large || card.card_faces?.[0]?.image_uris?.large,
@@ -337,6 +416,7 @@ function shapeYGO(card, pin = null) {
     priceScope: hasExactSetPrice
       ? 'set-code printing'
       : (exactPrintingRequested ? 'exact-print price unavailable' : 'card-level across all printings'),
+    priceSource: hasExactSetPrice ? 'YGOPRODeck' : null,
     recentSets: recentSets.length ? recentSets : null,
     imageUrl: card.card_images?.[0]?.image_url,
   };
@@ -346,6 +426,9 @@ export function applyTrustedMarketPrice(prices, cardData, currentPrice) {
   const clean = { ...(prices || {}) };
   if (currentPrice !== null) clean.en_price = `$${currentPrice.toFixed(2)}`;
   else if (cardData?.priceScope === 'exact-print price unavailable') clean.en_price = '';
+  // No supported catalogue currently supplies exact 30-day price history for
+  // all three games. Model prose is not a price feed.
+  clean.trend_30d = cardData?.trend30d || '';
   return clean;
 }
 
@@ -374,11 +457,19 @@ export function applyTrustedPriceNarrative(analysis, cardData) {
 }
 
 export function sanitizeCachedPriceNarrative(data) {
+  if (!data) return data;
   const exactPriceUnavailable = data?._exactPriceUnavailable
     || (data?._pin?.game === 'yugioh' && data?.prices?.en_price === '');
+  const cleaned = {
+    ...data,
+    prices: {
+      ...(data.prices || {}),
+      trend_30d: data._trend30dVerified ? (data.prices?.trend_30d || '') : '',
+    },
+  };
   return exactPriceUnavailable
-    ? applyTrustedPriceNarrative(data, { priceScope: 'exact-print price unavailable' })
-    : data;
+    ? applyTrustedPriceNarrative(cleaned, { priceScope: 'exact-print price unavailable' })
+    : cleaned;
 }
 
 // ─── Prompt injection helper ──────────────────────────────────────────────────

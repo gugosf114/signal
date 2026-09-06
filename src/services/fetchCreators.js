@@ -4,12 +4,13 @@
 // falls back to a web_search for creators.
 
 import { fetchWithTimeout } from './http.js';
+import { exactCreatorQuery, filterExactVideos } from './sourceRelevance.js';
 
-export async function fetchCreators(cardName, game = null) {
+export async function fetchCreators(cardName, game = null, pin = null) {
   const key = import.meta.env.VITE_YOUTUBE_API_KEY;
-  if (!key) return null;
+  if (!key || !pin) return null;
   try {
-    const q = encodeURIComponent(`${cardName} ${game || 'tcg'} card`.trim());
+    const q = encodeURIComponent(exactCreatorQuery(cardName, game, pin));
     const url =
       `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video` +
       `&order=relevance&maxResults=6&q=${q}&key=${key}`;
@@ -21,11 +22,13 @@ export async function fetchCreators(cardName, game = null) {
       .filter((it) => it.id?.videoId)
       .map((it) => ({
         title: it.snippet?.title,
+        description: it.snippet?.description,
         channel: it.snippet?.channelTitle,
         date: it.snippet?.publishedAt ? it.snippet.publishedAt.slice(0, 10) : null,
         url: `https://www.youtube.com/watch?v=${it.id.videoId}`,
       }));
-    return videos.length ? { videos } : null;
+    const exactVideos = filterExactVideos(videos, cardName, pin);
+    return exactVideos.length ? { videos: exactVideos } : null;
   } catch {
     return null;
   }

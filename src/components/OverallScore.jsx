@@ -4,7 +4,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { useWatchedCards } from './WatchedCards';
 import CardImage from './CardImage';
 import CardLightbox from './CardLightbox';
-import { printingLabel } from '../services/printing';
+import { printingIdentity, printingLabel } from '../services/printing';
 import PrintingIdentity from './PrintingIdentity';
 
 export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, expectedSignalCount = 8, coveragePct = 0, evidencePct = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null }) {
@@ -25,10 +25,10 @@ export default function OverallScore({ score, cardName, game, summary, truncated
       const raw = localStorage.getItem('signal_score_history');
       const parsedHistory = raw ? JSON.parse(raw) : [];
       const history = Array.isArray(parsedHistory) ? parsedHistory : [];
-      const identity = pin?.printingId || pin?.id || `${pin?.setId || ''}:${pin?.number || ''}`;
+      const identity = printingIdentity(pin);
       const entry = { score, scoreVersion: SCORE_VERSION, date: new Date().toISOString(), cardName, game, pin };
       const deduped = [entry, ...history.filter((item) => {
-        const otherIdentity = item?.pin?.printingId || item?.pin?.id || `${item?.pin?.setId || ''}:${item?.pin?.number || ''}`;
+        const otherIdentity = printingIdentity(item?.pin);
         return !(item.cardName === cardName && item.game === game && otherIdentity === identity);
       })];
       const trimmed = deduped.slice(0, 100);
@@ -39,7 +39,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
         const recent = Array.isArray(parsedRecent) ? parsedRecent : [];
         const recentEntry = { name: cardName, game, score, scoreVersion: SCORE_VERSION, scoredAt: entry.date, pin };
         const recentNew = [recentEntry, ...recent.filter((item) => {
-          const otherIdentity = item?.pin?.printingId || item?.pin?.id || `${item?.pin?.setId || ''}:${item?.pin?.number || ''}`;
+          const otherIdentity = printingIdentity(item?.pin);
           return !(item.name === cardName && item.game === game && otherIdentity === identity);
         })].slice(0, 8);
         localStorage.setItem('signal_recent_scans', JSON.stringify(recentNew));

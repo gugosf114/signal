@@ -13,7 +13,7 @@
 
 export function printingLabel(printing) {
   if (!printing) return null;
-  const { game, setName, setId, number, printedTotal, rarity } = printing;
+  const { game, setName, setId, number, printedTotal, rarity, finish } = printing;
 
   let id = null;
   if (game === 'pokemon' && number) {
@@ -33,7 +33,22 @@ export function printingLabel(printing) {
   if (setName && setName !== id) parts.push(setName);
   if (id) parts.push(id);
   if (rarity) parts.push(rarity);
+  if (finish && !parts.some((part) => String(part).toLowerCase() === String(finish).toLowerCase())) parts.push(finish);
   return parts.length ? parts.join(' · ') : null;
+}
+
+// One catalogue card can still have several physical finishes. The finish is
+// part of the identity everywhere data is saved or compared.
+export function printingIdentity(pin) {
+  if (!pin) return null;
+  const base = pin.printingId || pin.id
+    || [pin.setId, pin.number].filter(Boolean).join(':');
+  if (!base) return null;
+  const form = String(pin.form || '').trim().toLowerCase();
+  const rarity = pin.game === 'yugioh'
+    ? String(pin.rarity || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    : '';
+  return [String(base).trim().toLowerCase(), form, rarity].join('::');
 }
 
 // Normalizes whatever we know about a printing into one shape. `pin` is a card
@@ -61,6 +76,15 @@ export function toPrinting(game, pin, cardData) {
     rarity: pin?.rarity || (mayEnrichPin ? src.rarity : null) || null,
     imageUrl: pin?.imageUrl || src.imageUrl || null,
     imageLarge: pin?.imageLarge || src.imageLarge || null,
+    form: pin?.form || src.form || null,
+    finish: pin?.finish || src.finish || null,
+    availableFinishes: pin?.availableFinishes || src.availableFinishes || null,
+    marketPrices: pin?.marketPrices || src.marketPrices || null,
+    price: pin?.price ?? src.price ?? null,
+    priceSource: pin?.priceSource || src.priceSource || null,
+    priceUrl: pin?.priceUrl || src.priceUrl || null,
+    tcgplayerProductId: pin?.tcgplayerProductId || src.tcgplayerProductId || null,
+    tcgplayerImageUrl: pin?.tcgplayerImageUrl || src.tcgplayerImageUrl || null,
     pinned: !!pin,
   };
   return out.setName || out.number || out.setId ? out : null;

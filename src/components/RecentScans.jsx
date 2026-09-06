@@ -111,7 +111,7 @@ export default function RecentScans({ onSelect, loading, introActive = false }) 
           const slabDelay = 1.08 + (i * 0.17);
           return (
             <button
-              key={`${s.game}:${s.pin?.printingId || s.pin?.id || s.name}:${i}`}
+              key={`${s.game}:${s.pin?.printingId || s.pin?.id || s.name}:${s.pin?.form || ''}:${i}`}
               className={`recent-scan-row${isSlab ? ' recent-scan-slab' : ''}`}
               title={[s.name, printing].filter(Boolean).join(' — ')}
               aria-label={`Open recent scan: ${[s.name, printing].filter(Boolean).join(' — ')}`}

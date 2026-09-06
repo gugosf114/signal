@@ -28,7 +28,7 @@ import { attachScanPin, getCachedScanEntry, setCachedScan, clearCachedScan, refr
 import { backfillPrinting } from '../services/backfillPrinting';
 import { refreshPrices } from '../services/refreshPrices';
 import { startScanKeepAlive, stopScanKeepAlive } from '../services/scanKeepAlive';
-import { hasPrintingPin, nameClaimsExactPrinting } from '../services/recentScans';
+import { isExactScanTarget } from '../services/scanIdentity';
 import { recordScanDuration } from '../services/scanProgress';
 import { pendingScanCard } from '../services/pendingScan';
 import { resultCardPin } from '../services/printing';
@@ -187,24 +187,44 @@ export default function SignalDashboard() {
     // and pins the pre-fetch, so two printings of one name stay separate scans.
     const { force = false, pin = null, resumeStartedAt = null } = opts;
     let resolvedPin = pin;
+    let resolvedName = query;
+    let resolvedGame = game;
     setError(null);
     openPage('signal');
 
-    // A name can claim "Starlight Rare" while carrying no catalogue identity.
-    // That is how an exact-looking recent row launched a broad ROTA scan. Make
-    // the user choose the physical printing before any cache or API work runs.
-    if (!hasPrintingPin(resolvedPin) && nameClaimsExactPrinting(query)) {
+    if (!game && looksLikeSetCode(query)) {
+      try {
+        const hit = await lookupBySetCode(query);
+        if (hit?.name) {
+          resolvedName = hit.name;
+          resolvedGame = hit.game;
+          resolvedPin = {
+            ...hit,
+            id: hit.id || null,
+            printingId: hit.printingId || hit.id || null,
+            game: hit.game,
+            setId: hit.setId || hit.setCode || null,
+          };
+        }
+      } catch {}
+    }
+
+    // One gate guards every paid entry path: typed search, camera, upload,
+    // browse, recent, watched, Trending, retry, and restored sessions.
+    if (!isExactScanTarget(resolvedGame, resolvedPin)) {
       setLoading(false);
       setPendingCard(null);
       clearScanSession();
-      setError('Pick this exact printing from the card list so Signal keeps its set code.');
+      setError('Choose one exact printing from the card list before running Full Signal.');
       return;
     }
 
+    setLastSearched({ name: resolvedName, game: resolvedGame, pin: resolvedPin });
+
     // Fast-path cache check BEFORE flipping loading state — already-scanned
     // cards must return instantly with zero loading-theater flash.
-    if (!force && game) {
-      const fastEntry = getCachedScanEntry(query, game, resolvedPin);
+    if (!force) {
+      const fastEntry = getCachedScanEntry(resolvedName, resolvedGame, resolvedPin);
       if (fastEntry) {
         const cachedData = attachScanPin(fastEntry.data, resolvedPin);
         // Invalidate any in-flight scan so it can't overwrite this result
@@ -221,64 +241,12 @@ export default function SignalDashboard() {
         setScanComplete(false);
         scanStartedAtRef.current = null;
         saveCompletedScanSession({
-          name: query,
-          game,
-          pin: resolvedPin,
-          result: cachedData,
-        });
-        setLastSearched({ name: query, game, pin: resolvedPin });
-        if (fastEntry.pricesStale) topUpPrices(query, game, ++navTokenRef.current, resolvedPin);
-        if (!cachedData.printing) fillPrinting(query, game, navTokenRef.current, resolvedPin);
-        scrollResultFirst();
-        return;
-      }
-    }
-
-    // Set-code path is async (needs to resolve a name), so we have to flip
-    // loading first here. Plain card-name clicks skip this branch entirely
-    // and hit the early-return above.
-    let resolvedName = query;
-    let resolvedGame = game;
-    if (!game && looksLikeSetCode(query)) {
-      try {
-        const hit = await lookupBySetCode(query);
-        if (hit && hit.name) {
-          resolvedName = hit.name;
-          resolvedGame = hit.game;
-          resolvedPin = {
-            id: hit.id || null,
-            printingId: hit.printingId || hit.id || null,
-            game: hit.game,
-            setName: hit.setName || null,
-            setId: hit.setId || hit.setCode || null,
-            number: hit.number || null,
-            printedTotal: hit.printedTotal || null,
-            rarity: hit.rarity || null,
-          };
-        }
-      } catch {}
-    }
-
-    setLastSearched({ name: resolvedName, game: resolvedGame, pin: resolvedPin });
-
-    // Second cache check now that the set-code resolved (if it did).
-    if (!force) {
-      const entry = getCachedScanEntry(resolvedName, resolvedGame, resolvedPin);
-      if (entry) {
-        const cachedData = attachScanPin(entry.data, resolvedPin);
-        setCardImageUrl(null);
-        setResult(cachedData);
-        setLoading(false);
-        setPendingCard(null);
-        setScanComplete(false);
-        scanStartedAtRef.current = null;
-        saveCompletedScanSession({
           name: resolvedName,
           game: resolvedGame,
           pin: resolvedPin,
           result: cachedData,
         });
-        if (entry.pricesStale) topUpPrices(resolvedName, resolvedGame, ++navTokenRef.current, resolvedPin);
+        if (fastEntry.pricesStale) topUpPrices(resolvedName, resolvedGame, ++navTokenRef.current, resolvedPin);
         if (!cachedData.printing) fillPrinting(resolvedName, resolvedGame, navTokenRef.current, resolvedPin);
         scrollResultFirst();
         return;

@@ -1,16 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { SAMPLE_CARDS, GAME_LABELS } from '../config/signals';
+import { GAME_LABELS } from '../config/signals';
 import { getTopTrending } from '../services/fetchTopTrending';
+import { hasPrintingPin } from '../services/recentScans';
 import GameMark from './GameMark';
 import ScrollReveal from './ScrollReveal';
 
-// While the API call is in flight (and as the last-ditch fallback), show a
-// handful of curated reseller targets so the strip is never empty.
-const FALLBACK_TRENDING = SAMPLE_CARDS.slice(0, 5);
-
 export default function QuickPicks({ onSelect, loading, introActive = false }) {
-  const [trending, setTrending] = useState(FALLBACK_TRENDING);
-  const [isLive, setIsLive] = useState(false);
+  const [trending, setTrending] = useState([]);
+  const [trendStatus, setTrendStatus] = useState('loading');
   const [showFade, setShowFade] = useState(false);
   const listRef = useRef(null);
 
@@ -23,10 +20,14 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
   useEffect(() => {
     let cancelled = false;
     getTopTrending().then((picks) => {
-      if (cancelled || !Array.isArray(picks) || !picks.length) return;
+      if (cancelled) return;
+      if (!Array.isArray(picks) || !picks.length) {
+        setTrendStatus('unavailable');
+        return;
+      }
       setTrending(picks.slice(0, 5));
-      setIsLive(true);
-    }).catch(() => {});
+      setTrendStatus('live');
+    }).catch(() => { if (!cancelled) setTrendStatus('unavailable'); });
     return () => { cancelled = true; };
   }, []);
 
@@ -75,7 +76,7 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
             fontWeight: 700,
             letterSpacing: 0,
           }}>▲</span>
-          {isLive ? 'Top Trending' : 'Card Ideas'} · {trending.length}
+          {trendStatus === 'live' ? `Top Trending · ${trending.length}` : trendStatus === 'loading' ? 'Loading exact cards' : 'Trending unavailable'}
         </span>
         <div style={{
           flex: 1,
@@ -106,8 +107,8 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
               <button
               key={`quick-pick-${idx}`}
               className={`quick-pick-card quick-pick-card--${card.game || 'unknown'}`}
-              onClick={() => !loading && onSelect(card.name, card.game, { pin: card.id ? card : null })}
-              disabled={loading}
+              onClick={() => !loading && hasPrintingPin(card) && onSelect(card.name, card.game, { pin: card })}
+              disabled={loading || !hasPrintingPin(card)}
               style={{
                 '--deal-delay': `${dealDelay}s`,
                 '--deal-x': idx % 2 === 0 ? '-18px' : '18px',

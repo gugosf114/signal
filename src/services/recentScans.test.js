@@ -39,9 +39,9 @@ describe('recent scan printing safety', () => {
     assert.deepEqual(sanitizeRecentScans([unsafe, EXACT_ROTA]), [EXACT_ROTA]);
   });
 
-  test('plain old unpinned card scans remain usable', () => {
+  test('plain old unpinned card scans are hidden instead of launching broad', () => {
     const broad = { name: 'Black Lotus', game: 'mtg', score: 60, pin: null };
-    assert.deepEqual(sanitizeRecentScans([broad]), [broad]);
+    assert.deepEqual(sanitizeRecentScans([broad]), []);
   });
 
   test('recognizes exact-print words before a broad scan begins', () => {
@@ -52,5 +52,18 @@ describe('recent scan printing safety', () => {
   test('a Yu-Gi-Oh card id without a set printing is still broad', () => {
     assert.equal(hasPrintingPin({ game: 'yugioh', id: '32807846' }), false);
     assert.equal(hasPrintingPin(EXACT_ROTA.pin), true);
+  });
+
+  test('the same exact-print gate covers all three games', () => {
+    assert.equal(hasPrintingPin({ game: 'pokemon', id: 'ex3-97', printingId: 'ex3-97', form: 'holo' }), true);
+    assert.equal(hasPrintingPin({ game: 'mtg', id: 'f04ed2cc', printingId: 'f04ed2cc', form: 'normal' }), true);
+    assert.equal(hasPrintingPin({ game: 'pokemon' }), false);
+    assert.equal(hasPrintingPin({ game: 'mtg' }), false);
+    assert.equal(hasPrintingPin({ game: 'yugioh', id: '89631139' }), false);
+  });
+
+  test('rejects a broad lookup that merely returned one printing', () => {
+    assert.equal(hasPrintingPin({ game: 'pokemon', printingId: 'ex15-97', form: 'holo', pinned: false }), false);
+    assert.equal(hasPrintingPin({ game: 'mtg', printingId: 'one-card-but-no-finish' }), false);
   });
 });

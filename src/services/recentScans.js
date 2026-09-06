@@ -7,10 +7,16 @@ const PRINTING_WORDS = /\b(?:alternate art|starlight rare|quarter century|qcr|sp
 
 export function hasPrintingPin(pin) {
   if (!pin) return false;
+  // `pinned:false` marks an old report where a broad name lookup silently
+  // chose one printing. That is the exact bad state this gate must reject.
+  if (pin.pinned === false) return false;
   // YGOPRODeck's numeric `id` names the card across every reprint. Only the
   // printingId carries the set code. Pokémon and Scryfall IDs are print-level.
   if (pin.game === 'yugioh') return Boolean(pin.printingId);
-  return Boolean(pin.printingId || pin.id);
+  if (pin.game === 'pokemon' || pin.game === 'mtg') {
+    return Boolean((pin.printingId || pin.id) && pin.form);
+  }
+  return false;
 }
 
 export function nameClaimsExactPrinting(name) {
@@ -19,7 +25,7 @@ export function nameClaimsExactPrinting(name) {
 
 export function isSafeRecentScan(item) {
   if (!item?.name) return false;
-  return hasPrintingPin(item.pin) || !nameClaimsExactPrinting(item.name);
+  return hasPrintingPin(item.pin);
 }
 
 export function sanitizeRecentScans(items) {

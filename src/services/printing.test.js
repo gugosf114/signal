@@ -8,7 +8,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { printingLabel, resultCardPin, toPrinting } from './printing.js';
+import { printingIdentity, printingLabel, resultCardPin, toPrinting } from './printing.js';
 
 describe('printingLabel', () => {
   test('pokemon shows the number over the set total', () => {
@@ -47,6 +47,21 @@ describe('printingLabel', () => {
     assert.equal(printingLabel(null), null);
     assert.equal(printingLabel({ game: 'pokemon' }), null);
   });
+
+  test('the physical finish is visible', () => {
+    assert.equal(
+      printingLabel({ game: 'mtg', setName: 'Transformers', setId: 'bot', number: '13', rarity: 'mythic', finish: 'Foil' }),
+      'Transformers · BOT 13 · mythic · Foil',
+    );
+  });
+});
+
+describe('printingIdentity', () => {
+  test('finish is part of a saved scan identity', () => {
+    const normal = printingIdentity({ game: 'mtg', printingId: 'card-1', form: 'normal' });
+    const foil = printingIdentity({ game: 'mtg', printingId: 'card-1', form: 'foil' });
+    assert.notEqual(normal, foil);
+  });
 });
 
 describe('toPrinting', () => {
@@ -63,11 +78,12 @@ describe('toPrinting', () => {
   });
 
   test('a matching exact lookup may enrich the pin with total and rarity', () => {
-    const pin = { id: 'sv3-223', setName: 'Obsidian Flames', setId: 'sv3', number: '223' };
+    const pin = { id: 'sv3-223', setName: 'Obsidian Flames', setId: 'sv3', number: '223', form: 'holo', finish: 'Holo' };
     const out = toPrinting('pokemon', pin, cardData);
     assert.equal(out.rarity, 'Illustration Rare');
     assert.equal(out.printedTotal, '197');
     assert.equal(out.printingId, 'sv3-223');
+    assert.equal(out.form, 'holo');
   });
 
   test('with no pin it uses the pre-fetch', () => {

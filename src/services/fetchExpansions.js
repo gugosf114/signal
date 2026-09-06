@@ -101,11 +101,13 @@ export function pokemonRow(c, fallbackSetName = '') {
     game: 'pokemon',
     setName: c.set?.name || fallbackSetName,
     setId: c.set?.id || null,
+    setCode: c.set?.ptcgoCode || c.set?.id || null,
     setLogoUrl: c.set?.images?.logo || null,
     number: c.number || null,
     printedTotal: c.set?.printedTotal || c.set?.total || null,
     rarity: c.rarity || null,
     price: firstPrice,
+    priceSource: 'TCGplayer',
     marketPrices,
     availableFinishes,
     imageUrl: c.images?.small || null,
@@ -133,6 +135,8 @@ export function mtgRow(c, fallbackSetName = '') {
     number: c.collector_number || null,
     rarity: c.rarity || null,
     price: normalPrice ?? foilPrice ?? etchedPrice,
+    priceSource: 'Scryfall',
+    tcgplayerProductId: c.tcgplayer_id || null,
     marketPrices,
     availableFinishes,
     imageUrl: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || null,
@@ -223,6 +227,7 @@ export function ygoPrintingRows(card, wantedSet = null) {
     number: entry?.set_code || null,
     rarity: entry?.set_rarity || null,
     price,
+    priceSource: Number.isFinite(exactPrice) && exactPrice > 0 ? 'YGOPRODeck' : null,
     marketPrices: { normal: price, reverse: null },
     priceScope: Number.isFinite(exactPrice) && exactPrice > 0
       ? 'set-code printing'
@@ -420,11 +425,13 @@ function tcgdexPokemonRow(card, fallbackSet = null) {
     game: 'pokemon',
     setName: set.name || fallbackSet?.name || '',
     setId: set.id || fallbackSet?.id || null,
+    setCode: set.abbreviation?.official || set.id || fallbackSet?.id || null,
     setLogoUrl: set.logo ? `${set.logo}/high.webp` : null,
     number: card?.localId || null,
     printedTotal: set.cardCount?.official || fallbackSet?.cardCount?.official || null,
     rarity: card?.rarity || null,
     price: Object.values(marketPrices).find((value) => value != null) ?? null,
+    priceSource: 'TCGplayer',
     marketPrices,
     availableFinishes,
     imageUrl: images.small,
@@ -868,7 +875,14 @@ export async function suggestCards(query, limit = 8) {
   if (looksLikeYgoPasscode(q)) return (await fetchYgoPrintingsByPasscode(q)).slice(0, limit);
   if (looksLikeSetCode(q)) {
     const hit = await lookupBySetCode(q);
-    return hit ? [{ ...hit, setId: hit.setId || hit.setCode || null }] : [];
+    if (!hit) return [];
+    const choices = await resolvePrintingOptions({
+      name: hit.name,
+      game: hit.game,
+      number: hit.number || hit.setCode,
+      set: hit.setName || hit.setId,
+    }).catch(() => []);
+    return (choices.length ? choices : [{ ...hit, setId: hit.setId || hit.setCode || null }]).slice(0, limit);
   }
   const parsed = parseCardLookupQuery(q);
 

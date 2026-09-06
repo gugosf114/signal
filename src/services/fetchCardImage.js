@@ -52,8 +52,9 @@ const inFlight = new Map();     // key -> Promise, so four callers share one fet
 function imgKey(name, game, pin) {
   const identity = pin?.printingId || pin?.number || pin?.setId || pin?.id || '';
   const rarity = pin?.rarity || '';
+  const form = pin?.form || '';
   const scan = pin?.scanImagePath ? 'scan' : '';
-  return `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}::${identity}::${rarity}::${scan}`;
+  return `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}::${identity}::${rarity}::${form}::${scan}`;
 }
 
 function readImgCache() {

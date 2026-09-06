@@ -4,6 +4,8 @@
 // Re-scan button on the result page forces a fresh fetch when needed.
 
 import { sanitizeCachedPriceNarrative } from './fetchCardData.js';
+import { printingIdentity } from './printing.js';
+import { enforceExactCreatorSources } from './sourceRelevance.js';
 
 const CACHE_KEY = 'signal_scan_cache_v1';
 // Two clocks, because the two halves of a scan go stale at very different rates.
@@ -24,8 +26,42 @@ export function attachScanPin(data, pin) {
 // the $35 Obsidian Flames one from cache.
 function keyFor(name, game, pin) {
   const base = `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}`;
-  const printingId = pin?.printingId || pin?.id;
-  return printingId ? `${base}::${String(printingId).toLowerCase()}` : base;
+  const identity = printingIdentity(pin);
+  return identity ? `${base}::${identity}` : base;
+}
+
+function cleanData(data) {
+  return enforceExactCreatorSources(sanitizeCachedPriceNarrative(data), {
+    cardName: data?.card_name,
+    pin: data?._pin || data?.printing || null,
+  });
+}
+
+function entryPin(entry) {
+  const data = entry?.data;
+  return data?._pin || (data?.printing && typeof data.printing === 'object' ? data.printing : null);
+}
+
+function findEntry(cache, name, game, pin) {
+  const directKey = keyFor(name, game, pin);
+  if (cache[directKey]?.data) return { key: directKey, entry: cache[directKey] };
+  const wanted = printingIdentity(pin);
+  if (!wanted) return null;
+  const normalizedGame = String(game || '').toLowerCase();
+  const match = Object.entries(cache)
+    .sort((a, b) => (b[1]?.ts || 0) - (a[1]?.ts || 0))
+    .find(([, candidate]) => {
+      const candidateGame = String(candidate?.data?.game || '').toLowerCase();
+      return candidate?.data
+        && (!normalizedGame || !candidateGame || candidateGame === normalizedGame)
+        && entryPin(candidate)?.pinned !== false
+        && printingIdentity(entryPin(candidate)) === wanted;
+    });
+  if (!match) return null;
+  // Migrate the old broad-name key in place. The next read is direct.
+  cache[directKey] = match[1];
+  saveCache(cache);
+  return { key: directKey, entry: match[1] };
 }
 
 function loadCache() {
@@ -58,11 +94,11 @@ function saveCache(cache) {
 export function getCachedScan(name, game, pin) {
   if (!name) return null;
   const cache = loadCache();
-  const entry = cache[keyFor(name, game, pin)];
+  const entry = findEntry(cache, name, game, pin)?.entry;
   if (!entry || !entry.data) return null;
   const age = Date.now() - (entry.ts || 0);
   if (age < 0 || age > CACHE_TTL_MS) return null;
-  return sanitizeCachedPriceNarrative(entry.data);
+  return cleanData(entry.data);
 }
 
 // Same lookup, but also reports whether the PRICE half has aged out. The caller
@@ -71,20 +107,30 @@ export function getCachedScan(name, game, pin) {
 export function getCachedScanEntry(name, game, pin) {
   if (!name) return null;
   const cache = loadCache();
-  const entry = cache[keyFor(name, game, pin)];
+  const entry = findEntry(cache, name, game, pin)?.entry;
   if (!entry || !entry.data) return null;
   const age = Date.now() - (entry.ts || 0);
   if (age < 0 || age > CACHE_TTL_MS) return null;
   // priceTs tracks the last price top-up independently of the scan timestamp.
   const priceAge = Date.now() - (entry.priceTs || entry.ts || 0);
-  return { data: sanitizeCachedPriceNarrative(entry.data), pricesStale: priceAge > PRICE_TTL_MS };
+  return { data: cleanData(entry.data), pricesStale: priceAge > PRICE_TTL_MS };
 }
 
 export function setCachedScan(name, game, data, pin) {
   if (!name || !data || data._truncated) return;
   const cache = loadCache();
   const now = Date.now();
-  cache[keyFor(name, game, pin)] = { ts: now, priceTs: now, data: sanitizeCachedPriceNarrative(data) };
+  const cleaned = cleanData(data);
+  const entry = { ts: now, priceTs: now, data: cleaned };
+  cache[keyFor(name, game, pin)] = entry;
+  const resultPin = cleaned?._pin
+    || (cleaned?.printing && typeof cleaned.printing === 'object' ? cleaned.printing : null)
+    || pin;
+  const canonicalName = cleaned?.card_name || name;
+  const canonicalGame = cleaned?.game || game;
+  if (resultPin?.pinned !== false && printingIdentity(resultPin)) {
+    cache[keyFor(canonicalName, canonicalGame, resultPin)] = entry;
+  }
   saveCache(cache);
 }
 
@@ -93,10 +139,11 @@ export function setCachedScan(name, game, data, pin) {
 export function refreshCachedPrices(name, game, prices, pin) {
   if (!name || !prices) return;
   const cache = loadCache();
-  const k = keyFor(name, game, pin);
-  const entry = cache[k];
+  const found = findEntry(cache, name, game, pin);
+  const k = found?.key || keyFor(name, game, pin);
+  const entry = found?.entry;
   if (!entry || !entry.data) return;
-  entry.data = sanitizeCachedPriceNarrative({
+  entry.data = cleanData({
     ...entry.data,
     prices: { ...entry.data.prices, ...prices },
     grading_roi: null,
@@ -112,8 +159,9 @@ export function refreshCachedPrices(name, game, prices, pin) {
 export function patchCachedPrinting(name, game, printing, pin) {
   if (!name || !printing) return;
   const cache = loadCache();
-  const k = keyFor(name, game, pin);
-  const entry = cache[k];
+  const found = findEntry(cache, name, game, pin);
+  const k = found?.key || keyFor(name, game, pin);
+  const entry = found?.entry;
   if (!entry || !entry.data) return;
   entry.data = { ...entry.data, printing };
   cache[k] = entry;

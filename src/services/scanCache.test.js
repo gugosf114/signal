@@ -42,6 +42,15 @@ describe('scanCache printing keys', () => {
     assert.equal(getCachedScan('Umbreon ex', 'pokemon', CHEAP).prices.en, 7);
   });
 
+  test('foil and non-foil of one printing do not share an entry', () => {
+    const normal = { id: 'mtg-1', printingId: 'mtg-1', game: 'mtg', form: 'normal' };
+    const foil = { id: 'mtg-1', printingId: 'mtg-1', game: 'mtg', form: 'foil' };
+    setCachedScan('Optimus Prime, Hero', 'mtg', { prices: { en_price: '$14.70' }, _pin: normal }, normal);
+    setCachedScan('Optimus Prime, Hero', 'mtg', { prices: { en_price: '$26.32' }, _pin: foil }, foil);
+    assert.equal(getCachedScan('Optimus Prime, Hero', 'mtg', normal).prices.en_price, '$14.70');
+    assert.equal(getCachedScan('Optimus Prime, Hero', 'mtg', foil).prices.en_price, '$26.32');
+  });
+
   test('a pinned scan is not served to an unpinned search', () => {
     setCachedScan('Umbreon ex', 'pokemon', { prices: { en: 1495 } }, RICH);
     assert.equal(getCachedScan('Umbreon ex', 'pokemon'), null);
@@ -110,5 +119,26 @@ describe('scanCache printing keys', () => {
     const current = { ...RICH, scanImagePath: 'signal-scan-art/sv8pt5-161.jpg' };
     const data = attachScanPin({ card_name: 'Umbreon ex', _pin: RICH }, current);
     assert.equal(data._pin.scanImagePath, 'signal-scan-art/sv8pt5-161.jpg');
+  });
+
+  test('finds an old broad-key report by its returned exact printing', () => {
+    const now = Date.now();
+    store.signal_scan_cache_v1 = JSON.stringify({
+      'pokemon::rayquaza ex': {
+        ts: now,
+        priceTs: now,
+        data: {
+          card_name: 'Rayquaza ex δ',
+          game: 'pokemon',
+          printing: { game: 'pokemon', printingId: 'ex15-97', setName: 'Dragon Frontiers', number: '97', form: 'holo', pinned: true },
+          prices: { en_price: '$273.00', trend_30d: 'flat' },
+          signals: [],
+        },
+      },
+    });
+    const pin = { game: 'pokemon', printingId: 'ex15-97', setName: 'Dragon Frontiers', number: '97', form: 'holo', pinned: true };
+    const hit = getCachedScan('Rayquaza ex δ', 'pokemon', pin);
+    assert.equal(hit.prices.en_price, '$273.00');
+    assert.equal(hit.prices.trend_30d, '');
   });
 });

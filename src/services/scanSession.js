@@ -1,3 +1,5 @@
+import { isExactScanTarget } from './scanIdentity.js';
+
 const SESSION_KEY = 'signal_active_scan_v1';
 const PENDING_MAX_AGE_MS = 10 * 60 * 1000;
 const COMPLETE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -64,12 +66,16 @@ export function loadRecoverableScanSession(storage, now = Date.now()) {
 
   if (value.status === 'pending') {
     const age = now - Number(value.startedAt || 0);
-    if (age >= 0 && age <= PENDING_MAX_AGE_MS) return value;
+    if (age >= 0 && age <= PENDING_MAX_AGE_MS && isExactScanTarget(value.game, value.pin)) return value;
   }
 
   if (value.status === 'complete' && value.result) {
     const age = now - Number(value.completedAt || 0);
-    if (age >= 0 && age <= COMPLETE_MAX_AGE_MS) return value;
+    const pin = value.pin || value.result?._pin || value.result?.printing || null;
+    const game = value.game || value.result?.game;
+    if (age >= 0 && age <= COMPLETE_MAX_AGE_MS && isExactScanTarget(game, pin)) {
+      return { ...value, game, pin };
+    }
   }
 
   clearScanSession(storage);

@@ -248,6 +248,15 @@ test('home uses one compact latest Signal panel before Browse Cards', () => {
   assert.match(css, /\.latest-signal-market/);
 });
 
+test('every home card keeps one exact identity from chip to image and report', () => {
+  assert.match(quickPicksSource, /pin: card \}/);
+  assert.doesNotMatch(quickPicksSource, /pin: card\.id \? card : null/);
+  assert.match(dashboardSource, /isExactScanTarget\(resolvedGame, resolvedPin\)/);
+  assert.match(emptyStateSource, /pin=\{data\.pin \|\| null\}/);
+  assert.match(emptyStateSource, /No exact data/);
+  assert.match(priceSource, /No exact data/);
+});
+
 test('all page sections reveal once on scroll without taking over child transforms', () => {
   assert.match(scrollRevealSource, /IntersectionObserver/);
   assert.match(scrollRevealSource, /observer\.disconnect\(\)/);

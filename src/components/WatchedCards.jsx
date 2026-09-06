@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { GAME_LABELS, getScoreLabel } from '../config/signals';
 import ScrollReveal from './ScrollReveal';
+import { printingIdentity } from '../services/printing';
+import { hasPrintingPin } from '../services/recentScans';
 
 export function useWatchedCards() {
   const [watched, setWatched] = useState([]);
@@ -9,7 +11,7 @@ export function useWatchedCards() {
     try {
       const raw = localStorage.getItem('signal_watched_cards');
       const parsed = raw ? JSON.parse(raw) : [];
-      setWatched(Array.isArray(parsed) ? parsed : []);
+      setWatched((Array.isArray(parsed) ? parsed : []).filter((card) => hasPrintingPin(card?.pin)));
     } catch { setWatched([]); }
   };
 
@@ -28,7 +30,7 @@ export function useWatchedCards() {
       const raw = localStorage.getItem('signal_watched_cards');
       const parsed = raw ? JSON.parse(raw) : [];
       const list = Array.isArray(parsed) ? parsed : [];
-      const identity = (value) => value?.pin?.printingId || value?.pin?.id || null;
+      const identity = (value) => printingIdentity(value?.pin);
       const sameCard = (w) =>
         w.name === card.name && w.game === card.game &&
         identity(w) === identity(card);
@@ -45,7 +47,7 @@ export function useWatchedCards() {
 
   const isWatched = (name, game, pin = null) =>
     watched.some((w) => w.name === name && w.game === game
-      && (w.pin?.printingId || w.pin?.id || null) === (pin?.printingId || pin?.id || null));
+      && printingIdentity(w.pin) === printingIdentity(pin));
 
   return { watched, toggle, isWatched, reload: load };
 }

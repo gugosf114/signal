@@ -261,10 +261,10 @@ export default function PdfReport({ result, score, cardImageUrl }) {
         padding: '14px 0',
         marginBottom: 28,
       }}>
-        <PriceCell label="EN Price" value={result.prices?.en_price} />
+        <PriceCell label="EN Price" value={result.prices?.en_price || 'No exact price'} />
         <PriceCell
           label="30-Day Trend"
-          value={result.prices?.trend_30d}
+          value={result.prices?.trend_30d || 'No exact data'}
           smallFont
         />
         <PriceCell
