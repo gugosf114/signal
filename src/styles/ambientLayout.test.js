@@ -52,6 +52,46 @@ test('ambient orbs keep enough contrast for bright surroundings', () => {
   }
 });
 
+test('three-page text hierarchy brightens useful copy without washing out decoration', () => {
+  const root = css.match(/:root\s*\{([^}]*)\}/)?.[1] || '';
+  assert.match(root, /--signal-text-secondary:\s*#A8A498/);
+  assert.match(root, /--signal-text-muted:\s*#92897C/);
+
+  const luminance = (hex) => {
+    const channels = hex.match(/[0-9a-f]{2}/gi).map((part) => parseInt(part, 16) / 255);
+    const linear = channels.map((value) => (
+      value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+    ));
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+  };
+  const contrast = (left, right) => {
+    const a = luminance(left);
+    const b = luminance(right);
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  };
+  assert.ok(contrast('#A8A498', '#27262C') >= 4.5);
+  assert.ok(contrast('#92897C', '#1C1B20') >= 4.5);
+
+  assert.match(css, /\.pt-tab\s*\{[^}]*color:\s*var\(--signal-text-secondary\)/);
+  assert.match(css, /\.signal-main-input::placeholder\s*\{[^}]*var\(--signal-text-secondary\)[^}]*opacity:\s*1/);
+  assert.match(searchSource, /color:\s*'var\(--signal-text-muted\)'/);
+  assert.match(quickPicksSource, /color:\s*'var\(--signal-text-secondary\)'/);
+  assert.match(recentScansSource, /color:\s*'var\(--signal-text-secondary\)'/);
+  assert.match(newsSource, /color:\s*'var\(--signal-text-secondary\)'/);
+  assert.match(browserSource, /color:\s*'var\(--signal-text-muted\)'/);
+  assert.match(css, /\.col-summary-label\s*\{[^}]*color:\s*var\(--signal-text-secondary\)/);
+  assert.match(css, /\.col-card-meta\s*\{[^}]*color:\s*var\(--signal-text-muted\)/);
+  assert.match(css, /\.dos-method p\s*\{[^}]*color:\s*var\(--signal-text-secondary\)/);
+  assert.match(css, /\.dos-footnote\s*\{[^}]*color:\s*var\(--signal-text-muted\)/);
+  assert.match(scoreSource, /color:\s*'var\(--signal-text-secondary\)'/);
+  assert.match(signalCardSource, /dropped > 0 \? '#A09060' : 'var\(--signal-text-muted\)'/);
+
+  const ambientGrid = css.match(/\.signal-ambient-grid\s*\{([^}]*)\}/)?.[1] || '';
+  const dossierWatermark = css.match(/\.dos-hero::after\s*\{([^}]*)\}/)?.[1] || '';
+  assert.match(ambientGrid, /opacity:\s*0\.12/);
+  assert.match(dossierWatermark, /rgba\(232,228,220,0\.025\)/);
+});
+
 test('home attention pass reuses the existing logo, search, tiles, marks, and news', () => {
   assert.match(dashboardSource, /className="signal-logo-frame"/);
   assert.match(searchSource, /className="signal-search-form"/);

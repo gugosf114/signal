@@ -76,7 +76,7 @@ export default function RecentScans({ onSelect, loading, introActive = false }) 
           fontWeight: 700,
           letterSpacing: '0.24em',
           textTransform: 'uppercase',
-          color: '#7A7368',
+          color: 'var(--signal-text-secondary)',
           whiteSpace: 'nowrap',
         }}>
           Your last scans
@@ -182,7 +182,7 @@ export default function RecentScans({ onSelect, loading, introActive = false }) 
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                color: '#706C64',
+                color: 'var(--signal-text-secondary)',
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 8,
                 fontStyle: 'normal',

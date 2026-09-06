@@ -26,7 +26,7 @@ export default function SignalNav({ signals }) {
         fontFamily: "'Syne', sans-serif",
         fontWeight: 700,
         letterSpacing: '0.18em',
-        color: '#605C54',
+        color: 'var(--signal-text-secondary)',
         textTransform: 'uppercase',
         alignSelf: 'center',
         marginRight: 4,

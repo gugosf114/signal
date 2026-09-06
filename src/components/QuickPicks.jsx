@@ -123,7 +123,7 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
                 background: 'var(--signal-tile)',
                 border: '1px solid #4A464F',
                 borderRadius: 2,
-                color: '#7A7368',
+                color: 'var(--signal-text-secondary)',
                 fontSize: 14,
                 cursor: loading ? 'not-allowed' : 'pointer',
                 fontFamily: "'Syne', sans-serif",
@@ -142,7 +142,7 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = '#4A464F';
-                e.currentTarget.style.color = '#7A7368';
+                e.currentTarget.style.color = 'var(--signal-text-secondary)';
               }}
             >
               <GameMark game={card.game} compact alive />

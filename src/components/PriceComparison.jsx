@@ -2,7 +2,7 @@ import React from 'react';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 function trendMeta(trend) {
-  if (!trend) return { sym: '—', color: '#605C54' };
+  if (!trend) return { sym: '—', color: 'var(--signal-text-muted)' };
   const t = trend.toLowerCase();
   if (t.includes('up') || t.includes('rising') || t.includes('increas'))
     return { sym: '▲', color: '#608870' };
@@ -12,7 +12,7 @@ function trendMeta(trend) {
 }
 
 function alignMeta(val) {
-  if (!val) return { color: '#605C54', sym: '—' };
+  if (!val) return { color: 'var(--signal-text-muted)', sym: '—' };
   const v = val.toLowerCase();
   if (v === 'disagree' || v.includes('not agree') || v.includes('conflict')) return { color: '#C44040', sym: '✗' };
   if (v === 'agree' || /\bagree(?:s|d|ment)?\b/.test(v)) return { color: '#608870', sym: '✓' };
@@ -67,7 +67,7 @@ export default function PriceComparison({ data }) {
         ...(isMobile ? { gridColumn: '1 / 3' } : { flex: '1.4' }),
         padding: isMobile ? '12px 14px' : '14px 16px',
       }}>
-        <div style={{ ...labelStyle, color: '#7A7368' }}>Market Price</div>
+        <div style={{ ...labelStyle, color: 'var(--signal-text-secondary)' }}>Market Price</div>
         <div className="price-value" style={{ ...valStyle, fontSize: 16, color: '#E8E4DC' }}>
           {data.en_price || '—'}
         </div>
@@ -78,7 +78,7 @@ export default function PriceComparison({ data }) {
         ...(isMobile ? { gridColumn: '1 / 2', borderTop: '1px solid #1A1D24', borderRight: '1px solid #1A1D24' } : { flex: '0.8' }),
         padding: isMobile ? '10px 10px' : '14px 16px',
       }}>
-        <div style={{ ...labelStyle, color: '#7A7368' }}>30-Day Trend</div>
+        <div style={{ ...labelStyle, color: 'var(--signal-text-secondary)' }}>30-Day Trend</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span
             className={trend.sym === '▲' ? 'trend-bounce-up' : trend.sym === '▼' ? 'trend-bounce-down' : ''}
@@ -99,7 +99,7 @@ export default function PriceComparison({ data }) {
         ...(isMobile ? { gridColumn: '2 / 3', borderTop: '1px solid #1A1D24' } : { flex: '0.8' }),
         padding: isMobile ? '10px 10px' : '14px 16px',
       }}>
-        <div style={{ ...labelStyle, color: '#7A7368' }}>Alignment</div>
+        <div style={{ ...labelStyle, color: 'var(--signal-text-secondary)' }}>Alignment</div>
         <span style={{ ...valStyle, fontSize: 14, color: align.color }}>{align.sym}</span>
         <div style={{ fontSize: 9, color: align.color, marginTop: 2, fontFamily: "'JetBrains Mono', monospace", opacity: 0.7 }}>
           {data.signal_vs_market || '—'}

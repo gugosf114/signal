@@ -61,7 +61,7 @@ export default function WatchedCards({ onSelect }) {
         fontFamily: "'Syne', sans-serif",
         fontWeight: 700,
         letterSpacing: '0.22em',
-        color: '#605C54',
+        color: 'var(--signal-text-muted)',
         textTransform: 'uppercase',
         marginBottom: 6,
       }}>
@@ -124,7 +124,7 @@ export default function WatchedCards({ onSelect }) {
                   padding: 10,
                   margin: -10,
                   cursor: 'pointer',
-                  color: '#494640',
+                  color: 'var(--signal-text-muted)',
                   fontSize: 13,
                   lineHeight: 1,
                   display: 'flex',

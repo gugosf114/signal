@@ -129,7 +129,7 @@ export default function CardBrowser({
           fontFamily: "'Syne', sans-serif",
           fontWeight: 700,
           letterSpacing: '0.22em',
-          color: '#605C54',
+          color: 'var(--signal-text-muted)',
           textTransform: 'uppercase',
         }}>
           Browse cards
@@ -155,7 +155,7 @@ export default function CardBrowser({
                 background: activeGame === tab.id ? `${tab.color}18` : 'transparent',
                 border: `1px solid ${activeGame === tab.id ? tab.color + '50' : '#14161A'}`,
                 borderRadius: 2,
-                color: activeGame === tab.id ? tab.color : '#605C54',
+                color: activeGame === tab.id ? tab.color : 'var(--signal-text-secondary)',
                 fontSize: 10,
                 cursor: 'pointer',
                 fontFamily: "'Syne', sans-serif",
@@ -214,7 +214,7 @@ export default function CardBrowser({
           fontWeight: 700,
           letterSpacing: '0.22em',
           textTransform: 'uppercase',
-          color: '#605C54',
+          color: 'var(--signal-text-muted)',
           marginRight: 4,
         }}>Sort</span>
         {[
@@ -237,7 +237,7 @@ export default function CardBrowser({
                 background: selected ? `${activeTab.color}18` : 'transparent',
                 border: `1px solid ${selected ? activeTab.color + '60' : '#14161A'}`,
                 borderRadius: 2,
-                color: selected ? '#E8E4DC' : '#7A7368',
+                color: selected ? '#E8E4DC' : 'var(--signal-text-muted)',
                 fontSize: 11,
                 fontFamily: "'JetBrains Mono', monospace",
                 fontWeight: selected ? 700 : 500,
@@ -280,7 +280,7 @@ export default function CardBrowser({
                   background: selected ? `${activeTab.color}18` : 'transparent',
                   border: `1px solid ${selected ? activeTab.color + '60' : '#14161A'}`,
                   borderRadius: 2,
-                  color: selected ? '#E8E4DC' : '#7A7368',
+                  color: selected ? '#E8E4DC' : 'var(--signal-text-muted)',
                   fontSize: 12,
                   fontFamily: "'Syne', sans-serif",
                   fontWeight: selected ? 600 : 500,
@@ -298,14 +298,14 @@ export default function CardBrowser({
                 onMouseLeave={(e) => {
                   if (!selected) {
                     e.currentTarget.style.borderColor = '#14161A';
-                    e.currentTarget.style.color = '#7A7368';
+                    e.currentTarget.style.color = 'var(--signal-text-muted)';
                   }
                 }}
               >
                 {set.name}
                 {set.releaseDate && (
                   <span style={{
-                    color: selected ? activeTab.color : '#494640',
+                    color: selected ? activeTab.color : 'var(--signal-text-muted)',
                     fontSize: 9,
                     fontFamily: "'JetBrains Mono', monospace",
                   }}>
@@ -397,7 +397,7 @@ export default function CardBrowser({
               <div style={{
                 padding: '4px 2px 2px',
                 fontSize: 9,
-                color: '#7A7368',
+                color: 'var(--signal-text-secondary)',
                 fontFamily: "'Syne', sans-serif",
                 fontWeight: 500,
                 lineHeight: 1.3,

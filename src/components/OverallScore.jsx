@@ -166,7 +166,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               fontSize: 9,
               fontWeight: 700,
               letterSpacing: '0.16em',
-              color: '#7A7368',
+              color: 'var(--signal-text-secondary)',
             }}>
               MARKET PRESSURE
             </div>
@@ -184,7 +184,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               <span style={{
                 fontSize: 15,
                 fontFamily: "'JetBrains Mono', monospace",
-                color: '#2A2D34',
+                color: 'var(--signal-text-muted)',
                 fontWeight: 400,
               }}>
                 /100
@@ -227,7 +227,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               fontSize: 14,
               fontFamily: "'Instrument Serif', serif",
               fontStyle: 'italic',
-              color: '#8A8680',
+              color: 'var(--signal-text-secondary)',
               lineHeight: 1.4,
             }}>
               {blurb}
@@ -237,7 +237,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               marginTop: 7,
               fontSize: 10,
               fontFamily: "'JetBrains Mono', monospace",
-              color: evidencePct < 50 ? '#A09060' : '#7A7368',
+              color: evidencePct < 50 ? '#A09060' : 'var(--signal-text-secondary)',
               letterSpacing: '0.04em',
             }}>
               {signalCount}/{expectedSignalCount} SIGNALS · {evidencePct}% WITH VERIFIED SOURCES
@@ -267,7 +267,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
                 <span style={{
                   fontSize: 12,
                   fontFamily: "'JetBrains Mono', monospace",
-                  color: '#7A7368',
+                  color: 'var(--signal-text-secondary)',
                   letterSpacing: '0.04em',
                 }}>
                   of your last {percentileInfo.total} scans

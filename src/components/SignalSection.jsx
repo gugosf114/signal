@@ -67,7 +67,7 @@ export default function SignalSection({ section, signals, baseDelay = 0 }) {
           </h2>
           <span style={{
             fontSize: 12,
-            color: '#494640',
+            color: 'var(--signal-text-muted)',
             fontFamily: "'JetBrains Mono', monospace",
           }}>
             {section.id === 'short-term' ? '⏱ ' : ''}{section.subtitle}

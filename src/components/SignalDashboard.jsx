@@ -588,7 +588,7 @@ export default function SignalDashboard() {
             </button>
             <span style={{
               fontSize: 10,
-              color: '#605C54',
+              color: 'var(--signal-text-muted)',
               fontFamily: "'JetBrains Mono', monospace",
               letterSpacing: '0.04em',
             }}>
@@ -921,7 +921,7 @@ export default function SignalDashboard() {
             paddingTop: 16,
             borderTop: '1px solid #14161A',
             fontSize: 10,
-            color: '#605C54',
+            color: 'var(--signal-text-muted)',
             textAlign: 'center',
             fontFamily: "'JetBrains Mono', monospace",
             letterSpacing: '0.06em',

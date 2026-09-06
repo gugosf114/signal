@@ -70,7 +70,7 @@ function loadFeaturedScan() {
 }
 
 function trendSym(trend) {
-  if (!trend) return { sym: '—', color: '#605C54' };
+  if (!trend) return { sym: '—', color: 'var(--signal-text-muted)' };
   const t = String(trend).toLowerCase();
   if (t.includes('up') || t.includes('rising') || t.includes('increas') || t.includes('lead')) {
     return { sym: '▲', color: '#608870' };

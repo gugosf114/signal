@@ -150,7 +150,7 @@ function ArticleCard({ article, foilActive = false }) {
           <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: c }}>
             {article.source.label}
           </span>
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color: '#7A7368' }}>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color: 'var(--signal-text-secondary)' }}>
             {timeAgo(article.pubDate)}
           </span>
         </div>
@@ -172,7 +172,7 @@ function ArticleCard({ article, foilActive = false }) {
         </div>
         {article.description && (
           <div style={{
-            fontFamily: "'Syne',sans-serif", fontSize: 12, color: '#7A7368', lineHeight: 1.5,
+            fontFamily: "'Syne',sans-serif", fontSize: 12, color: 'var(--signal-text-secondary)', lineHeight: 1.5,
             overflow: 'hidden',
             display: '-webkit-box',
             WebkitLineClamp: 2,

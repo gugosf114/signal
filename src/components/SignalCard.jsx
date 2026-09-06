@@ -324,7 +324,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
                       fontWeight: 700,
                       letterSpacing: '0.18em',
                       textTransform: 'uppercase',
-                      color: '#605C54',
+                      color: 'var(--signal-text-secondary)',
                     }}>
                       Sources
                     </span>
@@ -352,7 +352,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
                     <span style={{
                       fontSize: 12,
                       fontFamily: "'JetBrains Mono', monospace",
-                      color: '#605C54',
+                      color: 'var(--signal-text-secondary)',
                     }}>
                       {activeSourceIdx + 1}/{sources.length}
                     </span>
@@ -423,7 +423,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
                   paddingTop: 10,
                   borderTop: '1px solid rgba(26, 29, 36, 0.4)',
                   fontSize: 13,
-                  color: dropped > 0 ? '#A09060' : '#494640',
+                  color: dropped > 0 ? '#A09060' : 'var(--signal-text-muted)',
                   fontFamily: "'JetBrains Mono', monospace",
                   letterSpacing: '0.06em',
                 }}>

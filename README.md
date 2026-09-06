@@ -1382,3 +1382,18 @@ panels, and text are unchanged.
 The page reveal also moves from `0.56s` to `0.75s`. Its 14px rise, early
 viewport trigger, short neighbor steps, one-play rule, and reduced-motion exit
 are unchanged. This makes the motion easier to see without delaying the page.
+
+---
+
+## Session log — 2026-09-06 selective text contrast
+
+A real Signal home screenshot showed the main cream text clearly, while useful
+small copy was using the same near-black greys as decoration. Two shared text
+steps now separate those jobs: `#A8A498` for small copy on tiles and `#92897C`
+for muted copy on the dark page or panels.
+
+Only useful words moved up: inactive tabs, search hints, card names, printing
+details, section labels, Collection counts and currency notes, Dossier method
+copy, result metadata, and verified-source notes. Background art, watermarks,
+lines, borders, glows, and other decoration keep their old low contrast. Font
+families, sizes, weights, spacing, layout, and motion are unchanged.

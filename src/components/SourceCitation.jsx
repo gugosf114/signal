@@ -290,7 +290,7 @@ export default function SourceCitation({ source }) {
               }} />
               <span style={{
                 fontSize: 13,
-                color: '#605C54',
+                color: 'var(--signal-text-muted)',
                 fontFamily: "'JetBrains Mono', monospace",
               }}>
                 {source.date}

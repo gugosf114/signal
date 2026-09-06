@@ -614,7 +614,7 @@ export default function SearchBar({
         )}
       </div>
 
-      <div style={{ marginTop: 6, fontSize: 9, color: '#605C54', fontFamily: "'JetBrains Mono', monospace", textAlign: 'left' }}>
+      <div style={{ marginTop: 6, fontSize: 9, color: 'var(--signal-text-muted)', fontFamily: "'JetBrains Mono', monospace", textAlign: 'left' }}>
         {!lookupMode
           ? 'Price: fast · Full Signal: about one minute.'
           : lookupMode === 'price'
