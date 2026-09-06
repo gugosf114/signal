@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrandIcon } from '../config/brandIcons';
 import { GAME_LABELS, getScoreLabel, calculateOverallScore } from '../config/signals';
-import { getCachedScan } from '../services/scanCache';
+import { getCachedScanEntry } from '../services/scanCache';
+import { refreshPrices } from '../services/refreshPrices';
 import CardImage from './CardImage';
 import ScrollReveal from './ScrollReveal';
 import { sanitizeRecentScans } from '../services/recentScans';
@@ -36,19 +37,28 @@ function loadFeaturedScan() {
     if (scans.length === 0) return null;
     const top = scans[0];
     if (!top?.name) return null;
-    const cached = getCachedScan(top.name, top.game, top.pin || null);
-    if (!cached) {
+    const cachedEntry = getCachedScanEntry(top.name, top.game, top.pin || null);
+    if (!cachedEntry) {
       // Fallback: we know name + game + score from the recents row even if
-      // the full scan body isn't in cache anymore. Render minimal real data.
+      // the full scan body isn't in cache anymore. Keep the exact saved price
+      // on screen while its free catalogue refresh runs.
+      const savedPrice = Number(top.pin?.price);
       return {
         name: top.name,
         game: top.game,
         score: typeof top.score === 'number' ? top.score : 0,
         pin: top.pin || null,
-        prices: {},
+        prices: {
+          en_price: Number.isFinite(savedPrice) && savedPrice > 0
+            ? `$${savedPrice.toFixed(2)}`
+            : '',
+          trend_30d: '',
+        },
         creator: null,
+        needsPriceRefresh: true,
       };
     }
+    const cached = cachedEntry.data;
     const score = calculateOverallScore(cached.signals || [], top.game);
     const creatorSignal = (cached.signals || []).find((s) => s.key === 'creator');
     const creatorSrc = creatorSignal?.sources?.[0];
@@ -66,6 +76,7 @@ function loadFeaturedScan() {
             level: creatorSignal?.level || 0,
           }
         : null,
+      needsPriceRefresh: cachedEntry.pricesStale,
     };
   } catch {
     return null;
@@ -157,7 +168,20 @@ function LatestSignalPanel({ data, isSample }) {
 
 export default function EmptyState() {
   // Lazy init from localStorage — synchronous, no flicker between sample and real.
-  const [featured] = useState(() => loadFeaturedScan());
+  const [featured, setFeatured] = useState(() => loadFeaturedScan());
+  useEffect(() => {
+    if (!featured?.needsPriceRefresh || !featured.pin) return;
+    let cancelled = false;
+    refreshPrices(featured.name, featured.game, featured.pin).then((prices) => {
+      if (cancelled || !prices) return;
+      setFeatured((current) => current ? {
+        ...current,
+        prices: { ...current.prices, ...prices, trend_30d: '' },
+        needsPriceRefresh: false,
+      } : current);
+    });
+    return () => { cancelled = true; };
+  }, [featured?.name, featured?.game, featured?.needsPriceRefresh]);
   const isSample = !featured;
   const data = featured || SAMPLE_DATA;
 

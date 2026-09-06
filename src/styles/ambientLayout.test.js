@@ -253,6 +253,8 @@ test('every home card keeps one exact identity from chip to image and report', (
   assert.doesNotMatch(quickPicksSource, /pin: card\.id \? card : null/);
   assert.match(dashboardSource, /isExactScanTarget\(resolvedGame, resolvedPin\)/);
   assert.match(emptyStateSource, /pin=\{data\.pin \|\| null\}/);
+  assert.match(emptyStateSource, /top\.pin\?\.price/);
+  assert.match(emptyStateSource, /refreshPrices\(featured\.name, featured\.game, featured\.pin\)/);
   assert.match(emptyStateSource, /No exact data/);
   assert.match(priceSource, /No exact data/);
 });
