@@ -1397,3 +1397,22 @@ details, section labels, Collection counts and currency notes, Dossier method
 copy, result metadata, and verified-source notes. Background art, watermarks,
 lines, borders, glows, and other decoration keep their old low contrast. Font
 families, sizes, weights, spacing, layout, and motion are unchanged.
+
+---
+
+## Session log — 2026-09-06 three-page swipe navigation
+
+Signal, Collection, and Dossier can now be changed with one horizontal page
+swipe as well as the existing top tabs. A left swipe moves forward and a right
+swipe moves back. Signal and Dossier stop at their outside edges; they do not
+wrap around.
+
+The gesture requires at least 72px of horizontal travel and must be clearly
+more horizontal than vertical, so normal page scrolling stays vertical. The
+news track, expansion strip, search fields, card viewer, scanner, and add-card
+sheet keep their own touch gestures. A completed swipe also blocks the button
+click that could otherwise fire under the lifted finger.
+
+The incoming page moves 24px from the swipe direction over 0.34 seconds. The
+transition does not change page layout, saved state, or tab behavior. Reduced
+motion switches pages immediately.

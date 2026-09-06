@@ -2796,6 +2796,24 @@
 }
 
 /* ─── Page tabs ───────────────────────────────────────────────────────────── */
+.page-swipe-surface,
+.page-swipe-panel { min-width: 0; }
+
+.page-swipe-panel--next {
+  animation: pageSwipeInFromRight 0.34s cubic-bezier(0.2, 0.76, 0.22, 1) both;
+}
+.page-swipe-panel--previous {
+  animation: pageSwipeInFromLeft 0.34s cubic-bezier(0.2, 0.76, 0.22, 1) both;
+}
+@keyframes pageSwipeInFromRight {
+  from { opacity: 0.5; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pageSwipeInFromLeft {
+  from { opacity: 0.5; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 .pt-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3961,6 +3979,12 @@
     opacity: 1 !important;
     translate: none !important;
     transition: none !important;
+  }
+  .page-swipe-panel--next,
+  .page-swipe-panel--previous {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
   .npc-foil-bloom,
   .npc-foil-sweep { display: none !important; }

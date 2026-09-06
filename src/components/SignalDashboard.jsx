@@ -34,6 +34,11 @@ import { pendingScanCard } from '../services/pendingScan';
 import { resultCardPin } from '../services/printing';
 import { addToCollection } from '../services/collection';
 import {
+  PAGE_SWIPE_IGNORE_SELECTOR,
+  pageAfterSwipe,
+  pageSwipeDirection,
+} from '../services/pageSwipe';
+import {
   clearScanSession,
   loadRecoverableScanSession,
   saveCompletedScanSession,
@@ -61,6 +66,7 @@ export default function SignalDashboard() {
   // Which page is showing. The header and tab strip are shared; everything
   // below them belongs to one page or the other.
   const [page, setPage] = useState('signal');
+  const [pageEntryDirection, setPageEntryDirection] = useState(null);
   const [result, setResult] = useState(() =>
     initialScanSession?.status === 'complete' ? initialScanSession.result : null
   );
@@ -84,7 +90,10 @@ export default function SignalDashboard() {
   const [addCard, setAddCard] = useState(null);
   const isMobile = useIsMobile();
 
-  const openPage = (nextPage) => setPage(nextPage);
+  const openPage = (nextPage, entryDirection = null) => {
+    setPageEntryDirection(entryDirection);
+    setPage(nextPage);
+  };
 
   const flashSaveMsg = (msg) => {
     setSaveMsg(msg);
@@ -111,6 +120,9 @@ export default function SignalDashboard() {
   );
   const resultTopRef = useRef(null);
   const recoveryStartedRef = useRef(false);
+  const pageSwipeStartRef = useRef(null);
+  const pageSwipeClickTimerRef = useRef(null);
+  const suppressPageSwipeClickRef = useRef(false);
 
   const scrollResultFirst = () => {
     requestAnimationFrame(() => {
@@ -400,13 +412,62 @@ export default function SignalDashboard() {
   const score = scoreDetails?.score ?? null;
   const signalHomeReady = page === 'signal' && !result && !loading && !error;
 
-  const changePage = (nextPage) => {
+  const changePage = (nextPage, entryDirection = null) => {
     // A saved answer remains the first thing on the next app opening until the
     // user deliberately leaves that answer. Do not erase it merely because
     // Android briefly called the activity visible.
     if (nextPage !== 'signal' && result && !loading) clearScanSession();
-    openPage(nextPage);
+    openPage(nextPage, entryDirection);
   };
+
+  useEffect(() => () => {
+    if (pageSwipeClickTimerRef.current) clearTimeout(pageSwipeClickTimerRef.current);
+  }, []);
+
+  const startPageSwipe = (event) => {
+    const touch = event.touches?.[0];
+    if (event.touches?.length !== 1 || !touch
+      || event.target?.closest?.(PAGE_SWIPE_IGNORE_SELECTOR)) {
+      pageSwipeStartRef.current = null;
+      return;
+    }
+    pageSwipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const finishPageSwipe = (event) => {
+    const start = pageSwipeStartRef.current;
+    pageSwipeStartRef.current = null;
+    const touch = event.changedTouches?.[0];
+    if (!start || !touch) return;
+    const direction = pageSwipeDirection(touch.clientX - start.x, touch.clientY - start.y);
+    if (!direction) return;
+
+    // A swipe that starts on a card or button must change the page without
+    // firing that control's click as the finger lifts. This also applies at
+    // the two stopped ends, where the page stays put.
+    suppressPageSwipeClickRef.current = true;
+    if (pageSwipeClickTimerRef.current) clearTimeout(pageSwipeClickTimerRef.current);
+    pageSwipeClickTimerRef.current = setTimeout(() => {
+      suppressPageSwipeClickRef.current = false;
+      pageSwipeClickTimerRef.current = null;
+    }, 450);
+    const nextPage = pageAfterSwipe(page, direction);
+    if (nextPage === page) return;
+    changePage(nextPage, direction);
+  };
+
+  const cancelPageSwipe = () => {
+    pageSwipeStartRef.current = null;
+  };
+
+  const stopSwipeClick = (event) => {
+    if (!suppressPageSwipeClickRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressPageSwipeClickRef.current = false;
+  };
+
+  const pagePanelClass = `page-swipe-panel${pageEntryDirection ? ` page-swipe-panel--${pageEntryDirection}` : ''}`;
 
   return (
     <div className="signal-dashboard" style={{
@@ -478,14 +539,22 @@ export default function SignalDashboard() {
 
       <PageTabs page={page} onChange={changePage} />
 
+      <div
+        className="page-swipe-surface"
+        onTouchStart={startPageSwipe}
+        onTouchEnd={finishPageSwipe}
+        onTouchCancel={cancelPageSwipe}
+        onClickCapture={stopSwipeClick}
+      >
+
       {page === 'dossier' && (
-        <div id="panel-dossier" role="tabpanel" aria-labelledby="tab-dossier">
+        <div key="dossier" id="panel-dossier" className={pagePanelClass} role="tabpanel" aria-labelledby="tab-dossier">
           <Dossier entryActive />
         </div>
       )}
 
       {page === 'collection' && (
-        <div id="panel-collection" role="tabpanel" aria-labelledby="tab-collection">
+        <div key="collection" id="panel-collection" className={pagePanelClass} role="tabpanel" aria-labelledby="tab-collection">
           <Collection
             entryActive
             onAddCard={(card) => setAddCard(card)}
@@ -499,7 +568,7 @@ export default function SignalDashboard() {
       )}
 
       {page === 'signal' && (
-      <div id="panel-signal" role="tabpanel" aria-labelledby="tab-signal">
+      <div key="signal" id="panel-signal" className={pagePanelClass} role="tabpanel" aria-labelledby="tab-signal">
       {/* Search is the dashboard, not result-page furniture. Hiding it during
           work and after completion makes the scan/result the first thing seen
           without depending on a fragile saved scroll position. */}
@@ -942,6 +1011,7 @@ export default function SignalDashboard() {
       )}
       </div>
       )}
+      </div>{/* /.page-swipe-surface */}
 
       {/* Off-screen premium PDF report — mounted only during Save PDF flow so
           html2pdf captures THIS clean editorial layout instead of the dark

@@ -92,6 +92,25 @@ test('three-page text hierarchy brightens useful copy without washing out decora
   assert.match(dossierWatermark, /rgba\(232,228,220,0\.025\)/);
 });
 
+test('page swipes move between tabs while horizontal rows keep their gestures', () => {
+  assert.match(dashboardSource, /pageSwipeDirection/);
+  assert.match(dashboardSource, /pageAfterSwipe/);
+  assert.match(dashboardSource, /onTouchStart=\{startPageSwipe\}/);
+  assert.match(dashboardSource, /onTouchEnd=\{finishPageSwipe\}/);
+  assert.match(dashboardSource, /onTouchCancel=\{cancelPageSwipe\}/);
+  assert.match(dashboardSource, /onClickCapture=\{stopSwipeClick\}/);
+  assert.match(dashboardSource, /page-swipe-panel--\$\{pageEntryDirection\}/);
+  assert.match(browserSource, /className="cb-set-strip"/);
+  assert.match(newsSource, /className="ns-track-outer"/);
+  assert.match(css, /@keyframes pageSwipeInFromRight/);
+  assert.match(css, /@keyframes pageSwipeInFromLeft/);
+  const swipeSurface = css.match(/\.page-swipe-surface,\s*\.page-swipe-panel\s*\{([^}]*)\}/)?.[1] || '';
+  assert.doesNotMatch(swipeSurface, /touch-action/);
+  const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
+  assert.match(reduced, /\.page-swipe-panel--next/);
+  assert.match(reduced, /\.page-swipe-panel--previous/);
+});
+
 test('home attention pass reuses the existing logo, search, tiles, marks, and news', () => {
   assert.match(dashboardSource, /className="signal-logo-frame"/);
   assert.match(searchSource, /className="signal-search-form"/);

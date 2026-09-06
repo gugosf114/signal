@@ -254,7 +254,7 @@ export default function CardBrowser({
 
       {/* Expansion picker — last 6 expansions per game, horizontal scroll */}
       {activeExpansions.length > 0 && !debounced && (
-        <div style={{
+        <div className="cb-set-strip" style={{
           display: 'flex',
           gap: 6,
           overflowX: 'auto',
