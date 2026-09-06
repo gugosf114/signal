@@ -1430,20 +1430,3 @@ The old blue ambient family is now the same muted green as the Price toggle:
 the first-page gaps. The solid cards block it where they sit, while their clear
 gaps expose it. Red and gold remain unchanged, and green replaces blue rather
 than adding a fourth ambient color.
-
----
-
-## Session log — 2026-09-06 maroon grid signature
-
-The TCG Intelligence area now owns one local, non-looping signature moment.
-When that section first enters view, a restrained set of small square cells
-falls inside the news area in Signal maroon. The cells settle into a dotted
-`株 SIGNAL` wordmark, then remain as a faint background mark behind the news
-cards. Search and page tabs are unchanged.
-
-The chosen phone mock set the placement and size. George then raised the
-falling-cell color 30% and the settled mark 20%; those levels are locked in CSS
-as `0.78` peak and `0.36` settled opacity. The right side fades into the green
-haze. The mark is decorative, cannot receive touches, plays once per Signal
-page visit, and adds no layout height. Reduced-motion mode skips the fall and
-shows only the settled ghost.

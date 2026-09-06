@@ -23,7 +23,6 @@ const emptyStateSource = readFileSync(new URL('../components/EmptyState.jsx', im
 const scrollRevealSource = readFileSync(new URL('../components/ScrollReveal.jsx', import.meta.url), 'utf8');
 const ambientSource = readFileSync(new URL('../components/SignalAmbient.jsx', import.meta.url), 'utf8');
 const ambientMotionSource = readFileSync(new URL('../services/ambientMotion.js', import.meta.url), 'utf8');
-const gridSignatureSource = readFileSync(new URL('../components/SignalGridSignature.jsx', import.meta.url), 'utf8');
 
 test('ambient art cannot widen the page horizontally', () => {
   const dashboard = css.match(/\.signal-dashboard\s*\{([^}]*)\}/)?.[1] || '';
@@ -136,36 +135,6 @@ test('page swipes move between tabs while horizontal rows keep their gestures', 
   const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
   assert.match(reduced, /\.page-swipe-panel--next/);
   assert.match(reduced, /\.page-swipe-panel--previous/);
-});
-
-test('TCG Intelligence plays one local maroon grid fall and leaves a quiet signature', () => {
-  assert.match(newsSource, /import SignalGridSignature/);
-  assert.match(newsSource, /const \[gridPlayed, setGridPlayed\] = useState\(false\)/);
-  assert.match(newsSource, /if \(foilVisible\) setGridPlayed\(true\)/);
-  assert.doesNotMatch(newsSource, /setGridPlayed\(false\)/);
-  assert.match(newsSource, /<SignalGridSignature active=\{gridPlayed\} \/>/);
-
-  assert.match(gridSignatureSource, />株<\/text>/);
-  assert.match(gridSignatureSource, />SIGNAL<\/text>/);
-  assert.match(gridSignatureSource, /pattern id="signal-grid-cell-pattern" width="8" height="8"/);
-  assert.match(gridSignatureSource, /aria-hidden="true"/);
-  assert.doesNotMatch(searchSource, /SignalGridSignature/);
-  assert.doesNotMatch(pageTabsSource, /SignalGridSignature/);
-
-  const signature = css.match(/\.news-grid-signature\s*\{([^}]*)\}/)?.[1] || '';
-  assert.match(signature, /--news-grid-rain-peak-opacity:\s*0\.78/);
-  assert.match(signature, /--news-grid-settled-opacity:\s*0\.36/);
-  assert.match(signature, /position:\s*absolute/);
-  assert.match(signature, /pointer-events:\s*none/);
-  assert.match(signature, /width:\s*min\(74%, 290px\)/);
-  assert.match(signature, /mask-image:\s*linear-gradient\(90deg, #000 0%, #000 76%, transparent 100%\)/);
-  assert.match(css, /@keyframes newsGridCellFall/);
-  assert.match(css, /@keyframes newsGridWordSettle/);
-  assert.doesNotMatch(css.slice(css.indexOf('.news-grid-signature'), css.indexOf('.ns-fade-l')), /infinite/);
-
-  const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
-  assert.match(reduced, /\.news-grid-rain-cell \{ display: none !important; \}/);
-  assert.match(reduced, /\.news-grid-signature--active \.news-grid-word/);
 });
 
 test('home attention pass reuses the existing logo, search, tiles, marks, and news', () => {
