@@ -55,9 +55,9 @@ function timestampMillis(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
-function reportDisposition(saved, now = Date.now()) {
-  if (saved?.rawResponse && timestampMillis(saved.expiresAt) > now) return 'cached';
+function reportDisposition(saved, now = Date.now(), force = false) {
   if (saved?.inFlightOwner && timestampMillis(saved.inFlightUntil) > now) return 'wait';
+  if (!force && saved?.rawResponse && timestampMillis(saved.expiresAt) > now) return 'cached';
   return 'claim';
 }
 
@@ -378,13 +378,13 @@ async function callAnthropic(req, modelBody) {
   return payload;
 }
 
-async function claimReport(ref, cacheKey, card) {
+async function claimReport(ref, cacheKey, card, force = false) {
   const owner = crypto.randomUUID();
   return db.runTransaction(async (transaction) => {
     const snap = await transaction.get(ref);
     const saved = snap.data();
     const now = Date.now();
-    const disposition = reportDisposition(saved, now);
+    const disposition = reportDisposition(saved, now, force);
     if (disposition === 'cached') return { disposition, saved };
     if (disposition === 'wait') return { disposition };
     transaction.set(ref, {
@@ -428,7 +428,9 @@ async function analyze(req, body, retry = 0) {
   const id = hash(cacheKey);
   const ref = db.collection(REPORTS).doc(id);
   const card = body.card && typeof body.card === 'object' ? body.card : {};
-  const claim = await claimReport(ref, cacheKey, card);
+  // A forced refresh still waits behind a live lease so two phones pressing
+  // Re-scan together pay once.
+  const claim = await claimReport(ref, cacheKey, card, retry === 0 && Boolean(body.force));
   if (claim.disposition === 'cached') return cachedReport(claim.saved);
   if (claim.disposition === 'wait') {
     const saved = await waitForReport(ref);

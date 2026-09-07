@@ -130,6 +130,9 @@ test('a live report or lease prevents a second paid model call', () => {
   assert.equal(reportDisposition({ inFlightOwner: 'worker-1', inFlightUntil: timestamp(2000) }, now), 'wait');
   assert.equal(reportDisposition({ inFlightOwner: 'worker-1', inFlightUntil: timestamp(999) }, now), 'claim');
   assert.equal(reportDisposition(null, now), 'claim');
+  // Re-scan: a live report is replaced, a live lease is still respected.
+  assert.equal(reportDisposition({ rawResponse: { id: 'msg_1' }, expiresAt: timestamp(2000) }, now, true), 'claim');
+  assert.equal(reportDisposition({ inFlightOwner: 'worker-1', inFlightUntil: timestamp(2000) }, now, true), 'wait');
 });
 
 test('the app token gate is off until the service carries a token, then exact', () => {

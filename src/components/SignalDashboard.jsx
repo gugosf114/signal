@@ -292,7 +292,7 @@ export default function SignalDashboard() {
     await startScanKeepAlive();
 
     try {
-      const raw = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal, pin: resolvedPin });
+      const raw = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal, pin: resolvedPin, force });
       const data = withCardRecord(raw, resolvedPin);
       // If goHome() bumped the nav token while we were scanning, the user has
       // already left the result page — do NOT yank them back by setting result.
