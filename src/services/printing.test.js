@@ -62,6 +62,18 @@ describe('printingIdentity', () => {
     const foil = printingIdentity({ game: 'mtg', printingId: 'card-1', form: 'foil' });
     assert.notEqual(normal, foil);
   });
+
+  test('Yu-Gi-Oh catalogue and TCGplayer labels become one product identity', () => {
+    const catalogue = printingIdentity({
+      game: 'yugioh', printingId: '32807846:L26D-ENS08',
+      tcgplayerProductId: 683013, rarity: 'Starlight Rare',
+    });
+    const marketplace = printingIdentity({
+      game: 'yugioh', printingId: 'tcgplayer:683013',
+      tcgplayerProductId: 683013, rarity: 'Starlight Rare',
+    });
+    assert.equal(catalogue, marketplace);
+  });
 });
 
 describe('toPrinting', () => {

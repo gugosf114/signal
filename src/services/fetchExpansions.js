@@ -259,6 +259,32 @@ export async function resolvePrintingOptions(input = {}) {
   if (!name) return [];
   if (!input.game || input.game === 'yugioh') {
     let rows = [];
+    const exactCode = looksLikeSetCode(input.number) ? normalizeYgoCode(input.number) : '';
+    if (exactCode) {
+      const rawSet = String(input.set || '').trim();
+      const setName = /unknown|unable|unreadable|not (?:clear|visible)/i.test(rawSet)
+        || looksLikeSetCode(rawSet)
+        ? ''
+        : rawSet;
+      const products = await searchTcgplayerProducts(name, { setName }).catch(() => []);
+      const exactProducts = products.filter((row) => (
+        String(row.baseName || baseTcgplayerName(row.name)).trim().toLowerCase() === name.toLowerCase()
+        && normalizeYgoCode(row.number) === exactCode
+      ));
+      if (exactProducts.length) {
+        let baseId = input.id || null;
+        if (!baseId) {
+          const direct = await lookupBySetCode(input.number).catch(() => null);
+          if (direct && namesCompatibleForCode(name, direct.name)) baseId = direct.id || null;
+        }
+        if (baseId) {
+          return [...new Map(exactProducts.map((row) => [
+            `tcgplayer:${row.tcgplayerProductId}`,
+            variantIdentity({ ...row, id: baseId }),
+          ])).values()];
+        }
+      }
+    }
     const passcode = looksLikeYgoPasscode(input.passcode) ? input.passcode
       : (looksLikeYgoPasscode(input.number) ? input.number : null);
     const passcodeRows = passcode ? await fetchYgoPrintingsByPasscode(passcode) : [];
@@ -877,6 +903,7 @@ export async function suggestCards(query, limit = 8) {
     const hit = await lookupBySetCode(q);
     if (!hit) return [];
     const choices = await resolvePrintingOptions({
+      id: hit.id,
       name: hit.name,
       game: hit.game,
       number: hit.number || hit.setCode,

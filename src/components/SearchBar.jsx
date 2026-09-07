@@ -58,8 +58,7 @@ function QuickPriceResult({ card, onAdd, onDone }) {
         <div>
           <strong>{details.name}</strong>
           <span>{details.gameLabel}</span>
-          <small>{scannerMatchMeta(details)}</small>
-          {details.priceSource && <small>{details.priceSource}</small>}
+          <small>{scannerMatchMeta(details)}{details.priceSource ? ` · ${details.priceSource}` : ''}</small>
         </div>
         <b>{scannerMatchPrice(details)}</b>
       </div>
@@ -295,6 +294,7 @@ export default function SearchBar({
           return;
         }
         const choices = await resolvePrintingOptions({
+          id: hit.id,
           name: hit.name,
           game: hit.game,
           number: hit.number || hit.setCode,

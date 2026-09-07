@@ -382,10 +382,8 @@ export default function Collection({
                 >+</button>
               </div>
               <div className="col-name">{card.name}</div>
-              <div className="col-printing">{printingLabel(card) || 'Needs exact match'}</div>
               <div className="col-card-meta">
                 <strong>{formatCollectionMoney(card.marketPrice)}</strong>
-                {card.priceSource && <span>{card.priceSource}</span>}
                 <span>{holdingMeta(card)}</span>
                 {card.paidPerCard != null && <span>Paid {formatCollectionMoney(card.paidPerCard)}</span>}
                 <span>Added {addedLabel(card.addedAt)}</span>

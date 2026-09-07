@@ -7,6 +7,7 @@ import {
   stampCardPrice,
   applyCardPricePatch,
   cardPriceNeedsRefresh,
+  CARD_PRICE_LOOKUP_VERSION,
   withCardRecord,
 } from './cardRecord.js';
 
@@ -51,6 +52,18 @@ describe('one exact card record', () => {
     assert.equal(two.form, null);
   });
 
+  test('Yu-Gi-Oh product labels do not change the printed card name', () => {
+    const card = normalizeCardRecord({
+      id: '32807846', printingId: 'tcgplayer:683013', tcgplayerProductId: 683013,
+      name: 'Reinforcement of the Army (Alternate Art) (Starlight Rare)',
+      game: 'yugioh', setName: 'Legendary Modern Decks 2026',
+      number: 'L26D-ENS08', rarity: 'Starlight Rare',
+    });
+    assert.equal(card.name, 'Reinforcement of the Army');
+    assert.equal(card.rarity, 'Starlight Rare');
+    assert.equal(card.printingId, 'tcgplayer:683013');
+  });
+
   test('a report, pin, and printing become one record', () => {
     const card = cardRecordFromResult({
       card_name: 'Rayquaza-EX', game: 'pokemon',
@@ -84,6 +97,7 @@ describe('one exact card record', () => {
     }, Date.UTC(2026, 8, 6, 20));
     assert.equal(cardPriceLabel(card), '$12.50');
     assert.equal(card.priceCheckedAt, '2026-09-06T20:00:00.000Z');
+    assert.equal(card.priceLookupVersion, CARD_PRICE_LOOKUP_VERSION);
   });
 
   test('one exact price patch updates every saved-card surface', () => {
@@ -98,7 +112,28 @@ describe('one exact card record', () => {
     assert.equal(fresh.price, 9.25);
     assert.equal(fresh.marketPrices.foil, 9.25);
     assert.equal(fresh.priceSource, 'Scryfall');
+    assert.equal(fresh.priceLookupVersion, CARD_PRICE_LOOKUP_VERSION);
     assert.equal(cardPriceNeedsRefresh(fresh, Date.parse('2026-09-06T01:00:00.000Z')), false);
+  });
+
+  test('old blank price checks rerun once after the exact-price route changes', () => {
+    const oldBlank = normalizeCardRecord({
+      id: '32807846', printingId: '32807846:L26D-ENS08',
+      name: 'Reinforcement of the Army', game: 'yugioh',
+      setName: 'Legendary Modern Decks 2026', number: 'L26D-ENS08',
+      rarity: 'Starlight Rare', priceCheckedAt: '2026-09-07T00:42:12.362Z',
+    });
+    assert.equal(cardPriceNeedsRefresh(oldBlank, Date.parse('2026-09-07T00:45:00.000Z')), true);
+    const checked = applyCardPricePatch(oldBlank, {
+      en_price: '$262.45', price_source: 'TCGplayer',
+      price_url: 'https://www.tcgplayer.com/product/683013',
+      tcgplayer_product_id: 683013,
+      price_checked_at: '2026-09-07T00:45:00.000Z',
+    });
+    assert.equal(checked.priceLookupVersion, CARD_PRICE_LOOKUP_VERSION);
+    assert.equal(checked.priceUrl, 'https://www.tcgplayer.com/product/683013');
+    assert.equal(checked.tcgplayerProductId, 683013);
+    assert.equal(cardPriceNeedsRefresh(checked, Date.parse('2026-09-07T00:46:00.000Z')), false);
   });
 
   test('a newer saved-card price replaces an older cached report price', () => {

@@ -140,6 +140,7 @@ export default function WatchedCards({ onSelect }) {
               <button
                 className="watched-chip-open"
                 onClick={() => onSelect(card.name, card.game, { pin: card.pin || null })}
+                title={[card.name, printingLabel(card.pin), cardPriceLabel({ ...card.pin, price: card.pin?.price ?? card.enPrice }), card.pin?.priceSource].filter(Boolean).join(' · ')}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -163,11 +164,7 @@ export default function WatchedCards({ onSelect }) {
                 }}>
                   {card.score == null ? '—' : `${card.score}/100`}
                 </span>
-                <span style={{ display: 'flex', minWidth: 0, flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
-                  <span style={{ color: '#92897C' }}>{card.name}</span>
-                  <small style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--signal-text-muted)', font: "500 9px/1.25 'JetBrains Mono', monospace" }}>{printingLabel(card.pin)}</small>
-                  <b style={{ color: '#A8A498', font: "650 9px/1.2 'JetBrains Mono', monospace" }}>{cardPriceLabel({ ...card.pin, price: card.pin?.price ?? card.enPrice })}{card.pin?.priceSource ? ` · ${card.pin.priceSource}` : ''}</b>
-                </span>
+                <span style={{ color: '#92897C' }}>{card.name}</span>
               </button>
               <button
                 className="watched-chip-remove"

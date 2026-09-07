@@ -10,6 +10,7 @@
 // broad card-level number instead of preserving a known wrong price.
 
 import { fetchCardData } from './fetchCardData.js';
+import { fetchTcgplayerPrice } from './fetchTcgplayerPrice.js';
 
 // priceLines come back per game as:
 //   pokemon  "Holofoil: $12.34 market / $10.00 low / $15.00 high"
@@ -30,6 +31,15 @@ function headlinePrice(priceLines) {
 // price — a $7 card quietly wearing a $1,499 number a day later.
 export async function refreshPrices(cardName, game, pin = null) {
   try {
+    // The card catalogues are often blank for new or premium Pokémon and
+    // Yu-Gi-Oh! printings even when TCGplayer has a live exact-product market
+    // price. Use the same strict name + set + number + rarity selector as
+    // search. It returns null rather than borrowing another printing's price.
+    if (['pokemon', 'yugioh'].includes(game) && pin) {
+      const tcgplayer = await fetchTcgplayerPrice(pin).catch(() => null);
+      const exactPatch = pricePatchFromTcgplayer(tcgplayer);
+      if (exactPatch) return exactPatch;
+    }
     const data = await fetchCardData(cardName, game, pin);
     return pricePatchFromCardData(data);
   } catch {
@@ -37,16 +47,29 @@ export async function refreshPrices(cardName, game, pin = null) {
   }
 }
 
+export function pricePatchFromTcgplayer(data) {
+  const price = Number(data?.price);
+  if (!Number.isFinite(price) || price <= 0) return null;
+  return {
+    en_price: `$${price.toFixed(2)}`,
+    price_source: data.source || 'TCGplayer',
+    price_url: data.url || '',
+    tcgplayer_product_id: data.productId || null,
+    price_checked_at: new Date().toISOString(),
+  };
+}
+
 export function pricePatchFromCardData(data) {
   if (!data) return null;
   const checked = new Date().toISOString();
   if (data.priceScope === 'exact-print price unavailable') {
-    return { en_price: '', price_source: '', price_checked_at: checked };
+    return { en_price: '', price_source: '', price_url: '', price_checked_at: checked };
   }
   const en = headlinePrice(data.priceLines);
   return en ? {
     en_price: en,
     price_source: data.priceSource || '',
+    price_url: data.priceUrl || data.tcgplayerUrl || data.scryfallUri || '',
     price_checked_at: checked,
   } : null;
 }

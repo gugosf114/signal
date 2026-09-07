@@ -23,6 +23,7 @@ const sources = {
   analysis: read('./analyzeCard.js'),
   cardData: read('./fetchCardData.js'),
   signals: read('../config/signals.js'),
+  styles: read('../styles/animations.css'),
 };
 
 describe('every card door uses one exact record', () => {
@@ -42,21 +43,46 @@ describe('every card door uses one exact record', () => {
     assert.match(sources.cardData, /isExactScanTarget\(game, exactPin\)/);
   });
 
-  test('every relevant screen shows exact identity and market facts', () => {
-    for (const name of ['trending', 'recent', 'watched', 'browser', 'collection', 'add', 'latest', 'score']) {
+  test('detail screens show exact identity and market facts', () => {
+    for (const name of ['browser', 'collection', 'add', 'latest', 'score']) {
       assert.match(sources[name], /printingLabel|PrintingIdentity|recentPrintingLine/, `${name} must show the exact printing`);
     }
-    for (const name of ['search', 'scanner', 'trending', 'recent', 'watched', 'browser', 'collection', 'add', 'latest', 'score', 'price', 'pdf']) {
+    for (const name of ['search', 'scanner', 'browser', 'collection', 'add', 'latest', 'score', 'price', 'pdf']) {
       assert.match(sources[name], /price|Price|enPrice/, `${name} must carry or show exact price data`);
     }
     assert.match(sources.loading, /printingLabel\(pin\)/);
     assert.match(sources.loading, /CardSlate cardName=\{cardName\} game=\{game\} pin=\{pin\}/);
-    assert.match(sources.loading, /cardPriceLabel\(pin\)/);
     assert.match(sources.price, /price_source/);
     assert.match(sources.pdf, /Price Source/);
     for (const name of ['recent', 'watched', 'collection']) {
       assert.match(sources[name], /refreshPrices/, `${name} must refresh its exact saved price`);
     }
+  });
+
+  test('compact cards keep their old shapes and pass the full record underneath', () => {
+    assert.equal((sources.browser.match(/minmax\(100px, 1fr\)/g) || []).length, 2);
+    assert.match(sources.browser, /onCardSelect\(c\.name, c\.game, \{ pin: c \}\)/);
+
+    assert.match(sources.trending, /gridTemplateColumns: 'repeat\(2, minmax\(0, 1fr\)\)'/);
+    assert.match(sources.trending, /maxHeight: 108/);
+    assert.match(sources.trending, /minHeight: 32/);
+    assert.doesNotMatch(sources.trending, /printingLabel|cardPriceLabel/);
+
+    assert.match(sources.recent, /gridTemplateColumns: '72px minmax\(0, 1\.25fr\) minmax\(0, 0\.75fr\)'/);
+    assert.match(sources.recent, /onSelect\(s\.name, s\.game, \{ pin: s\.pin \|\| null \}\)/);
+    assert.doesNotMatch(sources.recent, /cardPriceLabel/);
+
+    assert.match(sources.watched, /className="watched-chip"/);
+    assert.match(sources.watched, /onSelect\(card\.name, card\.game, \{ pin: card\.pin \|\| null \}\)/);
+    assert.doesNotMatch(sources.watched, /flexDirection: 'column'/);
+
+    assert.match(sources.collection, /className="col-card"/);
+    assert.doesNotMatch(sources.collection, /className="col-printing"/);
+    assert.match(sources.collection, /onLookup\(card\.name, card\.game, \{ pin: card \}\)/);
+
+    assert.doesNotMatch(sources.loading, /lt-cardslate-price/);
+    assert.match(sources.styles, /\.quick-price-card \{[\s\S]*?grid-template-columns: 52px minmax\(0, 1fr\) auto;/);
+    assert.match(sources.styles, /\.live-match-card \{[\s\S]*?grid-template-columns: 58px minmax\(0, 1fr\) auto;/);
   });
 
   test('cache and reopen storage are identity-only', () => {

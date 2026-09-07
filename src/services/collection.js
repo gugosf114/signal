@@ -5,6 +5,7 @@
 
 import { applyCardPricePatch, cardPriceNeedsRefresh, normalizeCardRecord, stampCardPrice } from './cardRecord.js';
 import { isExactScanTarget } from './scanIdentity.js';
+import { printingIdentity } from './printing.js';
 
 const KEY = 'signal_collection_v1';
 const MAX_ENTRIES = 2000;
@@ -80,8 +81,8 @@ export function collectionFormLabel(game, form) {
 function baseCardKey(card) {
   if (!card) return '';
   const game = (card.game || 'unknown').toLowerCase();
-  const printingId = card.printingId || card.id;
-  if (printingId) return `${game}::${String(printingId).toLowerCase()}`;
+  const exactIdentity = printingIdentity(card);
+  if (exactIdentity) return `${game}::${exactIdentity}`;
   const name = String(card.name || '').trim().toLowerCase();
   const set = String(card.setName || '').trim().toLowerCase();
   const num = String(card.number || '').trim().toLowerCase();
@@ -164,19 +165,62 @@ function normalizeEntry(card) {
   };
 }
 
+// Old builds could save the same Yu-Gi-Oh! product once as card-id:set-code
+// and once as tcgplayer:product-id. After normalization those are one physical
+// card. Keep one row and the larger saved quantity instead of inventing an
+// extra copy during migration.
+function collapseIdentityAliases(list) {
+  const clean = [];
+  for (const raw of Array.isArray(list) ? list : []) {
+    const entry = normalizeEntry(raw);
+    if (!entry) continue;
+    const key = cardKey(entry);
+    const index = clean.findIndex((card) => cardKey(card) === key);
+    if (index < 0) {
+      clean.push(entry);
+      continue;
+    }
+    const prior = clean[index];
+    const dates = [prior.addedAt, entry.addedAt]
+      .map((value) => new Date(value || '').getTime())
+      .filter(Number.isFinite);
+    clean[index] = normalizeEntry({
+      ...prior,
+      ...entry,
+      qty: Math.max(prior.qty, entry.qty),
+      marketPrice: entry.marketPrice ?? prior.marketPrice,
+      price: entry.price ?? prior.price,
+      marketPrices: { ...(prior.marketPrices || {}), ...(entry.marketPrices || {}) },
+      priceSource: entry.priceSource || prior.priceSource,
+      priceUrl: entry.priceUrl || prior.priceUrl,
+      priceCheckedAt: entry.priceCheckedAt || prior.priceCheckedAt,
+      priceLookupVersion: Math.max(prior.priceLookupVersion || 0, entry.priceLookupVersion || 0) || null,
+      tcgplayerProductId: entry.tcgplayerProductId || prior.tcgplayerProductId,
+      paidPerCard: prior.paidPerCard ?? entry.paidPerCard,
+      paidKnownQty: Math.max(prior.paidKnownQty || 0, entry.paidKnownQty || 0),
+      addedAt: dates.length ? new Date(Math.min(...dates)).toISOString() : (prior.addedAt || entry.addedAt),
+    });
+  }
+  return clean.slice(0, MAX_ENTRIES);
+}
+
 export function loadCollection() {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.map(normalizeEntry).filter(Boolean) : [];
+    if (!Array.isArray(parsed)) return [];
+    const clean = collapseIdentityAliases(parsed);
+    const encoded = JSON.stringify(clean);
+    if (encoded !== raw) localStorage.setItem(KEY, encoded);
+    return clean;
   } catch {
     return [];
   }
 }
 
 export function saveCollection(list) {
-  const clean = (Array.isArray(list) ? list : []).map(normalizeEntry).filter(Boolean).slice(0, MAX_ENTRIES);
+  const clean = collapseIdentityAliases(list);
   try { localStorage.setItem(KEY, JSON.stringify(clean)); } catch {}
   return clean;
 }

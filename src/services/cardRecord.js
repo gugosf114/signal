@@ -4,6 +4,10 @@
 
 export const CARD_RECORD_VERSION = 1;
 export const CARD_PRICE_TTL_MS = 24 * 60 * 60 * 1000;
+// Version 3 adds the exact TCGplayer product route to saved Pokémon and
+// Yu-Gi-Oh! price refreshes. Older blank checks must run once more instead of
+// staying fresh for 24 hours after the weaker catalogues returned no price.
+export const CARD_PRICE_LOOKUP_VERSION = 3;
 
 const GAMES = new Set(['pokemon', 'mtg', 'yugioh']);
 const FINISH_LABELS = {
@@ -53,15 +57,37 @@ function cleanDate(value) {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
+function canonicalYugiohName(value) {
+  let name = clean(value);
+  while (name) {
+    const match = name.match(/\s*\(([^()]*)\)\s*$/);
+    if (!match) break;
+    const label = match[1].trim().toLowerCase();
+    const printingLabel = /(?:alternate|extended|full)[ -]?art/.test(label)
+      || /(?:^|\s)(?:common|rare|secret|starlight|ultra|super|ultimate|collector|platinum|prismatic|quarter century)(?:\s|$)/.test(label);
+    if (!printingLabel) break;
+    name = name.slice(0, match.index).trim();
+  }
+  return name;
+}
+
 export function normalizeCardRecord(input = {}, fallback = {}) {
   const current = input && typeof input === 'object' ? input : {};
   const prior = fallback && typeof fallback === 'object' ? fallback : {};
   const game = clean(first(current.game, prior.game)).toLowerCase();
-  const name = clean(first(current.name, current.card_name, prior.name, prior.card_name));
+  const suppliedName = clean(first(current.name, current.card_name, prior.name, prior.card_name));
+  const name = game === 'yugioh' ? canonicalYugiohName(suppliedName) : suppliedName;
   if (!name || !GAMES.has(game)) return null;
 
   const id = clean(first(current.id, current.catalogId, prior.id, prior.catalogId)) || null;
-  const printingId = clean(first(current.printingId, prior.printingId, game !== 'yugioh' ? id : null)) || null;
+  const tcgplayerProductId = cardPriceNumber(first(current.tcgplayerProductId, prior.tcgplayerProductId));
+  const suppliedPrintingId = clean(first(current.printingId, prior.printingId, game !== 'yugioh' ? id : null)) || null;
+  // TCGplayer has one product ID per Yu-Gi-Oh! rarity/art product. A set code
+  // can be shared by Common, Secret, and Starlight cards, so once that exact
+  // product is known it becomes the one canonical printing ID on every route.
+  const printingId = game === 'yugioh' && tcgplayerProductId
+    ? `tcgplayer:${tcgplayerProductId}`
+    : suppliedPrintingId;
   const availableFinishes = cleanList(first(current.availableFinishes, prior.availableFinishes));
   let form = game === 'yugioh' ? null : clean(first(current.form, prior.form)) || null;
   if (!form && availableFinishes.length === 1) form = availableFinishes[0];
@@ -80,6 +106,10 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
   );
   const price = cardPriceNumber(suppliedPrice) ?? cardPriceNumber(marketPrices?.[form]);
   const explicitlyBroad = current.pinned === false || (current.pinned === undefined && prior.pinned === false);
+  const rawPriceLookupVersion = Number(first(current.priceLookupVersion, prior.priceLookupVersion));
+  const priceLookupVersion = Number.isInteger(rawPriceLookupVersion) && rawPriceLookupVersion > 0
+    ? rawPriceLookupVersion
+    : null;
 
   return {
     recordVersion: CARD_RECORD_VERSION,
@@ -113,7 +143,8 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
     priceSource: clean(first(current.priceSource, prior.priceSource)) || null,
     priceUrl: clean(first(current.priceUrl, prior.priceUrl)) || null,
     priceCheckedAt: cleanDate(first(current.priceCheckedAt, current.price_checked_at, prior.priceCheckedAt, prior.price_checked_at)),
-    tcgplayerProductId: cardPriceNumber(first(current.tcgplayerProductId, prior.tcgplayerProductId)),
+    priceLookupVersion,
+    tcgplayerProductId,
     tcgplayerImageUrl: clean(first(current.tcgplayerImageUrl, prior.tcgplayerImageUrl)) || null,
     source: clean(first(current.source, prior.source)) || null,
     releaseDate: clean(first(current.releaseDate, prior.releaseDate)) || null,
@@ -195,11 +226,16 @@ export function withCardRecord(result, fallback = null) {
 
 export function stampCardPrice(card, now = Date.now()) {
   const normalized = normalizeCardRecord(card);
-  if (!normalized || normalized.price === null || normalized.priceCheckedAt) return normalized;
-  return { ...normalized, priceCheckedAt: new Date(now).toISOString() };
+  if (!normalized || normalized.price === null) return normalized;
+  return {
+    ...normalized,
+    priceCheckedAt: normalized.priceCheckedAt || new Date(now).toISOString(),
+    priceLookupVersion: CARD_PRICE_LOOKUP_VERSION,
+  };
 }
 
 export function cardPriceNeedsRefresh(card, now = Date.now()) {
+  if (Number(card?.priceLookupVersion) !== CARD_PRICE_LOOKUP_VERSION) return true;
   const checked = new Date(card?.priceCheckedAt || '').getTime();
   return !Number.isFinite(checked) || now - checked < 0 || now - checked > CARD_PRICE_TTL_MS;
 }
@@ -216,6 +252,11 @@ export function applyCardPricePatch(card, patch) {
     price,
     marketPrices,
     priceSource: patch.price_source || null,
+    priceUrl: Object.prototype.hasOwnProperty.call(patch, 'price_url')
+      ? (patch.price_url || null)
+      : current.priceUrl,
     priceCheckedAt: patch.price_checked_at || new Date().toISOString(),
+    priceLookupVersion: CARD_PRICE_LOOKUP_VERSION,
+    tcgplayerProductId: patch.tcgplayer_product_id || current.tcgplayerProductId,
   });
 }

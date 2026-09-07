@@ -446,6 +446,49 @@ describe('camera printing resolution', () => {
     ]);
   });
 
+  test('typed L26D code keeps every exact TCGplayer product before the result limit', async () => {
+    globalThis.fetch = async (url, init = {}) => {
+      const body = JSON.parse(init.body || '{}');
+      if (String(url).includes('cardsetsinfo.php?setcode=L26D-ENS08')) {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              id: 32807846,
+              name: 'Reinforcement of the Army',
+              set_name: 'Legendary Modern Decks 2026',
+              set_code: 'L26D-ENS08',
+              set_rarity: 'Common',
+              set_price: '0.15',
+            };
+          },
+        };
+      }
+      if (body.action === 'tcgplayerSearch') {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return { products: [
+              { productId: 683043, productName: 'Reinforcement of the Army', setName: 'Legendary Modern Decks 2026', number: 'L26D-ENS08', rarityName: 'Common / Short Print', marketPrice: 0.15 },
+              { productId: 683012, productName: 'Reinforcement of the Army (Secret Rare)', setName: 'Legendary Modern Decks 2026', number: 'L26D-ENS08', rarityName: 'Secret Rare', marketPrice: 0.59 },
+              { productId: 683013, productName: 'Reinforcement of the Army (Alternate Art) (Starlight Rare)', setName: 'Legendary Modern Decks 2026', number: 'L26D-ENS08', rarityName: 'Starlight Rare', marketPrice: 262.45 },
+            ] };
+          },
+        };
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    };
+    const suggestions = await suggestCards('L26D-ENS08');
+    assert.deepEqual(suggestions.map((row) => [row.rarity, row.price, row.tcgplayerProductId]), [
+      ['Common / Short Print', 0.15, 683043],
+      ['Secret Rare', 0.59, 683012],
+      ['Starlight Rare', 262.45, 683013],
+    ]);
+    assert.equal(suggestions.every((row) => row.number === 'L26D-ENS08'), true);
+  });
+
   test('Search matches expands a passcode into every real printing', async () => {
     globalThis.fetch = async () => ({
       ok: true,

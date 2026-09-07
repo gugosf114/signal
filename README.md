@@ -1462,16 +1462,46 @@ save, cache hit, price refresh, and reopen. Old broad scans cannot run, return
 from cache, affect score history, or silently enter Collection. Safe old exact
 records are normalized in place.
 
-Every relevant compact surface now shows the exact printing and price instead
-of carrying hidden facts: search choices, scanner confirmation, Trending,
-Recent, Watched, browser cards and viewer, loading, full result and viewer,
-Latest Signal, Collection, the add sheet, CSV, and PDF. Collection, Recent, and
-Watched refresh their exact prices after 24 hours.
+Every relevant surface now consumes the same exact record. Full facts appear
+in search choices, scanner confirmation, price results, card viewers, loading,
+the full result, Latest Signal, the add sheet, CSV, and PDF. Compact Trending,
+Recent, Watched, Browser, and Collection layouts keep their existing shape and
+carry the full record into those detail views. Collection, Recent, and Watched
+refresh their exact prices after 24 hours.
 
 The unsupported fixed 30-day price field and the invented first-run sample
 card were removed. Direction remains in the verified Signal scorecard and its
 source implications.
 
 The route contract is pinned by tests for all three games and every entry and
-display surface. The complete local suite is 293 JavaScript tests plus 3 Python
+display surface. The complete local suite is 303 JavaScript tests plus 3 Python
 backtest tests; the Vite production build passes.
+
+**Layout restoration and real-phone closure.** The exact-card work first made
+compact cards larger. That change was rejected and removed. On the Fold's
+384px viewport, Browse Cards is three 112px columns, Trending is two compact
+columns with 32px rows, Recent rows are 44px high, and Watched is a 25px chip.
+Collection, scanner, loading, and price-result shapes match their old layout.
+Page width and scroll width both remain 384px.
+
+Phone checks then exposed four data faults that code-only checks had missed.
+Saved Pokémon and Yu-Gi-Oh! prices were asking the weaker catalogue instead of
+the exact TCGplayer product. `L26D-ENS08` was cutting the product list before
+filtering by set code and silently returning the $0.15 Common. The same
+Starlight card could be saved under both a catalogue ID and a TCGplayer product
+ID. Reopen also kept an old marketplace title beside the printed card name.
+
+The saved-price route now returns all seven held Pokémon/Yu-Gi-Oh! prices from
+their exact TCGplayer products. Pokémon's two-card summary is $51.82; the five
+Yu-Gi-Oh! cards are $406.73 at the final check. Typed `L26D-ENS08` shows Common
+$0.15, Secret $0.59, and Starlight $262.45 before any choice. Yu-Gi-Oh! product
+IDs are canonical, old aliases collapse without raising quantity, and reopen
+rewrites the full saved session to the same printed name.
+
+The saved `20260823_060636.jpg` upload resolved all three `L26D-ENS08` choices.
+Choosing Starlight ran a complete 8-signal report at $262.45 from TCGplayer
+with the exact product image and no 30-day field. Watched carried that same
+record in its old compact chip and reopened the cached result. Collection
+stayed at nine cards with one Starlight copy. The final clean laptop APK passed
+303 JavaScript tests, 3 Python tests, Vite, Capacitor sync, and Gradle; its
+SHA-256 is `42f1a75a99cf0ba19f095076a014c00a07b237b0e0a5bc545367ef9505e234a3`.

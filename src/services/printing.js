@@ -41,7 +41,10 @@ export function printingLabel(printing) {
 // part of the identity everywhere data is saved or compared.
 export function printingIdentity(pin) {
   if (!pin) return null;
-  const base = pin.printingId || pin.id
+  const productId = Number(pin.tcgplayerProductId);
+  const base = pin.game === 'yugioh' && Number.isInteger(productId) && productId > 0
+    ? `tcgplayer:${productId}`
+    : pin.printingId || pin.id
     || [pin.setId, pin.number].filter(Boolean).join(':');
   if (!base) return null;
   const form = pin.game === 'yugioh' ? '' : String(pin.form || '').trim().toLowerCase();

@@ -5,6 +5,7 @@ import {
   loadRecoverableScanSession,
   saveCompletedScanSession,
   savePendingScanSession,
+  SESSION_KEY,
   PENDING_MAX_AGE_MS,
 } from './scanSession.js';
 
@@ -47,6 +48,31 @@ describe('scan session recovery', () => {
     assert.equal(first.card, first._pin);
     assert.equal(first.card, first.printing);
     assert.equal(second.card.printingId, 'lea-233');
+  });
+
+  test('reopen rewrites an old Yu-Gi-Oh product title into the canonical record', () => {
+    const oldName = 'Reinforcement of the Army (Alternate Art) (Starlight Rare)';
+    const pin = {
+      name: oldName, game: 'yugioh', id: '32807846',
+      printingId: '32807846:L26D-ENS08', tcgplayerProductId: 683013,
+      setName: 'Legendary Modern Decks 2026', number: 'L26D-ENS08',
+      rarity: 'Starlight Rare', price: 262.45, priceSource: 'TCGplayer',
+    };
+    storage.setItem(SESSION_KEY, JSON.stringify({
+      status: 'complete', name: oldName, game: 'yugioh', pin,
+      result: { card_name: 'Reinforcement of the Army', game: 'yugioh', card: pin, signals: [] },
+      completedAt: 5000,
+    }));
+    const recovered = loadRecoverableScanSession(storage, 6000);
+    const saved = JSON.parse(storage.getItem(SESSION_KEY));
+    for (const value of [recovered, saved]) {
+      assert.equal(value.name, 'Reinforcement of the Army');
+      assert.equal(value.pin.name, 'Reinforcement of the Army');
+      assert.equal(value.pin.printingId, 'tcgplayer:683013');
+      assert.equal(value.result.card.name, 'Reinforcement of the Army');
+    }
+    assert.equal(recovered.result.card, recovered.result._pin);
+    assert.deepEqual(saved.result.card, saved.result._pin);
   });
 
   test('drops an old broad scan that silently chose one printing', () => {

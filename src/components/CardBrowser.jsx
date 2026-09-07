@@ -324,7 +324,7 @@ export default function CardBrowser({
       {browsing ? (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
           gap: 8,
         }}>
           {Array.from({ length: 10 }).map((_, i) => (
@@ -338,7 +338,7 @@ export default function CardBrowser({
       ) : cards.length > 0 ? (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
           gap: 8,
         }}>
           {cards.map(card => (
@@ -409,16 +409,6 @@ export default function CardBrowser({
                 maxWidth: '100%',
               }}>
                 {card.name}
-              </div>
-              <div style={{
-                minHeight: 48,
-                padding: '0 2px 5px',
-                color: 'var(--signal-text-muted)',
-                font: "500 9px/1.25 'JetBrains Mono', monospace",
-                overflow: 'hidden',
-              }}>
-                <span style={{ display: '-webkit-box', overflow: 'hidden', WebkitBoxOrient: 'vertical', WebkitLineClamp: 3 }}>{printingLabel(card)}</span>
-                <strong style={{ display: 'block', marginTop: 2, color: '#A8A498', fontWeight: 650 }}>{cardPriceLabel(card)}{card.priceSource ? ` · ${card.priceSource}` : ''}</strong>
               </div>
             </button>
           ))}

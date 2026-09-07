@@ -74,7 +74,9 @@ export function loadRecoverableScanSession(storage, now = Date.now()) {
   if (value.status === 'pending') {
     const age = now - Number(value.startedAt || 0);
     const pin = normalizeCardRecord(value.pin || {}, { name: value.name, game: value.game });
-    if (age >= 0 && age <= PENDING_MAX_AGE_MS && isExactScanTarget(value.game, pin)) return { ...value, pin };
+    if (age >= 0 && age <= PENDING_MAX_AGE_MS && isExactScanTarget(value.game, pin)) {
+      return writeSession({ ...value, name: pin.name, game: pin.game, pin }, storage);
+    }
   }
 
   if (value.status === 'complete' && value.result) {
@@ -85,7 +87,14 @@ export function loadRecoverableScanSession(storage, now = Date.now()) {
     });
     const game = value.game || value.result?.game;
     if (age >= 0 && age <= COMPLETE_MAX_AGE_MS && isExactScanTarget(game, pin)) {
-      return { ...value, game, pin, result: withCardRecord(value.result, pin) };
+      const result = withCardRecord(value.result, pin);
+      return writeSession({
+        ...value,
+        name: result?.card?.name || pin.name,
+        game,
+        pin: result?.card || pin,
+        result,
+      }, storage);
     }
   }
 

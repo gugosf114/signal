@@ -22,6 +22,7 @@ const {
   topPricedCollectionCards,
   applyCollectionPricePatch, collectionPriceNeedsRefresh,
 } = await import('./collection.js');
+const { CARD_PRICE_LOOKUP_VERSION } = await import('./cardRecord.js');
 
 const RICH = {
   id: 'sv8pt5-161', printingId: 'sv8pt5-161', game: 'pokemon', name: 'Umbreon ex', form: 'normal', finish: 'Normal',
@@ -156,6 +157,25 @@ describe('collection', () => {
     assert.notEqual(cardKey(common), cardKey(ultra));
   });
 
+  test('old and new IDs for one Yu-Gi-Oh product collapse without inventing a copy', () => {
+    const base = {
+      id: '32807846', name: 'Reinforcement of the Army', game: 'yugioh',
+      setName: 'Legendary Modern Decks 2026', number: 'L26D-ENS08',
+      rarity: 'Starlight Rare', tcgplayerProductId: 683013,
+      condition: 'near_mint', form: 'normal', qty: 1,
+    };
+    store.signal_collection_v1 = JSON.stringify([
+      { ...base, printingId: 'tcgplayer:683013', addedAt: '2026-09-06T20:00:00.000Z' },
+      { ...base, printingId: '32807846:L26D-ENS08', addedAt: '2026-08-28T20:00:00.000Z' },
+    ]);
+    const cards = loadCollection();
+    assert.equal(cards.length, 1);
+    assert.equal(cards[0].printingId, 'tcgplayer:683013');
+    assert.equal(cards[0].qty, 1);
+    assert.equal(cards[0].addedAt, '2026-08-28T20:00:00.000Z');
+    assert.equal(JSON.parse(store.signal_collection_v1).length, 1);
+  });
+
   test('bad stored quantities are repaired before use', () => {
     store['signal_collection_v1'] = JSON.stringify([{ ...RICH, qty: 'not-a-number' }]);
     assert.equal(loadCollection()[0].qty, 1);
@@ -243,8 +263,14 @@ describe('collection', () => {
   test('Collection refreshes missing or day-old prices only', () => {
     const now = Date.parse('2026-09-06T20:00:00.000Z');
     assert.equal(collectionPriceNeedsRefresh({}), true);
-    assert.equal(collectionPriceNeedsRefresh({ priceCheckedAt: '2026-09-06T19:00:00.000Z' }, now), false);
-    assert.equal(collectionPriceNeedsRefresh({ priceCheckedAt: '2026-09-05T19:00:00.000Z' }, now), true);
+    assert.equal(collectionPriceNeedsRefresh({
+      priceLookupVersion: CARD_PRICE_LOOKUP_VERSION,
+      priceCheckedAt: '2026-09-06T19:00:00.000Z',
+    }, now), false);
+    assert.equal(collectionPriceNeedsRefresh({
+      priceLookupVersion: CARD_PRICE_LOOKUP_VERSION,
+      priceCheckedAt: '2026-09-05T19:00:00.000Z',
+    }, now), true);
   });
 
   test('missing prices stay missing instead of becoming zero', () => {

@@ -576,8 +576,7 @@ const CardScanner = forwardRef(function CardScanner({
               <div>
                 <strong>{details.name}</strong>
                 <span>{details.gameLabel}</span>
-                <p>{needsChoice ? 'Choose an exact printing below' : scannerMatchMeta(details)}</p>
-                {details.priceSource && <small>{details.priceSource}</small>}
+                <p>{needsChoice ? 'Choose an exact printing below' : `${scannerMatchMeta(details)}${details.priceSource ? ` · ${details.priceSource}` : ''}`}</p>
               </div>
               <b>{scannerMatchDisplayPrice(details, candidates.length)}</b>
             </div>
@@ -679,7 +678,6 @@ const CardScanner = forwardRef(function CardScanner({
                         <strong>{item.name}</strong>
                         <small>{scannerMatchMeta(item)}</small>
                         <b>{scannerMatchPrice(item)}</b>
-                        {item.priceSource && <small>{item.priceSource}</small>}
                       </div>
                       <button
                         type="button"

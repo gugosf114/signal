@@ -48,6 +48,16 @@ Only a price tied to that record may appear. Saved Collection, Recent, and
 Watched cards refresh from the exact record after 24 hours. Missing exact
 prices say so plainly. Broad card-level prices never fill an exact-print gap.
 
+Pokémon and Yu-Gi-Oh! saved cards ask TCGplayer for the exact product before
+using their catalogue fallback. Magic asks Scryfall for the exact card and
+finish. A price miss from an older lookup version is checked again once after
+the exact route changes.
+
+For Yu-Gi-Oh!, a known TCGplayer product ID is the canonical printing ID because
+one printed set code can cover several real rarities and artworks. Old
+card-id/set-code records migrate to that product ID. Two old ID shapes for the
+same product collapse into one saved row without inventing another copy.
+
 ## Removed field
 
 Signal does not claim a fixed 30-day price field. Direction comes from the
