@@ -71,7 +71,7 @@ describe('cached price refresh', () => {
         rarity: 'Starlight Rare',
       });
       assert.equal(patch.en_price, '$262.45');
-      assert.equal(calls.length, 1);
+      assert.equal(calls.filter((url) => !/price\/history|workers\.dev/.test(url)).length, 1);
       assert.match(calls[0], /mp-search-api\.tcgplayer\.com/);
     } finally {
       globalThis.fetch = originalFetch;
@@ -113,7 +113,7 @@ describe('cached price refresh', () => {
       });
       assert.equal(patch.en_price, '$50.71');
       assert.equal(patch.tcgplayer_product_id, 684385);
-      assert.equal(calls.length, 1);
+      assert.equal(calls.filter((url) => !/price\/history|workers\.dev/.test(url)).length, 1);
       assert.match(calls[0], /mp-search-api\.tcgplayer\.com/);
     } finally {
       globalThis.fetch = originalFetch;

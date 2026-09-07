@@ -28,6 +28,11 @@ test('catalogue relay accepts only Signal card APIs', async () => {
   );
   assert.throws(() => catalogueTarget('https://example.com/cards'), /not allowed/);
   assert.throws(() => catalogueTarget('https://api.scryfall.com/account'), /not allowed/);
+  assert.equal(
+    catalogueTarget('https://infinite-api.tcgplayer.com/price/history/610516/detailed?range=quarter'),
+    'https://infinite-api.tcgplayer.com/price/history/610516/detailed?range=quarter',
+  );
+  assert.throws(() => catalogueTarget('https://infinite-api.tcgplayer.com/c/articles/'), /not allowed/);
 
   let requested;
   const reply = await catalogueFetch({

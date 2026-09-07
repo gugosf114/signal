@@ -38,6 +38,8 @@ const fmtUsd = (n) => {
   return `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
+const fmtMove = (value) => (value === null || value === undefined ? '—' : `${value > 0 ? '+' : ''}${value}%`);
+
 const fmtDate = (d) => d.toLocaleDateString('en-US', {
   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
 });
@@ -273,6 +275,20 @@ export default function PdfReport({ result, score, cardImageUrl }) {
           smallFont
         />
       </div>
+      {result.prices?.history && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          borderBottom: `1px solid ${RULE_HAIR}`,
+          padding: '0 0 14px',
+          marginTop: -14,
+          marginBottom: 28,
+        }}>
+          <PriceCell label="30-Day" value={fmtMove(result.prices.history.change30)} smallFont />
+          <PriceCell label="90-Day" value={fmtMove(result.prices.history.change90)} smallFont />
+          <PriceCell label="Sold · 30 days" value={result.prices.history.sold30 != null ? String(result.prices.history.sold30) : '—'} smallFont />
+        </div>
+      )}
 
       {/* ─── EBAY LISTINGS ────────────────────────────────────────────────── */}
       {listings.length > 0 && (

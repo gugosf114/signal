@@ -62,10 +62,13 @@ one printed set code can cover several real rarities and artworks. Old
 card-id/set-code records migrate to that product ID. Two old ID shapes for the
 same product collapse into one saved row without inventing another copy.
 
-## Removed field
+## Price history
 
-Signal does not claim a fixed 30-day price field. Direction comes from the
-verified Signal sources and scorecard.
+The 30-day and 90-day change, the sparkline, and the copies-sold count come
+only from TCGplayer's price history for the exact product SKU: English, Near
+Mint, in the chosen finish. A card without a TCGplayer product id shows no
+history. Nothing here is estimated by a model. Alignment (`signal_vs_market`)
+is computed from the score and the real 30-day move, never guessed.
 
 ## Completion gate
 

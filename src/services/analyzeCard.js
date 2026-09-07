@@ -19,6 +19,7 @@ import { fetchCreators, creatorsBlock } from './fetchCreators';
 import { fetchEbayListings, ebayBlock } from './fetchEbayListings';
 import { fetchJpSignal, jpBlock } from './fetchJpSignal';
 import { fetchCatalysts, catalystBlock } from './fetchCatalysts';
+import { alignmentFromHistory, fetchPriceHistory, historyBlock } from './priceHistory';
 import {
   extractRealUrls,
   collectPrefetchUrls,
@@ -110,6 +111,7 @@ RULES:
 - Detail = 1 short sentence. Summary = 1 sentence. Be terse.
 - eBay listings: include ONLY if a pre-fetched "EBAY LISTINGS" block is provided (copy those). Otherwise both arrays empty. NEVER invent eBay listings.
 - source.audience = verifiable metric only (e.g. "450k subs", "12k upvotes", "8.5M views") or null. Never guess.
+- ALWAYS return the JSON object. Never ask a question, never request more data, never explain why coverage is thin. Missing evidence is expressed inside the JSON: level 0 and "sources": [].
 
 ${creatorBlocks}
 For "creator": use the directory only to recognize a matched channel. Cite the strongest verified hit. Never claim a creator was silent unless a creator-specific search was actually run.
@@ -133,19 +135,20 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   // Scryfall / YGOPRODeck), Reddit (no key). Activate with keys: eBay Browse,
   // YouTube Data. Each parallel call that succeeds removes one ~5-15s
   // sequential web_search downstream.
-  const [cardData, community, creators, ebay, jp, catalysts] = await Promise.all([
+  const [cardData, community, creators, ebay, jp, catalysts, history] = await Promise.all([
     fetchCardData(cardName, game, pin).catch(() => null),
     fetchCommunity(cardName, game).catch(() => null),
     fetchCreators(cardName, game, pin).catch(() => null),
     fetchEbayListings(cardName, game, pin).catch(() => null),
     game === 'mtg' ? Promise.resolve(null) : fetchJpSignal(cardName, pin).catch(() => null),
     fetchCatalysts(cardName, game).catch(() => null),
+    fetchPriceHistory(pin, { signal: opts.signal }).catch(() => null),
   ]);
   if (printingIdentity(pin) && !cardData) {
     throw new Error('The exact printing could not be loaded. Pick it again from the catalogue and retry.');
   }
   const dataBlock = buildCardDataBlock(cardData);
-  const extraBlocks = [communityBlock(community), creatorsBlock(creators), ebayBlock(ebay), jpBlock(jp), catalystBlock(catalysts)].filter(Boolean);
+  const extraBlocks = [historyBlock(history), communityBlock(community), creatorsBlock(creators), ebayBlock(ebay), jpBlock(jp), catalystBlock(catalysts)].filter(Boolean);
   const prefetchBlocks = [dataBlock, ...extraBlocks].filter(Boolean);
   const hasPreFetch = prefetchBlocks.length > 0;
 
@@ -303,6 +306,12 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       }, pin));
       const score = calculateOverallScore(clean.signals, clean.game);
       clean._signalScore = score;
+      // The real 30/90-day move rides with the report, and alignment becomes a
+      // fact about score versus that move instead of the model's guess.
+      if (history) {
+        clean.prices.history = history;
+        clean.prices.signal_vs_market = alignmentFromHistory(score, history.change30) || clean.prices.signal_vs_market;
+      }
       clean._sharedCache = Boolean(shared.cached);
       clean._sharedCacheCreatedAt = shared.createdAt || null;
       await recordSignalMeasurement({

@@ -11,6 +11,7 @@
 
 import { fetchCardData } from './fetchCardData.js';
 import { fetchTcgplayerPrice } from './fetchTcgplayerPrice.js';
+import { fetchPriceHistory } from './priceHistory.js';
 
 // priceLines come back per game as:
 //   pokemon  "Holofoil: $12.34 market / $10.00 low / $15.00 high"
@@ -29,6 +30,12 @@ function headlinePrice(priceLines) {
 // `pin` is the printing this cached scan is actually about. Without it the
 // top-up looks the name up fresh and can come back with a different printing's
 // price — a $7 card quietly wearing a $1,499 number a day later.
+async function withHistory(patch, pin) {
+  if (!patch || !pin) return patch;
+  const history = await fetchPriceHistory(pin).catch(() => null);
+  return history ? { ...patch, history } : patch;
+}
+
 export async function refreshPrices(cardName, game, pin = null) {
   try {
     // The card catalogues are often blank for new or premium Pokémon and
@@ -38,10 +45,10 @@ export async function refreshPrices(cardName, game, pin = null) {
     if (['pokemon', 'yugioh'].includes(game) && pin) {
       const tcgplayer = await fetchTcgplayerPrice(pin).catch(() => null);
       const exactPatch = pricePatchFromTcgplayer(tcgplayer);
-      if (exactPatch) return exactPatch;
+      if (exactPatch) return withHistory({ ...exactPatch, tcgplayer_product_id: exactPatch.tcgplayer_product_id }, { ...pin, tcgplayerProductId: pin.tcgplayerProductId || exactPatch.tcgplayer_product_id });
     }
     const data = await fetchCardData(cardName, game, pin);
-    return pricePatchFromCardData(data);
+    return withHistory(pricePatchFromCardData(data), pin);
   } catch {
     return null;
   }
