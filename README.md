@@ -1577,5 +1577,8 @@ waiting behind a live lease), and the shared cache key carries a pre-fetch
 version so reports written before this repair refresh once on their next open.
 
 Version is 3.1 (`versionCode 22`); every build since 8/22 had shipped as 2.9
-/ 20. 324 JavaScript tests and 4 Python tests pass.
+/ 20. 323 JavaScript tests and 4 Python tests pass. Everything above was
+proven from the phone's own network (Node, same code, same gateway) and by
+live gateway calls; the one check still owed is a scan inside the installed
+app, which George runs himself.
 
