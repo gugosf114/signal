@@ -115,6 +115,15 @@ function LatestSignalPanel({ data }) {
           <strong>{prices.en_price || 'No exact price'}</strong>
           {priceNote && <small>{priceNote}</small>}
         </div>
+        {prices.history?.change30 !== null && prices.history?.change30 !== undefined && (
+          <div>
+            <span>30-day</span>
+            <strong style={{ color: prices.history.change30 >= 3 ? '#608870' : prices.history.change30 <= -3 ? '#C44040' : '#A09060' }}>
+              {prices.history.change30 > 0 ? '+' : ''}{prices.history.change30}%
+            </strong>
+            <small>TCGplayer · exact SKU</small>
+          </div>
+        )}
       </div>
 
       <div className="latest-signal-creator">

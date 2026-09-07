@@ -1,0 +1,5042 @@
+[
+ {
+  "key": "pokemon::swsh7-218::holo::",
+  "name": "Rayquaza VMAX",
+  "game": "pokemon",
+  "printingId": "swsh7-218",
+  "label": "spike",
+  "articleDate": "2026-09-01",
+  "productId": null,
+  "price": 1255.34,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 57,
+  "coverage": 100,
+  "evidence": 48,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 1
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 3,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": true,
+  "truncated": false,
+  "dropped": 1,
+  "ms": 5707,
+  "summary": "Rayquaza VMAX #218 (Evolving Skies secret rainbow rare) trades at $1255 market price with strong PSA 10 population (13,841/19,896), indicating moderate scarcity"
+ },
+ {
+  "key": "pokemon::hgss2-93::holo::",
+  "name": "Raikou & Suicune LEGEND",
+  "game": "pokemon",
+  "printingId": "hgss2-93",
+  "label": "spike",
+  "articleDate": "2026-09-01",
+  "productId": null,
+  "price": 201.12,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 50,
+  "coverage": 100,
+  "evidence": 5,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 20387,
+  "summary": "Raikou & Suicune LEGEND #93 is a 2010 vintage dual-prize LEGEND with $201 EN market price; zero competitive play, no creator buzz, and obsolete mechanic outside"
+ },
+ {
+  "key": "pokemon::xy6-104::holo::",
+  "name": "Rayquaza-EX",
+  "game": "pokemon",
+  "printingId": "xy6-104",
+  "label": "spike",
+  "articleDate": "2026-09-01",
+  "productId": null,
+  "price": 239.55,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 50,
+  "coverage": 100,
+  "evidence": 30,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 3,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 22695,
+  "summary": "Rayquaza-EX #104 (Roaring Skies, Ultra Rare) trades at $239.55 EN market price with no active competitive deck meta or strong community buzz; legacy card with l"
+ },
+ {
+  "key": "pokemon::me2pt5-284::holo::",
+  "name": "Mega Gengar ex",
+  "game": "pokemon",
+  "printingId": "me02.5-284",
+  "label": "spike",
+  "articleDate": "2026-09-01",
+  "productId": 676096,
+  "price": 930.25,
+  "change7": -2.5,
+  "change30": -17.2,
+  "change90": -29,
+  "sold30": 33,
+  "latestDate": "2026-09-05",
+  "score": 82,
+  "coverage": 100,
+  "evidence": 90,
+  "alignment": "disagree",
+  "signals": {
+   "creator": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "community": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 5,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 3,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 26900,
+  "summary": "Mega Gengar ex #284 (Ascended Heroes SIR) commands $930+ due to established Gengar IP demand, SIR scarcity across 22 variants, and PSA 10 premium; market price "
+ },
+ {
+  "key": "pokemon::sv4pt5-232::holo::",
+  "name": "Mew ex",
+  "game": "pokemon",
+  "printingId": "sv04.5-232",
+  "label": "spike",
+  "articleDate": "2026-09-01",
+  "productId": 534919,
+  "price": 898.47,
+  "change7": -1.1,
+  "change30": -11.1,
+  "change90": -10.5,
+  "sold30": 24,
+  "latestDate": "2026-09-07",
+  "score": 58,
+  "coverage": 100,
+  "evidence": 100,
+  "alignment": "disagree",
+  "signals": {
+   "creator": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 3,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 3,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 30720,
+  "summary": "Mew ex #232 (Paldean Fates SIR) trades at $898 holofoil with -11% 30-day trend; graded PSA 10 slabs show down-pressure; minimal competitive relevance but stable"
+ },
+ {
+  "key": "pokemon::me2pt5-281::holo::",
+  "name": "Team Rocket's Mewtwo ex",
+  "game": "pokemon",
+  "printingId": "me02.5-281",
+  "label": "drop",
+  "articleDate": "2026-08-28",
+  "productId": 676093,
+  "price": 297.48,
+  "change7": -1.6,
+  "change30": -22,
+  "change90": -34.3,
+  "sold30": 40,
+  "latestDate": "2026-09-05",
+  "score": 62,
+  "coverage": 100,
+  "evidence": 70,
+  "alignment": "disagree",
+  "signals": {
+   "creator": {
+    "level": 3,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 25338,
+  "summary": "Team Rocket's Mewtwo ex #281 trades at $297 with -22% 30-day momentum and 40 monthly copies sold; Special Illustration Rare scarcity (PSA 10: 166 graded) suppor"
+ },
+ {
+  "key": "pokemon::xy6-61::holo::",
+  "name": "M Rayquaza EX",
+  "game": "pokemon",
+  "printingId": "xy6-61",
+  "label": "drop",
+  "articleDate": "2026-08-28",
+  "productId": 98097,
+  "price": 172.83,
+  "change7": 0,
+  "change30": 29.1,
+  "change90": 78,
+  "sold30": 21,
+  "latestDate": "2026-09-06",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 48,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 19912,
+  "summary": "M Rayquaza EX #61 (Roaring Skies) trades at $172.83 EN market (up 78% over 90 days, 21 copies sold in 30 days) with neutral creator coverage and no modern compe"
+ },
+ {
+  "key": "pokemon::me2-125::holo::",
+  "name": "Mega Charizard X ex",
+  "game": "pokemon",
+  "printingId": "me02-125",
+  "label": "drop",
+  "articleDate": "2026-08-28",
+  "productId": 662184,
+  "price": 693.82,
+  "change7": -0.7,
+  "change30": -3.7,
+  "change90": -17.5,
+  "sold30": 81,
+  "latestDate": "2026-09-05",
+  "score": 74,
+  "coverage": 100,
+  "evidence": 100,
+  "alignment": "disagree",
+  "signals": {
+   "creator": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 26701,
+  "summary": "Mega Charizard X ex #125 SIR is a high-end Charizard collect (£693.82 EN market) with strong IP momentum and SIR scarcity, but zero competitive play and declini"
+ },
+ {
+  "key": "pokemon::me2pt5-286::holo::",
+  "name": "N's Zoroark ex",
+  "game": "pokemon",
+  "printingId": "me02.5-286",
+  "label": "drop",
+  "articleDate": "2026-08-20",
+  "productId": 676098,
+  "price": 149.16,
+  "change7": -0.2,
+  "change30": -12.6,
+  "change90": -23.3,
+  "sold30": 86,
+  "latestDate": "2026-09-07",
+  "score": 54,
+  "coverage": 100,
+  "evidence": 37,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 21213,
+  "summary": "N's Zoroark ex (Ascended Heroes #286, SIR) trades at $149.16 (declining -23.3% in 90 days) with strong Tier 2 competitive fundamentals (NAIC Top 16, Orlando Reg"
+ },
+ {
+  "key": "pokemon::det1-10::holo::",
+  "name": "Detective Pikachu",
+  "game": "pokemon",
+  "printingId": "det1-10",
+  "label": "spike",
+  "articleDate": "2026-08-12",
+  "productId": 186015,
+  "price": 15.88,
+  "change7": 0.8,
+  "change30": 16.8,
+  "change90": 22.6,
+  "sold30": 53,
+  "latestDate": "2026-09-07",
+  "score": 58,
+  "coverage": 100,
+  "evidence": 36,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 19619,
+  "summary": "Detective Pikachu #10 (holofoil, det1) trades at $15.88 EN with +16.8% 30-day growth; out-of-print scarcity and movie IP halo support stable collector demand, b"
+ },
+ {
+  "key": "pokemon::me2pt5-295::holo::",
+  "name": "Mega Dragonite ex",
+  "game": "pokemon",
+  "printingId": "me02.5-295",
+  "label": "spike",
+  "articleDate": "2026-08-12",
+  "productId": 676107,
+  "price": 231.02,
+  "change7": -0.4,
+  "change30": -13.2,
+  "change90": -30.3,
+  "sold30": 34,
+  "latestDate": "2026-09-07",
+  "score": 62,
+  "coverage": 100,
+  "evidence": 84,
+  "alignment": "disagree",
+  "signals": {
+   "creator": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 5,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 28862,
+  "summary": "Mega Dragonite ex #295 is a Mega Hyper Rare chase card anchoring Ascended Heroes at 1/1,786 packs; 30-day price dropped 13.2% ($231→$230.79) amid post-hype corr"
+ },
+ {
+  "key": "pokemon::xy7-96::holo::",
+  "name": "Primal Kyogre EX",
+  "game": "pokemon",
+  "printingId": "xy7-96",
+  "label": "spike",
+  "articleDate": "2026-08-05",
+  "productId": null,
+  "price": 452.5,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 50,
+  "coverage": 100,
+  "evidence": 10,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 18169,
+  "summary": "Primal Kyogre EX (AOR #96) is a secret-rare water-type Mega EX from 2015 with high EN market price ($452.50) but zero competitive tournament play recorded and n"
+ },
+ {
+  "key": "pokemon::hgss3-82::holo::",
+  "name": "Houndoom",
+  "game": "pokemon",
+  "printingId": "hgss3-82",
+  "label": "spike",
+  "articleDate": "2026-08-05",
+  "productId": null,
+  "price": 271.12,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 61,
+  "coverage": 100,
+  "evidence": 72,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 20942,
+  "summary": "Houndoom PRIME (HS Undaunted #82) at $271 is a legacy HGSS-era card held by collectors; editorial consensus rejected it as noncompetitive in 2010, and no modern"
+ },
+ {
+  "key": "pokemon::sv8-238::holo::",
+  "name": "Pikachu ex",
+  "game": "pokemon",
+  "printingId": "sv8-238",
+  "label": "spike",
+  "articleDate": "2026-08-12",
+  "productId": 590027,
+  "price": 289.03,
+  "change7": 0,
+  "change30": -4.5,
+  "change90": -15.9,
+  "sold30": 41,
+  "latestDate": "2026-09-06",
+  "score": 79,
+  "coverage": 100,
+  "evidence": 90,
+  "alignment": "disagree",
+  "signals": {
+   "creator": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 3,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 31826,
+  "summary": "Pikachu ex #238/191 Surging Sparks (Special Illustration Rare) commands $289 market price with -15.9% decay over 90 days; strong editorial consensus (Cardrake: "
+ },
+ {
+  "key": "pokemon::hgss3-86::holo::",
+  "name": "Umbreon",
+  "game": "pokemon",
+  "printingId": "hgss3-86",
+  "label": "spike",
+  "articleDate": "2026-08-05",
+  "productId": null,
+  "price": 575.3,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 62,
+  "coverage": 100,
+  "evidence": 53,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 4,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 28398,
+  "summary": "Umbreon Prime #86/90 is a stable mid-range collectible ($575 EN market) with strong nostalgia appeal, recent retail momentum (+14.6% in 30 days), and consistent"
+ },
+ {
+  "key": "pokemon::pl2-113::holo::",
+  "name": "Flying Pikachu",
+  "game": "pokemon",
+  "printingId": "pl2-113",
+  "label": "spike",
+  "articleDate": "2026-07-28",
+  "productId": null,
+  "price": 208.03,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 61,
+  "coverage": 100,
+  "evidence": 56,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 20447,
+  "summary": "Flying Pikachu 113/111 (Rising Rivals) is a 2009 out-of-print secret rare with strong scarcity tailwinds; TCGplayer market $208 vs. mixed aggregator readings ($"
+ },
+ {
+  "key": "pokemon::me2pt5-276::holo::",
+  "name": "Pikachu ex",
+  "game": "pokemon",
+  "printingId": "me02.5-276",
+  "label": "drop",
+  "articleDate": "2026-07-22",
+  "productId": 676088,
+  "price": 1025.53,
+  "change7": -1.4,
+  "change30": -8.8,
+  "change90": -22.6,
+  "sold30": 95,
+  "latestDate": "2026-09-07",
+  "score": 47,
+  "coverage": 100,
+  "evidence": 74,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 4,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 5,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 3,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 4,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 21488,
+  "summary": "Pikachu ex #276 is a franchise-anchor Special Illustration Rare trading at $1025.53, down 22.6% over 90 days despite strong collectibility (Stellar foil, 1:500 "
+ },
+ {
+  "key": "pokemon::smp-sm166::holo::",
+  "name": "Magikarp & Wailord-GX",
+  "game": "pokemon",
+  "printingId": "smp-SM166",
+  "label": "drop",
+  "articleDate": "2026-07-22",
+  "productId": null,
+  "price": 170.43,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 55,
+  "coverage": 100,
+  "evidence": 33,
+  "alignment": "disagree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 17094,
+  "summary": "SM166 shows extreme grading premium (664x raw-to-PSA10) with conflicting market signals; TCGplayer holofoil at $170.43 contradicts PriceCharting/PokeScape raw d"
+ },
+ {
+  "key": "pokemon::smp-sm228::holo::",
+  "name": "Armored Mewtwo",
+  "game": "pokemon",
+  "printingId": "smp-SM228",
+  "label": "spike",
+  "articleDate": "2026-07-08",
+  "productId": null,
+  "price": 298.5,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 57,
+  "coverage": 100,
+  "evidence": 53,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 18289,
+  "summary": "Armored Mewtwo SM228 is an extreme collector rarity with 1297.8% post-release price appreciation; zero competitive or editorial relevance; promo scarcity alone "
+ },
+ {
+  "key": "pokemon::sv3pt5-199::holo::",
+  "name": "Charizard ex",
+  "game": "pokemon",
+  "printingId": "sv03.5-199",
+  "label": "drop",
+  "articleDate": "2026-07-22",
+  "productId": 517045,
+  "price": 365.31,
+  "change7": 0.2,
+  "change30": -1.9,
+  "change90": -26.2,
+  "sold30": 104,
+  "latestDate": "2026-09-07",
+  "score": 89,
+  "coverage": 100,
+  "evidence": 94,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "community": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 5,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 5,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 25145,
+  "summary": "Charizard ex 151 #199 (SIR, Holofoil) holds $365 EN market price with -26% 90-day decline but strong fundamentals: chase-card IP anchor, zero-variant scarcity, "
+ },
+ {
+  "key": "pokemon::basep-49::normal::",
+  "name": "Snorlax",
+  "game": "pokemon",
+  "printingId": "basep-49",
+  "label": "spike",
+  "articleDate": "2026-07-02",
+  "productId": null,
+  "price": 416.61,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 50,
+  "coverage": 100,
+  "evidence": 10,
+  "alignment": "disagree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 13797,
+  "summary": "Snorlax Wizards Black Star Promos #49 trades at $361–$416 raw, with graded PSA 10 samples at $3,460; extreme price variance ($188–$1,798) and low transaction vo"
+ },
+ {
+  "key": "pokemon::basep-24::holo::",
+  "name": "_____'s Pikachu",
+  "game": "pokemon",
+  "printingId": "basep-24",
+  "label": "spike",
+  "articleDate": "2026-07-02",
+  "productId": null,
+  "price": 477.79,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 61,
+  "coverage": 100,
+  "evidence": 69,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 22646,
+  "summary": "WOTC #24 Birthday Pikachu is an ultra-scarce 2000 mail-in promo ($477 market / $290 low) with zero competitive demand and minimal creator/community coverage; sc"
+ },
+ {
+  "key": "pokemon::g1-rc28::holo::",
+  "name": "Flareon-EX",
+  "game": "pokemon",
+  "printingId": "g1-RC28",
+  "label": "spike",
+  "articleDate": "2026-07-02",
+  "productId": null,
+  "price": 232.3,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 48,
+  "coverage": 100,
+  "evidence": 18,
+  "alignment": "disagree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 17055,
+  "summary": "Flareon-EX RC28 (Generations Full Art) trades at $232.30 holofoil on TCGplayer but recent raw sales at $97.50 suggest market disagree; 25% decline in 30 days si"
+ },
+ {
+  "key": "pokemon::xy10-125::holo::",
+  "name": "Alakazam-EX",
+  "game": "pokemon",
+  "printingId": "xy10-125",
+  "label": "spike",
+  "articleDate": "2026-07-02",
+  "productId": null,
+  "price": 184.75,
+  "change7": null,
+  "change30": null,
+  "change90": null,
+  "sold30": null,
+  "latestDate": null,
+  "score": 57,
+  "coverage": 100,
+  "evidence": 33,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 17457,
+  "summary": "Alakazam-EX Fates Collide #125 (Secret Rare) commands $184.75 EN market with strong graded upside (PSA 10 $7.5k+) driven by population scarcity; EU market soft "
+ },
+ {
+  "key": "pokemon::xy10-55::holo::",
+  "name": "Umbreon EX",
+  "game": "pokemon",
+  "printingId": "xy10-55",
+  "label": "spike",
+  "articleDate": "2026-07-02",
+  "productId": 117812,
+  "price": 73.37,
+  "change7": 0,
+  "change30": -5.7,
+  "change90": 12.2,
+  "sold30": 9,
+  "latestDate": "2026-09-07",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 19,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 18973,
+  "summary": "Umbreon EX Fates Collide #55 is a collectible nostalgia play with moderate grading upside ($1375 PSA 10 observed), but lacks competitive, creator, or community "
+ },
+ {
+  "key": "pokemon::sv10pt5w-88::holo::",
+  "name": "Swadloon",
+  "game": "pokemon",
+  "printingId": "sv10.5w-088",
+  "label": "spike",
+  "articleDate": "2026-07-02",
+  "productId": 642203,
+  "price": 10.87,
+  "change7": -0.6,
+  "change30": -9.1,
+  "change90": 7.4,
+  "sold30": 74,
+  "latestDate": "2026-09-07",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 24,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 17442,
+  "summary": "Swadloon White Flare #088 is an Illustration Rare evolution filler with sub-$11 EN market price, neutral 30-day trend (-9.1%), and no competitive or creator tra"
+ },
+ {
+  "key": "mtg::f04ed2cc-aae1-400b-9cc5-5d4e3e3dd714::normal::",
+  "name": "Optimus Prime, Hero // Optimus Prime, Autobot Leader",
+  "game": "mtg",
+  "printingId": "f04ed2cc-aae1-400b-9cc5-5d4e3e3dd714",
+  "label": "spike",
+  "articleDate": "2026-09-03",
+  "productId": 448845,
+  "price": 14.7,
+  "change7": 21,
+  "change30": 335.5,
+  "change90": 224.9,
+  "sold30": 464,
+  "latestDate": "2026-09-05",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 12,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 15865,
+  "summary": "Optimus Prime, Hero is a mythic-rare Transformers Universes Beyond card trading at $14.70 EN with strong 30-day momentum (+335%) but minimal competitive or edit"
+ },
+ {
+  "key": "pokemon::zsv10pt5-136::holo::",
+  "name": "Krokorok",
+  "game": "pokemon",
+  "printingId": "zsv10pt5-136",
+  "label": "spike",
+  "articleDate": "2026-07-02",
+  "productId": 642591,
+  "price": 13.25,
+  "change7": -1.4,
+  "change30": -6.2,
+  "change90": 40.8,
+  "sold30": 54,
+  "latestDate": "2026-09-07",
+  "score": 49,
+  "coverage": 100,
+  "evidence": 55,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 20685,
+  "summary": "Krokorok Black Bolt #136 is a Stage 1 Illustration Rare with modest secondary-market liquidity ($13.25 TCGplayer, 54 sales/30d, +40.8% over 90d) but zero compet"
+ },
+ {
+  "key": "mtg::4443d112-209b-49ec-bc40-3a11dcdb092e::normal::",
+  "name": "Magda, the Hoardmaster",
+  "game": "mtg",
+  "printingId": "4443d112-209b-49ec-bc40-3a11dcdb092e",
+  "label": "spike",
+  "articleDate": "2026-09-03",
+  "productId": 544268,
+  "price": 4.31,
+  "change7": 0.2,
+  "change30": 169,
+  "change90": 619,
+  "sold30": 332,
+  "latestDate": "2026-09-05",
+  "score": 60,
+  "coverage": 100,
+  "evidence": 24,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 5,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 19450,
+  "summary": "Magda, the Hoardmaster OTJ #133 surged 619% in 90 days (from $0.58 to $4.17–$4.31) driven by The Hobbit Dwarf tribal demand and Treasure Commander synergy; pric"
+ },
+ {
+  "key": "mtg::d38961ce-0257-412f-acec-c5c9886061f8::normal::",
+  "name": "Ezuri, Stalker of Spheres",
+  "game": "mtg",
+  "printingId": "d38961ce-0257-412f-acec-c5c9886061f8",
+  "label": "spike",
+  "articleDate": "2026-09-03",
+  "productId": 478304,
+  "price": 1.24,
+  "change7": -55.8,
+  "change30": 35.7,
+  "change90": 90,
+  "sold30": 120,
+  "latestDate": "2026-09-07",
+  "score": 52,
+  "coverage": 100,
+  "evidence": 12,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 15134,
+  "summary": "Ezuri, Stalker of Spheres (ONE #201) is a bulk-bin rare: $1.33 non-foil, -55.8% in 7 days, down 90% since June peak, with Commander-only casual play and no comp"
+ },
+ {
+  "key": "mtg::e9544132-bbb5-4ec4-af82-dad56e5091af::normal::",
+  "name": "Ezuri, Renegade Leader",
+  "game": "mtg",
+  "printingId": "e9544132-bbb5-4ec4-af82-dad56e5091af",
+  "label": "spike",
+  "articleDate": "2026-09-03",
+  "productId": 36397,
+  "price": 18.56,
+  "change7": 2.1,
+  "change30": 40.8,
+  "change90": 36.9,
+  "sold30": 55,
+  "latestDate": "2026-09-05",
+  "score": 54,
+  "coverage": 100,
+  "evidence": 12,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 15616,
+  "summary": "Ezuri, Renegade Leader (SOM #119) is a stable Commander/Legacy staple with modest 30-day price growth (+40.8%) supported by consistent 340+ deck meta-presence, "
+ },
+ {
+  "key": "mtg::18cc2bc6-12bb-4795-b2b2-9d414823b773::normal::",
+  "name": "Warg Rider",
+  "game": "mtg",
+  "printingId": "18cc2bc6-12bb-4795-b2b2-9d414823b773",
+  "label": "spike",
+  "articleDate": "2026-09-03",
+  "productId": 518219,
+  "price": 33.47,
+  "change7": 1.1,
+  "change30": 67.9,
+  "change90": 87.2,
+  "sold30": 135,
+  "latestDate": "2026-09-07",
+  "score": 48,
+  "coverage": 100,
+  "evidence": 21,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 17826,
+  "summary": "Warg Rider LTR #826 shows 87.2% price appreciation over 90 days ($17.78→$33.47) driven by casual tribal demand and scarcity (single non-reprint rare), but zero "
+ },
+ {
+  "key": "mtg::b7af1ee9-525f-4db8-a07b-8a097a321afb::normal::",
+  "name": "Ayula, Queen Among Bears",
+  "game": "mtg",
+  "printingId": "b7af1ee9-525f-4db8-a07b-8a097a321afb",
+  "label": "spike",
+  "articleDate": "2026-09-03",
+  "productId": 539957,
+  "price": 5.33,
+  "change7": 12.7,
+  "change30": 163,
+  "change90": 231.3,
+  "sold30": 79,
+  "latestDate": "2026-09-07",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 24,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 1
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 1,
+  "ms": 15139,
+  "summary": "Ayula, Queen Among Bears (Fallout #348) shows strong price momentum (+163% in 30 days, +231% in 90 days) despite weak community signals (low EDHREC rank, niche "
+ },
+ {
+  "key": "mtg::7af082fa-86a3-4f7b-966d-2be1f1d0c0bc::normal::",
+  "name": "Smothering Tithe",
+  "game": "mtg",
+  "printingId": "7af082fa-86a3-4f7b-966d-2be1f1d0c0bc",
+  "label": "spike",
+  "articleDate": "2026-09-03",
+  "productId": 183033,
+  "price": 55.33,
+  "change7": -1.1,
+  "change30": 7.9,
+  "change90": 4.5,
+  "sold30": 152,
+  "latestDate": "2026-09-07",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 12,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 14693,
+  "summary": "Smothering Tithe (RNA #22) trades at $55.33 with +7.9% 30-day momentum and 152 copies sold monthly; EDHREC rank #65 confirms sustained Commander demand, but no "
+ },
+ {
+  "key": "mtg::5f7687b1-630a-4e95-89c7-eaf456d8cb68::normal::",
+  "name": "Tyvar, the Pummeler",
+  "game": "mtg",
+  "label": "spike",
+  "error": "Failed to parse signal data from API response. Check console for raw output.",
+  "ms": 11576
+ },
+ {
+  "key": "mtg::367d5f8b-77ee-47f7-bc71-972d62c280a9::normal::",
+  "name": "Beorn the Fierce",
+  "game": "mtg",
+  "printingId": "367d5f8b-77ee-47f7-bc71-972d62c280a9",
+  "label": "spike",
+  "articleDate": "2026-08-30",
+  "productId": 707283,
+  "price": 7.03,
+  "change7": -17.4,
+  "change30": -30.2,
+  "change90": null,
+  "sold30": 1322,
+  "latestDate": "2026-09-05",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 3,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 15620,
+  "summary": "Beorn the Fierce (HOB #119) is a newly released mythic that has declined 30% in 90 days ($22.31→$6.44 TCGplayer), suggesting early hype sell-through; weak Comma"
+ },
+ {
+  "key": "mtg::a073459e-1f00-47e0-a1b3-d30203aa35d1::normal::",
+  "name": "Caller of the Claw",
+  "game": "mtg",
+  "printingId": "a073459e-1f00-47e0-a1b3-d30203aa35d1",
+  "label": "spike",
+  "articleDate": "2026-08-30",
+  "productId": 10797,
+  "price": 13.09,
+  "change7": 7.6,
+  "change30": 88.4,
+  "change90": 97.6,
+  "sold30": 26,
+  "latestDate": "2026-09-07",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 9,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 1
+   },
+   "ip_momentum": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 1
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 2,
+  "ms": 16089,
+  "summary": "Caller of the Claw (Legions #121) is a low-demand casual card with modest 30-day price momentum (+88.4% from $6.75 to $13.34) driven by low absolute volume (26 "
+ },
+ {
+  "key": "mtg::868a2aa7-bcaf-409b-8802-d00ee1f2ae77::normal::",
+  "name": "Glóin, Dwarf Emissary",
+  "game": "mtg",
+  "printingId": "868a2aa7-bcaf-409b-8802-d00ee1f2ae77",
+  "label": "spike",
+  "articleDate": "2026-08-30",
+  "productId": 499209,
+  "price": 6.42,
+  "change7": 0.7,
+  "change30": 388.1,
+  "change90": 515,
+  "sold30": 615,
+  "latestDate": "2026-09-07",
+  "score": 47,
+  "coverage": 100,
+  "evidence": 45,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 19094,
+  "summary": "Glóin, Dwarf Emissary (LTR #132) shows strong near-term price momentum (+388% in 30 days, +515% in 90 days from $1 baseline; 615 copies sold in last 30 days) dr"
+ },
+ {
+  "key": "mtg::939b0bd0-24ea-45de-a2d3-37bbf6a3e6f9::normal::",
+  "name": "There and Back Again",
+  "game": "mtg",
+  "printingId": "939b0bd0-24ea-45de-a2d3-37bbf6a3e6f9",
+  "label": "spike",
+  "articleDate": "2026-08-30",
+  "productId": 498620,
+  "price": 11.97,
+  "change7": -8.2,
+  "change30": 94.8,
+  "change90": 134.6,
+  "sold30": 525,
+  "latestDate": "2026-09-05",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 3,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 15492,
+  "summary": "There and Back Again (LTR #151) trades at $11.59 with strong 90-day momentum (+134.6%) and 525 copies sold in 30 days, but lacks verified creator endorsement, c"
+ },
+ {
+  "key": "mtg::2fb8dace-c604-40fc-bbd4-5add5deb041a::normal::",
+  "name": "Alchemist's Talent",
+  "game": "mtg",
+  "printingId": "2fb8dace-c604-40fc-bbd4-5add5deb041a",
+  "label": "spike",
+  "articleDate": "2026-08-20",
+  "productId": 560228,
+  "price": 11.92,
+  "change7": -15,
+  "change30": 128.4,
+  "change90": 241.5,
+  "sold30": 667,
+  "latestDate": "2026-09-05",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 0,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 11552,
+  "summary": "Alchemist's Talent (BLC #22) priced at $11.92 reflects moderate Commander demand (#2095 EDHREC) with no creator, competitive, or regional hype; 30-day price sur"
+ },
+ {
+  "key": "mtg::2d90b839-0808-435d-bcf3-aa7af414c44b::normal::",
+  "name": "Bloatfly Swarm",
+  "game": "mtg",
+  "printingId": "2d90b839-0808-435d-bcf3-aa7af414c44b",
+  "label": "spike",
+  "articleDate": "2026-08-30",
+  "productId": 540770,
+  "price": 6.97,
+  "change7": -8.6,
+  "change30": 422.4,
+  "change90": 1455.6,
+  "sold30": 168,
+  "latestDate": "2026-09-05",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 21,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 1
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 1,
+  "ms": 16280,
+  "summary": "Bloatfly Swarm spiked +1455.6% in 90 days to $6.97; low Commander adoption (0.59%), no competitive history, and zero JP market. Spike driven by Fallout set nove"
+ },
+ {
+  "key": "mtg::6a5d8fad-2ffd-4645-8c49-907999b6cecf::normal::",
+  "name": "Smaug the Magnificent",
+  "game": "mtg",
+  "printingId": "6a5d8fad-2ffd-4645-8c49-907999b6cecf",
+  "label": "spike",
+  "articleDate": "2026-08-20",
+  "productId": 693003,
+  "price": 25.64,
+  "change7": -17.6,
+  "change30": -19.5,
+  "change90": -63.1,
+  "sold30": 1475,
+  "latestDate": "2026-09-05",
+  "score": 51,
+  "coverage": 100,
+  "evidence": 3,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 14309,
+  "summary": "Smaug the Magnificent peaked at $68.31 in June and has declined 63% to $25.64; 30-day volume of 1475 copies indicates weak sustained demand despite official mar"
+ },
+ {
+  "key": "mtg::5afc0319-9e17-4e81-a0b6-e76645bacb04::normal::",
+  "name": "Gimli of the Glittering Caves",
+  "game": "mtg",
+  "printingId": "5afc0319-9e17-4e81-a0b6-e76645bacb04",
+  "label": "spike",
+  "articleDate": "2026-08-20",
+  "productId": 499786,
+  "price": 13.59,
+  "change7": 20.9,
+  "change30": 194.2,
+  "change90": 896.5,
+  "sold30": 621,
+  "latestDate": "2026-09-05",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 9,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 1
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 1,
+  "ms": 17686,
+  "summary": "Gimli of the Glittering Caves (LTC #32) has surged +194% in 30 days on TCGplayer, with 621 copies sold; the 30-day momentum is real but market-driven rather tha"
+ },
+ {
+  "key": "mtg::079e6263-e54c-4899-a336-5315909b9322::normal::",
+  "name": "Magda, Brazen Outlaw",
+  "game": "mtg",
+  "printingId": "079e6263-e54c-4899-a336-5315909b9322",
+  "label": "spike",
+  "articleDate": "2026-08-20",
+  "productId": 229232,
+  "price": 11.21,
+  "change7": 1.7,
+  "change30": 84.8,
+  "change90": 328.4,
+  "sold30": 801,
+  "latestDate": "2026-09-05",
+  "score": 56,
+  "coverage": 100,
+  "evidence": 29,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 14985,
+  "summary": "Magda, Brazen Outlaw (Kaldheim #142) is a steady Commander staple with 801 copies sold in 30 days and +84.8% price momentum, driven primarily by cEDH play rathe"
+ },
+ {
+  "key": "mtg::7d66b355-9aff-4cce-ae4a-42b233475dcf::normal::",
+  "name": "Knucklebone Witch",
+  "game": "mtg",
+  "printingId": "7d66b355-9aff-4cce-ae4a-42b233475dcf",
+  "label": "spike",
+  "articleDate": "2026-08-20",
+  "productId": 15554,
+  "price": 17.77,
+  "change7": 3,
+  "change30": 494.4,
+  "change90": 1080.9,
+  "sold30": 26,
+  "latestDate": "2026-09-07",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 9,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 16102,
+  "summary": "Knucklebone Witch (Lorwyn #120) shows a dramatic 30-day spike (+494%) and 90-day surge (+1081%) from a $1.52 base, but search returns no creator, community, or "
+ },
+ {
+  "key": "mtg::6261205d-3506-4f0a-98ce-690f40df7a5a::normal::",
+  "name": "Goryo's Vengeance",
+  "game": "mtg",
+  "printingId": "6261205d-3506-4f0a-98ce-690f40df7a5a",
+  "label": "spike",
+  "articleDate": "2026-08-20",
+  "productId": 179463,
+  "price": 15.76,
+  "change7": -1.2,
+  "change30": 9,
+  "change90": 62.9,
+  "sold30": 62,
+  "latestDate": "2026-09-05",
+  "score": 62,
+  "coverage": 100,
+  "evidence": 41,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 15065,
+  "summary": "Goryo's Vengeance UMA #99 is a stable $15.76 card with 90-day growth of +62.9%, driven by consistent Modern/Legacy competitive demand and broad community adopti"
+ },
+ {
+  "key": "mtg::69d276fe-5f2b-41aa-80fa-64d3b60fd54f::normal::",
+  "name": "Blazing Sunsteel",
+  "game": "mtg",
+  "printingId": "69d276fe-5f2b-41aa-80fa-64d3b60fd54f",
+  "label": "spike",
+  "articleDate": "2026-08-13",
+  "productId": 227228,
+  "price": 15.13,
+  "change7": -3.6,
+  "change30": 73.9,
+  "change90": 396.7,
+  "sold30": 172,
+  "latestDate": "2026-09-07",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 21,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 18016,
+  "summary": "Blazing Sunsteel is a niche Commander equipment with low adoption (EDHREC #6465), steady but modest 30-day volume (172 copies), and a 30-day price gain of +73.9"
+ },
+ {
+  "key": "mtg::d4c05f2a-b844-42b3-af91-65694b4211dd::normal::",
+  "name": "Last Laugh",
+  "game": "mtg",
+  "printingId": "d4c05f2a-b844-42b3-af91-65694b4211dd",
+  "label": "spike",
+  "articleDate": "2026-08-13",
+  "productId": 9682,
+  "price": 13.72,
+  "change7": 3.3,
+  "change30": 62.9,
+  "change90": 475.9,
+  "sold30": 15,
+  "latestDate": "2026-09-06",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 0,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 11548,
+  "summary": "Last Laugh (TOR #68) has climbed 475.9% in 90 days ($2.37→$13.72) on thin volume (15 copies/30d), driven by casual multiplayer interest and Old Frame nostalgia "
+ },
+ {
+  "key": "mtg::3687f487-eec1-4979-8008-5c907adafe9d::normal::",
+  "name": "The Earth King",
+  "game": "mtg",
+  "printingId": "3687f487-eec1-4979-8008-5c907adafe9d",
+  "label": "spike",
+  "articleDate": "2026-08-13",
+  "productId": 662052,
+  "price": 4.44,
+  "change7": 2.3,
+  "change30": 37,
+  "change90": 78.5,
+  "sold30": 154,
+  "latestDate": "2026-09-07",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 12,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 14490,
+  "summary": "The Earth King #344 trades at $4.44 with 30-day momentum +37% driven by 154 recent sales; Commander casual demand evident (EDHREC #2780) but no competitive play"
+ },
+ {
+  "key": "mtg::84abfc59-10a7-4cb5-9cdd-81797116c810::normal::",
+  "name": "Prime Speaker Vannifar",
+  "game": "mtg",
+  "printingId": "84abfc59-10a7-4cb5-9cdd-81797116c810",
+  "label": "spike",
+  "articleDate": "2026-08-13",
+  "productId": 182997,
+  "price": 9.9,
+  "change7": 4,
+  "change30": 127.9,
+  "change90": 703.2,
+  "sold30": 201,
+  "latestDate": "2026-09-07",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 21,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 15008,
+  "summary": "Prime Speaker Vannifar (RNA #195) is a casual EDH staple with strong 30-day (+127.9%) and 90-day (+703.2%) price momentum driven by spec activity, but lacks com"
+ },
+ {
+  "key": "mtg::299f81b5-20eb-465b-bd36-2acd80a4f37c::normal::",
+  "name": "Rain of Riches",
+  "game": "mtg",
+  "printingId": "299f81b5-20eb-465b-bd36-2acd80a4f37c",
+  "label": "spike",
+  "articleDate": "2026-08-13",
+  "productId": 559876,
+  "price": 8.97,
+  "change7": -0.8,
+  "change30": -18.7,
+  "change90": 820.6,
+  "sold30": 325,
+  "latestDate": "2026-09-07",
+  "score": 51,
+  "coverage": 100,
+  "evidence": 24,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 3,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 20605,
+  "summary": "Rain of Riches is a mid-range Commander utility card ($8.97 EN, -18.7% 30-day trend) featured in official precons with modest community relevance but no creator"
+ },
+ {
+  "key": "mtg::6b36c4f5-5eff-4b46-9671-9a038d4d1788::normal::",
+  "name": "Battle of Wits",
+  "game": "mtg",
+  "printingId": "6b36c4f5-5eff-4b46-9671-9a038d4d1788",
+  "label": "spike",
+  "articleDate": "2026-08-07",
+  "productId": 517889,
+  "price": 26.11,
+  "change7": 0,
+  "change30": 31.2,
+  "change90": 537.3,
+  "sold30": 11,
+  "latestDate": "2026-09-06",
+  "score": 73,
+  "coverage": 100,
+  "evidence": 77,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 20008,
+  "summary": "Battle of Wits (Secret Lair #1446) spiked 537% in 90 days to $25.43, driven entirely by Whtz, the Bibliophile Commander unlock (Nov 2026); peak sales exceeded $"
+ },
+ {
+  "key": "mtg::2b997de0-2fd9-4b36-970a-b665b0cbcc33::normal::",
+  "name": "Gandalf the White",
+  "game": "mtg",
+  "printingId": "2b997de0-2fd9-4b36-970a-b665b0cbcc33",
+  "label": "spike",
+  "articleDate": "2026-08-07",
+  "productId": 518107,
+  "price": 22.35,
+  "change7": 2,
+  "change30": 9.2,
+  "change90": 30.8,
+  "sold30": 4,
+  "latestDate": "2026-09-07",
+  "score": 53,
+  "coverage": 100,
+  "evidence": 21,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 15833,
+  "summary": "Gandalf the White LTR #470 is a niche Commander staple with modest 90-day gains (+30.8%) driven by casual deckbuilding and Panharmonicon synergy; thin liquidity"
+ },
+ {
+  "key": "mtg::b2860277-5b9e-444a-81f9-58e23355a722::normal::",
+  "name": "Green Goblin, Nemesis",
+  "game": "mtg",
+  "printingId": "b2860277-5b9e-444a-81f9-58e23355a722",
+  "label": "spike",
+  "articleDate": "2026-08-07",
+  "productId": 621158,
+  "price": 14.04,
+  "change7": -2.3,
+  "change30": -3.7,
+  "change90": 131.8,
+  "sold30": 162,
+  "latestDate": "2026-09-05",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 12,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 13740,
+  "summary": "Green Goblin, Nemesis is a 2-week-old rare with mild Commander appeal (EDHREC #8128) priced at $14.04, down 3.7% in 30 days; no competitive play or major creato"
+ },
+ {
+  "key": "mtg::df81568b-c66a-49c6-bd48-7df98ea00117::normal::",
+  "name": "Mastermind Plum",
+  "game": "mtg",
+  "printingId": "df81568b-c66a-49c6-bd48-7df98ea00117",
+  "label": "spike",
+  "articleDate": "2026-08-07",
+  "productId": 532956,
+  "price": 6.06,
+  "change7": -0.5,
+  "change30": -10.3,
+  "change90": 276.2,
+  "sold30": 181,
+  "latestDate": "2026-09-05",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 41,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 3,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 15024,
+  "summary": "Mastermind Plum (Ravnica: Clue Edition #3) is a mid-tier Commander staple with 22K+ deck inclusions and modest market activity (181 sales/30d), but lacks creato"
+ },
+ {
+  "key": "mtg::25e6ebfb-8f0b-44f0-a911-103ade41c6bc::normal::",
+  "name": "Indominus Rex, Alpha",
+  "game": "mtg",
+  "printingId": "25e6ebfb-8f0b-44f0-a911-103ade41c6bc",
+  "label": "spike",
+  "articleDate": "2026-08-07",
+  "productId": 517549,
+  "price": 30.74,
+  "change7": -0.3,
+  "change30": -8.1,
+  "change90": 37.5,
+  "sold30": 43,
+  "latestDate": "2026-09-07",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 0,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 13411,
+  "summary": "Indominus Rex, Alpha trades at $30.74 (flat vs. 30d avg, +37.5% since June); high EDHREC rank (#10238) and Universes Beyond IP tie suggest casual Commander appe"
+ },
+ {
+  "key": "mtg::d465597a-362e-4bd0-b547-f11d8807e597::normal::",
+  "name": "Trinisphere",
+  "game": "mtg",
+  "printingId": "d465597a-362e-4bd0-b547-f11d8807e597",
+  "label": "spike",
+  "articleDate": "2026-08-07",
+  "productId": 11660,
+  "price": 32.87,
+  "change7": -0.3,
+  "change30": 4.8,
+  "change90": 15.6,
+  "sold30": 12,
+  "latestDate": "2026-09-06",
+  "score": 55,
+  "coverage": 100,
+  "evidence": 41,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 3,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 17008,
+  "summary": "Trinisphere Darksteel #154 is an established format staple (Vintage-restricted, Modern/Legacy key piece) with solid 30-day momentum (+4.8%), strong community de"
+ },
+ {
+  "key": "mtg::10a4e202-b564-4ac8-8bdf-a2a563662563::normal::",
+  "name": "The One Ring",
+  "game": "mtg",
+  "printingId": "10a4e202-b564-4ac8-8bdf-a2a563662563",
+  "label": "spike",
+  "articleDate": "2026-07-30",
+  "productId": 517451,
+  "price": 883.1,
+  "change7": 0,
+  "change30": 5.5,
+  "change90": 31.4,
+  "sold30": 4,
+  "latestDate": "2026-09-05",
+  "score": 61,
+  "coverage": 100,
+  "evidence": 48,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 1
+   },
+   "scarcity": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 1,
+  "ms": 19474,
+  "summary": "The One Ring #748 (alternate art borderless) holds a $883 en price with strong upward momentum (+31% in 90 days, +5.5% in 30 days) supported by set-level IP pre"
+ },
+ {
+  "key": "mtg::3766383d-6e3d-472c-ac7b-f3521ee214af::normal::",
+  "name": "Sauron, the Dark Lord",
+  "game": "mtg",
+  "printingId": "3766383d-6e3d-472c-ac7b-f3521ee214af",
+  "label": "spike",
+  "articleDate": "2026-07-30",
+  "productId": 518155,
+  "price": 614.82,
+  "change7": 1.1,
+  "change30": 10,
+  "change90": 75.2,
+  "sold30": 7,
+  "latestDate": "2026-09-07",
+  "score": 49,
+  "coverage": 100,
+  "evidence": 12,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 16526,
+  "summary": "Sauron, the Dark Lord LTR #744 trades at $614.82 on strong 90-day momentum (+75.2%) driven by scarcity (7 sales in 30 days, no reprints, only 10 catalogue entri"
+ },
+ {
+  "key": "mtg::7f1b99e0-ffb7-4f98-8ee5-4357bb79dd2e::normal::",
+  "name": "Last March of the Ents",
+  "game": "mtg",
+  "printingId": "7f1b99e0-ffb7-4f98-8ee5-4357bb79dd2e",
+  "label": "spike",
+  "articleDate": "2026-07-30",
+  "productId": 498341,
+  "price": 24.56,
+  "change7": 0,
+  "change30": -23.2,
+  "change90": -15.5,
+  "sold30": 94,
+  "latestDate": "2026-09-07",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 0,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 13730,
+  "summary": "Last March of the Ents is a low-signal mythic sorcery with weak community demand (EDHREC #985), negligible competitive presence, and -23.2% price decline over 3"
+ },
+ {
+  "key": "mtg::3a91aea3-3d04-4d66-bfbc-b039ccf1eb62::normal::",
+  "name": "Nazgûl",
+  "game": "mtg",
+  "printingId": "3a91aea3-3d04-4d66-bfbc-b039ccf1eb62",
+  "label": "spike",
+  "articleDate": "2026-07-30",
+  "productId": 518152,
+  "price": 96.35,
+  "change7": 0.6,
+  "change30": 7.4,
+  "change90": 58.7,
+  "sold30": 4,
+  "latestDate": "2026-09-06",
+  "score": 49,
+  "coverage": 100,
+  "evidence": 41,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 0,
+    "sources": 1,
+    "dir": -1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 16016,
+  "summary": "Nazgûl #726 (uncommon) has neutral-to-weak signals: $95.24 EN list is supply-driven (4 copies sold in 30 days), +58.7% gain since June reflects post-release spi"
+ },
+ {
+  "key": "mtg::71384418-173a-4f77-adab-56e52fa23692::normal::",
+  "name": "Delighted Halfling",
+  "game": "mtg",
+  "printingId": "71384418-173a-4f77-adab-56e52fa23692",
+  "label": "spike",
+  "articleDate": "2026-07-30",
+  "productId": 498414,
+  "price": 30.73,
+  "change7": 0.1,
+  "change30": 9.6,
+  "change90": 10.4,
+  "sold30": 286,
+  "latestDate": "2026-09-05",
+  "score": 70,
+  "coverage": 100,
+  "evidence": 50,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 4,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 18029,
+  "summary": "Delighted Halfling holds stable $30.73 EN price (+9.6% in 30 days) with strong 4-tier signals in Commander (12.3% EDHREC inclusion, 4.75 Pojo rating) and compet"
+ },
+ {
+  "key": "yugioh::tcgplayer:592579::::quarter-century-secret-rare",
+  "name": "Heat Wave",
+  "game": "yugioh",
+  "printingId": "tcgplayer:592579",
+  "label": "mixed",
+  "articleDate": "2026-09-01",
+  "productId": 592579,
+  "price": 14.37,
+  "change7": 0,
+  "change30": 23.3,
+  "change90": 103.7,
+  "sold30": 26,
+  "latestDate": "2026-09-05",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 0,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 13200,
+  "summary": "Heat Wave RA03-EN058 (Quarter Century Secret Rare) traded at $14.37 with +103.7% growth over 90 days; scarcity and rarity support valuation, but no verified com"
+ },
+ {
+  "key": "mtg::2203b2cd-48e5-471a-85fe-dc81012e5d61::normal::",
+  "name": "Flowering of the White Tree",
+  "game": "mtg",
+  "printingId": "2203b2cd-48e5-471a-85fe-dc81012e5d61",
+  "label": "spike",
+  "articleDate": "2026-07-30",
+  "productId": 499188,
+  "price": 11.31,
+  "change7": -4.7,
+  "change30": 9.2,
+  "change90": 16.6,
+  "sold30": 210,
+  "latestDate": "2026-09-07",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 41,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 2,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 15532,
+  "summary": "Flowering of the White Tree is a steady Commander role-player (~$11.31) with 210 copies sold in 30 days (+9.2% month); tournament play remains thin (JP Top 8 re"
+ },
+ {
+  "key": "yugioh::tcgplayer:173603::::common-short-print",
+  "name": "Debunk",
+  "game": "yugioh",
+  "printingId": "tcgplayer:173603",
+  "label": "mixed",
+  "articleDate": "2026-09-01",
+  "productId": 173603,
+  "price": 9.45,
+  "change7": 0.1,
+  "change30": 44.2,
+  "change90": 196.5,
+  "sold30": 48,
+  "latestDate": "2026-09-05",
+  "score": 55,
+  "coverage": 100,
+  "evidence": 23,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 1
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 1,
+  "ms": 14596,
+  "summary": "Debunk SDPL-EN039 is a reprinted common trap with modest 30-day volume (48 sales) and TCGplayer price at $9.45, up +196.5% from June low ($3.17) — but driven by"
+ },
+ {
+  "key": "mtg::0ce44270-a684-4489-9077-521456e6dfaa::normal::",
+  "name": "Lórien Revealed",
+  "game": "mtg",
+  "printingId": "0ce44270-a684-4489-9077-521456e6dfaa",
+  "label": "spike",
+  "articleDate": "2026-07-30",
+  "productId": 499960,
+  "price": 4.04,
+  "change7": 2.1,
+  "change30": 17.4,
+  "change90": 14.9,
+  "sold30": 887,
+  "latestDate": "2026-09-05",
+  "score": 63,
+  "coverage": 100,
+  "evidence": 45,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 19852,
+  "summary": "Lórien Revealed is a versatile pauper and control staple commanding $4.31 (TCGplayer) with solid multi-format competitive demand; strong historical spike in 202"
+ },
+ {
+  "key": "yugioh::tcgplayer:627321::::quarter-century-secret-rare",
+  "name": "Gren Maju Da Eiza",
+  "game": "yugioh",
+  "printingId": "tcgplayer:627321",
+  "label": "mixed",
+  "articleDate": "2026-09-01",
+  "productId": 627321,
+  "price": 13.69,
+  "change7": 0,
+  "change30": 42.8,
+  "change90": 144.3,
+  "sold30": 24,
+  "latestDate": "2026-09-05",
+  "score": 50,
+  "coverage": 100,
+  "evidence": 0,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 1
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 1,
+  "ms": 14871,
+  "summary": "Gren Maju Da Eiza RA04-EN124 shows strong 30- and 90-day price momentum (+42.8% / +144.3%) on moderate volume (24 sales/month), but lacks creator, community, ed"
+ },
+ {
+  "key": "yugioh::tcgplayer:695712::::ultra-rare",
+  "name": "Dominus Impulse",
+  "game": "yugioh",
+  "printingId": "tcgplayer:695712",
+  "label": "mixed",
+  "articleDate": "2026-09-01",
+  "productId": 695712,
+  "price": 127.14,
+  "change7": -1.4,
+  "change30": 45.5,
+  "change90": 47.3,
+  "sold30": 39,
+  "latestDate": "2026-09-06",
+  "score": 56,
+  "coverage": 100,
+  "evidence": 40,
+  "alignment": "agree",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 1,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 3,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 3,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 1
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 1,
+  "ms": 18682,
+  "summary": "Dominus Impulse BLGG-EN146 is a liquid meta staple (TCGplayer $128.64, +45% in 30d, 39 sales) with confirmed competitive demand (Master Duel 2nd-among-traps) an"
+ },
+ {
+  "key": "yugioh::tcgplayer:524516::::quarter-century-secret-rare",
+  "name": "Small World",
+  "game": "yugioh",
+  "printingId": "tcgplayer:524516",
+  "label": "mixed",
+  "articleDate": "2026-09-01",
+  "productId": 524516,
+  "price": 13.07,
+  "change7": -0.8,
+  "change30": 129.3,
+  "change90": 109.1,
+  "sold30": 70,
+  "latestDate": "2026-09-06",
+  "score": 55,
+  "coverage": 100,
+  "evidence": 28,
+  "alignment": "mixed",
+  "signals": {
+   "creator": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "community": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "ip_momentum": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "editorial": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "competitive": {
+    "level": 1,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "scarcity": {
+    "level": 2,
+    "sources": 1,
+    "dir": 1,
+    "dropped": 0
+   },
+   "jp_hype": {
+    "level": 0,
+    "sources": 0,
+    "dir": 0,
+    "dropped": 0
+   },
+   "jp_release": {
+    "level": 3,
+    "sources": 1,
+    "dir": 0,
+    "dropped": 0
+   }
+  },
+  "cached": false,
+  "truncated": false,
+  "dropped": 0,
+  "ms": 18963,
+  "summary": "Small World QCR (RA01-EN067) shows strong price momentum (+129% in 30 days) on TCGplayer (70 copies moved), but competitive meta role is unclear and no creator/"
+ }
+]

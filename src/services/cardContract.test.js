@@ -92,10 +92,16 @@ describe('every card door uses one exact record', () => {
     assert.match(sources.session, /normalizeCardRecord/);
   });
 
-  test('the retired 30-day field is absent from every user-facing surface', () => {
+  test('the 30-day figure is only ever the exact SKU history, never the retired estimate', () => {
     for (const name of ['dashboard', 'latest', 'price', 'pdf', 'signals']) {
-      assert.doesNotMatch(sources[name], /30[- ]?day|trend_30d/i, `${name} still exposes the retired field`);
+      assert.doesNotMatch(sources[name], /trend_30d/i, `${name} still exposes the retired field`);
     }
+    // Surfaces that print a 30-day move read it from prices.history, which
+    // only exists when TCGplayer answered for this exact product SKU.
+    for (const name of ['latest', 'price', 'pdf']) {
+      if (/30[- ]?day/i.test(sources[name])) assert.match(sources[name], /history/, `${name} shows a 30-day move without the exact history`);
+    }
+    assert.doesNotMatch(sources.signals, /30[- ]?day|trend_30d/i);
     assert.doesNotMatch(sources.latest, /SAMPLE_DATA|Sample Signal/);
   });
 });

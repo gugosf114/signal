@@ -132,10 +132,33 @@ def price_ygo(entry):
     return (float(value), card.get("set_name")) if value and float(value) > 0 else None
 
 
+def price_tcgplayer_history(entry):
+    """Latest market price of the exact TCGplayer product, any game, no key."""
+    product_id = entry.get("tcgplayer_product_id")
+    if not product_id:
+        return None
+    data = get(f"https://infinite-api.tcgplayer.com/price/history/{int(product_id)}/detailed?range=month", tries=2)
+    wanted = {"holofoil": "Holofoil", "normal": "Normal", "reverseHolofoil": "Reverse Holofoil"}.get(entry.get("price_variant") or "")
+    skus = [s for s in data.get("result", []) if s.get("buckets") and (s.get("condition") or "Near Mint") == "Near Mint"
+            and (not s.get("language") or s.get("language") == "English")]
+    if wanted:
+        skus = [s for s in skus if s.get("variant") == wanted] or skus
+    for sku in skus:
+        for bucket in sku["buckets"]:
+            value = float(bucket.get("marketPrice") or 0)
+            if value > 0:
+                return (value, f"TCGplayer {sku.get('variant')}")
+    return None
+
+
 def current_price(entry):
     game = (entry.get("game") or "").lower()
     name = entry["card"]
     try:
+        if entry.get("tcgplayer_product_id"):
+            got = price_tcgplayer_history(entry)
+            if got:
+                return got
         if game == "pokemon":
             return price_pokemon(entry)
         if game == "mtg":

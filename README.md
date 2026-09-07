@@ -1,6 +1,6 @@
 # 株 Signal
 
-### ⬇ [Download the latest APK — 3.1 (versionCode 22), built 2026-09-06](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.1/signal-3.1.apk)
+### ⬇ [Download the latest APK — 3.2 (versionCode 23), built 2026-09-06](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.2/signal-3.2.apk)
 
 Tap that on the phone, then open the downloaded file to install. It is signed
 with the laptop's debug key, the same one every previous sideload used, so it
@@ -1592,4 +1592,35 @@ far, so on-device checks needed the screen. `capacitor.config.json` now sets
 JavaScript can be driven over `adb forward … localabstract:webview_devtools_remote_<pid>`
 with no taps. Samsung still freezes a backgrounded app, so the app must be
 on screen or mid-scan.
+
+---
+
+## Session log — 2026-09-06 price history and the first measurement of the score
+
+**The app has a memory of price now.** TCGplayer's per-product history answers
+without a key: one row per SKU (variant, condition, language) with 90 days of
+market price and copies sold. `src/services/priceHistory.js` picks English
+Near Mint in the chosen finish, caches it six hours, and refuses to borrow a
+neighbour's line: no TCGplayer product id, no history. The result page's price
+strip shows 30-day and 90-day change with a sparkline; the PDF and the Latest
+Signal panel carry the move; the 24-hour price top-up refreshes it; and
+`signal_vs_market` is now computed from the score against the real 30-day
+move instead of guessed by the model. The gateway relays the history host.
+
+**First measurement.** 68 exact printings from TCGplayer's weekly movers
+articles were scanned through the live pipeline; 55 had exact history. The
+score did not describe the past month (AUC 0.42, the wrong side of a coin
+flip), the flat 50s were the cards that had jumped, and evidence rose as
+moves shrank because attention follows price. Nothing learnable in 55 rows.
+Full numbers, caveats, and the three things to do about it:
+`docs/SCORE_FIT_2026-09-06.md`. Those 68 rows now seed
+`scripts/backtest-baseline.json` with exact ids, TCGplayer product ids, and
+today's exact price, and `backtest.py` prices from TCGplayer history first, so
+the forward test reads on 2026-10-06 with one command.
+
+**Model refusal.** One scan failed because Haiku declined to output JSON and
+asked a question instead. The prompt now says missing evidence is expressed
+inside the JSON, never as a question.
+
+Version 3.2 (`versionCode 23`). 329 JavaScript tests and 4 Python tests pass.
 

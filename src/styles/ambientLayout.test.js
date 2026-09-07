@@ -257,8 +257,11 @@ test('every home card keeps one exact identity from chip to image and report', (
   assert.match(emptyStateSource, /refreshPrices\(featured\.name, featured\.game, featured\.pin\)/);
   assert.match(emptyStateSource, /latest-signal-printing/);
   assert.match(emptyStateSource, /price_source/);
-  assert.doesNotMatch(emptyStateSource, /30-day|trend_30d/i);
-  assert.doesNotMatch(priceSource, /30-Day|trend_30d/i);
+  assert.doesNotMatch(emptyStateSource, /trend_30d/i);
+  assert.doesNotMatch(priceSource, /trend_30d/i);
+  // The 30-day move is the exact SKU's TCGplayer history, never a model figure.
+  assert.match(emptyStateSource, /prices\.history\?\.change30/);
+  assert.match(priceSource, /data\.history/);
 });
 
 test('all page sections reveal once on scroll without taking over child transforms', () => {

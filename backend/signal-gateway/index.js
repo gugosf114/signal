@@ -29,6 +29,8 @@ const CATALOGUE_RULES = new Map([
   ['api.tcgdex.net', /^\/v2\/en\/(?:cards|sets)(?:\/[^/]+)?$/],
   ['api.scryfall.com', /^\/(?:cards|sets)(?:\/.*)?$/],
   ['db.ygoprodeck.com', /^\/api\/v7\/(?:cardinfo|cardsets|cardsetsinfo)\.php$/],
+  // TCGplayer's per-product price history, read by its own article widgets.
+  ['infinite-api.tcgplayer.com', /^\/price\/history\/\d+(?:\/detailed)?$/],
 ]);
 
 function hash(value) {
