@@ -1,6 +1,6 @@
 # 株 Signal
 
-### ⬇ [Download the latest APK — 3.2 (versionCode 23), built 2026-09-06](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.2/signal-3.2.apk)
+### ⬇ [Download the latest APK — 3.3 (versionCode 24), built 2026-09-06](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.3/signal-3.3.apk)
 
 Tap that on the phone, then open the downloaded file to install. It is signed
 with the laptop's debug key, the same one every previous sideload used, so it
@@ -1623,4 +1623,15 @@ asked a question instead. The prompt now says missing evidence is expressed
 inside the JSON, never as a question.
 
 Version 3.2 (`versionCode 23`). 329 JavaScript tests and 4 Python tests pass.
+
+---
+
+## Session log — 2026-09-06 the real move first, and the score is called Attention
+
+George's call after the measurement. The result page now opens with the
+price strip (market price, 30-day, 90-day, alignment) and the score panel
+follows it. The score is labelled **ATTENTION** on the result page and in the
+PDF, and its tier blurbs speak of attention, not pressure. Tier names,
+weights, and math are unchanged; the forward test on 2026-10-06 decides
+whether the label earns anything more. Version 3.3 (`versionCode 24`).
 

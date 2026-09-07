@@ -904,8 +904,20 @@ export default function SignalDashboard() {
 
           <div id="signal-report-capture">
 
+          {/* The real move first: market price, 30-day, 90-day. The attention
+              score follows it, because measured against price history the
+              score lags the move rather than leading it. */}
+          <ScrollReveal>
+            <PriceComparison
+              data={{
+                ...result.prices,
+                signal_vs_market: result.prices?.signal_vs_market,
+              }}
+            />
+          </ScrollReveal>
+
           {score !== null && (
-            <ScrollReveal>
+            <ScrollReveal delay={70}>
               <OverallScore
                 score={score}
                 cardName={result.card_name}
@@ -926,14 +938,6 @@ export default function SignalDashboard() {
             </ScrollReveal>
           )}
 
-          <ScrollReveal delay={70}>
-            <PriceComparison
-              data={{
-                ...result.prices,
-                signal_vs_market: result.prices?.signal_vs_market,
-              }}
-            />
-          </ScrollReveal>
 
           <ScrollReveal>
             <EbayListings data={result.ebay_listings} cachedAt={result._scannedAt} stale={result._relatedPriceDataStale} />

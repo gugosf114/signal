@@ -143,7 +143,7 @@ const PHASES = [
     details: [
       'Validating eight unique signal keys',
       'Clamping levels and checking citations',
-      'Computing bounded market pressure',
+      'Computing the attention score',
     ],
     log: [
       'check · output schema',

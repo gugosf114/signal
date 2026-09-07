@@ -179,7 +179,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               letterSpacing: '0.16em',
               color: 'var(--signal-text-secondary)',
             }}>
-              MARKET PRESSURE
+              ATTENTION
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
               <span className="score-animate" style={{
