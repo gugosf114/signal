@@ -41,9 +41,15 @@ import {
 // filtering was removed; Haiku completed the same direct-search step in 3.4.
 const ANALYSIS_MODEL = 'claude-haiku-4-5';
 
+// Bumped when the evidence handed to the model changes shape. A shared report
+// written before the creator, Japan, and Reddit lanes were repaired (2026-09-06)
+// froze a synthesis that never saw that evidence; a new key lets it refresh
+// once instead of serving the old answer for a week.
+export const PREFETCH_VERSION = 2;
+
 function sharedCacheKey(cardName, game, pin) {
   const identity = printingIdentity(pin) || '';
-  return [SCORE_VERSION, game || 'auto', String(cardName || '').trim().toLowerCase(), identity].join('::');
+  return [SCORE_VERSION, `p${PREFETCH_VERSION}`, game || 'auto', String(cardName || '').trim().toLowerCase(), identity].join('::');
 }
 
 function firstMarketPrice(priceLines) {
@@ -210,6 +216,10 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
 
   const shared = await sharedAnalyze({
     cacheKey,
+    // Re-scan is a deliberate paid refresh. Without this the gateway handed
+    // back the same cached report for seven days no matter how often the
+    // button was pressed.
+    force: Boolean(opts.force),
     card: {
       name: cardData?.name || cardName,
       game: resolvedGame || game,

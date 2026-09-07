@@ -1,6 +1,6 @@
 # 株 Signal
 
-### ⬇ [Download the latest APK — 3.0 (versionCode 21), built 2026-09-06](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.0/signal-3.0.apk)
+### ⬇ [Download the latest APK — 3.1 (versionCode 22), built 2026-09-06](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.1/signal-3.1.apk)
 
 Tap that on the phone, then open the downloaded file to install. It is signed
 with the laptop's debug key, the same one every previous sideload used, so it
@@ -11,7 +11,9 @@ All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio
 
 The Anthropic key has lived on the `signal-gateway-v1` Cloud Function since
 2026-08-23; no APK carries it. Since 2026-09-06 the YouTube key lives there
-too. What a build does carry is `VITE_SIGNAL_APP_TOKEN`, the token the gateway
+too, so a build without one (CI, Termux) still gets the creator and Japan
+lanes; a laptop build may compile its own copy in and ask YouTube directly.
+What every build must carry is `VITE_SIGNAL_APP_TOKEN`, the token the gateway
 requires before it spends money, so the APK stays on the private
 `portfolio-assets` repo. You'll need to be signed in to GitHub on the phone for
 the link to resolve.
@@ -1568,6 +1570,12 @@ anything and blamed the lookups. It now prints why rows were skipped, carries
 exact ids for the four rows that could be pinned, and reads TCGdex when
 pokemontcg.io is down.
 
-Version is 3.0 (`versionCode 21`); every build since 8/22 had shipped as 2.9
-/ 20. 323 JavaScript tests and 4 Python tests pass.
+**Re-scan never re-ran the model.** The button cleared the phone's local
+cache and then received the same shared report from the gateway for seven
+days. Re-scan now sends `force`, the gateway replaces the stored report (still
+waiting behind a live lease), and the shared cache key carries a pre-fetch
+version so reports written before this repair refresh once on their next open.
+
+Version is 3.1 (`versionCode 22`); every build since 8/22 had shipped as 2.9
+/ 20. 324 JavaScript tests and 4 Python tests pass.
 

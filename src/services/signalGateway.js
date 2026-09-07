@@ -75,8 +75,8 @@ export async function gateway(body, signal, retries = 2) {
   throw lastError || new Error('Signal gateway failed.');
 }
 
-export function sharedAnalyze({ cacheKey, card, modelRequest, signal }) {
-  return gateway({ action: 'analyze', cacheKey, card, modelRequest }, signal);
+export function sharedAnalyze({ cacheKey, card, modelRequest, signal, force = false }) {
+  return gateway({ action: 'analyze', cacheKey, card, modelRequest, force: Boolean(force) }, signal);
 }
 
 export function identifyCardViaGateway(modelRequest, signal) {
