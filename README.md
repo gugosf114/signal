@@ -1577,8 +1577,19 @@ waiting behind a live lease), and the shared cache key carries a pre-fetch
 version so reports written before this repair refresh once on their next open.
 
 Version is 3.1 (`versionCode 22`); every build since 8/22 had shipped as 2.9
-/ 20. 323 JavaScript tests and 4 Python tests pass. Everything above was
-proven from the phone's own network (Node, same code, same gateway) and by
-live gateway calls; the one check still owed is a scan inside the installed
-app, which George runs himself.
+/ 20. 323 JavaScript tests and 4 Python tests pass.
+
+**On-device proof (3.1 on the phone, 22:59 PT).** Tapping the Rayquaza VMAX
+trending chip ran a full report inside the installed app in 25 seconds:
+Evolving Skies 218/203 Rare Rainbow Holo, 57/100, 8 of 8 signals, **58% with
+verified sources**, $1,255.34 from TCGplayer, foreground service started and
+stopped, one ledger row, the day's model counter at 1. The three reports run
+on this phone before the repair carried 10–36% verified sources.
+
+**Headless testing.** The WebView debug socket was silent in every build so
+far, so on-device checks needed the screen. `capacitor.config.json` now sets
+`android.webContentsDebuggingEnabled`, so from the next build the app's
+JavaScript can be driven over `adb forward … localabstract:webview_devtools_remote_<pid>`
+with no taps. Samsung still freezes a backgrounded app, so the app must be
+on screen or mid-scan.
 
