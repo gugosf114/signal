@@ -1,16 +1,6 @@
 import React from 'react';
 import { useIsMobile } from '../hooks/useIsMobile';
 
-function trendMeta(trend) {
-  if (!trend) return { sym: '—', color: 'var(--signal-text-muted)' };
-  const t = trend.toLowerCase();
-  if (t.includes('up') || t.includes('rising') || t.includes('increas'))
-    return { sym: '▲', color: '#608870' };
-  if (t.includes('down') || t.includes('falling') || t.includes('decreas'))
-    return { sym: '▼', color: '#C44040' };
-  return { sym: '►', color: '#A09060' };
-}
-
 function alignMeta(val) {
   if (!val) return { color: 'var(--signal-text-muted)', sym: '—' };
   const v = val.toLowerCase();
@@ -38,21 +28,16 @@ export default function PriceComparison({ data }) {
   const isMobile = useIsMobile();
   if (!data) return null;
 
-  const trend = trendMeta(data.trend_30d);
   const align = alignMeta(data.signal_vs_market);
+  const checked = (() => {
+    const date = new Date(data.price_checked_at || '');
+    return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  })();
+  const priceNote = [data.price_source, checked ? `checked ${checked}` : null].filter(Boolean).join(' · ');
 
-  // Three cells since the yen price was removed: market price, 30-day trend,
-  // alignment. On mobile price takes the full first row and the two narrow cells
-  // split the second, so the price never competes for width with a symbol.
-  const outerStyle = isMobile ? {
+  const outerStyle = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    borderTop: '1px solid #1A1D24',
-    borderBottom: '1px solid #1A1D24',
-    marginBottom: 40,
-    background: 'var(--signal-panel)',
-  } : {
-    display: 'flex',
+    gridTemplateColumns: isMobile ? 'minmax(0, 1.45fr) minmax(0, 0.8fr)' : 'minmax(0, 1.6fr) minmax(0, 0.7fr)',
     borderTop: '1px solid #1A1D24',
     borderBottom: '1px solid #1A1D24',
     marginBottom: 40,
@@ -64,39 +49,18 @@ export default function PriceComparison({ data }) {
       {/* Market price. The provider varies by game, so this row does not stamp
           a marketplace logo onto a number that may have come from elsewhere. */}
       <div className="price-cell price-cell--market" style={{
-        ...(isMobile ? { gridColumn: '1 / 3' } : { flex: '1.4' }),
         padding: isMobile ? '12px 14px' : '14px 16px',
       }}>
         <div style={{ ...labelStyle, color: 'var(--signal-text-secondary)' }}>Market Price</div>
         <div className="price-value" style={{ ...valStyle, fontSize: 16, color: '#E8E4DC' }}>
           {data.en_price || 'No exact price'}
         </div>
+        {priceNote && <div style={{ fontSize: 9, color: 'var(--signal-text-muted)', marginTop: 3, fontFamily: "'JetBrains Mono', monospace" }}>{priceNote}</div>}
       </div>
-
-      {/* 30-DAY TREND (was 30D) */}
-      <div className="price-cell price-cell--trend" style={{
-        ...(isMobile ? { gridColumn: '1 / 2', borderTop: '1px solid #1A1D24', borderRight: '1px solid #1A1D24' } : { flex: '0.8' }),
-        padding: isMobile ? '10px 10px' : '14px 16px',
-      }}>
-        <div style={{ ...labelStyle, color: 'var(--signal-text-secondary)' }}>30-Day Trend</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span
-            className={trend.sym === '▲' ? 'trend-bounce-up' : trend.sym === '▼' ? 'trend-bounce-down' : ''}
-            style={{ ...valStyle, fontSize: 14, color: trend.color }}
-          >
-            {trend.sym}
-          </span>
-        </div>
-        <div style={{ fontSize: 9, color: trend.color, marginTop: 2, fontFamily: "'JetBrains Mono', monospace", opacity: 0.7 }}>
-          {data.trend_30d || 'No exact data'}
-        </div>
-      </div>
-
-      {!isMobile && <div style={{ width: 1, background: '#1A1D24' }} />}
 
       {/* ALIGNMENT (was Sig·Mkt) */}
       <div className="price-cell price-cell--alignment" style={{
-        ...(isMobile ? { gridColumn: '2 / 3', borderTop: '1px solid #1A1D24' } : { flex: '0.8' }),
+        borderLeft: '1px solid #1A1D24',
         padding: isMobile ? '10px 10px' : '14px 16px',
       }}>
         <div style={{ ...labelStyle, color: 'var(--signal-text-secondary)' }}>Alignment</div>

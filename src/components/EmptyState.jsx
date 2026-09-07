@@ -6,28 +6,12 @@ import { refreshPrices } from '../services/refreshPrices';
 import CardImage from './CardImage';
 import ScrollReveal from './ScrollReveal';
 import { sanitizeRecentScans } from '../services/recentScans';
+import { printingLabel } from '../services/printing';
 
 // ─── Featured-scan loader ────────────────────────────────────────────────────
 // On first render, pull the user's most recent scan out of localStorage.
-// If found, the dashboard's bottom showcase tile reflects that scan instead
-// of the static Charizard ex sample. New users (no scans) see the sample
-// with a "SAMPLE" watermark chip so it doesn't read as a real result.
-
-const SAMPLE_DATA = {
-  name: 'Charizard ex',
-  game: 'pokemon',
-  score: 82,
-  prices: {
-    en_price: '$42.50',
-    trend_30d: 'up — momentum stacking',
-  },
-  creator: {
-    headline: 'Leonhart pulls Charizard ex',
-    detail: '1.6M-sub channel, 284k views in 48h. Strong pull signal.',
-    implication: 'up',
-    level: 4,
-  },
-};
+// If found, the dashboard's bottom showcase tile reflects that exact scan.
+// With no scan there is no fake sample card and no invented market data.
 
 function loadFeaturedScan() {
   try {
@@ -52,7 +36,8 @@ function loadFeaturedScan() {
           en_price: Number.isFinite(savedPrice) && savedPrice > 0
             ? `$${savedPrice.toFixed(2)}`
             : '',
-          trend_30d: '',
+          price_source: top.pin?.priceSource || '',
+          price_checked_at: top.pin?.priceCheckedAt || '',
         },
         creator: null,
         needsPriceRefresh: true,
@@ -66,7 +51,7 @@ function loadFeaturedScan() {
       name: top.name,
       game: top.game,
       score,
-      pin: top.pin || cached._pin || cached.printing || null,
+      pin: top.pin || cached.card || cached._pin || cached.printing || null,
       prices: cached.prices || {},
       creator: creatorSrc
         ? {
@@ -83,35 +68,28 @@ function loadFeaturedScan() {
   }
 }
 
-function trendSym(trend) {
-  if (!trend) return { sym: '—', color: 'var(--signal-text-muted)' };
-  const t = String(trend).toLowerCase();
-  if (t.includes('up') || t.includes('rising') || t.includes('increas') || t.includes('lead')) {
-    return { sym: '▲', color: '#608870' };
-  }
-  if (t.includes('down') || t.includes('falling') || t.includes('decreas')) {
-    return { sym: '▼', color: '#C44040' };
-  }
-  return { sym: '►', color: '#A09060' };
-}
-
 // ─── Tiles ───────────────────────────────────────────────────────────────────
 
-function LatestSignalPanel({ data, isSample }) {
+function LatestSignalPanel({ data }) {
   const gameMeta = GAME_LABELS[data.game] || GAME_LABELS.pokemon;
   const scoreMeta = getScoreLabel(data.score ?? 50);
   const prices = data.prices || {};
-  const trend = trendSym(prices.trend_30d);
   const creator = data.creator;
+  const checkedDate = new Date(prices.price_checked_at || data.pin?.priceCheckedAt || '');
+  const checked = Number.isNaN(checkedDate.getTime())
+    ? null
+    : checkedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const priceNote = [prices.price_source || data.pin?.priceSource, checked ? `checked ${checked}` : null]
+    .filter(Boolean).join(' · ');
 
   return (
     <section
       className="latest-signal fade-slide-up"
       style={{ '--latest-signal-color': scoreMeta.color }}
-      aria-label={`${isSample ? 'Sample' : 'Latest'} Signal for ${data.name}`}
+      aria-label={`Latest Signal for ${data.name}`}
     >
       <header className="latest-signal-head">
-        <span>{isSample ? 'Sample Signal' : 'Latest Signal'}</span>
+        <span>Latest Signal</span>
         <span className="latest-signal-game" style={{ color: gameMeta.color }}>
           <BrandIcon brand={data.game} size={11} style={{ opacity: 0.78 }} />
           {gameMeta.label}
@@ -121,6 +99,7 @@ function LatestSignalPanel({ data, isSample }) {
       <div className="latest-signal-main">
         <div className="latest-signal-identity">
           <h2>{data.name}</h2>
+          {printingLabel(data.pin) && <small className="latest-signal-printing">{printingLabel(data.pin)}</small>}
           <div className="latest-signal-score">
             <strong style={{ color: scoreMeta.color }}>{data.score}</strong>
             <span>/100</span>
@@ -134,11 +113,7 @@ function LatestSignalPanel({ data, isSample }) {
         <div>
           <span>EN price</span>
           <strong>{prices.en_price || 'No exact price'}</strong>
-        </div>
-        <div>
-          <span>30-day trend</span>
-          <strong style={{ color: trend.color }}>{trend.sym}</strong>
-          <small style={{ color: trend.color }}>{prices.trend_30d || 'No exact data'}</small>
+          {priceNote && <small>{priceNote}</small>}
         </div>
       </div>
 
@@ -176,21 +151,17 @@ export default function EmptyState() {
       if (cancelled || !prices) return;
       setFeatured((current) => current ? {
         ...current,
-        prices: { ...current.prices, ...prices, trend_30d: '' },
+        prices: { ...current.prices, ...prices },
         needsPriceRefresh: false,
       } : current);
     });
     return () => { cancelled = true; };
   }, [featured?.name, featured?.game, featured?.needsPriceRefresh]);
-  const isSample = !featured;
-  const data = featured || SAMPLE_DATA;
-
   return (
     <ScrollReveal delay={70} className="latest-signal-wrap">
-      <LatestSignalPanel data={data} isSample={isSample} />
-      {isSample && (
+      {featured ? <LatestSignalPanel data={featured} /> : (
         <p className="latest-signal-note">
-          Compare the exact printing, verified sources, and eight market signals. A full scan can take up to two minutes.
+          Your latest exact card will appear here after its first full Signal.
         </p>
       )}
     </ScrollReveal>

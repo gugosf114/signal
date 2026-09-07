@@ -5,12 +5,14 @@ function csvCell(value) {
 
 export function collectionToCsv(cards) {
   const headers = [
-    'Name', 'Game', 'Set', 'Number', 'Form', 'Condition', 'Quantity',
-    'Market Price', 'Paid Per Card', 'Added At', 'Catalog ID', 'Printing ID', 'Image URL',
+    'Name', 'Game', 'Set', 'Number', 'Rarity', 'Finish', 'Form', 'Condition', 'Quantity',
+    'Market Price', 'Price Source', 'Price Checked At', 'Paid Per Card', 'Added At',
+    'Catalog ID', 'Printing ID', 'Image URL',
   ];
   const rows = (Array.isArray(cards) ? cards : []).map((card) => [
-    card.name, card.game, card.setName, card.number, card.form, card.condition,
-    card.qty, card.marketPrice, card.paidPerCard, card.addedAt,
+    card.name, card.game, card.setName, card.number, card.rarity, card.finish,
+    card.form, card.condition, card.qty, card.marketPrice, card.priceSource,
+    card.priceCheckedAt, card.paidPerCard, card.addedAt,
     card.id, card.printingId, card.imageLarge || card.imageUrl,
   ]);
   return [headers, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');

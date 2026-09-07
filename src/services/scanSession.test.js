@@ -23,28 +23,30 @@ describe('scan session recovery', () => {
   beforeEach(() => { storage = memoryStorage(); });
 
   test('keeps the exact pending printing and original start time', () => {
-    const pin = { id: '32807846', printingId: '32807846:RA01-EN047', game: 'yugioh' };
+    const pin = { id: '32807846', printingId: '32807846:RA01-EN047', game: 'yugioh', name: 'Reinforcement of the Army', setName: '25th Anniversary Rarity Collection', number: 'RA01-EN047' };
     savePendingScanSession({
       name: 'Reinforcement of the Army', game: 'yugioh', pin,
       force: true, startedAt: 1000,
     }, storage);
 
-    assert.deepEqual(loadRecoverableScanSession(storage, 2000), {
-      status: 'pending',
-      name: 'Reinforcement of the Army',
-      game: 'yugioh',
-      pin,
-      force: true,
-      startedAt: 1000,
-    });
+    const recovered = loadRecoverableScanSession(storage, 2000);
+    assert.equal(recovered.status, 'pending');
+    assert.equal(recovered.name, 'Reinforcement of the Army');
+    assert.equal(recovered.pin.printingId, pin.printingId);
+    assert.equal(recovered.pin.recordVersion, 1);
+    assert.equal(recovered.startedAt, 1000);
   });
 
   test('keeps a finished answer for the next app opening', () => {
-    const pin = { game: 'mtg', printingId: 'lea-233', form: 'normal' };
+    const pin = { name: 'Black Lotus', game: 'mtg', printingId: 'lea-233', setName: 'Limited Edition Alpha', number: '233', form: 'normal' };
     const result = { card_name: 'Black Lotus', game: 'mtg', _pin: pin };
     saveCompletedScanSession({ name: 'Black Lotus', game: 'mtg', pin, result, completedAt: 5000 }, storage);
-    assert.deepEqual(loadRecoverableScanSession(storage, 6000)?.result, result);
-    assert.deepEqual(loadRecoverableScanSession(storage, 7000)?.result, result);
+    const first = loadRecoverableScanSession(storage, 6000)?.result;
+    const second = loadRecoverableScanSession(storage, 7000)?.result;
+    assert.equal(first.card.printingId, 'lea-233');
+    assert.equal(first.card, first._pin);
+    assert.equal(first.card, first.printing);
+    assert.equal(second.card.printingId, 'lea-233');
   });
 
   test('drops an old broad scan that silently chose one printing', () => {

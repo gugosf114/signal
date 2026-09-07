@@ -7,9 +7,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 // device this app runs on — the card just appeared slightly larger and sat
 // there. It also carried five absolutely-positioned annotation chips offset at
 // left/right: -10 and -90, numbers chosen against a desktop layout: on a 375px
-// screen the EN-price chip ran off both edges (its value is a sentence, not a
-// number), the 30-day chip sat underneath the top-signal chip, and the close
-// hint read "ESC to close" on a device with no keyboard. All of it is gone; the
+// screen the annotation chips ran off both edges, and the close hint read
+// "ESC to close" on a device with no keyboard. All of it is gone; the
 // card is the whole point of opening this.
 //
 // Pointer events rather than touch events, so one code path covers finger,

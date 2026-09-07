@@ -7,7 +7,17 @@ import {
   parseCardLookupQuery, parseExpansionCache, resolvePrinting,
   resolvePrintingOptions, searchCardsByName, selectRecentMtgSets, selectRecentYugiohSets,
   selectRecentTcgDexPokemonSets, suggestCards, ygoPrintingRows,
+  suggestionSearch,
 } from './fetchExpansions.js';
+
+describe('phone catalogue timing', () => {
+  test('keeps a useful response and still bounds a stalled catalogue', async () => {
+    const useful = await suggestionSearch(new Promise((resolve) => setTimeout(() => resolve(['card']), 5)), 30);
+    const stalled = await suggestionSearch(new Promise(() => {}), 5);
+    assert.deepEqual(useful, { status: 'ok', rows: ['card'] });
+    assert.deepEqual(stalled, { status: 'timeout' });
+  });
+});
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });

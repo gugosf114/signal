@@ -1,9 +1,5 @@
 import { printingLabel } from './printing.js';
-
-// These words claim one physical version, not merely one card name. Without a
-// catalogue pin, Signal cannot prove which object they mean and must not turn
-// the label into a broad name scan.
-const PRINTING_WORDS = /\b(?:alternate art|starlight rare|quarter century|qcr|special illustration rare|illustration rare|secret rare|serialized|borderless|showcase|first edition|1st edition|reverse holo|holofoil)\b/i;
+import { normalizeCardRecord } from './cardRecord.js';
 
 export function hasPrintingPin(pin) {
   if (!pin) return false;
@@ -19,17 +15,23 @@ export function hasPrintingPin(pin) {
   return false;
 }
 
-export function nameClaimsExactPrinting(name) {
-  return PRINTING_WORDS.test(String(name || ''));
-}
-
 export function isSafeRecentScan(item) {
   if (!item?.name) return false;
-  return hasPrintingPin(item.pin);
+  return hasPrintingPin(item.pin)
+    && Boolean(item.pin?.name)
+    && Boolean(item.pin?.setName)
+    && Boolean(item.pin?.number);
 }
 
 export function sanitizeRecentScans(items) {
-  return (Array.isArray(items) ? items : []).filter(isSafeRecentScan);
+  return (Array.isArray(items) ? items : []).map((item) => {
+    const pin = normalizeCardRecord(item?.pin || {}, {
+      name: item?.name,
+      game: item?.game,
+      price: item?.enPrice,
+    });
+    return pin ? { ...item, name: pin.name, game: pin.game, pin } : null;
+  }).filter(isSafeRecentScan);
 }
 
 export function recentPrintingLine(item) {

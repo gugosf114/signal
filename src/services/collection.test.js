@@ -20,14 +20,15 @@ const {
   countCards, collectionValue, collectionValueSummary, cardKey, marketPriceFor,
   formatCollectionMoney, collectionFormLabel, collectionFormOptions, collectionView,
   topPricedCollectionCards,
+  applyCollectionPricePatch, collectionPriceNeedsRefresh,
 } = await import('./collection.js');
 
 const RICH = {
-  id: 'sv8pt5-161', game: 'pokemon', name: 'Umbreon ex',
+  id: 'sv8pt5-161', printingId: 'sv8pt5-161', game: 'pokemon', name: 'Umbreon ex', form: 'normal', finish: 'Normal',
   setName: 'Prismatic Evolutions', number: '161',
   marketPrices: { normal: 100, reverse: 140 }, price: 100,
 };
-const CHEAP = { id: 'sv8pt5-60', game: 'pokemon', name: 'Umbreon ex', setName: 'Prismatic Evolutions', number: '60' };
+const CHEAP = { id: 'sv8pt5-60', printingId: 'sv8pt5-60', game: 'pokemon', name: 'Umbreon ex', form: 'normal', finish: 'Normal', setName: 'Prismatic Evolutions', number: '60' };
 
 describe('collection', () => {
   beforeEach(() => { store = {}; });
@@ -132,24 +133,23 @@ describe('collection', () => {
     assert.equal(list[0].qty, 1);
   });
 
-  test('a card with no catalogue id still gets a stable identity', () => {
+  test('a card with no catalogue id cannot enter the collection', () => {
     const noId = { game: 'yugioh', name: 'Dark Magician', setName: 'LOB', number: '005' };
     addToCollection(noId);
     const list = addToCollection({ ...noId });
-    assert.equal(list.length, 1);
-    assert.equal(list[0].qty, 2);
+    assert.deepEqual(list, []);
   });
 
-  test('same name, different set, no ids: still two cards', () => {
+  test('set names alone cannot create two fake exact cards', () => {
     const a = { game: 'yugioh', name: 'Dark Magician', setName: 'LOB' };
     const b = { game: 'yugioh', name: 'Dark Magician', setName: 'SDY' };
     addToCollection(a);
-    assert.equal(addToCollection(b).length, 2);
+    assert.deepEqual(addToCollection(b), []);
   });
 
   test('Yu-Gi-Oh reprints sharing one card id stay separate', () => {
-    const common = { id: '89631139', printingId: '89631139:LDK2-ENJ01', game: 'yugioh', name: 'Blue-Eyes White Dragon' };
-    const ultra = { id: '89631139', printingId: '89631139:LOB-EN001', game: 'yugioh', name: 'Blue-Eyes White Dragon' };
+    const common = { id: '89631139', printingId: '89631139:LDK2-ENJ01', game: 'yugioh', name: 'Blue-Eyes White Dragon', setName: 'Legendary Decks II', number: 'LDK2-ENJ01' };
+    const ultra = { id: '89631139', printingId: '89631139:LOB-EN001', game: 'yugioh', name: 'Blue-Eyes White Dragon', setName: 'Legend of Blue Eyes White Dragon', number: 'LOB-EN001' };
     addToCollection(common);
     const list = addToCollection(ultra);
     assert.equal(list.length, 2);
@@ -226,6 +226,27 @@ describe('collection', () => {
     assert.equal(marketPriceFor(RICH, 'reverse'), 140);
   });
 
+  test('Collection refresh keeps the exact finish, source, and checked time', () => {
+    const card = { ...RICH, priceCheckedAt: '2026-09-01T00:00:00.000Z' };
+    const refreshed = applyCollectionPricePatch(card, {
+      en_price: '$123.45',
+      price_source: 'TCGplayer',
+      price_checked_at: '2026-09-06T20:00:00.000Z',
+    });
+    assert.equal(refreshed.marketPrice, 123.45);
+    assert.equal(refreshed.marketPrices.normal, 123.45);
+    assert.equal(refreshed.form, 'normal');
+    assert.equal(refreshed.priceSource, 'TCGplayer');
+    assert.equal(refreshed.priceCheckedAt, '2026-09-06T20:00:00.000Z');
+  });
+
+  test('Collection refreshes missing or day-old prices only', () => {
+    const now = Date.parse('2026-09-06T20:00:00.000Z');
+    assert.equal(collectionPriceNeedsRefresh({}), true);
+    assert.equal(collectionPriceNeedsRefresh({ priceCheckedAt: '2026-09-06T19:00:00.000Z' }, now), false);
+    assert.equal(collectionPriceNeedsRefresh({ priceCheckedAt: '2026-09-05T19:00:00.000Z' }, now), true);
+  });
+
   test('missing prices stay missing instead of becoming zero', () => {
     assert.equal(formatCollectionMoney(null), '—');
     assert.equal(formatCollectionMoney(''), '—');
@@ -296,7 +317,8 @@ describe('collection', () => {
   test('Yu-Gi-Oh exact printings ignore a synthetic reverse form', () => {
     const rota = {
       id: '32807846', printingId: '32807846:L26D-ENS08', game: 'yugioh',
-      name: 'Reinforcement of the Army', rarity: 'Starlight Rare',
+      name: 'Reinforcement of the Army', setName: 'Legendary Modern Decks 2026',
+      number: 'L26D-ENS08', rarity: 'Starlight Rare',
     };
     addToCollection(rota, { form: 'normal' });
     const list = addToCollection(rota, { form: 'reverse' });

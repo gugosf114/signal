@@ -6,6 +6,8 @@ import CardImage from './CardImage';
 import CardLightbox from './CardLightbox';
 import { printingIdentity, printingLabel } from '../services/printing';
 import PrintingIdentity from './PrintingIdentity';
+import { normalizeCardRecord } from '../services/cardRecord';
+import { isExactScanTarget } from '../services/scanIdentity';
 
 export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, expectedSignalCount = 8, coveragePct = 0, evidencePct = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null }) {
   const { label, color, blurb } = getScoreLabel(score);
@@ -18,13 +20,22 @@ export default function OverallScore({ score, cardName, game, summary, truncated
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const { toggle: toggleWatch, isWatched } = useWatchedCards();
   const watched = isWatched(cardName, game, pin);
+  const exactCard = pin || printing;
 
   useEffect(() => {
     if (score === null || score === undefined || !cardName || truncated) return;
     try {
       const raw = localStorage.getItem('signal_score_history');
       const parsedHistory = raw ? JSON.parse(raw) : [];
-      const history = Array.isArray(parsedHistory) ? parsedHistory : [];
+      const history = (Array.isArray(parsedHistory) ? parsedHistory : []).map((item) => {
+        const exactPin = normalizeCardRecord(item?.pin || {}, {
+          name: item?.cardName,
+          game: item?.game,
+        });
+        return exactPin && isExactScanTarget(exactPin.game, exactPin)
+          ? { ...item, cardName: exactPin.name, game: exactPin.game, pin: exactPin }
+          : null;
+      }).filter(Boolean);
       const identity = printingIdentity(pin);
       const entry = { score, scoreVersion: SCORE_VERSION, date: new Date().toISOString(), cardName, game, pin };
       const deduped = [entry, ...history.filter((item) => {
@@ -117,10 +128,10 @@ export default function OverallScore({ score, cardName, game, summary, truncated
             {/* Which printing this is. "Charizard" is hundreds of cards at
                 hundreds of prices; the name alone never said which one the
                 numbers below belong to. */}
-            {printingLabel(printing) && (
-              <PrintingIdentity printing={printing} />
+            {printingLabel(exactCard) && (
+              <PrintingIdentity printing={exactCard} />
             )}
-            {!printingLabel(printing) && (
+            {!printingLabel(exactCard) && (
               <div style={{
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 10,
@@ -349,6 +360,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
         onClose={() => setLightboxOpen(false)}
         imageUrl={cardImageUrl}
         cardName={cardName}
+        cardMeta={[printingLabel(exactCard), enPrice || 'Exact price unavailable', exactCard?.priceSource].filter(Boolean).join(' · ')}
       />
     </>
   );

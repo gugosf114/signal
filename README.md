@@ -27,6 +27,8 @@ JP set release calendars).
 
 Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
 
+The system-wide card rule is in [docs/CARD_DATA_CONTRACT.md](docs/CARD_DATA_CONTRACT.md).
+
 ---
 
 ## Current state — 2026-08-23
@@ -1442,3 +1444,34 @@ The transparent gaps and solid cards are unchanged.
 Red and gold remain at the top. The separate lower green orb remains near the
 bottom of the long page, using the Price toggle's `#608870`. Page swipes, text
 contrast, news foil, and every other approved effect are unchanged.
+
+---
+
+## Session log — 2026-09-06 exact card data contract
+
+Every card entry now becomes one exact card record before it can run Full
+Signal or enter Collection. Typed names, card numbers, camera scans, uploads,
+batch scans, Top Trending, the card browser, Recent, Watched, Collection,
+retry, and restored sessions all meet the same gate. The record keeps the game,
+catalogue printing ID, set, printed number, rarity, physical finish, exact
+image, current exact-print price, price source, and check time together.
+
+Scan cache keys now use only game plus exact printing/finish identity. Report
+data, `_pin`, and printing metadata are synchronized to the same record on
+save, cache hit, price refresh, and reopen. Old broad scans cannot run, return
+from cache, affect score history, or silently enter Collection. Safe old exact
+records are normalized in place.
+
+Every relevant compact surface now shows the exact printing and price instead
+of carrying hidden facts: search choices, scanner confirmation, Trending,
+Recent, Watched, browser cards and viewer, loading, full result and viewer,
+Latest Signal, Collection, the add sheet, CSV, and PDF. Collection, Recent, and
+Watched refresh their exact prices after 24 hours.
+
+The unsupported fixed 30-day price field and the invented first-run sample
+card were removed. Direction remains in the verified Signal scorecard and its
+source implications.
+
+The route contract is pinned by tests for all three games and every entry and
+display surface. The complete local suite is 293 JavaScript tests plus 3 Python
+backtest tests; the Vite production build passes.

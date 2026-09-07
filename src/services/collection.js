@@ -3,6 +3,9 @@
 // only the facts that belong to their copy: quantity, condition, form, and an
 // optional amount paid.
 
+import { applyCardPricePatch, cardPriceNeedsRefresh, normalizeCardRecord, stampCardPrice } from './cardRecord.js';
+import { isExactScanTarget } from './scanIdentity.js';
+
 const KEY = 'signal_collection_v1';
 const MAX_ENTRIES = 2000;
 const MAX_QTY = 999;
@@ -102,6 +105,21 @@ export function marketPriceFor(card, form = card?.form) {
   return cleanMoney(picked ?? rowPrice);
 }
 
+export function collectionPriceNeedsRefresh(card, now = Date.now()) {
+  return cardPriceNeedsRefresh(card, now);
+}
+
+export function applyCollectionPricePatch(card, patch) {
+  if (!card || !patch || !Object.prototype.hasOwnProperty.call(patch, 'en_price')) return card;
+  const updated = applyCardPricePatch(card, patch);
+  if (!updated) return card;
+  return normalizeEntry({
+    ...card,
+    ...updated,
+    marketPrice: updated.price,
+  });
+}
+
 function normalizeEntry(card) {
   if (!card || !card.name) return null;
   const qty = cleanQty(card.qty);
@@ -115,27 +133,26 @@ function normalizeEntry(card) {
     && ['tcgplayer', 'exact-catalogue'].includes(card.imageSource)
     ? card.imageSource
     : null;
-  return {
-    id: card.id || null,
-    printingId: card.printingId || card.id || null,
-    game: card.game || null,
-    name: String(card.name).trim(),
-    setName: card.setName || null,
-    setId: card.setId || null,
-    number: card.number || null,
-    rarity: card.rarity || null,
-    finish: card.finish || null,
-    availableFinishes: Array.isArray(card.availableFinishes) ? [...card.availableFinishes] : null,
-    scanImagePath: null,
+  const form = cleanFormForGame(card.game, card.form);
+  const record = normalizeCardRecord({
+    ...card,
+    form,
+    finish: collectionFormLabel(card.game, form) || card.finish,
     imageUrl: smallImage || largeImage,
     imageLarge: largeImage || smallImage,
     imageSource,
+    price: marketPriceFor(card, form),
+  });
+  if (!record) return null;
+  return {
+    ...record,
+    scanImagePath: null,
     tcgplayerProductId,
     tcgplayerImageUrl,
-    form: cleanFormForGame(card.game, card.form),
+    form,
     condition: cleanCondition(card.condition),
     qty,
-    marketPrice: marketPriceFor(card),
+    marketPrice: record.price,
     marketPrices: card.marketPrices && typeof card.marketPrices === 'object'
       ? Object.fromEntries(Object.entries(card.marketPrices)
         .filter(([form]) => Object.prototype.hasOwnProperty.call(FORM_LABELS[card.game] || {}, cleanFormForGame(card.game, form)))
@@ -197,16 +214,18 @@ export function addToCollection(card, details = {}, at = null) {
     at = details;
     details = {};
   }
-  if (!card || !card.name) return loadCollection();
+  const exactCard = stampCardPrice(normalizeCardRecord(card || {}));
+  if (!exactCard || !isExactScanTarget(exactCard.game, exactCard)) return loadCollection();
   const form = cleanFormForGame(card.game, details.form);
   const quantity = cleanQty(details.quantity);
   const paidPerCard = cleanMoney(details.paidPerCard);
   const entry = {
-    ...card,
+    ...exactCard,
     form,
+    finish: collectionFormLabel(exactCard.game, form) || exactCard.finish,
     condition: cleanCondition(details.condition),
     qty: quantity,
-    marketPrice: marketPriceFor(card, form),
+    marketPrice: marketPriceFor(exactCard, form),
     paidPerCard,
     paidKnownQty: paidPerCard === null ? 0 : quantity,
     addedAt: at || new Date().toISOString(),

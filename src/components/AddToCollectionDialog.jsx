@@ -5,6 +5,7 @@ import {
   formatCollectionMoney,
   marketPriceFor,
 } from '../services/collection';
+import { printingLabel } from '../services/printing';
 
 const CONDITIONS = [
   ['near_mint', 'Near mint'],
@@ -96,12 +97,13 @@ export default function AddToCollectionDialog({ card, isOpen, onClose, onAdded }
             <div className="ac-kicker">Add to collection</div>
             <h2 id="add-card-title" className="ac-title">{card.name}</h2>
             <div className="ac-meta">
-              {card.setName || 'Set not listed'}{card.number ? ` · ${card.number}` : ''}
+              {printingLabel({ ...card, form, finish: formOptions.find((option) => option.value === form)?.label || card.finish }) || 'Exact printing selected'}
             </div>
             <div className="ac-market">
               <span>Market price</span>
               <strong>{formatCollectionMoney(marketPrice)}</strong>
               {marketPrice == null && <em>Exact price unavailable</em>}
+              {card.priceSource && <em>{card.priceSource}</em>}
             </div>
           </div>
         </div>

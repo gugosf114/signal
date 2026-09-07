@@ -505,19 +505,6 @@
   opacity: 0;
 }
 
-/* ─── Trend arrows ──────────────────────────────────────────────────────── */
-
-@keyframes trendBounceUp {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
-}
-@keyframes trendBounceDown {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(2px); }
-}
-.trend-bounce-up { animation: trendBounceUp 2.5s ease-in-out infinite; }
-.trend-bounce-down { animation: trendBounceDown 2.5s ease-in-out infinite; }
-
 /* ════════════════════════════════════════════════════════════════════════════
    LOADING THEATER — Tokyo desk × Bloomberg INFO × Solari board
    ════════════════════════════════════════════════════════════════════════════ */
@@ -739,10 +726,14 @@
   max-width: 280px;
   overflow: hidden;
   color: #7A7368;
-  font: 700 8px/1.35 'JetBrains Mono', monospace;
+  font: 700 9px/1.35 'JetBrains Mono', monospace;
   letter-spacing: 0.02em;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.lt-cardslate-price {
+  color: #B8B2A7;
+  font: 650 9px/1.35 'JetBrains Mono', monospace;
 }
 
 /* Top-right cluster */
@@ -1360,6 +1351,15 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.latest-signal-printing {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: -3px 0 9px;
+  color: var(--signal-text-secondary);
+  font: 500 9px/1.35 'JetBrains Mono', monospace;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
 .latest-signal-score {
   display: flex;
   align-items: baseline;
@@ -1385,7 +1385,7 @@
 }
 .latest-signal-market {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   border-top: 1px solid #25272E;
   border-bottom: 1px solid #25272E;
   background: rgba(255, 255, 255, 0.012);
@@ -2109,7 +2109,7 @@
 .quick-price-heading span { color: #8EB099; font: 9px 'JetBrains Mono', monospace; text-align: right; }
 .quick-price-card {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-columns: 52px minmax(0, 1fr);
   align-items: center;
   gap: 11px;
   min-height: 78px;
@@ -2127,10 +2127,10 @@
 }
 .quick-price-noart { display: grid; place-items: center; color: #A39E96; font: 18px 'JetBrains Mono', monospace; }
 .quick-price-card > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.quick-price-card > div strong { overflow: hidden; color: #F1EDE5; font: 700 14px 'Syne', sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.quick-price-card > div strong { display: -webkit-box; overflow: hidden; color: #F1EDE5; font: 700 14px/1.2 'Syne', sans-serif; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .quick-price-card > div span { color: #C2BCB3; font: 700 9px 'Syne', sans-serif; }
-.quick-price-card > div small { overflow: hidden; color: #A39E96; font: 9px 'JetBrains Mono', monospace; text-overflow: ellipsis; white-space: nowrap; }
-.quick-price-card > b { color: #F1EDE5; font: 700 15px 'JetBrains Mono', monospace; white-space: nowrap; }
+.quick-price-card > div small { display: -webkit-box; overflow: hidden; color: #A39E96; font: 9px/1.3 'JetBrains Mono', monospace; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.quick-price-card > b { grid-column: 2; color: #F1EDE5; font: 700 15px 'JetBrains Mono', monospace; white-space: nowrap; }
 .quick-price-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 .quick-price-actions button { min-height: 48px; border-radius: 5px; font: 700 11px 'Syne', sans-serif; cursor: pointer; }
 .quick-price-add { border: 1px solid #608870; background: rgba(96,136,112,0.18); color: #C4D8C8; }
@@ -2185,22 +2185,22 @@
   flex: 1;
 }
 .sb-name {
+  display: -webkit-box;
   font-size: 13px;
   color: #E8E4DC;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .sb-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   color: var(--signal-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
 }
 .sb-game {
   flex: none;
@@ -2617,7 +2617,7 @@
 .live-match-chip--exact { border-color: #356252; color: #9FD9C0; background: rgba(53,98,82,0.2); }
 .live-match-card {
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) auto;
+  grid-template-columns: 58px minmax(0, 1fr);
   align-items: center;
   gap: 13px;
   min-height: 86px;
@@ -2629,10 +2629,11 @@
 .live-match-card img,
 .live-match-art { width: 58px; height: 80px; border-radius: 5px; object-fit: cover; background: #171A20; }
 .live-match-card > div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.live-match-card strong { overflow: hidden; color: #F5F1E8; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
+.live-match-card strong { display: -webkit-box; overflow: hidden; color: #F5F1E8; font-size: 16px; line-height: 1.2; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .live-match-card span { color: #B6B1A8; font: 700 10px 'Syne', sans-serif; }
-.live-match-card p { margin: 0; overflow: hidden; color: #77736B; font: 10px/1.4 'JetBrains Mono', monospace; text-overflow: ellipsis; white-space: nowrap; }
-.live-match-card b { color: #E8E4DC; font: 700 15px 'JetBrains Mono', monospace; white-space: nowrap; }
+.live-match-card p { display: -webkit-box; margin: 0; overflow: hidden; color: #77736B; font: 10px/1.4 'JetBrains Mono', monospace; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.live-match-card > div > small { color: #8E8980; font: 9px/1.3 'JetBrains Mono', monospace; }
+.live-match-card > b { grid-column: 2; color: #E8E4DC; font: 700 15px 'JetBrains Mono', monospace; white-space: nowrap; }
 .live-match-options { display: grid; gap: 7px; margin-top: 10px; }
 .live-match-option {
   min-height: 54px;
@@ -3817,8 +3818,7 @@
 
 .price-cell { animation: microDataCellSettle 0.38s cubic-bezier(0.2, 0.78, 0.22, 1.1) backwards; }
 .price-cell--market { animation-delay: 0.08s; }
-.price-cell--trend { animation-delay: 0.16s; }
-.price-cell--alignment { animation-delay: 0.24s; }
+.price-cell--alignment { animation-delay: 0.16s; }
 @keyframes microDataCellSettle {
   0% { opacity: 0.45; transform: translateY(5px); }
   100% { opacity: 1; transform: translateY(0); }
@@ -4108,6 +4108,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.col-printing {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--signal-text-muted);
+  font: 500 9px/1.35 'JetBrains Mono', monospace;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .col-card-meta {

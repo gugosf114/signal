@@ -8,6 +8,8 @@ import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
 import { fetchCardImage } from '../services/fetchCardImage';
 import { scannerMatchDetails, scannerMatchMeta, scannerMatchPrice } from '../services/scannerMatch';
 import CardScanner from './CardScanner';
+import { normalizeCardRecord, stampCardPrice } from '../services/cardRecord';
+import { isExactScanTarget } from '../services/scanIdentity';
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
 // Typing "Charizard" and hitting Enter used to scan whatever printing the API
@@ -57,6 +59,7 @@ function QuickPriceResult({ card, onAdd, onDone }) {
           <strong>{details.name}</strong>
           <span>{details.gameLabel}</span>
           <small>{scannerMatchMeta(details)}</small>
+          {details.priceSource && <small>{details.priceSource}</small>}
         </div>
         <b>{scannerMatchPrice(details)}</b>
       </div>
@@ -186,7 +189,10 @@ export default function SearchBar({
   }, [photoMenuOpen]);
 
   const routeResolvedCard = async (pricedCard) => {
-    const resolvedCard = await withResolvedCardImage(pricedCard);
+    const resolvedCard = stampCardPrice(normalizeCardRecord(await withResolvedCardImage(pricedCard)));
+    if (!resolvedCard || !isExactScanTarget(resolvedCard.game, resolvedCard)) {
+      throw new Error('Choose one exact printing before continuing.');
+    }
     reqToken.current += 1;
     quietFor.current = resolvedCard.name;
     setSuggestions([]);
@@ -222,6 +228,8 @@ export default function SearchBar({
         { requireProductId: card.game === 'yugioh' },
       );
       await routeResolvedCard(pricedCard);
+    } catch (error) {
+      setScanError(error?.message || 'The exact printing could not be loaded.');
     } finally {
       setResolving(false);
     }
@@ -384,7 +392,8 @@ export default function SearchBar({
   const preparePhotoMatch = async ({ card, pin }) => {
     if (!pin) return;
     const exactName = pin.name || card.name;
-    const exactPin = await withResolvedCardImage(pin, card);
+    const exactPin = stampCardPrice(normalizeCardRecord(await withResolvedCardImage(pin, card), card));
+    if (!exactPin || !isExactScanTarget(exactPin.game, exactPin)) return;
     return { card, exactPin, exactName };
   };
 
@@ -554,7 +563,7 @@ export default function SearchBar({
           aria-autocomplete="list"
           aria-controls="signal-card-suggestions"
           aria-activedescendant={active >= 0 ? `signal-card-option-${active}` : undefined}
-          placeholder={lookupMode ? 'Card name, number, or name + last digits' : 'Choose a lookup above first'}
+          placeholder={lookupMode ? 'Card name or number' : 'Choose a lookup above first'}
           disabled={busy || !lookupMode}
           enterKeyHint="search"
           style={{
@@ -602,6 +611,7 @@ export default function SearchBar({
                       {card.number ? ` · ${card.number}` : ''}
                       {card.rarity ? ` · ${card.rarity}` : ''}
                       {card.finish ? ` · ${card.finish}` : ''}
+                      {card.priceSource ? ` · ${card.priceSource}` : ''}
                     </span>
                   </span>
                   {card.price != null && (

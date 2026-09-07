@@ -21,7 +21,7 @@ export default function PrintingIdentity({ printing }) {
   const game = printing?.game || null;
   const setName = printing?.setName || printing?.setId || null;
   const code = printingCode(printing);
-  const details = [code, printing?.rarity].filter(Boolean).join(' · ');
+  const details = [code, printing?.rarity, printing?.finish].filter(Boolean).join(' · ');
   const setLogo = useMemo(() => {
     if (game === 'pokemon') return printing?.setLogoUrl || null;
     if (game === 'mtg' && printing?.setId) {

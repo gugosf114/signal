@@ -26,10 +26,10 @@ const {
   attachScanPin,
 } = await import('./scanCache.js');
 
-const RICH = { id: 'sv8pt5-161', game: 'pokemon' };
-const CHEAP = { id: 'sv8pt5-60', game: 'pokemon' };
-const YGO_COMMON = { id: '89631139', printingId: '89631139:LDK2-ENJ01', game: 'yugioh' };
-const YGO_ULTRA = { id: '89631139', printingId: '89631139:LOB-EN001', game: 'yugioh' };
+const RICH = { id: 'sv8pt5-161', printingId: 'sv8pt5-161', name: 'Umbreon ex', game: 'pokemon', setName: 'Prismatic Evolutions', number: '161', form: 'holo' };
+const CHEAP = { id: 'sv8pt5-60', printingId: 'sv8pt5-60', name: 'Umbreon ex', game: 'pokemon', setName: 'Prismatic Evolutions', number: '60', form: 'normal' };
+const YGO_COMMON = { id: '89631139', printingId: '89631139:LDK2-ENJ01', name: 'Blue-Eyes White Dragon', game: 'yugioh', setName: 'Legendary Decks II', number: 'LDK2-ENJ01' };
+const YGO_ULTRA = { id: '89631139', printingId: '89631139:LOB-EN001', name: 'Blue-Eyes White Dragon', game: 'yugioh', setName: 'Legend of Blue Eyes White Dragon', number: 'LOB-EN001' };
 
 describe('scanCache printing keys', () => {
   beforeEach(() => { store = {}; });
@@ -43,8 +43,8 @@ describe('scanCache printing keys', () => {
   });
 
   test('foil and non-foil of one printing do not share an entry', () => {
-    const normal = { id: 'mtg-1', printingId: 'mtg-1', game: 'mtg', form: 'normal' };
-    const foil = { id: 'mtg-1', printingId: 'mtg-1', game: 'mtg', form: 'foil' };
+    const normal = { id: 'mtg-1', printingId: 'mtg-1', name: 'Optimus Prime, Hero', game: 'mtg', setName: 'Transformers', number: '13', form: 'normal' };
+    const foil = { id: 'mtg-1', printingId: 'mtg-1', name: 'Optimus Prime, Hero', game: 'mtg', setName: 'Transformers', number: '13', form: 'foil' };
     setCachedScan('Optimus Prime, Hero', 'mtg', { prices: { en_price: '$14.70' }, _pin: normal }, normal);
     setCachedScan('Optimus Prime, Hero', 'mtg', { prices: { en_price: '$26.32' }, _pin: foil }, foil);
     assert.equal(getCachedScan('Optimus Prime, Hero', 'mtg', normal).prices.en_price, '$14.70');
@@ -57,15 +57,15 @@ describe('scanCache printing keys', () => {
   });
 
   test('Yu-Gi-Oh reprints sharing one card id use different entries', () => {
-    setCachedScan('Blue-Eyes White Dragon', 'yugioh', { printing: 'common' }, YGO_COMMON);
-    setCachedScan('Blue-Eyes White Dragon', 'yugioh', { printing: 'ultra' }, YGO_ULTRA);
-    assert.equal(getCachedScan('Blue-Eyes White Dragon', 'yugioh', YGO_COMMON).printing, 'common');
-    assert.equal(getCachedScan('Blue-Eyes White Dragon', 'yugioh', YGO_ULTRA).printing, 'ultra');
+    setCachedScan('Blue-Eyes White Dragon', 'yugioh', { summary: 'common' }, YGO_COMMON);
+    setCachedScan('Blue-Eyes White Dragon', 'yugioh', { summary: 'ultra' }, YGO_ULTRA);
+    assert.equal(getCachedScan('Blue-Eyes White Dragon', 'yugioh', YGO_COMMON).summary, 'common');
+    assert.equal(getCachedScan('Blue-Eyes White Dragon', 'yugioh', YGO_ULTRA).summary, 'ultra');
   });
 
-  test('unpinned scans still round-trip', () => {
+  test('unpinned scans are never cached', () => {
     setCachedScan('Black Lotus', 'mtg', { prices: { en: 7312 } });
-    assert.equal(getCachedScan('Black Lotus', 'mtg').prices.en, 7312);
+    assert.equal(getCachedScan('Black Lotus', 'mtg'), null);
   });
 
   test('a price top-up lands on the pinned entry only', () => {
@@ -88,11 +88,9 @@ describe('scanCache printing keys', () => {
     assert.equal(getCachedScan('Umbreon ex', 'pokemon', CHEAP).prices.en, 7);
   });
 
-  test('a pin with no id behaves like no pin at all', () => {
-    // Browse-grid cards from a catalogue that gives us no stable id must not
-    // each get their own cache entry keyed on "undefined".
+  test('a pin with no id cannot create a cache entry', () => {
     setCachedScan('Dark Magician', 'yugioh', { prices: { en: 1 } }, { game: 'yugioh' });
-    assert.equal(getCachedScan('Dark Magician', 'yugioh').prices.en, 1);
+    assert.equal(getCachedScan('Dark Magician', 'yugioh'), null);
   });
 
   test('partial scans are never cached', () => {
@@ -102,7 +100,7 @@ describe('scanCache printing keys', () => {
 
   test('old exact-print cache hits cannot revive a broad card price in prose', () => {
     const pin = {
-      id: '32807846', printingId: '32807846:L26D-ENS08', game: 'yugioh',
+      id: '32807846', printingId: '32807846:L26D-ENS08', name: 'Reinforcement of the Army', game: 'yugioh', setName: 'Legendary Modern Decks 2026', number: 'L26D-ENS08',
     };
     setCachedScan('Reinforcement of the Army', 'yugioh', {
       _pin: pin,
@@ -139,6 +137,6 @@ describe('scanCache printing keys', () => {
     const pin = { game: 'pokemon', printingId: 'ex15-97', setName: 'Dragon Frontiers', number: '97', form: 'holo', pinned: true };
     const hit = getCachedScan('Rayquaza ex δ', 'pokemon', pin);
     assert.equal(hit.prices.en_price, '$273.00');
-    assert.equal(hit.prices.trend_30d, '');
+    assert.equal('trend_30d' in hit.prices, false);
   });
 });

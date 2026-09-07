@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GAME_LABELS } from '../config/signals';
 import { getTopTrending } from '../services/fetchTopTrending';
-import { hasPrintingPin } from '../services/recentScans';
+import { isExactScanTarget } from '../services/scanIdentity';
+import { printingLabel } from '../services/printing';
+import { cardPriceLabel } from '../services/cardRecord';
 import GameMark from './GameMark';
 import ScrollReveal from './ScrollReveal';
 
@@ -91,9 +93,9 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
           onScroll={updateFade}
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
             gap: 6,
-            maxHeight: 108,
+            maxHeight: 250,
             overflowY: 'auto',
             alignContent: 'start',
             paddingRight: 2,
@@ -107,8 +109,8 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
               <button
               key={`quick-pick-${idx}`}
               className={`quick-pick-card quick-pick-card--${card.game || 'unknown'}`}
-              onClick={() => !loading && hasPrintingPin(card) && onSelect(card.name, card.game, { pin: card })}
-              disabled={loading || !hasPrintingPin(card)}
+              onClick={() => !loading && isExactScanTarget(card.game, card) && onSelect(card.name, card.game, { pin: card })}
+              disabled={loading || !isExactScanTarget(card.game, card)}
               style={{
                 '--deal-delay': `${dealDelay}s`,
                 '--deal-x': idx % 2 === 0 ? '-18px' : '18px',
@@ -119,8 +121,8 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
                 gap: 6,
                 width: '100%',
                 minWidth: 0,
-                minHeight: 32,
-                padding: '5px 10px',
+                minHeight: 72,
+                padding: '7px 10px',
                 background: 'var(--signal-tile)',
                 border: '1px solid #4A464F',
                 borderRadius: 2,
@@ -130,7 +132,6 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
                 fontFamily: "'Syne', sans-serif",
                 fontWeight: 500,
                 transition: 'all 0.12s',
-                whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 opacity: loading ? 0.3 : 1,
                 letterSpacing: '0.02em',
@@ -147,7 +148,13 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
               }}
             >
               <GameMark game={card.game} compact alive />
-              <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{card.name}</span>
+              <span style={{ minWidth: 0, overflow: 'hidden', display: 'flex', flex: 1, flexDirection: 'column', gap: 2 }}>
+                <strong style={{ overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, fontWeight: 600, lineHeight: 1.15 }}>{card.name}</strong>
+                <small style={{ overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, color: 'var(--signal-text-muted)', font: "500 9px/1.25 'JetBrains Mono', monospace" }}>{printingLabel(card)}</small>
+              </span>
+              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
+                <b style={{ color: '#E8E4DC', font: "650 10px/1.1 'JetBrains Mono', monospace" }}>{cardPriceLabel(card)}</b>
+                {card.priceSource && <small style={{ color: 'var(--signal-text-muted)', font: "500 9px/1 'JetBrains Mono', monospace" }}>{card.priceSource}</small>}
               {/* Only shown when the source article was specifically about price
                   spikes — a mixed "biggest movers" list carries no arrow rather
                   than a guessed direction. Title names the article. */}
@@ -163,6 +170,7 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
                   }}
                 >▲</span>
               )}
+              </span>
               </button>
             );
           })}

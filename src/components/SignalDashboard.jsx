@@ -32,6 +32,7 @@ import { isExactScanTarget } from '../services/scanIdentity';
 import { recordScanDuration } from '../services/scanProgress';
 import { pendingScanCard } from '../services/pendingScan';
 import { resultCardPin } from '../services/printing';
+import { normalizeCardRecord, stampCardPrice, withCardRecord } from '../services/cardRecord';
 import { addToCollection } from '../services/collection';
 import {
   PAGE_SWIPE_IGNORE_SELECTOR,
@@ -160,14 +161,17 @@ export default function SignalDashboard() {
     refreshCachedPrices(name, game, patch, pin);
     // The user may have navigated away while the free API was in flight.
     if (myToken !== navTokenRef.current) return;
-    setResult((prev) =>
-      prev ? {
+    setResult((prev) => {
+      if (!prev) return prev;
+      const next = withCardRecord({
         ...prev,
         prices: { ...prev.prices, ...patch },
         grading_roi: null,
         _relatedPriceDataStale: true,
-      } : prev
-    );
+      }, prev.card || pin);
+      saveCompletedScanSession({ name, game, pin: next.card || pin, result: next });
+      return next;
+    });
   };
 
   // A scan cached before the printing line existed shows no identifier under
@@ -208,6 +212,11 @@ export default function SignalDashboard() {
         }
       } catch {}
     }
+
+    resolvedPin = stampCardPrice(normalizeCardRecord(resolvedPin || {}, {
+      name: resolvedName,
+      game: resolvedGame,
+    }));
 
     // One gate guards every paid entry path: typed search, camera, upload,
     // browse, recent, watched, Trending, retry, and restored sessions.
@@ -284,7 +293,7 @@ export default function SignalDashboard() {
 
     try {
       const raw = await analyzeCard(resolvedName, resolvedGame, { signal: controller.signal, pin: resolvedPin });
-      const data = resolvedPin ? { ...raw, _pin: resolvedPin } : raw;
+      const data = withCardRecord(raw, resolvedPin);
       // If goHome() bumped the nav token while we were scanning, the user has
       // already left the result page — do NOT yank them back by setting result.
       if (myToken !== navTokenRef.current) return;
@@ -705,20 +714,16 @@ export default function SignalDashboard() {
             <button
               onClick={() => {
                 const pin = resultCardPin(result) || {};
-                setAddCard({
+                setAddCard(normalizeCardRecord({
                   ...pin,
-                  id: pin.id || pin.catalogId || result.printing?.catalogId || null,
-                  printingId: pin.printingId || pin.id || pin.catalogId || null,
                   name: result.card_name,
                   game: result.game,
-                  setName: pin.setName || result.printing?.setName || null,
-                  setId: pin.setId || result.printing?.setId || null,
-                  number: pin.number || result.printing?.number || null,
                   imageUrl: pin.imageUrl || cardImageUrl,
                   imageLarge: pin.imageLarge || cardImageUrl,
                   price: pin.price ?? firstDollar(result.prices?.en_price),
-                  marketPrices: pin.marketPrices || null,
-                });
+                  priceSource: result.prices?.price_source || pin.priceSource,
+                  priceCheckedAt: result.prices?.price_checked_at || pin.priceCheckedAt,
+                }));
               }}
               className="result-add-button"
               aria-label={`Add ${result.card_name || 'card'} to collection`}
@@ -925,7 +930,6 @@ export default function SignalDashboard() {
             <PriceComparison
               data={{
                 ...result.prices,
-                trend_30d: result.prices?.trend_30d,
                 signal_vs_market: result.prices?.signal_vs_market,
               }}
             />

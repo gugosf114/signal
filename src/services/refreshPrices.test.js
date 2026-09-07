@@ -5,16 +5,23 @@ import { pricePatchFromCardData } from './refreshPrices.js';
 
 describe('cached price refresh', () => {
   test('clears a stale broad price when the exact print has no price', () => {
-    assert.deepEqual(pricePatchFromCardData({
+    const patch = pricePatchFromCardData({
       priceLines: null,
       priceScope: 'exact-print price unavailable',
-    }), { en_price: '' });
+    });
+    assert.equal(patch.en_price, '');
+    assert.equal(patch.price_source, '');
+    assert.ok(patch.price_checked_at);
   });
 
   test('keeps a real exact market price', () => {
-    assert.deepEqual(pricePatchFromCardData({
+    const patch = pricePatchFromCardData({
       priceLines: ['Market price: $18.00'],
       priceScope: 'set-code printing',
-    }), { en_price: '$18.00' });
+      priceSource: 'YGOPRODeck',
+    });
+    assert.equal(patch.en_price, '$18.00');
+    assert.equal(patch.price_source, 'YGOPRODeck');
+    assert.ok(patch.price_checked_at);
   });
 });

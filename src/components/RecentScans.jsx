@@ -4,6 +4,8 @@ import { getCachedScan } from '../services/scanCache';
 import { recentPrintingLine, sanitizeRecentScans } from '../services/recentScans';
 import GameMark from './GameMark';
 import ScrollReveal from './ScrollReveal';
+import { applyCardPricePatch, cardPriceLabel, cardPriceNeedsRefresh } from '../services/cardRecord';
+import { refreshPrices } from '../services/refreshPrices';
 
 // Distinct from QuickPicks: this is YOUR trace through the app.
 // Visual cue: hairline divider + label, then log-style rows
@@ -12,6 +14,8 @@ export default function RecentScans({ onSelect, loading, introActive = false }) 
   const [scans, setScans] = useState([]);
   const [showFade, setShowFade] = useState(false);
   const listRef = useRef(null);
+  const priceRefreshAttempted = useRef(new Set());
+  const mountedRef = useRef(true);
 
   const updateFade = () => {
     const list = listRef.current;
@@ -47,6 +51,37 @@ export default function RecentScans({ onSelect, loading, introActive = false }) 
       window.removeEventListener('storage', load);
     };
   }, []);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    const stale = scans.filter((item) => {
+      const key = `${item.game}:${item.pin?.printingId}:${item.pin?.form || ''}`;
+      return cardPriceNeedsRefresh(item.pin) && !priceRefreshAttempted.current.has(key);
+    });
+    if (!stale.length) return;
+    for (const item of stale) priceRefreshAttempted.current.add(`${item.game}:${item.pin?.printingId}:${item.pin?.form || ''}`);
+    Promise.all(stale.map(async (item) => [
+      `${item.game}:${item.pin?.printingId}:${item.pin?.form || ''}`,
+      await refreshPrices(item.name, item.game, item.pin).catch(() => null),
+    ])).then((updates) => {
+      if (!mountedRef.current) return;
+      const byKey = new Map(updates.filter(([, patch]) => patch));
+      if (!byKey.size) return;
+      setScans((current) => {
+        const next = current.map((item) => {
+          const key = `${item.game}:${item.pin?.printingId}:${item.pin?.form || ''}`;
+          const patch = byKey.get(key);
+          return patch ? { ...item, pin: applyCardPricePatch(item.pin, patch) } : item;
+        });
+        localStorage.setItem('signal_recent_scans', JSON.stringify(next));
+        return next;
+      });
+    });
+  }, [scans]);
 
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = 0;
@@ -97,7 +132,7 @@ export default function RecentScans({ onSelect, loading, introActive = false }) 
             display: 'grid',
             gridTemplateColumns: 'minmax(0, 1fr)',
             gap: 4,
-            maxHeight: 140,
+            maxHeight: 176,
             overflowY: 'auto',
             paddingRight: 3,
             scrollbarWidth: 'thin',
@@ -124,13 +159,13 @@ export default function RecentScans({ onSelect, loading, introActive = false }) 
                 '--dust-drift-end': i === 0 ? '-14px' : (i === 1 ? '16px' : '-7px'),
                 '--dust-turn': i === 0 ? '-1.2deg' : (i === 1 ? '1.4deg' : '-0.5deg'),
                 display: 'grid',
-                gridTemplateColumns: '72px minmax(0, 1.25fr) minmax(0, 0.75fr)',
+                gridTemplateColumns: '64px minmax(0, 1fr) auto',
                 alignItems: 'center',
                 gap: 9,
                 width: '100%',
                 minWidth: 0,
-                minHeight: 44,
-                padding: '5px 10px 5px 12px',
+                minHeight: 68,
+                padding: '7px 10px 7px 12px',
                 background: 'var(--signal-tile)',
                 border: 'none',
                 borderLeft: `2px solid ${color}40`,
@@ -166,29 +201,28 @@ export default function RecentScans({ onSelect, loading, introActive = false }) 
                 minWidth: 0,
                 overflow: 'hidden',
                 textAlign: 'left',
-                fontFamily: "'Instrument Serif', serif",
-                fontStyle: 'italic',
-                fontSize: 15,
-                lineHeight: 1.2,
                 display: 'flex',
-                alignItems: 'center',
-                gap: 7,
+                flexDirection: 'column',
+                gap: 3,
               }}>
-                <GameMark game={s.game} compact />
-                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                <span style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <GameMark game={s.game} compact />
+                  <span style={{ minWidth: 0, overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, fontFamily: "'Instrument Serif', serif", fontStyle: 'italic', fontSize: 15, lineHeight: 1.15 }}>{s.name}</span>
+                </span>
+                <small style={{ overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, color: 'var(--signal-text-secondary)', fontFamily: "'JetBrains Mono', monospace", fontSize: 9, lineHeight: 1.2 }}>{printing || ''}</small>
               </span>
-              <small style={{
+              <span style={{
                 minWidth: 0,
                 overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                color: 'var(--signal-text-secondary)',
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 8,
-                fontStyle: 'normal',
-                letterSpacing: '0.02em',
-                textAlign: 'left',
-              }}>{printing ? `· ${printing}` : ''}</small>
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                textAlign: 'right',
+                alignItems: 'flex-end',
+              }}>
+                <b style={{ color: '#C8C4BC', fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 650, whiteSpace: 'nowrap' }}>{cardPriceLabel(s.pin)}</b>
+                {s.pin?.priceSource && <small style={{ color: 'var(--signal-text-muted)', fontFamily: "'JetBrains Mono', monospace", fontSize: 9 }}>{s.pin.priceSource}</small>}
+              </span>
             </button>
           );
           })}

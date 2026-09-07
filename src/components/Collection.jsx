@@ -5,6 +5,8 @@ import {
   collectionFormLabel, formatCollectionMoney, marketPriceFor,
   topPricedCollectionCards,
   collectionView,
+  applyCollectionPricePatch,
+  collectionPriceNeedsRefresh,
 } from '../services/collection';
 import {
   parseCollectionBackup, saveCollectionBackup, saveCollectionCsv,
@@ -20,6 +22,10 @@ import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
 import CollectionCurrencies from './CollectionCurrencies';
 import ScrollReveal from './ScrollReveal';
+import { printingIdentity, printingLabel } from '../services/printing';
+import { normalizeCardRecord, stampCardPrice } from '../services/cardRecord';
+import { isExactScanTarget } from '../services/scanIdentity';
+import { refreshPrices } from '../services/refreshPrices';
 import pokeBallMark from '../assets/binders/poke-ball.svg';
 import yugiohTcgLogo from '../assets/binders/yugioh-tcg-logo.png';
 import magicLogo from '../assets/binders/magic-logo.png';
@@ -80,6 +86,8 @@ export default function Collection({
   const [sort, setSort] = useState('newest');
   const importRef = useRef(null);
   const flashTimer = useRef(null);
+  const priceRefreshAttempted = useRef(new Set());
+  const mountedRef = useRef(true);
 
   const reload = useCallback(() => setCards(loadCollection()), []);
 
@@ -139,7 +147,39 @@ export default function Collection({
     return () => { cancelled = true; };
   }, [cards]);
 
+  useEffect(() => {
+    const unique = new Map();
+    for (const card of cards) {
+      const key = printingIdentity(card);
+      if (key && !unique.has(key)) unique.set(key, card);
+    }
+    const stale = [...unique.entries()].filter(([key, card]) => {
+      return isExactScanTarget(card.game, card)
+        && collectionPriceNeedsRefresh(card)
+        && !priceRefreshAttempted.current.has(key);
+    }).slice(0, 12);
+    if (!stale.length) return undefined;
+    for (const [key] of stale) priceRefreshAttempted.current.add(key);
+    Promise.all(stale.map(async ([key, card]) => [
+      key,
+      await refreshPrices(card.name, card.game, card).catch(() => null),
+    ])).then((updates) => {
+      if (!mountedRef.current) return;
+      const byKey = new Map(updates.filter(([, patch]) => patch));
+      if (!byKey.size) return;
+      setCards((current) => saveCollection(current.map((card) => {
+        const patch = byKey.get(printingIdentity(card));
+        return patch ? applyCollectionPricePatch(card, patch) : card;
+      })));
+    });
+    return undefined;
+  }, [cards]);
+
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const flash = useCallback((kind, text) => {
     setStatus({ kind, text });
@@ -342,8 +382,10 @@ export default function Collection({
                 >+</button>
               </div>
               <div className="col-name">{card.name}</div>
+              <div className="col-printing">{printingLabel(card) || 'Needs exact match'}</div>
               <div className="col-card-meta">
                 <strong>{formatCollectionMoney(card.marketPrice)}</strong>
+                {card.priceSource && <span>{card.priceSource}</span>}
                 <span>{holdingMeta(card)}</span>
                 {card.paidPerCard != null && <span>Paid {formatCollectionMoney(card.paidPerCard)}</span>}
                 <span>Added {addedLabel(card.addedAt)}</span>
@@ -356,11 +398,11 @@ export default function Collection({
       <CardBrowser
         actionLabel="Add to collection"
         onCardSelect={async (_name, _game, options = {}) => {
-          if (options.pin) onAddCard?.(await addTcgplayerPrice(
+          if (options.pin) onAddCard?.(stampCardPrice(normalizeCardRecord(await addTcgplayerPrice(
             options.pin,
             undefined,
             { requireProductId: options.pin.game === 'yugioh' },
-          ));
+          ))));
         }}
       />
 
@@ -370,14 +412,15 @@ export default function Collection({
         imageUrl={viewing?.imageLarge || viewing?.imageUrl}
         cardName={viewing?.name}
         cardMeta={viewing ? [
-          [viewing.setName, viewing.number].filter(Boolean).join(' · '),
+          printingLabel(viewing),
           `${formatCollectionMoney(viewing.marketPrice)} each`,
+          viewing.priceSource,
           `${viewing.qty} cop${viewing.qty === 1 ? 'y' : 'ies'}`,
           holdingMeta(viewing),
           `Added ${addedLabel(viewing.addedAt)}`,
         ].filter(Boolean).join('  ·  ') : null}
         scanLabel="Open Signal"
-        onScan={viewing && onLookup ? () => {
+        onScan={viewing && onLookup && isExactScanTarget(viewing.game, viewing) ? () => {
           const card = viewing;
           setViewing(null);
           onLookup(card.name, card.game, { pin: card });

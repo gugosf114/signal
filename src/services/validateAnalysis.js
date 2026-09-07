@@ -91,7 +91,6 @@ export function normalizeAnalysis(parsed, { cardName = '', game = null, now = Da
     game: resolvedGame,
     prices: {
       en_price: text(prices.en_price, 160),
-      trend_30d: text(prices.trend_30d, 160),
       signal_vs_market: alignment(prices.signal_vs_market),
     },
     ebay_listings: {

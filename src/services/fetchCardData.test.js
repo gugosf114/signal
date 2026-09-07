@@ -41,7 +41,7 @@ describe('fetchCardData exact-print contract', () => {
     };
 
     const result = await fetchCardData('Mega Darkrai ex', 'pokemon', {
-      id: 'me05-120', game: 'pokemon', source: 'tcgdex', form: 'holo', finish: 'Holo',
+      id: 'me05-120', game: 'pokemon', source: 'tcgdex', form: 'holo', finish: 'Holo', setName: 'Pitch Black', number: '120',
     });
     assert.equal(result.setName, 'Pitch Black');
     assert.deepEqual(result.priceLines, ['Holofoil: $214.69 market / $190.00 low / $250.00 high']);
@@ -76,7 +76,7 @@ describe('fetchCardData exact-print contract', () => {
       },
     });
     const result = await fetchCardData('Testmon', 'pokemon', {
-      id: 'card-1', printingId: 'card-1', game: 'pokemon', form: 'reverse', finish: 'Reverse Holo',
+      id: 'card-1', printingId: 'card-1', game: 'pokemon', setName: 'Test Set', number: '7', form: 'reverse', finish: 'Reverse Holo',
     });
     assert.deepEqual(result.priceLines, ['Reverse Holo: $12.00 market']);
     assert.equal(result.priceScope, 'exact finish');
@@ -88,7 +88,7 @@ describe('fetchCardData exact-print contract', () => {
       collector_number: '4', rarity: 'rare', prices: { usd: '3.00', usd_foil: '9.50' }, legalities: {},
     });
     const result = await fetchCardData('Test Mage', 'mtg', {
-      id: 'mtg-1', printingId: 'mtg-1', game: 'mtg', form: 'foil', finish: 'Foil',
+      id: 'mtg-1', printingId: 'mtg-1', game: 'mtg', setName: 'Test Set', number: '4', form: 'foil', finish: 'Foil',
     });
     assert.deepEqual(result.priceLines, ['Foil: $9.50']);
     assert.equal(result.priceScope, 'exact finish');
@@ -102,7 +102,7 @@ describe('fetchCardData exact-print contract', () => {
     };
 
     const result = await fetchCardData('Charizard ex', 'pokemon', {
-      id: 'sv8pt5-161', game: 'pokemon', setName: 'Prismatic Evolutions', number: '161',
+      id: 'sv8pt5-161', printingId: 'sv8pt5-161', game: 'pokemon', form: 'holo', setName: 'Prismatic Evolutions', number: '161',
     });
 
     assert.equal(result, null);
@@ -127,7 +127,7 @@ describe('fetchCardData exact-print contract', () => {
     });
 
     const result = await fetchCardData('Blue-Eyes White Dragon', 'yugioh', {
-      id: '89631139', game: 'yugioh', setName: 'Legendary Decks II',
+      id: '89631139', printingId: '89631139:LDK2-ENJ01', game: 'yugioh', setName: 'Legendary Decks II',
       setId: 'LDK2-ENJ01', number: 'LDK2-ENJ01', rarity: 'Common',
     });
 
@@ -158,7 +158,7 @@ describe('fetchCardData exact-print contract', () => {
     });
 
     const result = await fetchCardData('Reinforcement of the Army', 'yugioh', {
-      id: '32807846', game: 'yugioh', setName: 'Legendary Modern Decks 2026',
+      id: '32807846', printingId: '32807846:L26D-ENS08', game: 'yugioh', setName: 'Legendary Modern Decks 2026',
       setId: 'L26D-ENS08', number: 'L26D-ENS08', rarity: 'Starlight Rare',
     });
 
@@ -166,7 +166,7 @@ describe('fetchCardData exact-print contract', () => {
     assert.equal(result.priceScope, 'exact-print price unavailable');
     const trusted = applyTrustedMarketPrice({ en_price: '$0.13', trend_30d: 'up 30%' }, result, null);
     assert.equal(trusted.en_price, '');
-    assert.equal(trusted.trend_30d, '');
+    assert.equal('trend_30d' in trusted, false);
     const cleaned = applyTrustedPriceNarrative({
       summary: 'Strong scarcity, though the all-printing market price of $0.13 is misleading.',
       signals: [{ detail: 'The market price is $0.13.', sources: [] }],
@@ -176,13 +176,10 @@ describe('fetchCardData exact-print contract', () => {
     assert.doesNotMatch(cleaned.signals[0].detail, /\$0\.13/);
   });
 
-  test('Pokemon suffixes remain part of an unpinned exact-name lookup', async () => {
-    let requested = '';
-    globalThis.fetch = async (url) => {
-      requested = decodeURIComponent(String(url));
-      return response(200, { data: [] });
-    };
-    await fetchCardData('Charizard ex', 'pokemon');
-    assert.match(requested, /name:"Charizard ex"/);
+  test('an unpinned name never reaches a card API', async () => {
+    let calls = 0;
+    globalThis.fetch = async () => { calls += 1; return response(200, { data: [] }); };
+    assert.equal(await fetchCardData('Charizard ex', 'pokemon'), null);
+    assert.equal(calls, 0);
   });
 });

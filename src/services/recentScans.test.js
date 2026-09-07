@@ -2,7 +2,6 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   hasPrintingPin,
-  nameClaimsExactPrinting,
   recentPrintingLine,
   sanitizeRecentScans,
 } from './recentScans.js';
@@ -36,17 +35,16 @@ describe('recent scan printing safety', () => {
       score: 45,
       pin: null,
     };
-    assert.deepEqual(sanitizeRecentScans([unsafe, EXACT_ROTA]), [EXACT_ROTA]);
+    const clean = sanitizeRecentScans([unsafe, EXACT_ROTA]);
+    assert.equal(clean.length, 1);
+    assert.equal(clean[0].name, EXACT_ROTA.name);
+    assert.equal(clean[0].pin.printingId, EXACT_ROTA.pin.printingId);
+    assert.equal(clean[0].pin.recordVersion, 1);
   });
 
   test('plain old unpinned card scans are hidden instead of launching broad', () => {
     const broad = { name: 'Black Lotus', game: 'mtg', score: 60, pin: null };
     assert.deepEqual(sanitizeRecentScans([broad]), []);
-  });
-
-  test('recognizes exact-print words before a broad scan begins', () => {
-    assert.equal(nameClaimsExactPrinting('Charizard ex Special Illustration Rare'), true);
-    assert.equal(nameClaimsExactPrinting('Charizard ex'), false);
   });
 
   test('a Yu-Gi-Oh card id without a set printing is still broad', () => {

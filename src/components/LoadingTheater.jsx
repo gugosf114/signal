@@ -4,6 +4,7 @@ import { BrandIcon } from '../config/brandIcons';
 import { SIGNAL_TYPES } from '../config/signals';
 import { expectedScanDurationMs, linearScanProgress } from '../services/scanProgress';
 import { printingLabel } from '../services/printing';
+import { cardPriceLabel } from '../services/cardRecord';
 
 // ─── Loading Theater ─────────────────────────────────────────────────────────
 // Tokyo desk at 3am. Solari flip-board × Bloomberg INFO panel × CRT terminal.
@@ -440,6 +441,7 @@ function CardSlate({ cardName, game, pin, onImageLoad }) {
         <div className="lt-cardslate-label">SCANNING</div>
         <div className="lt-cardslate-name">{cardName || '—'}</div>
         {exactPrinting && <div className="lt-cardslate-printing">{exactPrinting}</div>}
+        {pin && <div className="lt-cardslate-price">{cardPriceLabel(pin)}{pin.priceSource ? ` · ${pin.priceSource}` : ''}</div>}
       </div>
     </div>
   );

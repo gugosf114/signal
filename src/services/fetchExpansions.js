@@ -13,11 +13,11 @@ const CACHE_KEY = 'signal_expansions_v3';
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const COUNT = 12;
 const PAGE = 21;
-const SUGGEST_TIMEOUT_MS = 3500;
+const SUGGEST_TIMEOUT_MS = 9000;
 
-function suggestionSearch(promise) {
+export function suggestionSearch(promise, timeoutMs = SUGGEST_TIMEOUT_MS) {
   return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve({ status: 'timeout' }), SUGGEST_TIMEOUT_MS);
+    const timer = setTimeout(() => resolve({ status: 'timeout' }), timeoutMs);
     promise.then(
       (rows) => { clearTimeout(timer); resolve({ status: 'ok', rows }); },
       (error) => { clearTimeout(timer); resolve({ status: 'error', error }); },

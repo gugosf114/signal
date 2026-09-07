@@ -8,7 +8,8 @@
 import { expandFinishRows, mtgRow, pokemonRow, searchCardsByName } from './fetchExpansions.js';
 import { baseTcgplayerName } from './fetchTcgplayerPrice.js';
 import { fetchCatalogueJSON } from './signalGateway.js';
-import { hasPrintingPin } from './recentScans.js';
+import { normalizeCardRecord, stampCardPrice } from './cardRecord.js';
+import { isExactScanTarget } from './scanIdentity.js';
 
 const CACHE_KEY = 'signal_top_trending_v3';
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -142,10 +143,11 @@ async function catalogueJSON(url, tries = 3) {
 }
 
 function withMeta(card, ref) {
+  const record = stampCardPrice(normalizeCardRecord({ ...card, pinned: true }));
+  if (!record) return null;
   return {
-    ...card,
-    pinned: true,
-    sourceCode: ref.sourceCode || card.setCode || null,
+    ...record,
+    sourceCode: ref.sourceCode || record.setCode || null,
     dir: ref.dir,
     sourceTitle: ref.sourceTitle,
   };
@@ -200,7 +202,7 @@ async function resolveEnough(refs, target) {
     index += batch.length;
     const settled = await Promise.allSettled(batch.map(resolveTrendingCard));
     cards.push(...settled
-      .filter((result) => result.status === 'fulfilled' && hasPrintingPin(result.value))
+      .filter((result) => result.status === 'fulfilled' && isExactScanTarget(result.value?.game, result.value))
       .map((result) => result.value));
   }
   return cards.slice(0, target);
@@ -235,7 +237,7 @@ function readCache() {
     const { ts, data } = JSON.parse(raw);
     const age = Date.now() - ts;
     if (age < 0 || age > CACHE_TTL_MS) return null;
-    if (!Array.isArray(data) || !data.length || !data.every((card) => hasPrintingPin(card))) return null;
+    if (!Array.isArray(data) || !data.length || !data.every((card) => isExactScanTarget(card?.game, card))) return null;
     return data;
   } catch {
     return null;

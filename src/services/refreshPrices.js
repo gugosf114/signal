@@ -39,7 +39,14 @@ export async function refreshPrices(cardName, game, pin = null) {
 
 export function pricePatchFromCardData(data) {
   if (!data) return null;
-  if (data.priceScope === 'exact-print price unavailable') return { en_price: '' };
+  const checked = new Date().toISOString();
+  if (data.priceScope === 'exact-print price unavailable') {
+    return { en_price: '', price_source: '', price_checked_at: checked };
+  }
   const en = headlinePrice(data.priceLines);
-  return en ? { en_price: en } : null;
+  return en ? {
+    en_price: en,
+    price_source: data.priceSource || '',
+    price_checked_at: checked,
+  } : null;
 }

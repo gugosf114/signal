@@ -28,6 +28,7 @@ import { tryParseSignalJSON } from './jsonRepair';
 import { normalizeAnalysis } from './validateAnalysis';
 import { enforceExactCreatorSources } from './sourceRelevance';
 import { isExactScanTarget } from './scanIdentity';
+import { normalizeCardRecord, stampCardPrice, withCardRecord } from './cardRecord';
 import { recordSignalMeasurement, sharedAnalyze } from './signalGateway';
 import {
   ANALYSIS_MAX_TOKENS,
@@ -76,7 +77,7 @@ ENUMS (exact lowercase):
 OUTPUT SHAPE:
 {
   "card_name": "", "game": "",
-  "prices": { "en_price": "", "trend_30d": "", "signal_vs_market": "agree | disagree | mixed | unknown" },
+  "prices": { "en_price": "", "signal_vs_market": "agree | disagree | mixed | unknown" },
   "ebay_listings": {
     "buy_it_now": [ { "title": "", "price_usd": 0, "condition": "", "shipping": "", "seller": "", "url": "" } /* 2 */ ],
     "auction":    [ { "title": "", "current_bid_usd": 0, "condition": "", "bid_count": 0, "time_remaining": "", "url": "" } /* 1, omit if no live auction */ ]
@@ -109,16 +110,13 @@ For "creator": use the directory only to recognize a matched channel. Cite the s
 For "jp_hype": JP creators from the directory when present.
 For creator and JP YouTube evidence, a card-family video is not evidence for this printing. Use only a video that names the exact set, set code, or printed card number. Otherwise leave sources empty and level 0.
 
-PRICE HISTORY:
-- Return trend_30d as an empty string unless the pre-fetched block explicitly supplies exact-print 30-day history. Never infer it from one current price, an article, or memory.
-
 GRADING ROI:
 - This app has no verified graded-sales feed. Return verdict and confidence as insufficient_data.
 - Never estimate PSA 10 value from memory.`;
 }
 
 export async function analyzeCard(cardName, game = null, opts = {}) {
-  const pin = opts.pin || null;
+  const pin = stampCardPrice(normalizeCardRecord(opts.pin || {}, { name: cardName, game }));
   if (!isExactScanTarget(game, pin)) {
     throw new Error('Choose one exact printing from the card list before running Full Signal.');
   }
@@ -282,7 +280,17 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       if (printingInfo) clean.printing = printingInfo;
       const currentPrice = firstMarketPrice(cardData?.priceLines);
       clean.prices = applyTrustedMarketPrice(clean.prices, cardData, currentPrice);
-      clean._trend30dVerified = Boolean(cardData?.trend30d);
+      const exactCard = stampCardPrice(normalizeCardRecord({
+        ...printingInfo,
+        name: cardData?.name || cardName,
+        game: resolvedGame || parsed.game,
+        price: currentPrice,
+        priceSource: cardData?.priceSource || pin?.priceSource,
+        priceUrl: cardData?.priceUrl || pin?.priceUrl,
+        imageUrl: cardData?.imageUrl || printingInfo?.imageUrl,
+        imageLarge: cardData?.imageUrl || printingInfo?.imageLarge,
+        pinned: true,
+      }, pin));
       const score = calculateOverallScore(clean.signals, clean.game);
       clean._signalScore = score;
       clean._sharedCache = Boolean(shared.cached);
@@ -300,7 +308,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
           cached: Boolean(shared.cached),
         },
       }).catch((error) => console.warn('[signal] measurement record failed:', error?.message || error));
-      return clean;
+      return withCardRecord(clean, exactCard || pin);
     }
   }
 

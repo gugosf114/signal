@@ -263,8 +263,8 @@ export default function PdfReport({ result, score, cardImageUrl }) {
       }}>
         <PriceCell label="EN Price" value={result.prices?.en_price || 'No exact price'} />
         <PriceCell
-          label="30-Day Trend"
-          value={result.prices?.trend_30d || 'No exact data'}
+          label="Price Source"
+          value={result.prices?.price_source || result.card?.priceSource || 'Not available'}
           smallFont
         />
         <PriceCell

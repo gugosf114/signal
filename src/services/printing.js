@@ -44,7 +44,7 @@ export function printingIdentity(pin) {
   const base = pin.printingId || pin.id
     || [pin.setId, pin.number].filter(Boolean).join(':');
   if (!base) return null;
-  const form = String(pin.form || '').trim().toLowerCase();
+  const form = pin.game === 'yugioh' ? '' : String(pin.form || '').trim().toLowerCase();
   const rarity = pin.game === 'yugioh'
     ? String(pin.rarity || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
     : '';
@@ -94,5 +94,5 @@ export function toPrinting(game, pin, cardData) {
 // Rendering must not throw that identity away and fall back to a slow name
 // search, especially for Pokémon where one name can cover many cards.
 export function resultCardPin(result) {
-  return result?._pin || result?.printing || null;
+  return result?.card || result?._pin || result?.printing || null;
 }

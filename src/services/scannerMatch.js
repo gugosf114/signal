@@ -1,4 +1,5 @@
 import { collectionFormOptions, marketPriceFor } from './collection.js';
+import { printingLabel } from './printing.js';
 
 const GAME_LABELS = {
   pokemon: 'Pokémon',
@@ -22,18 +23,22 @@ export function scannerMatchDetails(match = {}) {
     game: source.game || vision.game || null,
     gameLabel: GAME_LABELS[source.game || vision.game] || 'Trading card',
     setName: clean(source.setName) || clean(source.set) || clean(vision.set) || 'Set unknown',
+    setId: clean(source.setId) || null,
     number: clean(source.number) || clean(source.setCode) || clean(vision.number) || clean(vision.passcode) || null,
+    printedTotal: clean(source.printedTotal) || null,
     rarity: clean(source.rarity) || null,
     finish: clean(source.finish) || null,
     form: source.form || 'normal',
     imageUrl: clean(source.imageUrl) || null,
     price: Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : null,
+    priceSource: clean(source.priceSource) || null,
+    priceCheckedAt: clean(source.priceCheckedAt) || null,
     confidence: clean(vision.confidence) || null,
   };
 }
 
 export function scannerMatchMeta(details = {}) {
-  return [details.setName, details.number, details.rarity, details.finish].filter(Boolean).join(' · ');
+  return printingLabel(details) || 'Exact printing selected';
 }
 
 export function scannerMatchPrice(details = {}) {

@@ -9,32 +9,22 @@
 //   YGOPRODeck       — db.ygoprodeck.com   (YGO prices from TCGPlayer/Cardmarket)
 
 import { fetchWithTimeout } from './http.js';
+import { isExactScanTarget } from './scanIdentity.js';
+import { normalizeCardRecord } from './cardRecord.js';
 
-// `pin` is a card picked from the search suggestions: {id, game, ...}. Without
-// it we look the name up and take the first hit, which for "Charizard" is one
-// arbitrary printing out of hundreds — different set, different rarity,
-// different price. With it we fetch that exact card by catalogue id.
+// `pin` is the exact card record chosen by search, number lookup, camera,
+// upload, Trending, Recent, Watched, or Collection. A broad name is refused.
 export async function fetchCardData(cardName, game, pin = null) {
   try {
-    if (pin?.printingId || pin?.id) {
-      const exact = await fetchPinned(pin);
-      if (exact) return exact;
-      // A chosen catalogue row is a hard identity boundary. Falling back to a
-      // name search can join the pin's set/number to another printing's price,
-      // rarity, and set total. A dead pin is therefore a miss, not permission
-      // to guess.
-      return cardDataFromPin(cardName, game, pin);
-    }
-    if (game === 'pokemon') return await fetchPokemonData(cardName);
-    if (game === 'mtg')     return await fetchMTGData(cardName);
-    if (game === 'yugioh')  return await fetchYGOData(cardName);
-    // Game unknown — race all three, return first hit
-    const results = await Promise.allSettled([
-      fetchPokemonData(cardName),
-      fetchMTGData(cardName),
-      fetchYGOData(cardName),
-    ]);
-    return results.find(r => r.status === 'fulfilled' && r.value)?.value ?? null;
+    const exactPin = normalizeCardRecord(pin || {}, { name: cardName, game });
+    if (!isExactScanTarget(game, exactPin)) return null;
+    const exact = await fetchPinned(exactPin);
+    if (exact) return exact;
+    // A chosen catalogue row is a hard identity boundary. Falling back to a
+    // name search can join the pin's set/number to another printing's price,
+    // rarity, and set total. A dead pin is therefore a miss, not permission
+    // to guess.
+    return cardDataFromPin(cardName, game, exactPin);
   } catch {
     return null;
   }
@@ -186,7 +176,6 @@ async function fetchTcgDexPokemonData(cardId, pin = null) {
     if (Number.isFinite(high) && high > 0) parts.push(`$${high.toFixed(2)} high`);
     priceLines.push(`${labels[variant] || variant}: ${parts.join(' / ')}`);
   }
-  const eu = Number(card.pricing?.cardmarket?.avg30);
   const legalFormats = Object.entries(card.legal || {})
     .filter(([, value]) => String(value).toLowerCase() === 'legal')
     .map(([format]) => format);
@@ -206,26 +195,10 @@ async function fetchTcgDexPokemonData(cardId, pin = null) {
     priceLines: priceLines.length ? priceLines : null,
     priceScope: pin?.form ? (priceLines.length ? 'exact finish' : 'exact-print price unavailable') : null,
     priceSource: 'TCGplayer',
-    euTrend: Number.isFinite(eu) && eu > 0 ? `€${eu.toFixed(2)} (EU 30-day avg)` : null,
     legalFormats,
     tcgplayerUrl: null,
     imageUrl: card.image ? `${card.image}/high.webp` : null,
   }, pin);
-}
-
-async function fetchPokemonData(cardName) {
-  const cleanName = cardName
-    .replace(/"/g, '')
-    .trim();
-
-  const res = await retryFetch(
-    `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(cleanName)}"&pageSize=3&orderBy=-set.releaseDate`
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  const card = data.data?.[0];
-  if (!card) return null;
-  return shapePokemon(card);
 }
 
 const POKEMON_FORM_KEYS = {
@@ -261,9 +234,6 @@ function shapePokemon(card, pin = null) {
     priceLines.push(`${label}: ${parts.join(' / ')}`);
   }
 
-  const cm = card.cardmarket?.prices;
-  const euTrend = cm?.avg30 ? `€${cm.avg30.toFixed(2)} (EU 30-day avg)` : null;
-
   const legalFormats = Object.entries(card.legalities || {})
     .filter(([, v]) => v === 'Legal')
     .map(([k]) => k);
@@ -286,7 +256,6 @@ function shapePokemon(card, pin = null) {
     priceLines: priceLines.length ? priceLines : null,
     priceScope: pin?.form ? (priceLines.length ? 'exact finish' : 'exact-print price unavailable') : null,
     priceSource: 'TCGplayer',
-    euTrend,
     legalFormats,
     tcgplayerUrl: card.tcgplayer?.url,
     imageUrl: card.images?.large || card.images?.small,
@@ -294,18 +263,6 @@ function shapePokemon(card, pin = null) {
 }
 
 // ─── Scryfall (MTG) ───────────────────────────────────────────────────────────
-
-async function fetchMTGData(cardName) {
-  const res = await retryFetch(
-    `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`,
-    { headers: SCRYFALL_HEADERS }
-  );
-  if (res.status === 404) return null;
-  if (!res.ok) return null;
-  const card = await res.json();
-  if (card.object === 'error') return null;
-  return shapeMTG(card);
-}
 
 function shapeMTG(card, pin = null) {
   const prices = card.prices || {};
@@ -350,19 +307,6 @@ function shapeMTG(card, pin = null) {
 }
 
 // ─── YGOPRODeck (Yu-Gi-Oh!) ──────────────────────────────────────────────────
-
-async function fetchYGOData(cardName) {
-  const res = await retryFetch(
-    `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`
-  );
-  if (res.status === 400) return null;
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (data.error) return null;
-  const card = data.data?.[0];
-  if (!card) return null;
-  return shapeYGO(card);
-}
 
 function shapeYGO(card, pin = null) {
   const p = card.card_prices?.[0] || {};
@@ -425,10 +369,10 @@ function shapeYGO(card, pin = null) {
 export function applyTrustedMarketPrice(prices, cardData, currentPrice) {
   const clean = { ...(prices || {}) };
   if (currentPrice !== null) clean.en_price = `$${currentPrice.toFixed(2)}`;
-  else if (cardData?.priceScope === 'exact-print price unavailable') clean.en_price = '';
-  // No supported catalogue currently supplies exact 30-day price history for
-  // all three games. Model prose is not a price feed.
-  clean.trend_30d = cardData?.trend30d || '';
+  else clean.en_price = '';
+  delete clean.trend_30d;
+  clean.price_source = currentPrice !== null ? (cardData?.priceSource || '') : '';
+  clean.price_checked_at = new Date().toISOString();
   return clean;
 }
 
@@ -460,13 +404,9 @@ export function sanitizeCachedPriceNarrative(data) {
   if (!data) return data;
   const exactPriceUnavailable = data?._exactPriceUnavailable
     || (data?._pin?.game === 'yugioh' && data?.prices?.en_price === '');
-  const cleaned = {
-    ...data,
-    prices: {
-      ...(data.prices || {}),
-      trend_30d: data._trend30dVerified ? (data.prices?.trend_30d || '') : '',
-    },
-  };
+  const prices = { ...(data.prices || {}) };
+  delete prices.trend_30d;
+  const cleaned = { ...data, prices };
   return exactPriceUnavailable
     ? applyTrustedPriceNarrative(cleaned, { priceScope: 'exact-print price unavailable' })
     : cleaned;
@@ -495,8 +435,6 @@ export function buildCardDataBlock(cardData) {
     cardData.priceLines.forEach(p => lines.push(`  • ${p}`));
   }
   if (cardData.priceScope) lines.push(`Price scope: ${cardData.priceScope}`);
-  if (cardData.euTrend) lines.push(`  • ${cardData.euTrend}`);
-  if (cardData.trend30d) lines.push(`30-day trend: ${cardData.trend30d}`);
 
   if (cardData.legalFormats?.length) {
     lines.push(`Legal in: ${cardData.legalFormats.join(', ')}`);

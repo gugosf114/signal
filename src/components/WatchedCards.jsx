@@ -1,17 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GAME_LABELS, getScoreLabel } from '../config/signals';
 import ScrollReveal from './ScrollReveal';
-import { printingIdentity } from '../services/printing';
-import { hasPrintingPin } from '../services/recentScans';
+import { printingIdentity, printingLabel } from '../services/printing';
+import { applyCardPricePatch, cardPriceLabel, cardPriceNeedsRefresh, normalizeCardRecord, stampCardPrice } from '../services/cardRecord';
+import { refreshPrices } from '../services/refreshPrices';
+import { isExactScanTarget } from '../services/scanIdentity';
 
 export function useWatchedCards() {
   const [watched, setWatched] = useState([]);
+  const priceRefreshAttempted = useRef(new Set());
+  const mountedRef = useRef(true);
 
   const load = () => {
     try {
       const raw = localStorage.getItem('signal_watched_cards');
       const parsed = raw ? JSON.parse(raw) : [];
-      setWatched((Array.isArray(parsed) ? parsed : []).filter((card) => hasPrintingPin(card?.pin)));
+      const clean = (Array.isArray(parsed) ? parsed : []).map((card) => {
+        const pin = normalizeCardRecord(card?.pin || {}, {
+          name: card?.name,
+          game: card?.game,
+          price: card?.enPrice,
+        });
+        return pin ? { ...card, name: pin.name, game: pin.game, pin } : null;
+      }).filter((card) => isExactScanTarget(card?.game, card?.pin));
+      setWatched(clean);
+      localStorage.setItem('signal_watched_cards', JSON.stringify(clean));
     } catch { setWatched([]); }
   };
 
@@ -25,19 +38,56 @@ export function useWatchedCards() {
     };
   }, []);
 
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    const stale = watched.filter((item) => {
+      const key = printingIdentity(item.pin);
+      return key && cardPriceNeedsRefresh(item.pin) && !priceRefreshAttempted.current.has(key);
+    });
+    if (!stale.length) return;
+    for (const item of stale) priceRefreshAttempted.current.add(printingIdentity(item.pin));
+    Promise.all(stale.map(async (item) => [
+      printingIdentity(item.pin),
+      await refreshPrices(item.name, item.game, item.pin).catch(() => null),
+    ])).then((updates) => {
+      if (!mountedRef.current) return;
+      const byKey = new Map(updates.filter(([, patch]) => patch));
+      if (!byKey.size) return;
+      setWatched((current) => {
+        const next = current.map((item) => {
+          const patch = byKey.get(printingIdentity(item.pin));
+          return patch ? { ...item, pin: applyCardPricePatch(item.pin, patch) } : item;
+        });
+        localStorage.setItem('signal_watched_cards', JSON.stringify(next));
+        return next;
+      });
+    });
+  }, [watched]);
+
   const toggle = (card) => {
     try {
+      const pin = stampCardPrice(normalizeCardRecord(card?.pin || {}, {
+        name: card?.name,
+        game: card?.game,
+        price: card?.enPrice,
+      }));
+      if (!pin || !isExactScanTarget(pin.game, pin)) return false;
+      const exactCard = { ...card, name: pin.name, game: pin.game, pin };
       const raw = localStorage.getItem('signal_watched_cards');
       const parsed = raw ? JSON.parse(raw) : [];
       const list = Array.isArray(parsed) ? parsed : [];
       const identity = (value) => printingIdentity(value?.pin);
       const sameCard = (w) =>
-        w.name === card.name && w.game === card.game &&
-        identity(w) === identity(card);
+        w.name === exactCard.name && w.game === exactCard.game &&
+        identity(w) === identity(exactCard);
       const exists = list.some(sameCard);
       const next = exists
-        ? list.filter(w => !sameCard(w))
-        : [{ ...card, watchedAt: new Date().toISOString() }, ...list].slice(0, 20);
+        ? list.filter((item) => !sameCard(item))
+        : [{ ...exactCard, watchedAt: new Date().toISOString() }, ...list].slice(0, 20);
       localStorage.setItem('signal_watched_cards', JSON.stringify(next));
       setWatched(next);
       window.dispatchEvent(new Event('signal-watch-updated'));
@@ -113,7 +163,11 @@ export default function WatchedCards({ onSelect }) {
                 }}>
                   {card.score == null ? '—' : `${card.score}/100`}
                 </span>
-                <span style={{ color: '#92897C' }}>{card.name}</span>
+                <span style={{ display: 'flex', minWidth: 0, flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+                  <span style={{ color: '#92897C' }}>{card.name}</span>
+                  <small style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--signal-text-muted)', font: "500 9px/1.25 'JetBrains Mono', monospace" }}>{printingLabel(card.pin)}</small>
+                  <b style={{ color: '#A8A498', font: "650 9px/1.2 'JetBrains Mono', monospace" }}>{cardPriceLabel({ ...card.pin, price: card.pin?.price ?? card.enPrice })}{card.pin?.priceSource ? ` · ${card.pin.priceSource}` : ''}</b>
+                </span>
               </button>
               <button
                 className="watched-chip-remove"

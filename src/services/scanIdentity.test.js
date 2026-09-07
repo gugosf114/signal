@@ -11,9 +11,9 @@ describe('one paid-scan identity gate', () => {
   });
 
   test('accepts exact catalogue printings in every game', () => {
-    assert.equal(isExactScanTarget('pokemon', { game: 'pokemon', printingId: 'xy6-104', form: 'holo' }), true);
-    assert.equal(isExactScanTarget('mtg', { game: 'mtg', printingId: 'f04ed2cc', form: 'normal' }), true);
-    assert.equal(isExactScanTarget('yugioh', { game: 'yugioh', printingId: 'tcgplayer:592579' }), true);
+    assert.equal(isExactScanTarget('pokemon', { name: 'Rayquaza-EX', game: 'pokemon', printingId: 'xy6-104', setName: 'Roaring Skies', number: '104', form: 'holo' }), true);
+    assert.equal(isExactScanTarget('mtg', { name: 'Optimus Prime, Hero', game: 'mtg', printingId: 'f04ed2cc', setName: 'Transformers', number: '13', form: 'normal' }), true);
+    assert.equal(isExactScanTarget('yugioh', { name: 'Heat Wave', game: 'yugioh', printingId: 'tcgplayer:592579', setName: 'Quarter Century Bonanza', number: 'RA03-EN058' }), true);
   });
 
   test('rejects an unknown game even when it has an id', () => {
@@ -21,6 +21,10 @@ describe('one paid-scan identity gate', () => {
   });
 
   test('rejects a pin from another game', () => {
-    assert.equal(isExactScanTarget('pokemon', { game: 'mtg', printingId: 'same-looking-id' }), false);
+    assert.equal(isExactScanTarget('pokemon', { name: 'X', game: 'mtg', printingId: 'same-looking-id', setName: 'Set', number: '1', form: 'normal' }), false);
+  });
+
+  test('rejects an id that lost its set or printed number', () => {
+    assert.equal(isExactScanTarget('pokemon', { name: 'Rayquaza-EX', game: 'pokemon', printingId: 'xy6-104', form: 'holo' }), false);
   });
 });
