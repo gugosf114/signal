@@ -203,7 +203,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
             </div>
           )}
           <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.18em', color: INK_MUTE }}>
-            MARKET PRESSURE
+            ATTENTION
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
             <span style={{

@@ -120,12 +120,12 @@ export const GAME_LABELS = {
 // not a recommendation. Pairs with the "Not financial advice" footer.
 export function getScoreLabel(score) {
   const safe = Number.isFinite(Number(score)) ? Math.max(0, Math.min(100, Number(score))) : 50;
-  if (safe >= 85) return { label: 'BLAZING', color: '#C44040', blurb: 'Broad upward pressure across strong signals' };
-  if (safe >= 70) return { label: 'SURGING', color: '#C44040', blurb: 'Clear upward pressure across the evidence' };
-  if (safe >= 56) return { label: 'HEATING', color: '#A09060', blurb: 'The evidence leans upward' };
-  if (safe >= 45) return { label: 'STEADY',  color: '#608870', blurb: 'The evidence is mixed or neutral' };
-  if (safe >= 30) return { label: 'COOLING', color: '#807060', blurb: 'The evidence leans downward' };
-  return                   { label: 'FALLING', color: '#7A7368', blurb: 'Broad downward pressure across strong signals' };
+  if (safe >= 85) return { label: 'BLAZING', color: '#C44040', blurb: 'Broad, strong positive attention across the signals' };
+  if (safe >= 70) return { label: 'SURGING', color: '#C44040', blurb: 'Clear positive attention across the evidence' };
+  if (safe >= 56) return { label: 'HEATING', color: '#A09060', blurb: 'Attention leans positive' };
+  if (safe >= 45) return { label: 'STEADY',  color: '#608870', blurb: 'Attention is mixed or quiet' };
+  if (safe >= 30) return { label: 'COOLING', color: '#807060', blurb: 'Attention leans negative' };
+  return                   { label: 'FALLING', color: '#7A7368', blurb: 'Broad negative attention across the signals' };
 }
 
 // ─── Weighted Score Calculator ───────────────────────────────────────────────
@@ -167,10 +167,12 @@ export function directionMultiplier(sources) {
 
 // ─── Weighted Score Calculator ───────────────────────────────────────────────
 
-// Score is market pressure, not raw attention:
-//   0   = strong bearish pressure
+// Score is attention with a direction, measured 2026-09-06 against real
+// price history: it follows price rather than leading it, so it is labelled
+// ATTENTION in the app until the forward test (2026-10-06) says otherwise.
+//   0   = strong negative attention
 //   50  = mixed, neutral, missing, or unsourced evidence
-//   100 = strong bullish pressure
+//   100 = strong positive attention
 //
 // Missing signals stay neutral and keep their configured weight. This prevents
 // one returned 5/5 signal from becoming a perfect score on a truncated scan.
