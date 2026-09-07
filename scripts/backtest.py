@@ -54,18 +54,50 @@ def get(url, tries=6):
     raise last
 
 
+def tcgdex_id(card_id):
+    """pokemontcg.io `sv8pt5-161` is TCGdex `sv08.5-161`; older families match already."""
+    import re
+    m = re.match(r"^([A-Za-z]+)(\d+)(pt5|\.5)?([A-Za-z0-9]*)-(.+)$", str(card_id or "").strip())
+    if not m or m.group(1).lower() not in {"sv", "me"}:
+        return str(card_id or "").strip()
+    family, set_number, half, suffix, number = m.groups()
+    number = number.zfill(3) if number.isdigit() else number
+    return f"{family.lower()}{int(set_number):02d}{'.5' if half else ''}{suffix}-{number}"
+
+
+TCGDEX_VARIANTS = {"holofoil": "holofoil", "normal": "normal", "reverseHolofoil": "reverse-holofoil",
+                   "1stEditionHolofoil": "1st-edition-holofoil", "unlimitedHolofoil": "unlimited-holofoil"}
+
+
+def price_pokemon_tcgdex(entry):
+    """Same exact printing, read from TCGdex when pokemontcg.io is down."""
+    card_id = entry.get("catalog_id") or f'{entry.get("set_id")}-{entry.get("collector_number")}'
+    card = get("https://api.tcgdex.net/v2/en/cards/" + urllib.parse.quote(tcgdex_id(card_id)), tries=2)
+    variants = (card.get("pricing") or {}).get("tcgplayer") or {}
+    wanted = TCGDEX_VARIANTS.get(entry.get("price_variant") or "")
+    selected = variants.get(wanted) if wanted else None
+    if selected is None:
+        priced = [value for value in variants.values() if isinstance(value, dict) and value.get("marketPrice")]
+        selected = max(priced, key=lambda value: value.get("marketPrice"), default=None)
+    value = (selected or {}).get("marketPrice")
+    return (float(value), (card.get("set") or {}).get("name")) if value else None
+
+
 def price_pokemon(entry):
     """Price one exact Pokémon catalogue printing."""
-    if entry.get("catalog_id"):
-        payload = get("https://api.pokemontcg.io/v2/cards/" + urllib.parse.quote(str(entry["catalog_id"])))
-        cards = [payload.get("data")] if payload.get("data") else []
-    elif entry.get("set_id") and entry.get("collector_number"):
-        query = f'set.id:{entry["set_id"]} number:{entry["collector_number"]}'
-        cards = get("https://api.pokemontcg.io/v2/cards?q=" + urllib.parse.quote(query) + "&pageSize=2").get("data", [])
-    else:
-        return None
+    try:
+        if entry.get("catalog_id"):
+            payload = get("https://api.pokemontcg.io/v2/cards/" + urllib.parse.quote(str(entry["catalog_id"])), tries=3)
+            cards = [payload.get("data")] if payload.get("data") else []
+        elif entry.get("set_id") and entry.get("collector_number"):
+            query = f'set.id:{entry["set_id"]} number:{entry["collector_number"]}'
+            cards = get("https://api.pokemontcg.io/v2/cards?q=" + urllib.parse.quote(query) + "&pageSize=2", tries=3).get("data", [])
+        else:
+            return None
+    except Exception:  # noqa: BLE001 - pokemontcg.io is down; TCGdex carries the same printing
+        return price_pokemon_tcgdex(entry)
     if len(cards) != 1 or not cards[0]:
-        return None
+        return price_pokemon_tcgdex(entry)
     card = cards[0]
     variants = (card.get("tcgplayer") or {}).get("prices") or {}
     wanted = entry.get("price_variant")
@@ -204,7 +236,12 @@ def cmd_check():
     rows, skipped = build_rows(data)
 
     if not rows:
-        sys.exit("No comparable rows — every lookup failed or the baseline is empty.")
+        print("No comparable rows.")
+        if skipped:
+            print("\nSkipped:")
+            for card, reason in skipped:
+                print(f"  - {card}: {reason}")
+        sys.exit(1)
 
     print(f"\nBaseline {base_date} → today. {len(rows)} exact-print cards; {len(skipped)} skipped.\n")
     print(f"{'SCORE':>5}  {'CARD':<44}{'THEN':>10}{'NOW':>10}{'MOVE':>9}")

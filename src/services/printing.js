@@ -11,6 +11,8 @@
 //
 // No import-free rule here beyond keeping it pure — this is called from render.
 
+import { canonicalPokemonId } from './pokemonIds.js';
+
 export function printingLabel(printing) {
   if (!printing) return null;
   const { game, setName, setId, number, printedTotal, rarity, finish } = printing;
@@ -47,11 +49,16 @@ export function printingIdentity(pin) {
     : pin.printingId || pin.id
     || [pin.setId, pin.number].filter(Boolean).join(':');
   if (!base) return null;
+  // pokemontcg.io and TCGdex spell the same modern card differently
+  // (`sv8pt5-161` vs `sv08.5-161`). One physical card gets one identity.
+  const identityBase = pin.game === 'pokemon'
+    ? canonicalPokemonId(base)
+    : String(base).trim().toLowerCase();
   const form = pin.game === 'yugioh' ? '' : String(pin.form || '').trim().toLowerCase();
   const rarity = pin.game === 'yugioh'
     ? String(pin.rarity || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
     : '';
-  return [String(base).trim().toLowerCase(), form, rarity].join('::');
+  return [identityBase, form, rarity].join('::');
 }
 
 // Normalizes whatever we know about a printing into one shape. `pin` is a card
@@ -73,6 +80,8 @@ export function toPrinting(game, pin, cardData) {
     printingId: pin?.printingId || (pin?.id && normalizedGame !== 'yugioh' ? pin.id : null) || src.printingId || null,
     setName: pin?.setName || src.setName || null,
     setId: pin?.setId || src.setId || null,
+    setCode: pin?.setCode || src.setCode || null,
+    sourceCode: pin?.sourceCode || src.sourceCode || null,
     setLogoUrl: pin?.setLogoUrl || src.setLogoUrl || null,
     number: pin?.number || src.number || null,
     printedTotal: pin?.printedTotal || (mayEnrichPin ? src.printedTotal : null) || null,

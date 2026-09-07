@@ -5,6 +5,12 @@ on:
     branches: [main, master]
   pull_request:
 
+# The gateway only spends money for callers that present this token. It is a
+# repository secret so a CI-built APK can scan; a fork's pull request builds
+# without it and simply cannot reach the paid actions.
+env:
+  VITE_SIGNAL_APP_TOKEN: ${{ secrets.VITE_SIGNAL_APP_TOKEN }}
+
 jobs:
   web:
     name: Web tests and build

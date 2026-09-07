@@ -28,6 +28,11 @@ class BacktestTests(unittest.TestCase):
         self.assertEqual(rows, [])
         self.assertEqual(skipped[0][1], "no exact printing id")
 
+    def test_tcgdex_ids_translate_only_modern_families(self):
+        self.assertEqual(BACKTEST.tcgdex_id("sv8pt5-161"), "sv08.5-161")
+        self.assertEqual(BACKTEST.tcgdex_id("base5-27"), "base5-27")
+        self.assertEqual(BACKTEST.tcgdex_id("sv7-60"), "sv07-060")
+
     def test_exact_mature_rows_can_be_split(self):
         rows = [
             {"score": 80, "move": 10, "new_set": False},

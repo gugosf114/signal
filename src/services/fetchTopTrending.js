@@ -5,7 +5,7 @@
 // chip launched a broad name scan. Only <price-history-card> tags are movers,
 // and every one is resolved to a catalogue printing before it reaches the UI.
 
-import { expandFinishRows, mtgRow, pokemonRow, searchCardsByName } from './fetchExpansions.js';
+import { expandFinishRows, mtgRow, pokemonRow, searchCardsByName, tcgdexPokemonRow } from './fetchExpansions.js';
 import { baseTcgplayerName } from './fetchTcgplayerPrice.js';
 import { fetchCatalogueJSON } from './signalGateway.js';
 import { normalizeCardRecord, stampCardPrice } from './cardRecord.js';
@@ -153,7 +153,31 @@ function withMeta(card, ref) {
   };
 }
 
+// The same printed set code and number, read from TCGdex. pokemontcg.io
+// answers 500 to about half its calls on a bad day; without this the
+// Pokémon movers simply vanished from Top Trending on those days.
+async function resolvePokemonTcgdex(ref) {
+  const sets = await catalogueJSON(`https://api.tcgdex.net/v2/en/sets?abbreviation.official=${encodeURIComponent(ref.sourceCode)}`);
+  if (!Array.isArray(sets) || sets.length !== 1) return null;
+  const set = await catalogueJSON(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(sets[0].id)}`);
+  const wanted = String(ref.number || '').replace(/^0+/, '') || '0';
+  const brief = (set?.cards || []).find((card) => String(card?.localId || '').replace(/^0+/, '') === wanted);
+  if (!brief?.id) return null;
+  const card = await catalogueJSON(`https://api.tcgdex.net/v2/en/cards/${encodeURIComponent(brief.id)}`);
+  if (!card?.id || normalizedName(card.name) !== normalizedName(ref.name)) return null;
+  const priced = expandFinishRows(tcgdexPokemonRow(card)).filter((row) => Number.isFinite(row.price) && row.price > 0);
+  return priced.length === 1 ? withMeta(priced[0], ref) : null;
+}
+
 async function resolvePokemon(ref) {
+  try {
+    const exact = await resolvePokemonPokemontcg(ref);
+    if (exact) return exact;
+  } catch {}
+  return resolvePokemonTcgdex(ref).catch(() => null);
+}
+
+async function resolvePokemonPokemontcg(ref) {
   const setQuery = encodeURIComponent(`ptcgoCode:${ref.sourceCode}`);
   const sets = await catalogueJSON(`https://api.pokemontcg.io/v2/sets?q=${setQuery}&pageSize=10`);
   const exactSets = (sets?.data || []).filter(

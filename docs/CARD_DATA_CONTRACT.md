@@ -12,6 +12,10 @@ Full Signal. A card name alone is never a record.
 - Physical finish for Pokémon and Magic
 - `pinned: true`
 
+Pokémon printing ids are compared in pokemontcg.io shape. TCGdex's
+`sv08.5-161` and pokemontcg.io's `sv8pt5-161` are one card and one identity
+(`pokemonIds.js`); every TCGdex fallback translates the id before asking.
+
 ## Carried facts
 
 The same record carries the exact catalogue image, current exact-print price,
