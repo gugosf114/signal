@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const {
   hash, finite, validateModelBody, reportDisposition,
   officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch, tcgplayerSearch,
+  requireAppToken, validateYoutubeBody, youtubeCacheKey, shapeYoutubeItems,
+  DAILY_GLOBAL_MODEL_CALLS, DAILY_GLOBAL_YOUTUBE_CALLS,
 } = require('./index');
 
 test('cache ids are stable and hide card text', () => {
@@ -128,4 +130,31 @@ test('a live report or lease prevents a second paid model call', () => {
   assert.equal(reportDisposition({ inFlightOwner: 'worker-1', inFlightUntil: timestamp(2000) }, now), 'wait');
   assert.equal(reportDisposition({ inFlightOwner: 'worker-1', inFlightUntil: timestamp(999) }, now), 'claim');
   assert.equal(reportDisposition(null, now), 'claim');
+});
+
+test('the app token gate is off until the service carries a token, then exact', () => {
+  assert.doesNotThrow(() => requireAppToken({}, ''));
+  assert.doesNotThrow(() => requireAppToken({ appToken: 'abc' }, 'abc'));
+  assert.throws(() => requireAppToken({ appToken: 'wrong' }, 'abc'), /Update the app/);
+  assert.throws(() => requireAppToken({}, 'abc'), /Update the app/);
+});
+
+test('video search accepts only Signal shapes and caches by the exact question', () => {
+  const params = validateYoutubeBody({ q: 'Umbreon SIR Prismatic Evolutions', regionCode: 'jp', relevanceLanguage: 'JA', order: 'date', maxResults: 40 });
+  assert.deepEqual(params, { q: 'Umbreon SIR Prismatic Evolutions', regionCode: 'JP', relevanceLanguage: 'ja', order: 'date', maxResults: 8 });
+  assert.equal(youtubeCacheKey(params), youtubeCacheKey({ ...params, q: 'umbreon sir prismatic evolutions' }));
+  assert.notEqual(youtubeCacheKey(params), youtubeCacheKey({ ...params, regionCode: '' }));
+  assert.throws(() => validateYoutubeBody({ q: 'x' }), /required/);
+  assert.throws(() => validateYoutubeBody({ q: 'Umbreon', regionCode: 'RU' }), /not allowed/);
+  assert.throws(() => validateYoutubeBody({ q: 'Umbreon', order: 'viewCount' }), /not allowed/);
+  const items = shapeYoutubeItems([
+    { id: { videoId: 'abcdefghijk' }, snippet: { title: 'T', description: 'D', channelTitle: 'C', publishedAt: '2026-09-01T00:00:00Z' } },
+    { id: { kind: 'youtube#channel' }, snippet: { title: 'channel' } },
+  ]);
+  assert.deepEqual(items, [{ videoId: 'abcdefghijk', title: 'T', description: 'D', channel: 'C', publishedAt: '2026-09-01T00:00:00Z' }]);
+});
+
+test('whole-service ceilings stay above one honest day and below a runaway bill', () => {
+  assert.ok(DAILY_GLOBAL_MODEL_CALLS >= 300 && DAILY_GLOBAL_MODEL_CALLS <= 2000);
+  assert.ok(DAILY_GLOBAL_YOUTUBE_CALLS < 100);
 });

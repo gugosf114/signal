@@ -14,7 +14,9 @@
       "new_set": false,
       "baseline_price": 1494.97,
       "baseline_source": "Prismatic Evolutions",
-      "baseline_date": "2026-08-15"
+      "baseline_date": "2026-08-15",
+      "catalog_id": "sv8pt5-161",
+      "price_variant": "holofoil"
     },
     {
       "card": "Mega Feraligatr ex",
@@ -57,9 +59,11 @@
       "scanned_price": "~$12",
       "app_said": "stable/flat — vintage non-holo rare with low volatility",
       "new_set": false,
-      "baseline_price": 144.45,
+      "baseline_price": 16.55,
       "baseline_source": "Team Rocket",
-      "baseline_date": "2026-08-15"
+      "baseline_date": "2026-09-07",
+      "set_id": "base5",
+      "collector_number": "27"
     },
     {
       "card": "Mega Clefable EX",
@@ -80,9 +84,10 @@
       "scanned_price": "$12.93 non-foil",
       "app_said": "no spike signal detected; low EDHREC adoption",
       "new_set": true,
-      "baseline_price": 1.77,
+      "baseline_price": 2.75,
       "baseline_source": "Marvel Super Heroes",
-      "baseline_date": "2026-08-15"
+      "baseline_date": "2026-09-07",
+      "catalog_id": "d8b94ebb-0b3a-4e68-8c0c-3a61ac32f3ef"
     },
     {
       "card": "Thorin, King of Durin's Folk",
@@ -92,9 +97,10 @@
       "scanned_price": "$10.99",
       "app_said": "fresh Hobbit Eternal rare; strong T1 Commander validation",
       "new_set": true,
-      "baseline_price": 10.99,
+      "baseline_price": 11.23,
       "baseline_source": "The Hobbit Eternal",
-      "baseline_date": "2026-08-15"
+      "baseline_date": "2026-09-07",
+      "catalog_id": "773813a8-723f-4c26-9e0a-a01b2faada98"
     },
     {
       "card": "Slowbro",
@@ -142,5 +148,6 @@
       "new_set": true,
       "baseline_price": null
     }
-  ]
+  ],
+  "_identity_note": "Rows without catalog_id / set_id+collector_number / set_code are name-level scans from June and are skipped on purpose; the harness only scores exact printings. Exact ids added 2026-09-06 for the four rows that could be pinned; three of those restart their baseline on the next snapshot."
 }

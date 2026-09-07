@@ -1,18 +1,20 @@
 # 株 Signal
 
-### ⬇ [Download the latest APK — 2.9 (versionCode 20)](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v2.9/signal-2.9.apk)
+### ⬇ [Download the latest APK — 3.0 (versionCode 21), built 2026-09-06](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.0/signal-3.0.apk)
 
-Tap that on the phone, then open the downloaded file to install. It's signed
-with the debug key, the same one every previous sideload used, so it installs
-straight over the existing app as an update and keeps your scan history. To
-start clean instead, uninstall Signal first and then open the file.
+Tap that on the phone, then open the downloaded file to install. It is signed
+with the laptop's debug key, the same one every previous sideload used, so it
+installs straight over the existing app as an update and keeps your scan
+history and Collection. To start clean instead, uninstall Signal first.
 
-Built from `e17d7ea`. All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio-assets/releases).
+All releases: [portfolio-assets/releases](https://github.com/gugosf114/portfolio-assets/releases).
 
-The APK lives on the private `portfolio-assets` repo rather than here, because
-the build compiles `VITE_ANTHROPIC_API_KEY` into the bundle — a public download
-would put scans on George's bill. You'll need to be signed in to GitHub on the
-phone for the link to resolve.
+The Anthropic key has lived on the `signal-gateway-v1` Cloud Function since
+2026-08-23; no APK carries it. Since 2026-09-06 the YouTube key lives there
+too. What a build does carry is `VITE_SIGNAL_APP_TOKEN`, the token the gateway
+requires before it spends money, so the APK stays on the private
+`portfolio-assets` repo. You'll need to be signed in to GitHub on the phone for
+the link to resolve.
 
 ---
 
@@ -779,8 +781,11 @@ npm test                    # citation filter + JSON recovery tests
 npm run build               # production build into dist/
 ```
 
-Anthropic API key goes in `.env.local` as `VITE_ANTHROPIC_API_KEY=...` (file
-is gitignored).
+`.env.local` (gitignored) carries `VITE_SIGNAL_APP_TOKEN=...`, which every
+build needs to reach the paid gateway actions, and optionally
+`VITE_YOUTUBE_API_KEY=...` to ask YouTube directly instead of through the
+gateway. CI gets the token from the repository secret of the same name. The
+Anthropic key is never in a client build.
 
 ---
 
@@ -1505,3 +1510,64 @@ record in its old compact chip and reopened the cached result. Collection
 stayed at nine cards with one Starlight copy. The final clean laptop APK passed
 303 JavaScript tests, 3 Python tests, Vite, Capacitor sync, and Gradle; its
 SHA-256 is `42f1a75a99cf0ba19f095076a014c00a07b237b0e0a5bc545367ef9505e234a3`.
+
+---
+
+## Session log — 2026-09-06 live pipeline test and repair (Claude)
+
+The pipe was driven end to end from outside the app: catalogue lookups, the
+exact-print price route, every gateway action, three real Full Signal reports,
+the shared cache across devices, the lease race, vision, trending, news, rates,
+the backtest, and the build installed on the phone. What worked, worked: a
+fresh Haiku report in 17–18 s with all 8 signals and zero dropped citations;
+the phone's own 21:12 Reinforcement report served to a laptop in one second;
+two identical requests spending one model call; `L26D-ENS08` → Common $0.15,
+Secret $0.59, Starlight $262.45. What did not:
+
+**Creator lane was dead twice.** The APK on the phone carried no YouTube key
+(built from a Termux `dist/` where no `.env.local` exists), so `fetchCreators`
+returned before asking. With the key, the exact-print filter rejected 6 of 6
+real videos for Umbreon ex 161/131 because creators write "Umbreon SIR", never
+"Umbreon ex Special Illustration Rare". Fix: the gateway now holds the YouTube
+key (`youtubeSearch`, cached a day, capped at 95 searches a day for the whole
+service and 60 per install), every build gets the lane, and
+`sourceRelevance.js` accepts a creator's shorthand as long as the video still
+pins the printing — base name, the set, and the number or a premium rarity.
+A second search in that shorthand runs only when the catalogue wording finds
+nothing. Measured on the six live titles: 3 kept, 3 dropped (the ambiguous
+"Umbreon Pull REACTION" stays out). Model-found videos that pass the same
+check now survive the creator gate instead of being erased for not appearing
+in the pre-fetch.
+
+**Japan lane** used the same missing key and the same filter; both fixes
+apply. Google Trends answers 429 from the phone and stays best-effort.
+
+**Reddit** answers 403 to every `search.json` call from a phone. The RSS
+search feed still answers a browser agent, so `fetchCommunity` falls back to
+it; those posts carry no score, and the block says so.
+
+**One Pokémon card, two identities.** pokemontcg.io fails about half its
+calls on a bad day; when it does, TCGdex answers and the same card arrives as
+`sv08.5-161` instead of `sv8pt5-161` — two cache keys, two shared reports paid
+twice, two Collection rows. `printingIdentity` now canonicalises Pokémon ids
+(`pokemonIds.js`), and every TCGdex fallback translates the id first, which is
+also why those fallbacks used to 404. Set-code lookup, Top Trending, and
+catalysts gained TCGdex fallbacks for the same outage.
+
+**Yu-Gi-Oh camera resolver.** A misread code (`OP02-EN010` for `L26D-ENS08`)
+used to erase a correctly read passcode and rarity and return zero options.
+The passcode rows, narrowed by rarity, are now offered as the choice.
+
+**Money.** The per-install daily cap keys on a header the caller chooses. The
+gateway now also enforces whole-service ceilings (600 model calls, 95 video
+searches a day) and, once `SIGNAL_APP_TOKEN` is set on the service, requires
+the token compiled into Signal builds for every paid action.
+
+**Backtest** had zero rows with an exact printing id, so it could never score
+anything and blamed the lookups. It now prints why rows were skipped, carries
+exact ids for the four rows that could be pinned, and reads TCGdex when
+pokemontcg.io is down.
+
+Version is 3.0 (`versionCode 21`); every build since 8/22 had shipped as 2.9
+/ 20. 323 JavaScript tests and 4 Python tests pass.
+

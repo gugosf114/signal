@@ -15,6 +15,7 @@
 
 import { fetchWithTimeout } from './http.js';
 import { getOfficialYugiohArt } from './signalGateway.js';
+import { toTcgdexId } from './pokemonIds.js';
 
 // ─── Image URL cache ─────────────────────────────────────────────────────────
 // The same card's art is requested by up to four components at once —
@@ -292,7 +293,7 @@ async function fetchPokemonExactImage(id, name) {
   // TCGdex shares the legacy IDs and is the fallback when pokemontcg.io has
   // one of its routine 500/502 spells.
   try {
-    const res = await fetchWithTimeout(`https://api.tcgdex.net/v2/en/cards/${encodeURIComponent(id)}`);
+    const res = await fetchWithTimeout(`https://api.tcgdex.net/v2/en/cards/${encodeURIComponent(toTcgdexId(id))}`);
     if (res.ok) {
       const card = await res.json();
       if (card?.image) return `${card.image}/high.webp`;

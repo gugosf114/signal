@@ -108,7 +108,8 @@ describe('fetchCardData exact-print contract', () => {
     assert.equal(result, null);
     assert.equal(calls.length, 2);
     assert.match(calls[0], /cards\/sv8pt5-161$/);
-    assert.match(calls[1], /tcgdex\.net\/v2\/en\/cards\/sv8pt5-161$/);
+    // TCGdex spells this printing sv08.5-161; the untranslated id 404s there.
+    assert.match(calls[1], /tcgdex\.net\/v2\/en\/cards\/sv08\.5-161$/);
   });
 
   test('a Yu-Gi-Oh pin selects its exact set printing, not card_sets[0]', async () => {

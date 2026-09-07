@@ -12,6 +12,17 @@ const REPORT_LEASE_MS = 3 * 60 * 1000;
 const REPORT_WAIT_MS = 110 * 1000;
 const REPORT_POLL_MS = 1000;
 const DAILY_MODEL_CALLS = 100;
+// Whole-service ceilings. The per-install cap keys on a header the caller
+// chooses, so on its own it bounds nothing; these bound the day's bill.
+const DAILY_GLOBAL_MODEL_CALLS = 600;
+const YOUTUBE_CACHE = 'signal_youtube_cache_v1';
+const YOUTUBE_CACHE_MS = 24 * 60 * 60 * 1000;
+const DAILY_YOUTUBE_CALLS = 60;
+// YouTube's free quota is 10,000 units a day and one search costs 100.
+const DAILY_GLOBAL_YOUTUBE_CALLS = 95;
+const YOUTUBE_REGIONS = new Set(['', 'US', 'JP']);
+const YOUTUBE_LANGUAGES = new Set(['', 'en', 'ja']);
+const YOUTUBE_ORDERS = new Set(['relevance', 'date']);
 const ALLOWED_MODELS = new Set(['claude-haiku-4-5', 'claude-sonnet-4-6']);
 const CATALOGUE_RULES = new Map([
   ['api.pokemontcg.io', /^\/v2\/(?:cards|sets)(?:\/[^/]+)?$/],
@@ -229,6 +240,70 @@ async function yugiohArt(body) {
   return { cached: false, imageUrl };
 }
 
+// Paid actions need the token compiled into Signal builds. Enforcement
+// switches on only once SIGNAL_APP_TOKEN is set on the service, so phones on
+// an older build keep working until the new build is installed.
+function requireAppToken(body, expected = process.env.SIGNAL_APP_TOKEN) {
+  if (!expected) return;
+  if (safeText(body?.appToken, 200) !== expected) {
+    throw Object.assign(new Error('This Signal build cannot use the paid gateway. Update the app.'), { status: 401 });
+  }
+}
+
+function validateYoutubeBody(body) {
+  const q = safeText(body?.q, 200);
+  if (q.length < 2) throw Object.assign(new Error('Search text is required.'), { status: 400 });
+  const regionCode = safeText(body?.regionCode, 2).toUpperCase();
+  const relevanceLanguage = safeText(body?.relevanceLanguage, 2).toLowerCase();
+  const order = safeText(body?.order, 12).toLowerCase() || 'relevance';
+  const maxResults = Math.max(1, Math.min(8, Math.floor(finite(body?.maxResults) ?? 6)));
+  if (!YOUTUBE_REGIONS.has(regionCode) || !YOUTUBE_LANGUAGES.has(relevanceLanguage) || !YOUTUBE_ORDERS.has(order)) {
+    throw Object.assign(new Error('Search options are not allowed.'), { status: 400 });
+  }
+  return { q, regionCode, relevanceLanguage, order, maxResults };
+}
+
+function youtubeCacheKey(params) {
+  return hash(['yt', params.q.toLowerCase(), params.regionCode, params.relevanceLanguage, params.order, params.maxResults].join('::'));
+}
+
+function shapeYoutubeItems(items) {
+  return (Array.isArray(items) ? items : []).map((item) => ({
+    videoId: safeText(item?.id?.videoId, 20),
+    title: safeText(item?.snippet?.title, 200),
+    description: safeText(item?.snippet?.description, 500),
+    channel: safeText(item?.snippet?.channelTitle, 120),
+    publishedAt: safeText(item?.snippet?.publishedAt, 40),
+  })).filter((item) => item.videoId);
+}
+
+async function youtubeSearch(req, body, fetcher = fetch) {
+  const params = validateYoutubeBody(body);
+  const ref = db.collection(YOUTUBE_CACHE).doc(youtubeCacheKey(params));
+  const saved = (await ref.get()).data();
+  if (Array.isArray(saved?.items) && timestampMillis(saved.expiresAt) > Date.now()) {
+    return { cached: true, items: saved.items };
+  }
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) throw Object.assign(new Error('Video search is unavailable.'), { status: 503 });
+  await useQuota(req, 'youtube', DAILY_YOUTUBE_CALLS, DAILY_GLOBAL_YOUTUBE_CALLS);
+  const search = new URLSearchParams({ part: 'snippet', type: 'video', order: params.order, maxResults: String(params.maxResults), q: params.q, key: apiKey });
+  if (params.regionCode) search.set('regionCode', params.regionCode);
+  if (params.relevanceLanguage) search.set('relevanceLanguage', params.relevanceLanguage);
+  const response = await fetcher(`https://www.googleapis.com/youtube/v3/search?${search}`, { signal: AbortSignal.timeout(8000) });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw Object.assign(new Error(payload?.error?.message || `Video search failed (${response.status}).`), { status: 502 });
+  }
+  const items = shapeYoutubeItems(payload?.items);
+  await ref.set({
+    items,
+    createdAt: FieldValue.serverTimestamp(),
+    expiresAt: Timestamp.fromMillis(Date.now() + YOUTUBE_CACHE_MS),
+  });
+  return { cached: false, items };
+}
+
 function validateModelBody(body) {
   if (!body || typeof body !== 'object') throw new Error('Missing model request.');
   if (!ALLOWED_MODELS.has(body.model)) throw new Error('Model is not allowed.');
@@ -250,26 +325,32 @@ function validateModelBody(body) {
   if (bytes > 7_000_000) throw new Error('Request is too large.');
 }
 
-async function useModelQuota(req) {
+async function useQuota(req, kind, perInstall, perDay) {
   const install = safeText(req.get('x-signal-install-id'), 120)
     || safeText(req.get('x-forwarded-for')?.split(',')[0], 120)
     || 'unknown';
   const day = new Date().toISOString().slice(0, 10);
-  const ref = db.collection(LIMITS).doc(`${day}_${hash(install).slice(0, 32)}`);
+  const suffix = kind === 'model' ? '' : `_${kind}`;
+  const ref = db.collection(LIMITS).doc(`${day}_${hash(install).slice(0, 32)}${suffix}`);
+  const globalRef = db.collection(LIMITS).doc(`${day}_global${suffix}`);
   await db.runTransaction(async (transaction) => {
-    const snap = await transaction.get(ref);
+    const [snap, globalSnap] = await Promise.all([transaction.get(ref), transaction.get(globalRef)]);
     const count = Number(snap.data()?.count || 0);
-    if (count >= DAILY_MODEL_CALLS) {
-      const error = new Error('Daily scan limit reached.');
-      error.status = 429;
-      throw error;
+    const globalCount = Number(globalSnap.data()?.count || 0);
+    if (count >= perInstall) {
+      throw Object.assign(new Error(kind === 'model' ? 'Daily scan limit reached.' : 'Daily video search limit reached.'), { status: 429 });
     }
-    transaction.set(ref, {
-      count: count + 1,
-      day,
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
+    if (globalCount >= perDay) {
+      throw Object.assign(new Error('Signal is resting until tomorrow (UTC). Try again then.'), { status: 429 });
+    }
+    const stamp = { day, updatedAt: FieldValue.serverTimestamp() };
+    transaction.set(ref, { ...stamp, count: count + 1 }, { merge: true });
+    transaction.set(globalRef, { ...stamp, count: globalCount + 1 }, { merge: true });
   });
+}
+
+async function useModelQuota(req) {
+  return useQuota(req, 'model', DAILY_MODEL_CALLS, DAILY_GLOBAL_MODEL_CALLS);
 }
 
 async function callAnthropic(req, modelBody) {
@@ -411,11 +492,19 @@ async function handler(req, res) {
     if (body.action === 'catalogueFetch') return res.json(await catalogueFetch(body));
     if (body.action === 'tcgplayerSearch') return res.json(await tcgplayerSearch(body));
     if (body.action === 'yugiohArt') return res.json(await yugiohArt(body));
+    if (body.action === 'youtubeSearch') {
+      requireAppToken(body);
+      return res.json(await youtubeSearch(req, body));
+    }
     if (body.action === 'vision') {
+      requireAppToken(body);
       const result = await callAnthropic(req, body.modelRequest);
       return res.json({ cached: false, result });
     }
-    if (body.action === 'analyze') return res.json(await analyze(req, body));
+    if (body.action === 'analyze') {
+      requireAppToken(body);
+      return res.json(await analyze(req, body));
+    }
     if (body.action === 'observe') return res.json(await observe(body));
     return res.status(400).json({ error: 'Unknown action.' });
   } catch (error) {
@@ -429,4 +518,6 @@ functions.http('signalGateway', handler);
 module.exports = {
   handler, hash, finite, validateModelBody, reportDisposition,
   officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch, tcgplayerSearch,
+  requireAppToken, validateYoutubeBody, youtubeCacheKey, shapeYoutubeItems,
+  DAILY_GLOBAL_MODEL_CALLS, DAILY_GLOBAL_YOUTUBE_CALLS,
 };

@@ -11,6 +11,7 @@
 import { fetchWithTimeout } from './http.js';
 import { isExactScanTarget } from './scanIdentity.js';
 import { normalizeCardRecord } from './cardRecord.js';
+import { toTcgdexId } from './pokemonIds.js';
 
 // `pin` is the exact card record chosen by search, number lookup, camera,
 // upload, Trending, Recent, Watched, or Collection. A broad name is refused.
@@ -95,7 +96,9 @@ async function fetchPinned(pin) {
           if (data.data) return applyTrustedPinMarketPrice(shapePokemon(data.data, pin), pin);
         }
       } catch {}
-      return fetchTcgDexPokemonData(id, pin);
+      // TCGdex spells the same card `sv08.5-161`; the untranslated
+      // pokemontcg.io id 404s there, which used to end this fallback.
+      return fetchTcgDexPokemonData(toTcgdexId(id), pin);
     }
     if (pin.game === 'mtg') {
       const id = pin.id || pin.catalogId || pin.printingId;

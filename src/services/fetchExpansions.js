@@ -314,7 +314,18 @@ export async function resolvePrintingOptions(input = {}) {
       // A photographed set code is stronger evidence than a name search. If
       // it does not match, never fall back to unrelated printings from another
       // set. The former fallback turned an OCR'd I26D-ENS08 into RA01-EN051.
-      const options = narrowed.length ? narrowed : (number ? [] : rows);
+      let options = narrowed.length ? narrowed : (number ? [] : rows);
+      // A misread code must not erase a correct passcode. Foil glare turned
+      // L26D-ENS08 into OP02-EN010 while the lower-left passcode and the
+      // printed rarity were read right; those two facts leave a short list of
+      // real printings, which is a choice for the owner, not a dead end.
+      if (!options.length && number && passcodeRows.length) {
+        const rarityText = String(input.rarity || '').trim().toLowerCase();
+        const byRarity = rarityText
+          ? passcodeRows.filter((row) => String(row.rarity || '').trim().toLowerCase() === rarityText)
+          : [];
+        options = byRarity.length ? byRarity : passcodeRows;
+      }
       const unique = [...new Map(options.map((row) => {
         const identity = row.tcgplayerProductId
           ? `tcgplayer:${row.tcgplayerProductId}`
@@ -440,7 +451,7 @@ function tcgdexPrices(card) {
   return pokemonPrices(prices, market);
 }
 
-function tcgdexPokemonRow(card, fallbackSet = null) {
+export function tcgdexPokemonRow(card, fallbackSet = null) {
   const images = tcgdexImages(card?.image);
   const { marketPrices, availableFinishes } = tcgdexPrices(card);
   const set = card?.set || fallbackSet || {};

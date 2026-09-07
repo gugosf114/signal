@@ -1,6 +1,15 @@
 // Creator evidence must be about the physical printing in the report.
 // A real YouTube URL only proves that the video exists. It does not prove that
 // a Rayquaza video shows the same Rayquaza printing.
+//
+// 2026-09-06: the first version demanded the exact catalogue name. Real
+// creators do not say "Umbreon ex Special Illustration Rare"; they say
+// "UMBREON SIR from Prismatic Evolutions". Measured against the live YouTube
+// answer for that card, the strict rule rejected 6 of 6 real videos, so the
+// creator lane read "no exact-print source" on the most-watched card of the
+// year. The rule now accepts a creator's shorthand as long as the video still
+// pins the exact printing: the card's base name, the set, and either the
+// collector number or the premium rarity.
 
 function normalized(value) {
   return String(value || '')
@@ -9,7 +18,7 @@ function normalized(value) {
     .replace(/&quot;/gi, '"')
     .replace(/[δΔ]/g, ' delta ')
     .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
@@ -20,16 +29,92 @@ function includesPhrase(haystack, needle) {
   return Boolean(wanted && ` ${normalized(haystack)} `.includes(` ${wanted} `));
 }
 
-function nameMatches(text, cardName) {
-  const firstFace = String(cardName || '').split('//')[0].trim();
-  return includesPhrase(text, firstFace);
+function firstFace(cardName) {
+  return String(cardName || '').split('//')[0].trim();
 }
 
-function exactAnchors(pin) {
+function nameMatches(text, cardName) {
+  return includesPhrase(text, firstFace(cardName));
+}
+
+// "Umbreon ex", "Charizard VMAX", "Pikachu V": the mechanic suffix is what
+// creators drop first. Pokémon only; a Magic name is never shortened.
+const POKEMON_SUFFIX_RE = /\s+(?:ex|gx|v|vmax|vstar|break|lv\.?\s?x|prime|legend|star|tag team)$/i;
+
+export function baseCardName(cardName, game = 'pokemon') {
+  const name = firstFace(cardName);
+  if (game !== 'pokemon') return name;
+  const stripped = name.replace(POKEMON_SUFFIX_RE, '').trim();
+  return stripped || name;
+}
+
+// Premium rarities and the shorthand collectors use for them. Plain "rare",
+// "common", and "uncommon" are deliberately absent: they pin nothing.
+const RARITY_ALIASES = [
+  [/special illustration rare/, ['special illustration rare', 'special illustration', 'sir']],
+  [/(?:^| )illustration rare/, ['illustration rare', 'ir']],
+  [/hyper rare/, ['hyper rare', 'hyper']],
+  [/ultra rare/, ['ultra rare']],
+  [/secret rare/, ['secret rare', 'secret']],
+  [/starlight/, ['starlight rare', 'starlight']],
+  [/quarter century/, ['quarter century', 'qcsr']],
+  [/collector'?s? rare/, ['collectors rare', 'collector s rare']],
+  [/ghost rare/, ['ghost rare']],
+  [/gold rare/, ['gold rare']],
+  [/(?:alternate|alt) art/, ['alternate art', 'alt art']],
+  [/full art/, ['full art']],
+  [/extended art/, ['extended art']],
+  [/borderless/, ['borderless']],
+  [/serialized/, ['serialized', 'serial']],
+];
+
+export function rarityAnchors(rarity) {
+  const wanted = normalized(rarity);
+  if (!wanted) return [];
+  const anchors = new Set();
+  for (const [pattern, aliases] of RARITY_ALIASES) {
+    if (pattern.test(wanted)) for (const alias of aliases) anchors.add(normalized(alias));
+  }
+  return [...anchors].filter(Boolean);
+}
+
+// Shorthand a creator would put in a title, for the fallback search query.
+export function rarityShorthand(rarity) {
+  const wanted = normalized(rarity);
+  if (/special illustration rare/.test(wanted)) return 'SIR';
+  if (/(?:^| )illustration rare/.test(wanted)) return 'IR';
+  if (/hyper rare/.test(wanted)) return 'hyper rare';
+  if (/starlight/.test(wanted)) return 'Starlight';
+  if (/quarter century/.test(wanted)) return 'Quarter Century';
+  if (/secret rare/.test(wanted)) return 'Secret Rare';
+  if (/(?:alternate|alt) art/.test(wanted)) return 'alt art';
+  if (/full art/.test(wanted)) return 'full art';
+  return '';
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// "Prismatic Evolution" and "Prismatic Evolutions" name the same set.
+function setNameMatches(haystack, setName) {
+  const words = normalized(setName).split(' ').filter(Boolean);
+  if (!words.length) return false;
+  const pattern = words.map((word) => `${escapeRegExp(word.replace(/s$/, ''))}s?`).join(' ');
+  return new RegExp(`(?:^| )${pattern}(?: |$)`).test(` ${normalized(haystack)} `);
+}
+
+function codeAnchors(pin) {
   if (!pin) return [];
-  const anchors = [pin.setName, pin.setCode, pin.sourceCode];
+  const anchors = [pin.setCode, pin.sourceCode];
   if (pin.sourceCode && pin.number) anchors.push(`${pin.sourceCode}-${pin.number}`);
   if (pin.setCode && pin.number) anchors.push(`${pin.setCode}-${pin.number}`);
+  return [...new Set(anchors.map(normalized).filter((value) => value.length >= 3))];
+}
+
+function numberAnchors(pin) {
+  if (!pin) return [];
+  const anchors = [];
   // Yu-Gi-Oh set numbers are strong IDs. Bare Pokémon/MTG collector numbers
   // are weak words ("97" can be a price or view count), so require #number.
   if (pin.game === 'yugioh' && pin.number) anchors.push(pin.number);
@@ -38,11 +123,28 @@ function exactAnchors(pin) {
   return [...new Set(anchors.map(normalized).filter((value) => value.length >= 3))];
 }
 
+function exactAnchors(pin) {
+  return [...new Set([...codeAnchors(pin), ...numberAnchors(pin), normalized(pin?.setName)].filter((value) => value && value.length >= 3))];
+}
+
 export function sourceMatchesExactPrinting(source, cardName, pin) {
   const text = [source?.title, source?.description].filter(Boolean).join(' ');
-  if (!text || !nameMatches(text, cardName)) return false;
+  if (!text || !pin) return false;
   const haystack = ` ${normalized(text)} `;
-  return exactAnchors(pin).some((anchor) => haystack.includes(` ${anchor} `));
+  const fullName = nameMatches(text, cardName);
+  const base = baseCardName(cardName, pin.game);
+  const baseName = !fullName && base !== firstFace(cardName) && includesPhrase(text, base);
+  if (!fullName && !baseName) return false;
+
+  const set = (pin.setName && setNameMatches(text, pin.setName))
+    || codeAnchors(pin).some((anchor) => haystack.includes(` ${anchor} `));
+  const number = numberAnchors(pin).some((anchor) => haystack.includes(` ${anchor} `));
+  const rarity = rarityAnchors(pin.rarity).some((anchor) => haystack.includes(` ${anchor} `));
+
+  // The full catalogue name plus any exact anchor is the old rule, unchanged.
+  if (fullName) return set || number || rarity;
+  // Shorthand needs the set AND something that separates printings inside it.
+  return set && (number || rarity);
 }
 
 export function exactCreatorQuery(cardName, game, pin) {
@@ -52,6 +154,16 @@ export function exactCreatorQuery(cardName, game, pin) {
     pin?.number || '',
     pin?.rarity ? `"${pin.rarity}"` : '',
     game === 'pokemon' ? 'Pokemon card' : game === 'yugioh' ? 'Yu-Gi-Oh card' : 'Magic card',
+  ].filter(Boolean).join(' ');
+}
+
+// The way a creator would title it: "Umbreon SIR Prismatic Evolutions".
+export function looseCreatorQuery(cardName, game, pin) {
+  const shorthand = rarityShorthand(pin?.rarity) || String(pin?.rarity || '').trim();
+  return [
+    baseCardName(cardName, game),
+    shorthand,
+    pin?.setName || '',
   ].filter(Boolean).join(' ');
 }
 
@@ -106,9 +218,10 @@ export function enforceExactCreatorSources(analysis, {
     const kept = signal.sources.filter((source) => {
       if (signal.key === 'jp_hype' && source?.type !== 'youtube') return true;
       const url = normalizedUrl(source?.url);
-      return allow === null
-        ? sourceMatchesExactPrinting(source, cardName, pin)
-        : Boolean(url && allow.has(url));
+      // A video the model found with its own search counts when its title
+      // pins the printing, even if the pre-fetch did not return it.
+      return (allow !== null && Boolean(url && allow.has(url)))
+        || sourceMatchesExactPrinting(source, cardName, pin);
     });
     const dropped = signal.sources.length - kept.length;
     removed += dropped;

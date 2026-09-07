@@ -1,36 +1,31 @@
 // ─── Japan signal ─────────────────────────────────────────────────────────────
 // The wedge: what Japan is doing before the US price moves. Two parallel pulls:
-//   1. JP creator hype  — YouTube Data API, region JP / language ja (uses the key
-//      you already have). Reliable.
-//   2. JP vs US interest — Google Trends (unofficial endpoint). Best-effort: if
-//      Google blocks/rate-limits it, returns null and the scan is unaffected.
+//   1. JP creator hype  — YouTube search restricted to region JP / language ja,
+//      through the compiled-in key or the gateway. Same exact-print check as
+//      the English lane, same two-query fallback.
+//   2. JP vs US interest — Google Trends (unofficial endpoint). Best-effort:
+//      Google answers 429 from most phones; when it does the scan is unaffected.
 // Returns null only if BOTH fail.
 
 import { fetchWithTimeout } from './http.js';
-import { exactCreatorQuery, filterExactVideos } from './sourceRelevance.js';
+import { exactCreatorQuery, filterExactVideos, looseCreatorQuery } from './sourceRelevance.js';
+import { searchYouTube } from './youtubeSearch.js';
 
 async function jpHype(cardName, pin = null) {
-  const key = import.meta.env.VITE_YOUTUBE_API_KEY;
-  if (!key || !pin) return null;
+  if (!pin) return null;
   try {
-    const q = encodeURIComponent(exactCreatorQuery(cardName, pin?.game, pin));
-    const url =
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video` +
-      `&order=date&maxResults=5&regionCode=JP&relevanceLanguage=ja&q=${q}&key=${key}`;
-    const res = await fetchWithTimeout(url, {}, 8000);
-    if (!res.ok) return null;
-    const j = await res.json();
-    const vids = (j.items || [])
-      .filter((it) => it.id?.videoId)
-      .map((it) => ({
-        title: it.snippet?.title,
-        description: it.snippet?.description,
-        channel: it.snippet?.channelTitle,
-        date: it.snippet?.publishedAt ? it.snippet.publishedAt.slice(0, 10) : null,
-        url: `https://www.youtube.com/watch?v=${it.id.videoId}`,
-      }));
-    const exactVideos = filterExactVideos(vids, cardName, pin);
-    return exactVideos.length ? exactVideos : null;
+    const seen = new Set();
+    const videos = [];
+    for (const q of [exactCreatorQuery(cardName, pin?.game, pin), looseCreatorQuery(cardName, pin?.game, pin)]) {
+      const found = await searchYouTube({ q, order: 'date', maxResults: 5, regionCode: 'JP', relevanceLanguage: 'ja' }).catch(() => []);
+      for (const video of filterExactVideos(found, cardName, pin)) {
+        if (seen.has(video.url)) continue;
+        seen.add(video.url);
+        videos.push(video);
+      }
+      if (videos.length) break;
+    }
+    return videos.length ? videos : null;
   } catch {
     return null;
   }

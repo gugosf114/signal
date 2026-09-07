@@ -83,12 +83,31 @@ async function ygoBanlist(cardName) {
 
 // ─── Pokémon / TCG API ───────────────────────────────────────────────────────
 
+async function pokemonCardPrintsTcgdex(cardName) {
+  const res = await fetchWithTimeout(
+    `https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(cardName)}&pagination:page=1&pagination:itemsPerPage=50`
+  );
+  if (!res.ok) return null;
+  const rows = await res.json();
+  const list = Array.isArray(rows) ? rows : [];
+  const exact = list.filter((c) => String(c?.name || '').toLowerCase() === String(cardName).toLowerCase());
+  const cards = (exact.length ? exact : list).map((c) => ({
+    id: c.id,
+    set: String(c.id || '').split('-')[0],
+    series: null,
+    released: null,
+    rarity: null,
+    number: c.localId,
+  }));
+  return cards.length ? { total_prints: cards.length, prints: cards } : null;
+}
+
 async function pokemonCardPrints(cardName) {
   const q = `name:"${cardName}"`;
   const res = await fetchWithTimeout(
     `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&select=id,name,set,rarity,number&pageSize=50`
-  );
-  if (!res.ok) return null;
+  ).catch(() => null);
+  if (!res?.ok) return pokemonCardPrintsTcgdex(cardName);
   const j = await res.json();
   const cards = (j.data || []).map((c) => ({
     id: c.id,

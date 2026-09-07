@@ -4,6 +4,17 @@ const GATEWAY_EDGE_URL = 'https://signal-gateway-edge.gugosf.workers.dev';
 const GATEWAY_URLS = [GATEWAY_EDGE_URL, GATEWAY_URL, GATEWAY_DIRECT_URL];
 const INSTALL_KEY = 'signal_install_id_v1';
 
+// Compiled in from .env.local (or the CI secret). The gateway only spends money
+// for callers that present it. It rides inside the JSON body because the edge
+// worker forwards the body untouched and drops unknown headers.
+function appToken() {
+  try {
+    return import.meta.env?.VITE_SIGNAL_APP_TOKEN || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function installId() {
   try {
     let value = localStorage.getItem(INSTALL_KEY);
@@ -33,6 +44,7 @@ function retryDelay(ms, signal) {
 
 export async function gateway(body, signal, retries = 2) {
   let lastError;
+  const payloadBody = JSON.stringify({ ...body, appToken: appToken() });
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const url = GATEWAY_URLS[Math.min(attempt, GATEWAY_URLS.length - 1)];
@@ -43,11 +55,12 @@ export async function gateway(body, signal, retries = 2) {
           'Content-Type': 'application/json',
           'X-Signal-Install-Id': installId(),
         },
-        body: JSON.stringify(body),
+        body: payloadBody,
       });
       const payload = await response.json().catch(() => ({}));
       if (response.ok) return payload;
       const error = new Error(payload.error || `Signal gateway failed (${response.status}).`);
+      error.status = response.status;
       error.retryable = response.status >= 500;
       if (!error.retryable || attempt === retries) throw error;
       lastError = error;
@@ -76,6 +89,14 @@ export function recordSignalMeasurement({ cacheKey, measurement }) {
 
 export function getOfficialYugiohArt({ cardName, setCode, rarity }) {
   return gateway({ action: 'yugiohArt', cardName, setCode, rarity }, undefined, 1);
+}
+
+// The YouTube key lives on the server. A phone that was built without one
+// (CI, Termux) still gets the creator and Japan lanes. Results are cached on
+// the server for a day so repeat scans of one card cost no quota.
+export async function youtubeSearchViaGateway({ q, regionCode = '', relevanceLanguage = '', order = 'relevance', maxResults = 6 }, signal) {
+  const payload = await gateway({ action: 'youtubeSearch', q, regionCode, relevanceLanguage, order, maxResults }, signal, 1);
+  return Array.isArray(payload?.items) ? payload.items : [];
 }
 
 // Android cannot reliably open the public card APIs itself. The same small
