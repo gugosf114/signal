@@ -2025,45 +2025,27 @@
    Dropdown under the main search bar. Sits above everything else on the
    page — the result card and the nav both use stacking contexts of their
    own, and a suggestion list that slides *behind* the page is useless. */
-.lookup-mode-toggle {
-  position: absolute;
-  z-index: 5;
-  top: 50%;
-  right: 7px;
-  transform: translateY(-50%);
-  width: 76px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid #5C5761;
-  border-radius: 999px;
-  background: var(--signal-raised);
-  color: #F1EDE5;
+.signal-search-helper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 7px;
+  color: var(--signal-text-muted);
+  font: 9px 'JetBrains Mono', monospace;
+}
+.signal-search-helper button {
+  flex: none;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #34373E;
+  border-radius: 4px;
+  background: transparent;
+  color: #B6B1A8;
+  font: 700 9px 'Syne', sans-serif;
   cursor: pointer;
 }
-.lookup-mode-toggle > span {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--signal-toggle-green);
-  box-shadow: 0 1px 5px rgba(0,0,0,0.45);
-  transition: transform 0.16s ease, background 0.16s ease;
-}
-.lookup-mode-toggle > strong {
-  position: absolute;
-  top: 50%;
-  right: 7px;
-  transform: translateY(-50%);
-  font: 700 8px 'Syne', sans-serif;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.lookup-mode-toggle--full > span { transform: translateX(40px); background: #C44040; }
-.lookup-mode-toggle--full > strong { left: 7px; right: auto; }
-.lookup-mode-toggle:focus-visible { outline: 2px solid #F1EDE5; outline-offset: 2px; }
-.lookup-mode-toggle:disabled { cursor: default; opacity: 0.45; }
+.signal-search-helper button:disabled { opacity: 0.4; }
 
 .sb-searching {
   display: flex;
@@ -2130,7 +2112,8 @@
 .quick-price-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 .quick-price-actions button { min-height: 48px; border-radius: 5px; font: 700 11px 'Syne', sans-serif; cursor: pointer; }
 .quick-price-add { border: 1px solid #608870; background: rgba(96,136,112,0.18); color: #C4D8C8; }
-.quick-price-done { border: 1px solid #FFFFFF; background: transparent; color: #F1EDE5; }
+.quick-price-run { border: 1px solid #C44040; background: #C44040; color: #FFF; }
+.quick-price-done { grid-column: 1 / -1; min-height: 42px !important; border: 1px solid #FFFFFF; background: transparent; color: #F1EDE5; }
 
 .sb-list {
   position: absolute;
@@ -2213,53 +2196,6 @@
   color: #A8A498;
 }
 
-/* Shared camera source chooser. Signal and Collection render the same
-   SearchBar, so both places get the same two actions. */
-.photo-choice-menu {
-  position: absolute;
-  top: calc(100% + 7px);
-  left: 0;
-  z-index: 75;
-  width: min(280px, calc(100vw - 32px));
-  padding: 5px;
-  background: var(--signal-panel);
-  border: 1px solid #2A2D34;
-  border-radius: 4px;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.72);
-}
-.photo-choice-menu button {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 58px;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 3px;
-  background: transparent;
-  color: #E8E4DC;
-  text-align: left;
-  cursor: pointer;
-}
-.photo-choice-menu button + button { border-top: 1px solid #171A20; }
-.photo-choice-menu button:hover, .photo-choice-menu button:focus-visible { background: var(--signal-raised); outline: none; }
-.photo-choice-menu button > span:last-child { display: flex; flex-direction: column; gap: 2px; }
-.photo-choice-menu strong { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 650; }
-.photo-choice-menu small { color: var(--signal-text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 9px; }
-.photo-choice-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border: 1px solid #2A2D34;
-  border-radius: 50%;
-  color: #C44040;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 18px;
-}
-
 .compact-scroll-fade {
   position: absolute;
   z-index: 2;
@@ -2340,24 +2276,6 @@
 .live-card-frame .corner-tr { right: -3px; top: -3px; border-width: 3px 3px 0 0; border-radius: 0 8px 0 0; }
 .live-card-frame .corner-bl { left: -3px; bottom: -3px; border-width: 0 0 3px 3px; border-radius: 0 0 0 8px; }
 .live-card-frame .corner-br { right: -3px; bottom: -3px; border-width: 0 3px 3px 0; border-radius: 0 0 8px; }
-.live-number-guide {
-  position: absolute;
-  left: 5%;
-  right: 5%;
-  bottom: 7%;
-  height: 15%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 4px;
-  border: 1px dashed rgba(224, 192, 96, 0.9);
-  color: #FFE5A0;
-  background: rgba(0, 0, 0, 0.18);
-  font: 700 8px 'JetBrains Mono', monospace;
-  letter-spacing: 0.1em;
-  text-shadow: 0 1px 5px #000;
-  pointer-events: none;
-}
 .live-focus-ring {
   position: absolute;
   width: 54px;
@@ -2457,7 +2375,7 @@
   object-fit: cover;
   pointer-events: none;
 }
-.live-scanner-preview { object-fit: contain; background: #050607; filter: brightness(0.56) saturate(0.82); }
+.live-scanner-preview { object-fit: contain; background: #050607; }
 .live-scanner-topbar {
   min-height: 74px;
   padding: calc(14px + env(safe-area-inset-top)) 18px 10px;
@@ -2466,16 +2384,6 @@
 }
 .live-scanner-topbar strong { font-size: 14px; letter-spacing: 0.16em; }
 .live-scanner-topbar button { min-height: 48px; font-size: 14px; }
-.live-scanner-auto {
-  justify-self: end;
-  padding: 5px 8px;
-  border: 1px solid rgba(196,64,64,0.72);
-  border-radius: 999px;
-  color: #F0B5AF;
-  background: rgba(196,64,64,0.13);
-  font: 700 9px 'JetBrains Mono', monospace;
-  letter-spacing: 0.12em;
-}
 .live-scanner-copy {
   top: calc(88px + env(safe-area-inset-top));
   gap: 7px;
@@ -2491,18 +2399,6 @@
   box-shadow: 0 0 0 9999px rgba(0,0,0,0.46), 0 0 0 1px rgba(0,0,0,0.55);
 }
 .live-card-frame .corner { width: 42px; height: 42px; border-color: #E96565; }
-.live-number-guide {
-  left: 7%;
-  right: 7%;
-  bottom: 5%;
-  height: 13%;
-  border-color: rgba(255,229,160,0.82);
-  border-radius: 4px;
-  color: #FFE5A0;
-  background: rgba(0,0,0,0.34);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-}
 .live-scanner-bottom {
   min-height: 144px;
   padding: 18px 22px calc(18px + env(safe-area-inset-bottom));
@@ -3663,7 +3559,6 @@
 .signal-logo-frame,
 .pt-tab,
 .signal-photo-trigger,
-.lookup-mode-toggle,
 .quick-pick-card,
 .recent-scan-row,
 .npc-outer,
@@ -3691,7 +3586,6 @@
 .ac-actions button,
 .cl-close,
 .cl-btn,
-.photo-choice-menu button,
 .quick-price-actions button {
   -webkit-tap-highlight-color: transparent;
 }
@@ -3734,11 +3628,6 @@
   background: color-mix(in srgb, var(--signal-panel) 96%, #C44040);
 }
 .signal-main-input::placeholder { color: var(--signal-text-secondary); opacity: 1; }
-.lookup-mode-toggle { transition: transform 0.14s ease, border-color 0.14s ease, filter 0.14s ease; }
-.lookup-mode-toggle:active { transform: translateY(-50%) scale(0.96); filter: brightness(1.12); }
-.lookup-mode-toggle:active > span { transform: scale(0.88); }
-.lookup-mode-toggle--full:active > span { transform: translateX(40px) scale(0.88); }
-
 .quick-pick-card:active {
   transform: translateY(1px) scale(0.972) !important;
   filter: brightness(1.16);
@@ -3925,7 +3814,6 @@
 .dos-button { transition: transform 0.13s ease, filter 0.15s ease, border-color 0.15s ease; }
 .dos-button:active { transform: translateY(1px) scale(0.97); filter: brightness(1.18); }
 
-.photo-choice-menu button:active,
 .quick-price-actions button:active,
 .sb-item:active,
 .lt-cancel:active,
@@ -4040,9 +3928,6 @@
   .signal-logo-frame:active,
   .pt-tab:active,
   .signal-photo-trigger:active,
-  .lookup-mode-toggle:active,
-  .lookup-mode-toggle:active > span,
-  .lookup-mode-toggle--full:active > span,
   .quick-pick-card:active,
   .recent-scan-row:active,
   .npc-outer:active .npc-above,
@@ -4070,7 +3955,6 @@
   .cb-set-chip:active,
   .cb-card:active,
   .dos-button:active,
-  .photo-choice-menu button:active,
   .quick-price-actions button:active,
   .sb-item:active,
   .lt-cancel:active,

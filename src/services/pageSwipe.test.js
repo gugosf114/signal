@@ -1,10 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  DEFAULT_PAGE,
+  PAGE_ORDER,
   PAGE_SWIPE_IGNORE_SELECTOR,
   pageAfterSwipe,
   pageSwipeDirection,
 } from './pageSwipe.js';
+
+test('Collection is the page Signal opens on', () => {
+  assert.equal(DEFAULT_PAGE, 'collection');
+  assert.equal(PAGE_ORDER.indexOf(DEFAULT_PAGE), 1);
+});
 
 test('a clear horizontal swipe chooses the page direction', () => {
   assert.equal(pageSwipeDirection(-90, 12), 'next');
@@ -20,6 +27,7 @@ test('short and mostly vertical gestures remain normal page scrolling', () => {
 test('page swipes stop at Signal and Dossier instead of wrapping', () => {
   assert.equal(pageAfterSwipe('signal', 'previous'), 'signal');
   assert.equal(pageAfterSwipe('signal', 'next'), 'collection');
+  assert.equal(pageAfterSwipe('collection', 'previous'), 'signal');
   assert.equal(pageAfterSwipe('collection', 'next'), 'dossier');
   assert.equal(pageAfterSwipe('dossier', 'previous'), 'collection');
   assert.equal(pageAfterSwipe('dossier', 'next'), 'dossier');

@@ -8,6 +8,8 @@ const sources = {
   search: read('../components/SearchBar.jsx'),
   scanner: read('../components/CardScanner.jsx'),
   scanImage: read('./scanCardImage.js'),
+  nativeScanner: read('./nativeCardScanner.js'),
+  nativeCamera: read('../../android/app/src/main/java/com/gugosf114/signal/NativeCardScannerActivity.java'),
   trending: read('../components/QuickPicks.jsx'),
   recent: read('../components/RecentScans.jsx'),
   watched: read('../components/WatchedCards.jsx'),
@@ -130,5 +132,19 @@ describe('every card door uses one exact record', () => {
     assert.match(sources.search, /if \(gemini\.candidates\.length\) return gemini/);
     assert.match(sources.search, /identifyAndResolve\('sonnet'\)/);
     assert.match(sources.search, /!candidates\[0\]\?\.requiresOwnerChoice/);
+  });
+
+  test('one card scan reaches price, collection, and Full Signal without a second photo', () => {
+    assert.match(sources.search, /aria-label="Scan a card"/);
+    assert.doesNotMatch(sources.search, /photo-choice-menu|lookup-mode-toggle/);
+    assert.match(sources.scanner, />Add to collection</);
+    assert.match(sources.scanner, />Run Full Signal</);
+    assert.match(sources.scanner, />Scan next</);
+    assert.doesNotMatch(sources.scanner, />AUTO<|SET \/ NUMBER|Done · Price only/);
+    assert.doesNotMatch(sources.styles, /live-scanner-preview[^}]*brightness/);
+    assert.match(sources.nativeScanner, /scanCardsNatively/);
+    assert.match(sources.nativeCamera, /LifecycleCameraController/);
+    assert.match(sources.nativeCamera, /CAPTURE_MODE_MAXIMIZE_QUALITY/);
+    assert.match(sources.nativeCamera, /setHideOverlayWindows\(true\)/);
   });
 });

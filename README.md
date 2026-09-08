@@ -1710,3 +1710,40 @@ the name is exact, Signal shows exact-name printing choices and never auto-picks
 Sonnet runs only when Gemini plus the catalogs produce no choices. Haiku remains
 the Full Signal analyst after the exact printing is locked. Version 3.6
 (`versionCode 27`).
+
+---
+
+## Session log — 2026-09-08 native card camera and Collection start
+
+**The camera is native now.** Signal's Android app uses CameraX 1.6.2 through
+its own Capacitor plugin and full-screen activity. The old WebView camera drew
+about 15 preview frames per second and sent a roughly 747×1043 crop on this
+phone. The new camera returned a 4080×1748 JPEG with portrait EXIF rotation —
+7.1 megapixels before Signal's safe upload resize. CameraX owns focus, exposure,
+torch, tap-to-focus, pinch zoom, and the high-quality still.
+
+**The scanner is quiet and manual.** One fixed white card frame, one line of
+help, Photos, Flash, Close, and one red shutter are visible. The false `AUTO`
+label and the dark set/number box are gone. Android hides third-party floating
+bubbles while Signal owns the camera window. A Google document-scanner trial
+was rejected because its camera lived in a Google Play services activity where
+Signal could not hide the WiM bubble. There is no live edge detection or
+automatic capture in this version.
+
+**One scan, then one decision.** The camera icon opens the scanner directly.
+The Price/Full pre-scan switch and source menu are gone. After exact printing
+and price are visible, the same scan offers Add to Collection, Run Full Signal,
+or Scan Next. `Scan a stack` keeps the multi-card path reachable. The retired
+React camera shell does not render under the native launch, and the scanner
+activity uses no page-slide animation.
+
+**Collection opens first.** The page order remains Signal, Collection,
+Dossier. A normal app launch starts on the middle Collection tab. From there,
+a rightward swipe goes to Signal and a leftward swipe goes to Dossier; all
+three tab buttons remain direct controls.
+
+**Proof.** George completed two native price scans and added both cards to the
+Collection. He then confirmed the scanner opens as one screen. A clean app
+start selected Collection on the installed Fold with all 12 cards and the
+$428.95 total intact. The native handoff, focused page-order checks, production
+web build, Android debug build, Android unit tests, and Android lint passed.

@@ -4,4 +4,29 @@
     <string name="title_activity_main">Signal</string>
     <string name="package_name">com.gugosf114.signal</string>
     <string name="custom_url_scheme">com.gugosf114.signal</string>
+    <string name="scanner_close">Close scanner</string>
+    <string name="scanner_flash">FLASH</string>
+    <string name="scanner_flash_on">FLASH ON</string>
+    <string name="scanner_turn_flash_on">Turn flash on</string>
+    <string name="scanner_turn_flash_off">Turn flash off</string>
+    <string name="scanner_opening">Opening camera…</string>
+    <string name="scanner_place_card">Place one card inside the frame</string>
+    <string name="scanner_photos">PHOTOS</string>
+    <string name="scanner_choose_photos">Choose card photos</string>
+    <string name="scanner_scan_card">Scan card</string>
+    <string name="scanner_done">DONE</string>
+    <string name="scanner_finish_batch">Finish batch</string>
+    <string name="scanner_hold_still">Hold still…</string>
+    <string name="scanner_photo_failed">Photo failed. Tap to try again.</string>
+    <string name="scanner_opening_photos">Opening photos…</string>
+    <string name="scanner_photo_open_failed">That photo could not be opened.</string>
+    <string name="scanner_done_count">DONE %1$d</string>
+    <plurals name="scanner_finish_batch_count">
+        <item quantity="one">Finish batch with %1$d card</item>
+        <item quantity="other">Finish batch with %1$d cards</item>
+    </plurals>
+    <plurals name="scanner_cards_ready">
+        <item quantity="one">%1$d card ready · scan the next</item>
+        <item quantity="other">%1$d cards ready · scan the next</item>
+    </plurals>
 </resources>

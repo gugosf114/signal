@@ -18,6 +18,19 @@
         <item name="android:windowLightStatusBar">false</item>
     </style>
 
+    <style name="AppTheme.CardScanner" parent="AppTheme.NoActionBar">
+        <item name="android:windowAnimationStyle">@style/CardScannerWindowAnimation</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+
+    <style name="CardScannerWindowAnimation">
+        <item name="android:activityOpenEnterAnimation">@anim/scanner_no_animation</item>
+        <item name="android:activityOpenExitAnimation">@anim/scanner_no_animation</item>
+        <item name="android:activityCloseEnterAnimation">@anim/scanner_no_animation</item>
+        <item name="android:activityCloseExitAnimation">@anim/scanner_no_animation</item>
+    </style>
+
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>

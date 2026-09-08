@@ -18,6 +18,11 @@ import {
   scannerPrintingKey,
 } from '../services/scannerMatch';
 import { setScannerOverlayProtection } from '../services/scannerDisplay';
+import {
+  nativeCardScannerAvailable,
+  scanCardsNatively,
+  shouldRenderScannerShell,
+} from '../services/nativeCardScanner';
 
 function canvasFile(canvas) {
   return new Promise((resolve, reject) => {
@@ -72,7 +77,6 @@ const CardScanner = forwardRef(function CardScanner({
   onBatchAdd,
   onManualSearch,
   mode = 'single',
-  lookupMode = 'price',
 }, ref) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -88,6 +92,9 @@ const CardScanner = forwardRef(function CardScanner({
   const previewPausedRef = useRef(false);
   const cameraTokenRef = useRef(0);
   const pendingFilesRef = useRef([]);
+  const identifyRef = useRef(null);
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
   useImperativeHandle(ref, () => ({
     choosePhoto: () => fileInputRef.current?.click(),
   }), []);
@@ -103,7 +110,7 @@ const CardScanner = forwardRef(function CardScanner({
   const [launchAction, setLaunchAction] = useState(null);
   const [batch, setBatch] = useState([]);
   const batchMode = mode === 'batch';
-  const priceOnly = !batchMode && lookupMode === 'price';
+  const nativeScanner = nativeCardScannerAvailable();
   const batchSummary = scannerBatchSummary(batch);
 
   const clearPreview = useCallback(() => {
@@ -150,6 +157,19 @@ const CardScanner = forwardRef(function CardScanner({
     previewPausedRef.current = false;
     const cameraToken = ++cameraTokenRef.current;
     try {
+      if (nativeScanner) {
+        const nativeResult = await scanCardsNatively({ batch: batchMode });
+        if (cameraToken !== cameraTokenRef.current) return;
+        if (nativeResult.cancelled) {
+          onCancelRef.current?.();
+          return;
+        }
+        pendingFilesRef.current = nativeResult.files.slice(1);
+        // CameraX returns a full-resolution still. Let the existing image
+        // preparation make its full-photo and code-area crops from that file.
+        await identifyRef.current?.(nativeResult.files[0], false);
+        return;
+      }
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('Live camera is unavailable on this device.');
       const { stream, track, focus } = await openFocusedRearCamera(navigator.mediaDevices);
       if (cameraToken !== cameraTokenRef.current) {
@@ -219,14 +239,14 @@ const CardScanner = forwardRef(function CardScanner({
       setPhase('ready');
     } catch (cameraError) {
       setError({
-        title: 'Camera did not open',
+        title: nativeScanner ? 'Scanner did not open' : 'Camera did not open',
         message: cameraError?.name === 'NotAllowedError'
           ? 'Allow Camera for Signal, then try again.'
           : cameraError?.message || 'The camera could not open.',
       });
       setPhase('error');
     }
-  }, [stop]);
+  }, [batchMode, nativeScanner, stop]);
 
   useEffect(() => {
     if (!open) {
@@ -252,6 +272,7 @@ const CardScanner = forwardRef(function CardScanner({
   }, [open, start, stop, clearPreview]);
 
   if (!open) return null;
+  if (!shouldRenderScannerShell({ open, native: nativeScanner, phase })) return null;
 
   const requestFocus = async (event = null) => {
     const frame = frameRef.current;
@@ -299,6 +320,7 @@ const CardScanner = forwardRef(function CardScanner({
       setPhase('error');
     }
   };
+  identifyRef.current = identify;
 
   const capture = async () => {
     const stage = stageRef.current;
@@ -482,19 +504,18 @@ const CardScanner = forwardRef(function CardScanner({
 
         <div className="live-scanner-topbar">
           <button type="button" onClick={cancel}>Cancel</button>
-          <strong>{batchMode ? 'Batch scan' : priceOnly ? 'Price only' : 'Full Signal'}</strong>
+          <strong>{batchMode ? 'Batch scan' : 'Card scan'}</strong>
           {batchMode ? (
             <button type="button" className="live-batch-count" onClick={reviewBatch} disabled={!batch.length}>
               {batchSummary.cards} saved
             </button>
-          ) : <span className="live-scanner-auto">AUTO</span>}
+          ) : <span aria-hidden />}
         </div>
 
         {cameraVisible && !error && (
           <>
             <div className="live-scanner-copy" aria-live="polite">
-              <strong>{phase === 'opening' ? 'Opening camera…' : phase === 'capturing' ? 'Hold still…' : 'Fill the frame with one card'}</strong>
-              <span>Use a plain background. Keep every card edge visible.</span>
+              <strong>{phase === 'opening' ? 'Opening camera…' : phase === 'capturing' ? 'Hold still…' : 'Place one card inside the frame'}</strong>
             </div>
             <div
               ref={frameRef}
@@ -512,7 +533,6 @@ const CardScanner = forwardRef(function CardScanner({
             >
               <i className="corner corner-tl" /><i className="corner corner-tr" />
               <i className="corner corner-bl" /><i className="corner corner-br" />
-              <div className="live-number-guide">SET / NUMBER</div>
               {focusPoint && (
                 <span
                   key={focusPoint.key}
@@ -565,7 +585,7 @@ const CardScanner = forwardRef(function CardScanner({
                 {candidates.length > 0 ? (match.pin ? 'Printing selected' : 'Choose printing') : (details.exact ? 'Exact match' : 'Needs a check')}
               </span>
               <span>
-                {batchMode ? 'Batch price lookup' : priceOnly ? 'Price only' : 'Full Signal'}
+                {batchMode ? 'Batch price lookup' : 'Card scan'}
                 {details.confidence ? ` · ${details.confidence} confidence` : ''}
               </span>
             </div>
@@ -609,9 +629,7 @@ const CardScanner = forwardRef(function CardScanner({
                 : details.exact
                   ? (batchMode
                     ? 'Check the exact printing before keeping this card.'
-                    : priceOnly
-                      ? 'Price lookup complete. No full Signal report has run.'
-                      : 'Check the exact printing before starting the paid full report.')
+                    : 'Check the exact printing, then choose what happens next.')
                   : 'No exact printing is selected yet.'}
             </p>
             <div className={`live-match-actions ${details.exact ? 'live-match-actions--complete' : ''}`}>
@@ -622,17 +640,11 @@ const CardScanner = forwardRef(function CardScanner({
                     <button type="button" className="live-match-add" onClick={() => keepForBatch('review')}>Keep & review</button>
                     <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
                   </>
-                ) : priceOnly ? (
-                  <>
-                    <button type="button" className="live-match-add" onClick={() => launch('add')}>Add to collection</button>
-                    <button type="button" className="live-match-done" onClick={cancel}>Done · Price only</button>
-                    <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
-                  </>
                 ) : (
                   <>
                     <button type="button" className="live-match-add" onClick={() => launch('add')}>Add to collection</button>
-                    <button type="button" className="live-match-primary" onClick={() => launch('run')}>Confirm & run full Signal</button>
-                    <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
+                    <button type="button" className="live-match-primary" onClick={() => launch('run')}>Run Full Signal</button>
+                    <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan next</button>
                   </>
                 )
               ) : needsChoice ? (

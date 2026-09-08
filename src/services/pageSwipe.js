@@ -1,4 +1,5 @@
 export const PAGE_ORDER = Object.freeze(['signal', 'collection', 'dossier']);
+export const DEFAULT_PAGE = 'collection';
 export const PAGE_SWIPE_MIN_PX = 72;
 export const PAGE_SWIPE_AXIS_RATIO = 1.25;
 

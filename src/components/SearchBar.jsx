@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { flushSync } from 'react-dom';
 import { scanCardImage } from '../services/scanCardImage';
 import { looksLikeYgoPasscode, resolvePrintingOptions, suggestCards } from '../services/fetchExpansions';
 import { looksLikeSetCode, lookupBySetCode } from '../services/lookupBySetCode';
@@ -25,31 +24,13 @@ const MIN_CHARS = 2;
 
 const GAME_LABEL = { pokemon: 'PKM', mtg: 'MTG', yugioh: 'YGO' };
 
-function LookupModeToggle({ value, onToggle, disabled }) {
-  const full = value === 'full';
-  return (
-    <button
-      type="button"
-      className={`lookup-mode-toggle lookup-mode-toggle--${value}`}
-      aria-pressed={full}
-      aria-label={`${full ? 'Full Signal' : 'Price only'} selected. Tap to switch.`}
-      title={full ? 'Full Signal · about one minute · paid analysis' : 'Price only · no full-report charge'}
-      disabled={disabled}
-      onClick={onToggle}
-    >
-      <span aria-hidden />
-      <strong>{full ? 'Full' : 'Price'}</strong>
-    </button>
-  );
-}
-
-function QuickPriceResult({ card, onAdd, onDone }) {
+function QuickPriceResult({ card, onAdd, onRun, onDone }) {
   const details = scannerMatchDetails({ card, pin: card });
   return (
     <section className="quick-price-result" aria-label="Price lookup complete" aria-live="polite">
       <div className="quick-price-heading">
         <strong>Price lookup complete</strong>
-        <span>No full Signal report ran</span>
+        <span>Choose what happens next</span>
       </div>
       <div className="quick-price-card">
         {details.imageUrl
@@ -64,6 +45,7 @@ function QuickPriceResult({ card, onAdd, onDone }) {
       </div>
       <div className="quick-price-actions">
         {onAdd && <button type="button" className="quick-price-add" onClick={onAdd}>Add to collection</button>}
+        {onRun && <button type="button" className="quick-price-run" onClick={onRun}>Run Full Signal</button>}
         <button type="button" className="quick-price-done" onClick={onDone}>Done · Price only</button>
       </div>
     </section>
@@ -96,7 +78,6 @@ export default function SearchBar({
   onScannerBatch = null,
   loading = false,
 }) {
-  const [lookupMode, setLookupMode] = useState('price');
   const [quickResult, setQuickResult] = useState(null);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
@@ -104,15 +85,12 @@ export default function SearchBar({
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerMode, setScannerMode] = useState('single');
   const [scannerSession, setScannerSession] = useState(0);
-  const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const formRef = useRef(null);
-  const photoMenuRef = useRef(null);
-  const scannerRef = useRef(null);
   // Bumped on every keystroke and every pick, so a slow catalogue reply that
   // lands after the user moved on can't repopulate the list.
   const reqToken = useRef(0);
@@ -173,20 +151,6 @@ export default function SearchBar({
     return () => document.removeEventListener('pointerdown', onDocDown);
   }, [open]);
 
-  useEffect(() => {
-    if (!photoMenuOpen) return;
-    const close = (event) => {
-      if (!photoMenuRef.current?.contains(event.target)) setPhotoMenuOpen(false);
-    };
-    const escape = (event) => { if (event.key === 'Escape') setPhotoMenuOpen(false); };
-    document.addEventListener('pointerdown', close);
-    window.addEventListener('keydown', escape);
-    return () => {
-      document.removeEventListener('pointerdown', close);
-      window.removeEventListener('keydown', escape);
-    };
-  }, [photoMenuOpen]);
-
   const routeResolvedCard = async (pricedCard) => {
     const resolvedCard = stampCardPrice(normalizeCardRecord(await withResolvedCardImage(pricedCard)));
     if (!resolvedCard || !isExactScanTarget(resolvedCard.game, resolvedCard)) {
@@ -197,28 +161,11 @@ export default function SearchBar({
     setSuggestions([]);
     setOpen(false);
     setActive(-1);
-    if (lookupMode === 'price') {
-      setQuery('');
-      setQuickResult(resolvedCard);
-      return;
-    }
-    if (lookupMode !== 'full') {
-      setScanError('Choose Price Only or Run Full Signal first.');
-      return;
-    }
-    if (!onSearch) throw new Error('Full Signal is unavailable.');
-    setQuery(resolvedCard.name);
-    await onSearch(resolvedCard.name, resolvedCard.game, {
-      pin: resolvedCard,
-      force: resolvedCard.priceSource === 'TCGplayer',
-    });
+    setQuery('');
+    setQuickResult(resolvedCard);
   };
 
   const pick = async (card) => {
-    if (!lookupMode) {
-      setScanError('Choose Price Only or Run Full Signal first.');
-      return;
-    }
     setResolving(true);
     try {
       const pricedCard = await addTcgplayerPrice(
@@ -236,10 +183,6 @@ export default function SearchBar({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!lookupMode) {
-      setScanError('Choose Price Only or Run Full Signal first.');
-      return;
-    }
     if (open && active >= 0 && suggestions[active]) {
       pick(suggestions[active]);
       return;
@@ -375,40 +318,20 @@ export default function SearchBar({
     }
   });
 
-  const openPhotoMenu = () => {
-    if (!lookupMode) {
-      setScanError('Choose Price Only or Run Full Signal first.');
-      return;
-    }
+  const scanCard = () => {
     setScanError(null);
     setOpen(false);
-    setPhotoMenuOpen((value) => !value);
-  };
-
-  const scanCard = () => {
-    setPhotoMenuOpen(false);
     setScannerMode('single');
     setScannerSession((value) => value + 1);
     setScannerOpen(true);
   };
 
   const batchScan = () => {
-    setPhotoMenuOpen(false);
+    setScanError(null);
+    setOpen(false);
     setScannerMode('batch');
     setScannerSession((value) => value + 1);
     setScannerOpen(true);
-  };
-
-  const uploadPhoto = () => {
-    setPhotoMenuOpen(false);
-    // Mount the shared scanner before clicking its hidden file input. Keeping
-    // both operations inside this tap preserves Android's file-picker gesture.
-    flushSync(() => {
-      setScannerMode('single');
-      setScannerSession((value) => value + 1);
-      setScannerOpen(true);
-    });
-    scannerRef.current?.choosePhoto();
   };
 
   const preparePhotoMatch = async ({ card, pin }) => {
@@ -481,13 +404,6 @@ export default function SearchBar({
 
   const busy = loading || resolving;
 
-  const toggleLookupMode = () => {
-    setLookupMode((current) => current === 'price' ? 'full' : 'price');
-    setQuickResult(null);
-    setScanError(null);
-    setPhotoMenuOpen(false);
-  };
-
   const addQuickResult = async () => {
     const add = onScannerAdd || onCardFound;
     if (!add || !quickResult) return;
@@ -498,6 +414,17 @@ export default function SearchBar({
     } finally {
       setResolving(false);
     }
+  };
+
+  const runQuickResult = async () => {
+    if (!onSearch || !quickResult) return;
+    const card = quickResult;
+    setQuickResult(null);
+    setQuery(card.name);
+    await onSearch(card.name, card.game, {
+      pin: card,
+      force: card.priceSource === 'TCGplayer',
+    });
   };
 
   return (
@@ -511,16 +438,14 @@ export default function SearchBar({
         maxWidth: 580,
       }}>
       <div style={{ position: 'relative', width: '100%', minWidth: 0 }}>
-        {/* Signal and Collection use this same two-choice photo menu. */}
+        {/* A normal tap now means exactly one thing: open the card camera. */}
         <button
           type="button"
           className="signal-photo-trigger"
-          onClick={openPhotoMenu}
-          disabled={busy || !lookupMode}
-          aria-label="Choose scan or upload"
-          aria-expanded={photoMenuOpen}
-          aria-haspopup="menu"
-          title="Scan or upload a card photo"
+          onClick={scanCard}
+          disabled={busy}
+          aria-label="Scan a card"
+          title="Scan a card"
           style={{
             position: 'absolute',
             left: 6,
@@ -535,8 +460,8 @@ export default function SearchBar({
             alignItems: 'center',
             justifyContent: 'center',
             color: '#A8A498',
-            cursor: busy || !lookupMode ? 'not-allowed' : 'pointer',
-            opacity: lookupMode ? 1 : 0.35,
+            cursor: busy ? 'not-allowed' : 'pointer',
+            opacity: busy ? 0.35 : 1,
             transition: 'color 0.15s',
           }}
           onMouseEnter={(e) => { if (!busy) e.currentTarget.style.color = '#C44040'; }}
@@ -547,23 +472,6 @@ export default function SearchBar({
             <circle cx="12" cy="13" r="4" />
           </svg>
         </button>
-
-        {photoMenuOpen && !busy && (
-          <div ref={photoMenuRef} className="photo-choice-menu" role="menu" aria-label="Card photo source">
-            <button type="button" role="menuitem" onClick={scanCard}>
-              <span className="photo-choice-icon" aria-hidden>◎</span>
-              <span><strong>Scan card</strong><small>Open the live camera</small></span>
-            </button>
-            <button type="button" role="menuitem" onClick={batchScan}>
-              <span className="photo-choice-icon" aria-hidden>＋</span>
-              <span><strong>Batch scan</strong><small>Camera or select many photos</small></span>
-            </button>
-            <button type="button" role="menuitem" onClick={uploadPhoto}>
-              <span className="photo-choice-icon" aria-hidden>↑</span>
-              <span><strong>Upload photo</strong><small>Use a saved image</small></span>
-            </button>
-          </div>
-        )}
 
         {/* No explicit submit button — camera icon on the left handles image scans,
             Enter key on the keyboard submits a typed card name. The previous
@@ -585,12 +493,12 @@ export default function SearchBar({
           aria-autocomplete="list"
           aria-controls="signal-card-suggestions"
           aria-activedescendant={active >= 0 ? `signal-card-option-${active}` : undefined}
-          placeholder={lookupMode ? 'Card name or number' : 'Choose a lookup above first'}
-          disabled={busy || !lookupMode}
+          placeholder="Card name or number"
+          disabled={busy}
           enterKeyHint="search"
           style={{
             width: '100%',
-            padding: '16px 94px 16px 50px',
+            padding: '16px 16px 16px 50px',
             background: 'var(--signal-panel)',
             border: `1px solid ${focused ? '#2A2D34' : '#1A1D24'}`,
             borderRadius: 3,
@@ -604,7 +512,6 @@ export default function SearchBar({
             boxSizing: 'border-box',
           }}
         />
-        <LookupModeToggle value={lookupMode} onToggle={toggleLookupMode} disabled={busy} />
 
         {open && suggestions.length > 0 && (
           <ul id="signal-card-suggestions" className="sb-list" role="listbox">
@@ -646,12 +553,11 @@ export default function SearchBar({
         )}
       </div>
 
-      <div style={{ marginTop: 6, fontSize: 9, color: 'var(--signal-text-muted)', fontFamily: "'JetBrains Mono', monospace", textAlign: 'left' }}>
-        {!lookupMode
-          ? 'Price: fast · Full Signal: about one minute.'
-          : lookupMode === 'price'
-            ? 'Price Only: exact printing and current market price.'
-            : 'Full Signal: confirm the exact printing before the paid report runs.'}
+      <div className="signal-search-helper">
+        <span>One scan. Then choose what happens.</span>
+        {onScannerBatch && (
+          <button type="button" onClick={batchScan} disabled={busy}>Scan a stack</button>
+        )}
       </div>
 
       {(suggesting || resolving) && query.trim().length >= MIN_CHARS && (
@@ -664,6 +570,7 @@ export default function SearchBar({
         <QuickPriceResult
           card={quickResult}
           onAdd={(onScannerAdd || onCardFound) ? addQuickResult : null}
+          onRun={onSearch ? runQuickResult : null}
           onDone={() => setQuickResult(null)}
         />
       )}
@@ -686,10 +593,8 @@ export default function SearchBar({
 
       <CardScanner
         key={scannerSession}
-        ref={scannerRef}
         open={scannerOpen}
         mode={scannerMode}
-        lookupMode={lookupMode}
         onCancel={() => setScannerOpen(false)}
         onIdentify={identifyPhoto}
         onAdd={(match) => finishPhotoMatch(match, 'add')}

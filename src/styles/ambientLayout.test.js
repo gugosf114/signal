@@ -73,7 +73,8 @@ test('transparent gaps stay clear while the upper and middle green light stays r
   assert.doesNotMatch(ambientCss, /\.signal-ambient-field--green\s*\{/);
   assert.doesNotMatch(ambientCss, /signal-ambient-field--cool|signalAmbientCool/);
   assert.doesNotMatch(ambientCss, /rgba\((?:83, 113, 126|55, 82, 91|73, 107, 121|47, 75, 84),/);
-  assert.match(css, /\.lookup-mode-toggle > span\s*\{[^}]*background:\s*var\(--signal-toggle-green\)/);
+  assert.match(css, /\.signal-search-helper button\s*\{[^}]*border:\s*1px solid #34373E/);
+  assert.doesNotMatch(searchSource, /lookup-mode-toggle/);
 });
 
 test('three-page text hierarchy brightens useful copy without washing out decoration', () => {
@@ -98,7 +99,7 @@ test('three-page text hierarchy brightens useful copy without washing out decora
 
   assert.match(css, /\.pt-tab\s*\{[^}]*color:\s*var\(--signal-text-secondary\)/);
   assert.match(css, /\.signal-main-input::placeholder\s*\{[^}]*var\(--signal-text-secondary\)[^}]*opacity:\s*1/);
-  assert.match(searchSource, /color:\s*'var\(--signal-text-muted\)'/);
+  assert.match(css, /\.signal-search-helper\s*\{[^}]*color:\s*var\(--signal-text-muted\)/);
   assert.match(quickPicksSource, /color:\s*'var\(--signal-text-secondary\)'/);
   assert.match(recentScansSource, /color:\s*'var\(--signal-text-secondary\)'/);
   assert.match(newsSource, /color:\s*'var\(--signal-text-secondary\)'/);

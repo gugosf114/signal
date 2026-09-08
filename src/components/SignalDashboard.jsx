@@ -36,6 +36,7 @@ import { normalizeCardRecord, stampCardPrice, withCardRecord } from '../services
 import { addToCollection } from '../services/collection';
 import { reportEvidenceStats } from '../services/citations';
 import {
+  DEFAULT_PAGE,
   PAGE_SWIPE_IGNORE_SELECTOR,
   pageAfterSwipe,
   pageSwipeDirection,
@@ -67,7 +68,7 @@ export default function SignalDashboard() {
   const [initialScanSession] = useState(() => loadRecoverableScanSession());
   // Which page is showing. The header and tab strip are shared; everything
   // below them belongs to one page or the other.
-  const [page, setPage] = useState('signal');
+  const [page, setPage] = useState(DEFAULT_PAGE);
   const [pageEntryDirection, setPageEntryDirection] = useState(null);
   const [result, setResult] = useState(() =>
     initialScanSession?.status === 'complete' ? initialScanSession.result : null

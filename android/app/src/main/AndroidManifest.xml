@@ -24,6 +24,11 @@
 
         </activity>
 
+        <activity
+            android:name=".NativeCardScannerActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.CardScanner" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -44,6 +49,8 @@
 
     <!-- Permissions -->
 
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
