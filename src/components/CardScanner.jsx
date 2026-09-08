@@ -77,6 +77,7 @@ const CardScanner = forwardRef(function CardScanner({
   onBatchAdd,
   onManualSearch,
   mode = 'single',
+  lookupMode = 'price',
 }, ref) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -110,6 +111,7 @@ const CardScanner = forwardRef(function CardScanner({
   const [launchAction, setLaunchAction] = useState(null);
   const [batch, setBatch] = useState([]);
   const batchMode = mode === 'batch';
+  const priceOnly = !batchMode && lookupMode === 'price';
   const nativeScanner = nativeCardScannerAvailable();
   const batchSummary = scannerBatchSummary(batch);
 
@@ -504,7 +506,7 @@ const CardScanner = forwardRef(function CardScanner({
 
         <div className="live-scanner-topbar">
           <button type="button" onClick={cancel}>Cancel</button>
-          <strong>{batchMode ? 'Batch scan' : 'Card scan'}</strong>
+          <strong>{batchMode ? 'Batch scan' : priceOnly ? 'Price only' : 'Full Signal'}</strong>
           {batchMode ? (
             <button type="button" className="live-batch-count" onClick={reviewBatch} disabled={!batch.length}>
               {batchSummary.cards} saved
@@ -585,7 +587,7 @@ const CardScanner = forwardRef(function CardScanner({
                 {candidates.length > 0 ? (match.pin ? 'Printing selected' : 'Choose printing') : (details.exact ? 'Exact match' : 'Needs a check')}
               </span>
               <span>
-                {batchMode ? 'Batch price lookup' : 'Card scan'}
+                {batchMode ? 'Batch price lookup' : priceOnly ? 'Price only' : 'Full Signal'}
                 {details.confidence ? ` · ${details.confidence} confidence` : ''}
               </span>
             </div>
@@ -629,7 +631,9 @@ const CardScanner = forwardRef(function CardScanner({
                 : details.exact
                   ? (batchMode
                     ? 'Check the exact printing before keeping this card.'
-                    : 'Check the exact printing, then choose what happens next.')
+                    : priceOnly
+                      ? 'Price lookup complete. No full Signal report has run.'
+                      : 'Check the exact printing before starting the paid full report.')
                   : 'No exact printing is selected yet.'}
             </p>
             <div className={`live-match-actions ${details.exact ? 'live-match-actions--complete' : ''}`}>
@@ -640,11 +644,17 @@ const CardScanner = forwardRef(function CardScanner({
                     <button type="button" className="live-match-add" onClick={() => keepForBatch('review')}>Keep & review</button>
                     <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
                   </>
+                ) : priceOnly ? (
+                  <>
+                    <button type="button" className="live-match-add" onClick={() => launch('add')}>Add to collection</button>
+                    <button type="button" className="live-match-done" onClick={cancel}>Done · Price only</button>
+                    <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
+                  </>
                 ) : (
                   <>
                     <button type="button" className="live-match-add" onClick={() => launch('add')}>Add to collection</button>
-                    <button type="button" className="live-match-primary" onClick={() => launch('run')}>Run Full Signal</button>
-                    <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan next</button>
+                    <button type="button" className="live-match-primary" onClick={() => launch('run')}>Confirm & run full Signal</button>
+                    <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
                   </>
                 )
               ) : needsChoice ? (

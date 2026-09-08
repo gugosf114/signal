@@ -1731,11 +1731,12 @@ Signal could not hide the WiM bubble. There is no live edge detection or
 automatic capture in this version.
 
 **One scan, then one decision.** The camera icon opens the scanner directly.
-The Price/Full pre-scan switch and source menu are gone. After exact printing
-and price are visible, the same scan offers Add to Collection, Run Full Signal,
-or Scan Next. `Scan a stack` keeps the multi-card path reachable. The retired
-React camera shell does not render under the native launch, and the scanner
-activity uses no page-slide animation.
+The old source menu is gone. The Price/Full toggle remains inside the search
+box on both card-search pages and selects the scan path before the camera opens.
+Price mode shows the exact price and Add to Collection. Full mode confirms the
+exact printing before the paid report starts. `Scan a stack` keeps the
+multi-card path reachable. The retired React camera shell does not render under
+the native launch, and the scanner activity uses no page-slide animation.
 
 **Collection opens first.** The page order remains Signal, Collection,
 Dossier. A normal app launch starts on the middle Collection tab. From there,

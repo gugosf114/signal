@@ -134,13 +134,15 @@ describe('every card door uses one exact record', () => {
     assert.match(sources.search, /!candidates\[0\]\?\.requiresOwnerChoice/);
   });
 
-  test('one card scan reaches price, collection, and Full Signal without a second photo', () => {
+  test('native card scans preserve the explicit Price and Full Signal modes', () => {
     assert.match(sources.search, /aria-label="Scan a card"/);
-    assert.doesNotMatch(sources.search, /photo-choice-menu|lookup-mode-toggle/);
+    assert.match(sources.search, /LookupModeToggle/);
+    assert.doesNotMatch(sources.search, /photo-choice-menu/);
+    assert.match(sources.scanner, /const priceOnly/);
     assert.match(sources.scanner, />Add to collection</);
-    assert.match(sources.scanner, />Run Full Signal</);
-    assert.match(sources.scanner, />Scan next</);
-    assert.doesNotMatch(sources.scanner, />AUTO<|SET \/ NUMBER|Done · Price only/);
+    assert.match(sources.scanner, />Confirm & run full Signal</);
+    assert.match(sources.scanner, />Done · Price only</);
+    assert.doesNotMatch(sources.scanner, />AUTO<|SET \/ NUMBER/);
     assert.doesNotMatch(sources.styles, /live-scanner-preview[^}]*brightness/);
     assert.match(sources.nativeScanner, /scanCardsNatively/);
     assert.match(sources.nativeCamera, /LifecycleCameraController/);

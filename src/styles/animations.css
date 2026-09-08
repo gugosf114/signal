@@ -2025,6 +2025,46 @@
    Dropdown under the main search bar. Sits above everything else on the
    page — the result card and the nav both use stacking contexts of their
    own, and a suggestion list that slides *behind* the page is useless. */
+.lookup-mode-toggle {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  right: 7px;
+  transform: translateY(-50%);
+  width: 76px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #5C5761;
+  border-radius: 999px;
+  background: var(--signal-raised);
+  color: #F1EDE5;
+  cursor: pointer;
+}
+.lookup-mode-toggle > span {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--signal-toggle-green);
+  box-shadow: 0 1px 5px rgba(0,0,0,0.45);
+  transition: transform 0.16s ease, background 0.16s ease;
+}
+.lookup-mode-toggle > strong {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  transform: translateY(-50%);
+  font: 700 8px 'Syne', sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.lookup-mode-toggle--full > span { transform: translateX(40px); background: #C44040; }
+.lookup-mode-toggle--full > strong { left: 7px; right: auto; }
+.lookup-mode-toggle:focus-visible { outline: 2px solid #F1EDE5; outline-offset: 2px; }
+.lookup-mode-toggle:disabled { cursor: default; opacity: 0.45; }
+
 .signal-search-helper {
   display: flex;
   align-items: center;
@@ -2112,8 +2152,7 @@
 .quick-price-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 .quick-price-actions button { min-height: 48px; border-radius: 5px; font: 700 11px 'Syne', sans-serif; cursor: pointer; }
 .quick-price-add { border: 1px solid #608870; background: rgba(96,136,112,0.18); color: #C4D8C8; }
-.quick-price-run { border: 1px solid #C44040; background: #C44040; color: #FFF; }
-.quick-price-done { grid-column: 1 / -1; min-height: 42px !important; border: 1px solid #FFFFFF; background: transparent; color: #F1EDE5; }
+.quick-price-done { border: 1px solid #FFFFFF; background: transparent; color: #F1EDE5; }
 
 .sb-list {
   position: absolute;
@@ -3559,6 +3598,7 @@
 .signal-logo-frame,
 .pt-tab,
 .signal-photo-trigger,
+.lookup-mode-toggle,
 .quick-pick-card,
 .recent-scan-row,
 .npc-outer,
@@ -3628,6 +3668,10 @@
   background: color-mix(in srgb, var(--signal-panel) 96%, #C44040);
 }
 .signal-main-input::placeholder { color: var(--signal-text-secondary); opacity: 1; }
+.lookup-mode-toggle { transition: transform 0.14s ease, border-color 0.14s ease, filter 0.14s ease; }
+.lookup-mode-toggle:active { transform: translateY(-50%) scale(0.96); filter: brightness(1.12); }
+.lookup-mode-toggle:active > span { transform: scale(0.88); }
+.lookup-mode-toggle--full:active > span { transform: translateX(40px) scale(0.88); }
 .quick-pick-card:active {
   transform: translateY(1px) scale(0.972) !important;
   filter: brightness(1.16);
@@ -3928,6 +3972,9 @@
   .signal-logo-frame:active,
   .pt-tab:active,
   .signal-photo-trigger:active,
+  .lookup-mode-toggle:active,
+  .lookup-mode-toggle:active > span,
+  .lookup-mode-toggle--full:active > span,
   .quick-pick-card:active,
   .recent-scan-row:active,
   .npc-outer:active .npc-above,

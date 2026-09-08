@@ -24,7 +24,25 @@ const MIN_CHARS = 2;
 
 const GAME_LABEL = { pokemon: 'PKM', mtg: 'MTG', yugioh: 'YGO' };
 
-function QuickPriceResult({ card, onAdd, onRun, onDone }) {
+function LookupModeToggle({ value, onToggle, disabled }) {
+  const full = value === 'full';
+  return (
+    <button
+      type="button"
+      className={`lookup-mode-toggle lookup-mode-toggle--${value}`}
+      aria-pressed={full}
+      aria-label={`${full ? 'Full Signal' : 'Price only'} selected. Tap to switch.`}
+      title={full ? 'Full Signal · about one minute · paid analysis' : 'Price only · no full-report charge'}
+      disabled={disabled}
+      onClick={onToggle}
+    >
+      <span aria-hidden />
+      <strong>{full ? 'Full' : 'Price'}</strong>
+    </button>
+  );
+}
+
+function QuickPriceResult({ card, onAdd, onDone }) {
   const details = scannerMatchDetails({ card, pin: card });
   return (
     <section className="quick-price-result" aria-label="Price lookup complete" aria-live="polite">
@@ -45,7 +63,6 @@ function QuickPriceResult({ card, onAdd, onRun, onDone }) {
       </div>
       <div className="quick-price-actions">
         {onAdd && <button type="button" className="quick-price-add" onClick={onAdd}>Add to collection</button>}
-        {onRun && <button type="button" className="quick-price-run" onClick={onRun}>Run Full Signal</button>}
         <button type="button" className="quick-price-done" onClick={onDone}>Done · Price only</button>
       </div>
     </section>
@@ -78,6 +95,7 @@ export default function SearchBar({
   onScannerBatch = null,
   loading = false,
 }) {
+  const [lookupMode, setLookupMode] = useState('price');
   const [quickResult, setQuickResult] = useState(null);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
@@ -161,8 +179,17 @@ export default function SearchBar({
     setSuggestions([]);
     setOpen(false);
     setActive(-1);
-    setQuery('');
-    setQuickResult(resolvedCard);
+    if (lookupMode === 'price') {
+      setQuery('');
+      setQuickResult(resolvedCard);
+      return;
+    }
+    if (!onSearch) throw new Error('Full Signal is unavailable.');
+    setQuery(resolvedCard.name);
+    await onSearch(resolvedCard.name, resolvedCard.game, {
+      pin: resolvedCard,
+      force: resolvedCard.priceSource === 'TCGplayer',
+    });
   };
 
   const pick = async (card) => {
@@ -404,6 +431,12 @@ export default function SearchBar({
 
   const busy = loading || resolving;
 
+  const toggleLookupMode = () => {
+    setLookupMode((current) => current === 'price' ? 'full' : 'price');
+    setQuickResult(null);
+    setScanError(null);
+  };
+
   const addQuickResult = async () => {
     const add = onScannerAdd || onCardFound;
     if (!add || !quickResult) return;
@@ -414,17 +447,6 @@ export default function SearchBar({
     } finally {
       setResolving(false);
     }
-  };
-
-  const runQuickResult = async () => {
-    if (!onSearch || !quickResult) return;
-    const card = quickResult;
-    setQuickResult(null);
-    setQuery(card.name);
-    await onSearch(card.name, card.game, {
-      pin: card,
-      force: card.priceSource === 'TCGplayer',
-    });
   };
 
   return (
@@ -498,7 +520,7 @@ export default function SearchBar({
           enterKeyHint="search"
           style={{
             width: '100%',
-            padding: '16px 16px 16px 50px',
+            padding: '16px 94px 16px 50px',
             background: 'var(--signal-panel)',
             border: `1px solid ${focused ? '#2A2D34' : '#1A1D24'}`,
             borderRadius: 3,
@@ -512,6 +534,7 @@ export default function SearchBar({
             boxSizing: 'border-box',
           }}
         />
+        <LookupModeToggle value={lookupMode} onToggle={toggleLookupMode} disabled={busy} />
 
         {open && suggestions.length > 0 && (
           <ul id="signal-card-suggestions" className="sb-list" role="listbox">
@@ -554,7 +577,9 @@ export default function SearchBar({
       </div>
 
       <div className="signal-search-helper">
-        <span>One scan. Then choose what happens.</span>
+        <span>{lookupMode === 'price'
+          ? 'Price Only: exact printing and current market price.'
+          : 'Full Signal: confirm the exact printing before the paid report runs.'}</span>
         {onScannerBatch && (
           <button type="button" onClick={batchScan} disabled={busy}>Scan a stack</button>
         )}
@@ -570,7 +595,6 @@ export default function SearchBar({
         <QuickPriceResult
           card={quickResult}
           onAdd={(onScannerAdd || onCardFound) ? addQuickResult : null}
-          onRun={onSearch ? runQuickResult : null}
           onDone={() => setQuickResult(null)}
         />
       )}
@@ -595,6 +619,7 @@ export default function SearchBar({
         key={scannerSession}
         open={scannerOpen}
         mode={scannerMode}
+        lookupMode={lookupMode}
         onCancel={() => setScannerOpen(false)}
         onIdentify={identifyPhoto}
         onAdd={(match) => finishPhotoMatch(match, 'add')}

@@ -73,8 +73,7 @@ test('transparent gaps stay clear while the upper and middle green light stays r
   assert.doesNotMatch(ambientCss, /\.signal-ambient-field--green\s*\{/);
   assert.doesNotMatch(ambientCss, /signal-ambient-field--cool|signalAmbientCool/);
   assert.doesNotMatch(ambientCss, /rgba\((?:83, 113, 126|55, 82, 91|73, 107, 121|47, 75, 84),/);
-  assert.match(css, /\.signal-search-helper button\s*\{[^}]*border:\s*1px solid #34373E/);
-  assert.doesNotMatch(searchSource, /lookup-mode-toggle/);
+  assert.match(css, /\.lookup-mode-toggle > span\s*\{[^}]*background:\s*var\(--signal-toggle-green\)/);
 });
 
 test('three-page text hierarchy brightens useful copy without washing out decoration', () => {
