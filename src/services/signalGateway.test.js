@@ -1,11 +1,24 @@
 import { afterEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GATEWAY_DIRECT_URL, GATEWAY_EDGE_URL, GATEWAY_URL, gateway } from './signalGateway.js';
+import { GATEWAY_DIRECT_URL, GATEWAY_EDGE_URL, GATEWAY_URL, gateway, identifyCardViaGemini } from './signalGateway.js';
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
 
 describe('Signal gateway retry', () => {
+  test('Gemini identification sends images through the fixed Signal action', async () => {
+    let sent;
+    globalThis.fetch = async (_url, init) => {
+      sent = JSON.parse(init.body);
+      return { ok: true, status: 200, async json() { return { result: { model: 'gemini-3.5-flash-lite' } }; } };
+    };
+    const images = { full: 'abc', detail: 'def' };
+    await identifyCardViaGemini(images);
+    assert.equal(sent.action, 'identifyCard');
+    assert.deepEqual(sent.images, images);
+    assert.equal('model' in sent, false);
+  });
+
   test('repairs a temporary DNS failure instead of killing the scan', async () => {
     let calls = 0;
     const urls = [];

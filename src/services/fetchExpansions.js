@@ -254,6 +254,14 @@ function variantIdentity(row) {
   return { ...row, printingId: `${row.id}:${row.number}:${rarity}` };
 }
 
+function requireOwnerChoice(rows, reason = 'vision-conflict') {
+  return rows.map((row) => ({
+    ...row,
+    requiresOwnerChoice: true,
+    ownerChoiceReason: reason,
+  }));
+}
+
 export async function resolvePrintingOptions(input = {}) {
   const name = String(input.name || '').trim();
   if (!name) return [];
@@ -320,11 +328,10 @@ export async function resolvePrintingOptions(input = {}) {
       // printed rarity were read right; those two facts leave a short list of
       // real printings, which is a choice for the owner, not a dead end.
       if (!options.length && number && passcodeRows.length) {
-        const rarityText = String(input.rarity || '').trim().toLowerCase();
-        const byRarity = rarityText
-          ? passcodeRows.filter((row) => String(row.rarity || '').trim().toLowerCase() === rarityText)
-          : [];
-        options = byRarity.length ? byRarity : passcodeRows;
+        // A correct passcode proves the card name, not its physical rarity.
+        // Vision called real Secret cards Starlight and vice versa throughout
+        // the benchmark. Show every printing and make the owner choose.
+        options = requireOwnerChoice(passcodeRows, 'code-conflict');
       }
       const unique = [...new Map(options.map((row) => {
         const identity = row.tcgplayerProductId
@@ -337,6 +344,26 @@ export async function resolvePrintingOptions(input = {}) {
         // seven; the old three-row cap hid the owner's Ultimate/Ultra/Super/
         // Secret card. Exact-code scans must show every rarity for that code.
         return number ? unique : unique.slice(0, 8);
+      }
+    }
+
+    // A bad tiny code must not erase a clearly read name. This fallback never
+    // auto-picks: it exposes exact-name catalog rows and requires the owner to
+    // choose the printed set and rarity. In the measured 12-card set, this
+    // changed Gemini 3.5 plus the catalog from 10/12 to 12/12 correct choices.
+    if (input.game === 'yugioh') {
+      const fallbackRows = await searchCardsByName('yugioh', name, null).catch(() => []);
+      const exactFallback = fallbackRows.filter((row) => (
+        String(row.baseName || baseTcgplayerName(row.name)).trim().toLowerCase() === name.toLowerCase()
+      ));
+      const uniqueFallback = [...new Map(exactFallback.map((row) => {
+        const identity = row.tcgplayerProductId
+          ? `tcgplayer:${row.tcgplayerProductId}`
+          : `${row.id}:${normalizeYgoCode(row.number)}:${String(row.rarity || '').toLowerCase()}`;
+        return [identity, variantIdentity(row)];
+      })).values()];
+      if (uniqueFallback.length) {
+        return requireOwnerChoice(uniqueFallback.slice(0, 8), 'code-conflict');
       }
     }
   }
@@ -358,15 +385,21 @@ export async function resolvePrintingOptions(input = {}) {
         || setName.includes(wantedSet) || wantedSet.includes(setName);
       return numberMatches && setMatches;
     });
-    // Vision's set label is a hint, not an identity. If the name is exact and
-    // there is no readable collector number, a wrong set guess must not erase
-    // the real catalogue printings. Show those printings and let the owner pick.
-    const choices = matches.length ? matches : (!wantedNumber ? pool : []);
+    // Vision's set and number are hints until the catalog confirms them. When
+    // they conflict but the printed name is exact, show exact-name rows and
+    // require a human choice. Never silently replace the bad code with a card.
+    const conflicted = !matches.length && Boolean(wantedNumber || wantedSet);
+    const choices = matches.length
+      ? matches
+      : (exactName.length ? exactName : (!wantedNumber ? pool : []));
     const unique = [...new Map(choices.map((row) => [
       `${row.printingId || row.id}:${row.form || 'normal'}`,
       row,
     ])).values()];
-    if (unique.length) return unique.slice(0, 8);
+    if (unique.length) {
+      const limited = unique.slice(0, 8);
+      return conflicted ? requireOwnerChoice(limited, 'code-conflict') : limited;
+    }
   }
 
   const pin = await resolvePrinting(input);

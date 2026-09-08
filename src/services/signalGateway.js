@@ -83,6 +83,10 @@ export function identifyCardViaGateway(modelRequest, signal) {
   return gateway({ action: 'vision', modelRequest }, signal);
 }
 
+export function identifyCardViaGemini(images, signal) {
+  return gateway({ action: 'identifyCard', images }, signal);
+}
+
 export function recordSignalMeasurement({ cacheKey, measurement }) {
   return gateway({ action: 'observe', cacheKey, measurement }, undefined, 0);
 }

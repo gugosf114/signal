@@ -1,6 +1,6 @@
 # 株 Signal
 
-### ⬇ [Download the latest APK — 3.5 (versionCode 26), built 2026-09-07](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.5/signal-3.5.apk)
+### ⬇ [Download the latest APK — 3.6 (versionCode 27), built 2026-09-07](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.6/signal-3.6.apk)
 
 Tap that on the phone, then open the downloaded file to install. It is signed
 with the laptop's debug key, the same one every previous sideload used, so it
@@ -33,6 +33,7 @@ Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
 
 The system-wide card rule is in [docs/CARD_DATA_CONTRACT.md](docs/CARD_DATA_CONTRACT.md).
 The source-truth rule is in [docs/SOURCE_EVIDENCE_CONTRACT.md](docs/SOURCE_EVIDENCE_CONTRACT.md).
+The measured reader choice is in [docs/CARD_ID_BENCHMARK_2026-09-07.md](docs/CARD_ID_BENCHMARK_2026-09-07.md).
 
 ---
 
@@ -1690,3 +1691,22 @@ eBay and TCGplayer listings stay out.
 The web-search fee remains one call per fresh report. Old thin reports cannot
 return: local scan cache and active-session keys moved to v3, and the shared
 report key moved to pre-fetch version 4. Version 3.5 (`versionCode 26`).
+
+---
+
+## Session log — 2026-09-07 measured card reader
+
+Twelve card images from the phone were run through Haiku 4.5, Sonnet 4.6,
+Gemini 2.5 Flash, Gemini 2.5 Pro, Gemini 3.5 Flash-Lite, and Gemini 3.7 Flash.
+With Signal's real catalog, Haiku put the correct printing in the choices for
+7/12 images, Sonnet for 8/12, and both Gemini 3.5 and 3.7 for 10/12. Gemini 3.5
+plus a safe exact-name fallback reached 12/12. It cost $0.00106 per image and
+finished in a median 1.9 seconds. Full results are in
+`docs/CARD_ID_BENCHMARK_2026-09-07.md`.
+
+Gemini 3.5 Flash-Lite now reads the photo through the existing Google Cloud
+gateway. The card catalogs remain the authority. If a tiny code conflicts but
+the name is exact, Signal shows exact-name printing choices and never auto-picks.
+Sonnet runs only when Gemini plus the catalogs produce no choices. Haiku remains
+the Full Signal analyst after the exact printing is locked. Version 3.6
+(`versionCode 27`).

@@ -336,21 +336,43 @@ export default function SearchBar({
   };
 
   const identifyPhoto = (file, { framed = false, signal } = {}) => withScanKeepAlive(async () => {
-    const card = await scanCardImage(file, { framed, signal });
-    // A camera guess is not yet a printing. Resolve it against the live card
-    // catalogues, then show the match before spending money on the full report.
-    const options = await resolvePrintingOptions(card).catch(() => []);
-    const candidates = await Promise.all(options.map((option) => addTcgplayerPrice(
-      option,
-      signal,
-      { requireProductId: option.game === 'yugioh' },
-    )));
-    return {
-      card,
-      pin: candidates.length === 1 ? candidates[0] : null,
-      candidates,
-      file,
+    const identifyAndResolve = async (engine) => {
+      const card = await scanCardImage(file, { framed, signal, engine });
+      // A camera read is not yet a printing. The catalog must accept it before
+      // Signal shows a price or spends money on the full report.
+      const options = await resolvePrintingOptions(card).catch(() => []);
+      const candidates = await Promise.all(options.map((option) => addTcgplayerPrice(
+        option,
+        signal,
+        { requireProductId: option.game === 'yugioh' },
+      )));
+      return {
+        card,
+        pin: candidates.length === 1 && !candidates[0]?.requiresOwnerChoice
+          ? candidates[0]
+          : null,
+        candidates,
+        file,
+        identifier: engine,
+      };
     };
+
+    let gemini = null;
+    let geminiError = null;
+    try {
+      gemini = await identifyAndResolve('gemini');
+      if (gemini.candidates.length) return gemini;
+    } catch (error) {
+      if (error?.name === 'AbortError' || signal?.aborted) throw error;
+      geminiError = error;
+    }
+
+    try {
+      return await identifyAndResolve('sonnet');
+    } catch (error) {
+      if (gemini) return gemini;
+      throw geminiError || error;
+    }
   });
 
   const openPhotoMenu = () => {

@@ -1,16 +1,15 @@
 // Camera-based card identification.
 // Capture a photo of any TCG card (Pokemon / MTG / Yu-Gi-Oh!), send the image
-// to Anthropic's vision endpoint, and get back the card's name + game so we
+// to the Signal gateway, and get back the card's printed text so we
 // can feed the existing analyzeCard pipeline.
 //
-// The Google Cloud gateway owns the Anthropic key. The browser's file input handles camera
+// Gemini 3.5 Flash-Lite is the measured first reader. Sonnet 4.6 runs only
+// when Gemini plus the card catalogs produce no safe choices. The browser's file input handles camera
 // capture (`capture="environment"`), which on Android opens the camera app
 // directly inside the Capacitor WebView.
 
-import { identifyCardViaGateway } from './signalGateway.js';
-// Haiku handles reading a card's name/set/number off a clear photo just as well
-// as Sonnet at ~1/3 the cost — the heavy synthesis stays on Sonnet in analyzeCard.
-const MODEL = 'claude-haiku-4-5';
+import { identifyCardViaGateway, identifyCardViaGemini } from './signalGateway.js';
+const FALLBACK_MODEL = 'claude-sonnet-4-6';
 
 const SYSTEM = `You are a trading card identifier. The user shows you a photo of a TCG card and you must identify it.
 
@@ -134,30 +133,33 @@ export async function scanCardImage(file, opts = {}) {
   }
 
   let result;
+  const engine = opts.engine === 'sonnet' ? 'sonnet' : 'gemini';
   try {
-    const payload = await identifyCardViaGateway({
-      model: MODEL,
-      max_tokens: 600,
-      system: SYSTEM,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: mediaType, data: images.full },
-          },
-          { type: 'text', text: 'Full card photo.' },
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: mediaType, data: images.detail },
-          },
-          { type: 'text', text: 'Close crop of the printed code area. Identify the card and copy the code exactly.' },
-        ],
-      }],
-    }, opts.signal);
+    const payload = engine === 'sonnet'
+      ? await identifyCardViaGateway({
+        model: FALLBACK_MODEL,
+        max_tokens: 600,
+        system: SYSTEM,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: images.full },
+            },
+            { type: 'text', text: 'Full card photo.' },
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: images.detail },
+            },
+            { type: 'text', text: 'Close crop of the printed code area. Identify the card and copy the code exactly.' },
+          ],
+        }],
+      }, opts.signal)
+      : await identifyCardViaGemini(images, opts.signal);
     result = payload.result;
   } catch (error) {
-    throw new Error(`Vision API error: ${error?.message || 'gateway failed'}`);
+    throw new Error(`${engine === 'sonnet' ? 'Sonnet' : 'Gemini'} identification error: ${error?.message || 'gateway failed'}`);
   }
   const text = (result.content || [])
     .filter(b => b.type === 'text')

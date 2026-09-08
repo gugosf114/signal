@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const functions = require('@google-cloud/functions-framework');
 const { Firestore, FieldValue, Timestamp } = require('@google-cloud/firestore');
+const { GoogleAuth } = require('google-auth-library');
 
 const db = new Firestore();
 const REPORTS = 'signal_shared_reports_v1';
@@ -24,6 +25,30 @@ const YOUTUBE_REGIONS = new Set(['', 'US', 'JP']);
 const YOUTUBE_LANGUAGES = new Set(['', 'en', 'ja']);
 const YOUTUBE_ORDERS = new Set(['relevance', 'date']);
 const ALLOWED_MODELS = new Set(['claude-haiku-4-5', 'claude-sonnet-4-6']);
+const GEMINI_CARD_MODEL = 'gemini-3.5-flash-lite';
+const VERTEX_LOCATION = 'global';
+const CARD_IDENTIFIER_SYSTEM = `You are a trading card identifier. The user shows you a photo of a TCG card and you must identify it.
+
+Output strict JSON only — no markdown, no prose. Schema:
+{
+  "name": "<exact card name as printed>",
+  "game": "pokemon" | "yugioh" | "mtg" | null,
+  "set": "<set name or null>",
+  "number": "<collector number like 199/198 or null>",
+  "passcode": "<Yu-Gi-Oh 8-digit lower-left card passcode, or null>",
+  "rarity": "<visible printing rarity such as Starlight Rare, or null>",
+  "confidence": "high" | "medium" | "low",
+  "notes": "<one short sentence if confidence < high, else empty>"
+}
+
+Rules:
+- Copy the exact printed name. Keep Pokemon suffixes such as ex, VMAX, and VSTAR.
+- game is pokemon, yugioh, or mtg. Use null when the card frame is unclear.
+- For Yu-Gi-Oh, number is the lower-right set code. passcode is the lower-left 8-digit number.
+- Inspect both lower corners. Preserve every letter and digit.
+- Do not infer a nearby printing. Use null for text you cannot read.
+- High confidence requires a clearly read name. Never use confidence to hide an uncertain code or rarity.`;
+const googleAuth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
 const CATALOGUE_RULES = new Map([
   ['api.pokemontcg.io', /^\/v2\/(?:cards|sets)(?:\/[^/]+)?$/],
   ['api.tcgdex.net', /^\/v2\/en\/(?:cards|sets)(?:\/[^/]+)?$/],
@@ -327,6 +352,79 @@ function validateModelBody(body) {
   if (bytes > 7_000_000) throw new Error('Request is too large.');
 }
 
+function validateIdentifyBody(body) {
+  const images = body?.images;
+  if (!images || typeof images !== 'object') throw new Error('Card images are required.');
+  const clean = {};
+  let total = 0;
+  for (const key of ['full', 'detail']) {
+    const value = images[key];
+    if (typeof value !== 'string' || value.length < 100 || value.length > 5_000_000
+      || !/^[A-Za-z0-9+/=]+$/.test(value)) {
+      throw new Error(`Card ${key} image is invalid.`);
+    }
+    total += value.length;
+    clean[key] = value;
+  }
+  if (total > 8_000_000) throw new Error('Card images are too large.');
+  return clean;
+}
+
+function geminiIdentifyRequest(images) {
+  return {
+    systemInstruction: { parts: [{ text: CARD_IDENTIFIER_SYSTEM }] },
+    contents: [{
+      role: 'user',
+      parts: [
+        { inlineData: { mimeType: 'image/jpeg', data: images.full } },
+        { text: 'Full card photo.' },
+        { inlineData: { mimeType: 'image/jpeg', data: images.detail } },
+        { text: 'Close crop of the printed code area. Identify the card and copy the code exactly.' },
+      ],
+    }],
+    generationConfig: {
+      maxOutputTokens: 1000,
+      responseMimeType: 'application/json',
+      thinkingConfig: { thinkingLevel: 'minimal' },
+    },
+  };
+}
+
+function shapeGeminiIdentifyResponse(payload) {
+  const text = (payload?.candidates || [])
+    .flatMap((candidate) => candidate?.content?.parts || [])
+    .filter((part) => part?.text && !part?.thought)
+    .map((part) => part.text)
+    .join('')
+    .trim();
+  if (!text) throw new Error('Gemini returned no card identification.');
+  const usage = payload?.usageMetadata || {};
+  return {
+    provider: 'google-vertex',
+    model: GEMINI_CARD_MODEL,
+    content: [{ type: 'text', text }],
+    usage: {
+      input_tokens: Number(usage.promptTokenCount || 0),
+      output_tokens: Number(usage.candidatesTokenCount || 0) + Number(usage.thoughtsTokenCount || 0),
+    },
+  };
+}
+
+async function callGeminiIdentify(req, body) {
+  const images = validateIdentifyBody(body);
+  await useModelQuota(req);
+  const project = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || 'bakers-agent';
+  const url = `https://aiplatform.googleapis.com/v1/projects/${project}/locations/${VERTEX_LOCATION}`
+    + `/publishers/google/models/${GEMINI_CARD_MODEL}:generateContent`;
+  const client = await googleAuth.getClient();
+  const response = await client.request({
+    url,
+    method: 'POST',
+    data: geminiIdentifyRequest(images),
+  });
+  return shapeGeminiIdentifyResponse(response.data);
+}
+
 async function useQuota(req, kind, perInstall, perDay) {
   const install = safeText(req.get('x-signal-install-id'), 120)
     || safeText(req.get('x-forwarded-for')?.split(',')[0], 120)
@@ -500,6 +598,11 @@ async function handler(req, res) {
       requireAppToken(body);
       return res.json(await youtubeSearch(req, body));
     }
+    if (body.action === 'identifyCard') {
+      requireAppToken(body);
+      const result = await callGeminiIdentify(req, body);
+      return res.json({ cached: false, result });
+    }
     if (body.action === 'vision') {
       requireAppToken(body);
       const result = await callAnthropic(req, body.modelRequest);
@@ -520,8 +623,9 @@ async function handler(req, res) {
 functions.http('signalGateway', handler);
 
 module.exports = {
-  handler, hash, finite, validateModelBody, reportDisposition,
+  handler, hash, finite, validateModelBody, validateIdentifyBody,
+  geminiIdentifyRequest, shapeGeminiIdentifyResponse, reportDisposition,
   officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch, tcgplayerSearch,
   requireAppToken, validateYoutubeBody, youtubeCacheKey, shapeYoutubeItems,
-  DAILY_GLOBAL_MODEL_CALLS, DAILY_GLOBAL_YOUTUBE_CALLS,
+  DAILY_GLOBAL_MODEL_CALLS, DAILY_GLOBAL_YOUTUBE_CALLS, GEMINI_CARD_MODEL,
 };

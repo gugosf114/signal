@@ -7,6 +7,7 @@ const sources = {
   dashboard: read('../components/SignalDashboard.jsx'),
   search: read('../components/SearchBar.jsx'),
   scanner: read('../components/CardScanner.jsx'),
+  scanImage: read('./scanCardImage.js'),
   trending: read('../components/QuickPicks.jsx'),
   recent: read('../components/RecentScans.jsx'),
   watched: read('../components/WatchedCards.jsx'),
@@ -120,5 +121,14 @@ describe('every card door uses one exact record', () => {
     assert.match(sources.session, /signal_active_scan_v3/);
     assert.doesNotMatch(sources.validation, /source: text\(source\.source/);
     assert.doesNotMatch(sources.validation, /title: text\(source\.title/);
+  });
+
+  test('Gemini reads photos, the catalog gates them, and Sonnet is fallback only', () => {
+    assert.match(sources.scanImage, /identifyCardViaGemini/);
+    assert.match(sources.scanImage, /claude-sonnet-4-6/);
+    assert.match(sources.search, /identifyAndResolve\('gemini'\)/);
+    assert.match(sources.search, /if \(gemini\.candidates\.length\) return gemini/);
+    assert.match(sources.search, /identifyAndResolve\('sonnet'\)/);
+    assert.match(sources.search, /!candidates\[0\]\?\.requiresOwnerChoice/);
   });
 });

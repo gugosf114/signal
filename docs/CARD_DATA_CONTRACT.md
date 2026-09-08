@@ -39,6 +39,17 @@ data beside that record. It does not create another card identity.
 Every door ends at `normalizeCardRecord` and `isExactScanTarget`. If the exact
 printing or finish is unknown, the app asks for a choice. It does not guess.
 
+## Photo identification rule
+
+Gemini 3.5 Flash-Lite reads the full card image and the code-area crop first.
+Its words are hints, not identity. Signal resolves those hints against the live
+catalogs before showing a price or running Full Signal.
+
+If a read code matches nothing but the card name matches, Signal shows the
+catalog's exact-name printings and marks them as requiring an owner choice. It
+never auto-picks through a code conflict. Sonnet 4.6 runs only when Gemini plus
+the catalogs return zero safe choices. Haiku is not a photo identifier.
+
 ## Every relevant screen
 
 Search choices, scanner confirmation, price-only result, Trending, Recent,

@@ -311,6 +311,32 @@ describe('camera printing resolution', () => {
     ]);
   });
 
+  test('a wrong Magic collector number returns exact-name choices without auto-picking', async () => {
+    const card = {
+      id: 'nick-25', name: 'Nick Fury, Agent of S.H.I.E.L.D.', set: 'msh',
+      set_name: 'Marvel Super Heroes', collector_number: '25', rarity: 'rare',
+      finishes: ['nonfoil'], prices: { usd: '1.50' },
+      image_uris: { small: 'nick-small.jpg', large: 'nick-large.jpg' },
+    };
+    globalThis.fetch = async (_url, init = {}) => {
+      const body = JSON.parse(init.body || '{}');
+      if (body.action === 'catalogueFetch') {
+        return {
+          ok: true, status: 200,
+          async json() { return { catalogue: true, ok: true, status: 200, data: { data: [card] } }; },
+        };
+      }
+      return { ok: false, status: 400, async json() { return {}; } };
+    };
+    const options = await resolvePrintingOptions({
+      name: 'Nick Fury, Agent of S.H.I.E.L.D.', game: 'mtg',
+      set: 'Marvel Super Heroes', number: '125',
+    });
+    assert.equal(options.length, 1);
+    assert.equal(options[0].number, '25');
+    assert.equal(options[0].requiresOwnerChoice, true);
+  });
+
   test('one bad code letter cannot turn Chaos Magical Hats into an unrelated card', async () => {
     assert.equal(namesCompatibleForCode('Hydradius Harmonia', 'Fydraulis Harmonia'), true);
     assert.equal(namesCompatibleForCode('Chaos Magical Hats', "D/D/D Oracle King d'Arc"), false);
@@ -412,7 +438,7 @@ describe('camera printing resolution', () => {
     assert.equal(options.every((row) => row.number === 'L26D-ENS08'), true);
   });
 
-  test('an unmatched photographed code never falls back to another set', async () => {
+  test('an unmatched photographed code shows exact-name rows but never auto-picks one', async () => {
     globalThis.fetch = async () => ({
       ok: true,
       status: 200,
@@ -422,7 +448,10 @@ describe('camera printing resolution', () => {
       name: 'Reinforcement of the Army', game: 'yugioh',
       number: 'L26D-ENS08', set: 'Unknown',
     });
-    assert.deepEqual(options, []);
+    assert.equal(options.length, 7);
+    assert.equal(options.every((row) => row.number === 'RA01-EN051'), true);
+    assert.equal(options.every((row) => row.requiresOwnerChoice === true), true);
+    assert.equal(options.every((row) => row.ownerChoiceReason === 'code-conflict'), true);
   });
 
   test('an exact set code shows every real rarity instead of cutting off after three', async () => {

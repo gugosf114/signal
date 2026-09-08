@@ -1,10 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
-  hash, finite, validateModelBody, reportDisposition,
+  hash, finite, validateModelBody, validateIdentifyBody,
+  geminiIdentifyRequest, shapeGeminiIdentifyResponse, reportDisposition,
   officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch, tcgplayerSearch,
   requireAppToken, validateYoutubeBody, youtubeCacheKey, shapeYoutubeItems,
-  DAILY_GLOBAL_MODEL_CALLS, DAILY_GLOBAL_YOUTUBE_CALLS,
+  DAILY_GLOBAL_MODEL_CALLS, DAILY_GLOBAL_YOUTUBE_CALLS, GEMINI_CARD_MODEL,
 } = require('./index');
 
 test('cache ids are stable and hide card text', () => {
@@ -102,6 +103,41 @@ test('only Signal models and bounded requests pass', () => {
   assert.doesNotThrow(() => validateModelBody(body));
   assert.throws(() => validateModelBody({ ...body, model: 'claude-opus-4-8' }), /not allowed/);
   assert.throws(() => validateModelBody({ ...body, max_tokens: 6001 }), /not allowed/);
+});
+
+test('Gemini card identification accepts only two bounded base64 images', () => {
+  const image = 'a'.repeat(120);
+  assert.deepEqual(validateIdentifyBody({ images: { full: image, detail: image } }), {
+    full: image,
+    detail: image,
+  });
+  assert.throws(() => validateIdentifyBody({}), /required/);
+  assert.throws(() => validateIdentifyBody({ images: { full: image, detail: 'not base64!' } }), /invalid/);
+  assert.throws(() => validateIdentifyBody({ images: { full: 'a'.repeat(5_000_001), detail: image } }), /invalid/);
+});
+
+test('Gemini card identification owns its model, prompt, and minimal thinking', () => {
+  const image = 'a'.repeat(120);
+  const request = geminiIdentifyRequest({ full: image, detail: image });
+  assert.equal(GEMINI_CARD_MODEL, 'gemini-3.5-flash-lite');
+  assert.equal(request.contents[0].parts.filter((part) => part.inlineData).length, 2);
+  assert.equal(request.generationConfig.responseMimeType, 'application/json');
+  assert.deepEqual(request.generationConfig.thinkingConfig, { thinkingLevel: 'minimal' });
+  assert.match(request.systemInstruction.parts[0].text, /Do not infer a nearby printing/);
+});
+
+test('Gemini response becomes the same small shape as the existing scanner', () => {
+  const result = shapeGeminiIdentifyResponse({
+    candidates: [{ content: { parts: [
+      { thought: true, text: 'hidden work' },
+      { text: '{"name":"A.I. Connect"}' },
+    ] } }],
+    usageMetadata: { promptTokenCount: 2200, candidatesTokenCount: 70, thoughtsTokenCount: 5 },
+  });
+  assert.equal(result.model, 'gemini-3.5-flash-lite');
+  assert.equal(result.provider, 'google-vertex');
+  assert.deepEqual(result.content, [{ type: 'text', text: '{"name":"A.I. Connect"}' }]);
+  assert.deepEqual(result.usage, { input_tokens: 2200, output_tokens: 75 });
 });
 
 test('analysis permits one direct search and rejects hidden code filtering', () => {

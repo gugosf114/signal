@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "main": "index.js",
-  "engines": { "node": "22" },
+  "engines": {
+    "node": "22"
+  },
   "scripts": {
     "start": "functions-framework --target=signalGateway",
     "test": "node --test index.test.js"
   },
   "dependencies": {
     "@google-cloud/firestore": "^7.11.5",
-    "@google-cloud/functions-framework": "^3.5.1"
+    "@google-cloud/functions-framework": "^3.5.1",
+    "google-auth-library": "^9.15.1"
   }
 }
