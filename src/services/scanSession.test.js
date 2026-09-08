@@ -24,9 +24,11 @@ describe('scan session recovery', () => {
   beforeEach(() => { storage = memoryStorage(); });
 
   test('a completed report from the old source-trust session cannot reopen', () => {
-    storage.setItem('signal_active_scan_v1', JSON.stringify({
+    const report = JSON.stringify({
       status: 'complete', name: 'Old report', result: { summary: 'old model prose' }, completedAt: 1000,
-    }));
+    });
+    storage.setItem('signal_active_scan_v1', report);
+    storage.setItem('signal_active_scan_v2', report);
     assert.equal(loadRecoverableScanSession(storage, 2000), null);
   });
 

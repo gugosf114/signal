@@ -25,6 +25,7 @@ import {
   collectPrefetchEvidence,
   mergeEvidenceRegistries,
   lockSourcesToEvidence,
+  fillEvidenceGaps,
   buildVerifiedSummary,
 } from './citations';
 import { tryParseSignalJSON } from './jsonRepair';
@@ -48,7 +49,7 @@ const ANALYSIS_MODEL = 'claude-haiku-4-5';
 // written before the creator, Japan, and Reddit lanes were repaired (2026-09-06)
 // froze a synthesis that never saw that evidence; a new key lets it refresh
 // once instead of serving the old answer for a week.
-export const PREFETCH_VERSION = 3;
+export const PREFETCH_VERSION = 4;
 
 function sharedCacheKey(cardName, game, pin) {
   const identity = printingIdentity(pin) || '';
@@ -285,8 +286,13 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
         cardName: cardData?.name || cardName,
         game: resolvedGame || parsed.game,
       });
-      const locked = lockSourcesToEvidence(normalized, evidenceRegistry, { ebay });
-      const exactCreators = enforceExactCreatorSources(locked, {
+      const evidenceContext = {
+        cardName: cardData?.name || cardName,
+        pin: printingInfo || pin,
+      };
+      const locked = lockSourcesToEvidence(normalized, evidenceRegistry, { ebay, ...evidenceContext });
+      const filled = fillEvidenceGaps(locked, evidenceRegistry, evidenceContext);
+      const exactCreators = enforceExactCreatorSources(filled, {
         cardName: cardData?.name || cardName,
         pin: printingInfo || pin,
         creatorVideos: creators?.videos || [],

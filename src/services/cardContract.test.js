@@ -109,14 +109,15 @@ describe('every card door uses one exact record', () => {
 
   test('source identity belongs to retrieval and empty schema slots never pose as evidence', () => {
     assert.match(sources.analysis, /lockSourcesToEvidence\(normalized, evidenceRegistry/);
+    assert.match(sources.analysis, /fillEvidenceGaps\(locked, evidenceRegistry/);
     assert.match(sources.analysis, /buildVerifiedSummary/);
     assert.match(sources.evidence, /Model-written metadata and factual[\s\S]*prose are discarded/);
     assert.match(sources.evidence, /level: sources\.length \? signal\.level : 0/);
     assert.match(sources.score, /AREAS SOURCED/);
     assert.match(sources.score, /UNIQUE SOURCE/);
     assert.doesNotMatch(sources.score, /SIGNALS · .*VERIFIED SOURCES/);
-    assert.match(sources.cache, /signal_scan_cache_v2/);
-    assert.match(sources.session, /signal_active_scan_v2/);
+    assert.match(sources.cache, /signal_scan_cache_v3/);
+    assert.match(sources.session, /signal_active_scan_v3/);
     assert.doesNotMatch(sources.validation, /source: text\(source\.source/);
     assert.doesNotMatch(sources.validation, /title: text\(source\.title/);
   });

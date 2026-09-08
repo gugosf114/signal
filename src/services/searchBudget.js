@@ -1,12 +1,11 @@
 export const MAX_GATEWAY_SEARCHES = 1;
 export const ANALYSIS_MAX_TOKENS = 6000;
 export const FIXED_SEARCH_TARGET =
-  'Find the single strongest current source missing from the supplied tournament, Reddit, or YouTube evidence.';
+  'Run one broad discovery search, not a price lookup. Search the card name and set with deck, tournament, review, community, creator, and Japan terms. Exclude eBay, stores, shops, and generic price listings. Return a mixed result page that can support several research areas at once.';
 
-// Every fresh report gets the same bounded research pass. The old gap-based
-// budget gave Claude up to two dynamic searches. On sparse cards that turned
-// into long chains of code-execution filters, while an easier card finished
-// after only a few. One direct search keeps the work and bill predictable.
+// Every fresh report still pays for one search. A single search result page
+// carries several records; citations.js sorts all useful records into the
+// eight areas instead of throwing away everything except Haiku's one choice.
 export function selectSearchTargets() {
   return [FIXED_SEARCH_TARGET];
 }

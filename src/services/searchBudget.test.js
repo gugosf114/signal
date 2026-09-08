@@ -36,6 +36,10 @@ describe('gateway search budget', () => {
       max_uses: 1,
       allowed_callers: ['direct'],
     });
+    for (const term of ['deck', 'tournament', 'review', 'community', 'creator', 'Japan']) {
+      assert.match(FIXED_SEARCH_TARGET, new RegExp(term, 'i'));
+    }
+    assert.match(FIXED_SEARCH_TARGET, /Exclude eBay, stores, shops, and generic price listings/);
     assert.equal(ANALYSIS_MAX_TOKENS, 6000);
   });
 });

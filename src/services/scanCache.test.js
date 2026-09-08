@@ -75,6 +75,7 @@ describe('scanCache printing keys', () => {
         data: { card_name: 'Umbreon ex', game: 'pokemon', summary: 'old model prose', _pin: RICH },
       },
     });
+    store.signal_scan_cache_v2 = store.signal_scan_cache_v1;
     assert.equal(getCachedScan('Umbreon ex', 'pokemon', RICH), null);
   });
 
@@ -131,7 +132,7 @@ describe('scanCache printing keys', () => {
 
   test('finds an old broad-key report by its returned exact printing', () => {
     const now = Date.now();
-    store.signal_scan_cache_v2 = JSON.stringify({
+    store.signal_scan_cache_v3 = JSON.stringify({
       'pokemon::rayquaza ex': {
         ts: now,
         priceTs: now,

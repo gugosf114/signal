@@ -18,6 +18,7 @@ import {
   collectPrefetchEvidence,
   mergeEvidenceRegistries,
   lockSourcesToEvidence,
+  fillEvidenceGaps,
   reportEvidenceStats,
   buildVerifiedSummary,
 } from './citations.js';
@@ -57,7 +58,7 @@ describe('locked evidence records', () => {
     assert.equal(locked.signals[0].detail, '12th place at a City League event.');
   });
 
-  test('the Shedinja failure cannot turn eight filled boxes into eight sourced areas', () => {
+  test('the Shedinja failure cannot count one page as two sourced areas', () => {
     const search = extractSearchEvidence([{
       type: 'web_search_tool_result',
       content: [{
@@ -101,7 +102,7 @@ describe('locked evidence records', () => {
     assert.equal(empty.sources.length, 0);
     assert.equal(empty.detail, 'No verified evidence was retrieved for this area.');
     assert.deepEqual(reportEvidenceStats(locked.signals), {
-      sourcedSignalCount: 2,
+      sourcedSignalCount: 1,
       expectedSignalCount: 8,
       uniqueSourceCount: 1,
     });
@@ -202,5 +203,34 @@ describe('locked evidence records', () => {
     });
     assert.equal(locked.ebay_listings.buy_it_now[0].title, 'real');
     assert.equal(locked.ebay_listings.buy_it_now[0].price_usd, 25);
+  });
+
+  test('one paid search result page can fill several areas without extra searches', () => {
+    const results = [
+      ['YouTube Shedinja Mega Evolution deck', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'],
+      ['Shedinja deck discussion', 'https://www.reddit.com/r/PTCGL/comments/abc/shedinja_deck/'],
+      ['Shedinja Mega Evolution Decklists', 'https://pokemoncard.io/category/pokemon/shedinja-me1-144'],
+      ['Shedinja Mega Evolution review and guide', 'https://example.org/shedinja-mega-evolution-guide'],
+      ['Shedinja PSA population report', 'https://www.psacard.com/pop/tcg-cards/2025/shedinja/12345'],
+      ['Shedinja anime character spotlight', 'https://example.net/shedinja-anime-spotlight'],
+      ['Shedinja Japanese release date', 'https://example.jp/shedinja-japanese-release-date'],
+      ['ヌケニン (Shedinja) Mega Evolution デッキ', 'https://example.jp/shedinja-deck'],
+      ['Shedinja 144/132 for sale', 'https://www.ebay.com/itm/123'],
+      ['Shedinja 144/132', 'https://www.tcgplayer.com/product/654483'],
+    ].map(([title, url]) => ({ type: 'web_search_result', title, url }));
+    const registry = extractSearchEvidence([{ type: 'web_search_tool_result', content: results }]);
+    const report = lockSourcesToEvidence({
+      signals: keys.map((key) => ({ key, level: 0, detail: 'none', sources: [] })),
+    }, registry, { cardName: 'Shedinja', pin: { name: 'Shedinja', setName: 'Mega Evolution', number: '144' } });
+    fillEvidenceGaps(report, registry, { cardName: 'Shedinja', pin: { name: 'Shedinja', setName: 'Mega Evolution', number: '144' } });
+    assert.deepEqual(reportEvidenceStats(report.signals), {
+      sourcedSignalCount: 8,
+      expectedSignalCount: 8,
+      uniqueSourceCount: 8,
+    });
+    const used = new Set(report.signals.flatMap((signal) => signal.sources.map((source) => source.url)));
+    assert.equal([...used].some((url) => url.includes('ebay.com')), false);
+    assert.equal([...used].some((url) => url.includes('tcgplayer.com')), false);
+    assert.equal(report.signals.every((signal) => signal.level === 0), true);
   });
 });

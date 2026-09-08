@@ -9,9 +9,9 @@ import { enforceExactCreatorSources } from './sourceRelevance.js';
 import { normalizeCardRecord, withCardRecord } from './cardRecord.js';
 import { isExactScanTarget } from './scanIdentity.js';
 
-// v2 refuses every report created before source metadata was locked to the
-// retrieval record. Old prose must never re-enter the app through local cache.
-const CACHE_KEY = 'signal_scan_cache_v2';
+// v3 also refuses reports made before Signal used the whole paid search result
+// page. Old thin reports must not hide the records the app already retrieved.
+const CACHE_KEY = 'signal_scan_cache_v3';
 // Two clocks, because the two halves of a scan go stale at very different rates.
 // Signals (creator buzz, scarcity, ban status, JP release timing) move over
 // weeks. Prices move daily. Holding both for 7 days served stale money numbers;

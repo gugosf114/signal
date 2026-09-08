@@ -1,6 +1,6 @@
 # 株 Signal
 
-### ⬇ [Download the latest APK — 3.4 (versionCode 25), built 2026-09-07](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.4/signal-3.4.apk)
+### ⬇ [Download the latest APK — 3.5 (versionCode 26), built 2026-09-07](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.5/signal-3.5.apk)
 
 Tap that on the phone, then open the downloaded file to install. It is signed
 with the laptop's debug key, the same one every previous sideload used, so it
@@ -1663,3 +1663,30 @@ both moved to v2, and the shared report key moved to pre-fetch version 3.
 Regression coverage pins the Shedinja failure, invented metadata, invented
 URLs, changed paths, YouTube ID substitution, eBay field changes, and both old
 cache doors. Version 3.4 (`versionCode 25`).
+
+---
+
+## Session log — 2026-09-07 use the whole search result page
+
+The first 3.4 phone report was honest but still thin: Anthropic returned ten
+real search-result records for one paid search, Haiku selected one, and the app
+discarded the other nine. One paid search had been mistaken for one source.
+
+Full Signal still makes exactly one paid web search. The search now asks for a
+mixed page covering decks, tournaments, reviews, communities, creators, and
+Japan while excluding stores and generic price listings. After Haiku's answer,
+Signal independently sorts every useful, card-matching retrieval record into
+an empty research area. Exact YouTube, Reddit, and JP pre-fetch records enter
+the same sorter. Store listings remain in the price/listing parts of the app;
+they cannot pose as research.
+
+One URL may fill only one area. App-sorted evidence is neutral because its
+existence is proven but no bullish or bearish reading is invented. Haiku can
+still judge a source it selected, but its selected source must match both the
+card and the research area. The test fixture feeds ten records from one search
+page and proves eight different real sources can fill all eight areas while the
+eBay and TCGplayer listings stay out.
+
+The web-search fee remains one call per fresh report. Old thin reports cannot
+return: local scan cache and active-session keys moved to v3, and the shared
+report key moved to pre-fetch version 4. Version 3.5 (`versionCode 26`).

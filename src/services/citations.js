@@ -28,6 +28,10 @@ export function normalizeUrl(url) {
 const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'www.youtu.be']);
 const YOUTUBE_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
 const IMPLICATIONS = new Set(['up', 'down', 'neutral']);
+const EVIDENCE_AREAS = new Set([
+  'creator', 'community', 'ip_momentum', 'editorial',
+  'competitive', 'scarcity', 'jp_hype', 'jp_release',
+]);
 
 const SOURCE_META = {
   'youtube.com': { type: 'youtube', source: 'YouTube' },
@@ -39,6 +43,8 @@ const SOURCE_META = {
   'scryfall.com': { type: 'other', source: 'Scryfall' },
   'pokemon.com': { type: 'other', source: 'Pokemon.com' },
   'deltiasgaming.com': { type: 'editorial', source: "Deltia's Gaming" },
+  'sportscardinvestor.com': { type: 'editorial', source: 'Sports Card Investor' },
+  'psacard.com': { type: 'population_report', source: 'PSA' },
 };
 
 function cleanText(value, max = 300) {
@@ -74,6 +80,7 @@ function canonicalEvidence(input, defaults = {}) {
     url,
     reach: defaults.reach || 'unknown',
     audience: cleanText(defaults.audience, 100) || null,
+    area: EVIDENCE_AREAS.has(defaults.area) ? defaults.area : null,
   };
 }
 
@@ -144,13 +151,14 @@ export function collectPrefetchEvidence({ cardData, community, creators, ebay, j
       type: 'reddit',
       source: post.subreddit || 'Reddit',
       audience,
+      area: 'community',
     });
   }
   for (const video of creators?.videos || []) {
-    putEvidence(registry, video, { type: 'youtube', source: video.channel || 'YouTube' });
+    putEvidence(registry, video, { type: 'youtube', source: video.channel || 'YouTube', area: 'creator' });
   }
   for (const video of jp?.jpVideos || []) {
-    putEvidence(registry, video, { type: 'youtube', source: video.channel || 'YouTube' });
+    putEvidence(registry, video, { type: 'youtube', source: video.channel || 'YouTube', area: 'jp_hype' });
   }
   for (const listing of ebay?.buy_it_now || []) {
     putEvidence(registry, listing, { type: 'marketplace_en', source: 'eBay' });
@@ -203,11 +211,62 @@ function evidenceDetail(sources) {
   return `Verified source: ${first.title}`;
 }
 
+function searchable(value) {
+  return String(value || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function evidenceMatchesCard(evidence, cardName, pin) {
+  if (evidence?.area) return true; // app pre-fetchers already queried and checked this card
+  const haystack = searchable([evidence?.title, evidence?.summary, evidence?.url].filter(Boolean).join(' '));
+  const names = [cardName, pin?.name]
+    .filter(Boolean)
+    .flatMap((name) => String(name).split('//'))
+    .map((name) => searchable(name))
+    .filter((name) => name.length >= 3);
+  if (!names.length) return true;
+  return names.some((name) => haystack.includes(name));
+}
+
+function isMarketplaceEvidence(evidence) {
+  if (String(evidence?.type || '').startsWith('marketplace_')) return true;
+  const host = hostKey(evidence?.url);
+  const text = searchable(`${evidence?.title || ''} ${evidence?.url || ''}`);
+  return ['ebay.com', 'tcgplayer.com'].includes(host)
+    || /\b(?:buy|sale|for sale|shop|store|singles)\b/.test(text);
+}
+
+export function classifyEvidenceArea(evidence) {
+  if (EVIDENCE_AREAS.has(evidence?.area)) return evidence.area;
+  if (!evidence || isMarketplaceEvidence(evidence)) return null;
+  const rawText = `${evidence.title || ''} ${evidence.summary || ''}`;
+  const text = searchable(`${rawText} ${evidence.url || ''}`);
+  const japaneseText = /[\u3040-\u30ff\u3400-\u9fff]/.test(rawText);
+  if (evidence.type === 'youtube') return japaneseText || /\b(?:japan|japanese|jp)\b/i.test(rawText)
+    ? 'jp_hype' : 'creator';
+  if (evidence.type === 'reddit' || evidence.type === 'twitter') return 'community';
+  if (japaneseText) return 'jp_hype';
+  if (evidence.type === 'tournament') return 'competitive';
+  if (evidence.type === 'population_report'
+    || /\b(?:population|pop report|print run|scarcity|supply|out of print|reprint)\b/.test(text)) return 'scarcity';
+  if (/\b(?:japan|japanese|jp|release date|released|launch|set calendar)\b/i.test(rawText)) return 'jp_release';
+  if (/\b(?:tournament|decklists?|deck lists?|decks|championship|city league|ban list|banlist|legality|competitive|meta analysis)\b/.test(text)) return 'competitive';
+  if (/\b(?:anime|movie|video game|franchise|anniversary|character spotlight)\b/.test(text)) return 'ip_momentum';
+  if (evidence.type === 'editorial'
+    || /\b(?:article|editorial|review|guide|top cards|news|analysis)\b/.test(text)) return 'editorial';
+  return null;
+}
+
 // This is the hard trust boundary. The model may choose a retrieved URL and
 // judge its direction. It may not create any visible source metadata or any
 // factual detail. All visible source fields come from the retrieval registry.
 // A signal with no locked source is neutral and says so plainly.
-export function lockSourcesToEvidence(parsed, registry, { ebay } = {}) {
+export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', pin = null } = {}) {
   if (!Array.isArray(parsed?.signals)) {
     if (parsed) {
       parsed.signals = [];
@@ -218,21 +277,25 @@ export function lockSourcesToEvidence(parsed, registry, { ebay } = {}) {
   }
 
   let totalDropped = 0;
+  const usedAcrossReport = new Set();
   parsed.signals = parsed.signals.map((signal) => {
     const seen = new Set();
     const sources = [];
     let dropped = Number(signal.dropped) || 0;
     for (const proposed of Array.isArray(signal.sources) ? signal.sources : []) {
       const evidence = evidenceForUrl(registry, proposed?.url);
-      if (!evidence) {
+      const key = evidence && normalizeUrl(evidence.url);
+      const area = classifyEvidenceArea(evidence);
+      if (!evidence || !key || area !== signal.key || usedAcrossReport.has(key) || !evidenceMatchesCard(evidence, cardName, pin)) {
         dropped += 1;
         continue;
       }
-      const key = normalizeUrl(evidence.url);
       if (!key || seen.has(key)) continue;
       seen.add(key);
+      usedAcrossReport.add(key);
+      const { area: _area, ...visibleEvidence } = evidence;
       sources.push({
-        ...evidence,
+        ...visibleEvidence,
         implication: IMPLICATIONS.has(proposed.implication) ? proposed.implication : 'neutral',
       });
     }
@@ -255,6 +318,38 @@ export function lockSourcesToEvidence(parsed, registry, { ebay } = {}) {
   parsed._droppedTotal = totalDropped;
   parsed._droppedListings = 0;
   parsed._evidenceVersion = 1;
+  return parsed;
+}
+
+// Haiku used to select one URL and silently discard the rest of the same paid
+// search result page. Fill empty areas from the already-retrieved records. The
+// added records stay neutral because code can prove the page exists and matches
+// the card, but only analysis can judge whether its market direction is up or
+// down. This spends no extra search call.
+export function fillEvidenceGaps(parsed, registry, { cardName = '', pin = null } = {}) {
+  if (!Array.isArray(parsed?.signals) || !(registry instanceof Map)) return parsed;
+  const used = new Set(parsed.signals.flatMap((signal) => (
+    Array.isArray(signal.sources) ? signal.sources.map((source) => normalizeUrl(source?.url)).filter(Boolean) : []
+  )));
+  const candidates = [...registry.values()]
+    .filter((evidence) => evidenceMatchesCard(evidence, cardName, pin))
+    .sort((a, b) => Number(Boolean(b.area)) - Number(Boolean(a.area)));
+
+  for (const evidence of candidates) {
+    const url = normalizeUrl(evidence?.url);
+    const area = classifyEvidenceArea(evidence);
+    if (!url || !area || used.has(url)) continue;
+    const index = parsed.signals.findIndex((signal) => signal?.key === area && !(signal.sources || []).length);
+    if (index < 0) continue;
+    const { area: _area, ...visibleEvidence } = evidence;
+    parsed.signals[index] = {
+      ...parsed.signals[index],
+      level: 0,
+      detail: evidenceDetail([visibleEvidence]),
+      sources: [{ ...visibleEvidence, implication: 'neutral' }],
+    };
+    used.add(url);
+  }
   return parsed;
 }
 
