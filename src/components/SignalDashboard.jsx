@@ -34,6 +34,7 @@ import { pendingScanCard } from '../services/pendingScan';
 import { resultCardPin } from '../services/printing';
 import { normalizeCardRecord, stampCardPrice, withCardRecord } from '../services/cardRecord';
 import { addToCollection } from '../services/collection';
+import { reportEvidenceStats } from '../services/citations';
 import {
   PAGE_SWIPE_IGNORE_SELECTOR,
   pageAfterSwipe,
@@ -386,6 +387,7 @@ export default function SignalDashboard() {
   const scoreDetails = result
     ? calculateScoreDetails(result.signals || [], result.game)
     : null;
+  const evidenceStats = result ? reportEvidenceStats(result.signals || []) : null;
   const score = scoreDetails?.score ?? null;
   const signalHomeReady = page === 'signal' && !result && !loading && !error;
 
@@ -926,8 +928,8 @@ export default function SignalDashboard() {
                 truncated={result._truncated}
                 signalCount={(result.signals || []).length}
                 expectedSignalCount={8}
-                coveragePct={scoreDetails?.coveragePct || 0}
-                evidencePct={scoreDetails?.evidencePct || 0}
+                sourcedSignalCount={evidenceStats?.sourcedSignalCount || 0}
+                uniqueSourceCount={evidenceStats?.uniqueSourceCount || 0}
                 onRetry={() => handleSearch(result.card_name, result.game, { force: true, pin: resultCardPin(result) })}
                 signals={result.signals || []}
                 enPrice={result.prices?.en_price}

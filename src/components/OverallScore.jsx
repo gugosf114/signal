@@ -9,7 +9,7 @@ import PrintingIdentity from './PrintingIdentity';
 import { normalizeCardRecord } from '../services/cardRecord';
 import { isExactScanTarget } from '../services/scanIdentity';
 
-export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, expectedSignalCount = 8, coveragePct = 0, evidencePct = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null }) {
+export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, expectedSignalCount = 8, sourcedSignalCount = 0, uniqueSourceCount = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null }) {
   const { label, color, blurb } = getScoreLabel(score);
   const gameMeta = GAME_LABELS[game];
   const glowColor = gameMeta?.color || '#C44040';
@@ -248,10 +248,10 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               marginTop: 7,
               fontSize: 10,
               fontFamily: "'JetBrains Mono', monospace",
-              color: evidencePct < 50 ? '#A09060' : 'var(--signal-text-secondary)',
+              color: sourcedSignalCount < expectedSignalCount ? '#A09060' : 'var(--signal-text-secondary)',
               letterSpacing: '0.04em',
             }}>
-              {signalCount}/{expectedSignalCount} SIGNALS · {evidencePct}% WITH VERIFIED SOURCES
+              {sourcedSignalCount}/{expectedSignalCount} AREAS SOURCED · {uniqueSourceCount} UNIQUE SOURCE{uniqueSourceCount === 1 ? '' : 'S'}
             </div>
 
             {/* A bare "62" is meaningless on its own — the comparison to the

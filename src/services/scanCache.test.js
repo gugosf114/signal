@@ -68,6 +68,16 @@ describe('scanCache printing keys', () => {
     assert.equal(getCachedScan('Black Lotus', 'mtg'), null);
   });
 
+  test('reports from the old source-trust cache can never reopen', () => {
+    store.signal_scan_cache_v1 = JSON.stringify({
+      'pokemon::sv8pt5-161::holo::': {
+        ts: Date.now(),
+        data: { card_name: 'Umbreon ex', game: 'pokemon', summary: 'old model prose', _pin: RICH },
+      },
+    });
+    assert.equal(getCachedScan('Umbreon ex', 'pokemon', RICH), null);
+  });
+
   test('a price top-up lands on the pinned entry only', () => {
     setCachedScan('Umbreon ex', 'pokemon', { prices: { en: 1495 } }, RICH);
     setCachedScan('Umbreon ex', 'pokemon', { prices: { en: 7 } }, CHEAP);
@@ -121,7 +131,7 @@ describe('scanCache printing keys', () => {
 
   test('finds an old broad-key report by its returned exact printing', () => {
     const now = Date.now();
-    store.signal_scan_cache_v1 = JSON.stringify({
+    store.signal_scan_cache_v2 = JSON.stringify({
       'pokemon::rayquaza ex': {
         ts: now,
         priceTs: now,

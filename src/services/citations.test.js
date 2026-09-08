@@ -1,5 +1,5 @@
-// Tests for the citation filter — the only thing standing between a fabricated
-// URL and the user's report.
+// Tests for the evidence lock — the only thing standing between model-written
+// source fields and the user's report.
 //
 // Every hole this filter has ever had failed SILENTLY: a bad link sails through
 // and the page still looks perfect. Two such holes are on record in the README
@@ -13,94 +13,14 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  normalizeUrl,
   extractYouTubeId,
-  urlIsReal,
-  extractRealUrls,
-  collectPrefetchUrls,
-  filterHallucinatedSources,
+  extractSearchEvidence,
+  collectPrefetchEvidence,
+  mergeEvidenceRegistries,
+  lockSourcesToEvidence,
+  reportEvidenceStats,
+  buildVerifiedSummary,
 } from './citations.js';
-
-const real = (...urls) => new Set(urls.map(normalizeUrl));
-
-describe('urlIsReal — exact matching', () => {
-  test('accepts a URL that was actually retrieved', () => {
-    const urls = real('https://www.tcgplayer.com/product/12345/umbreon-ex');
-    assert.equal(urlIsReal('https://www.tcgplayer.com/product/12345/umbreon-ex', urls), true);
-  });
-
-  test('ignores a trailing-slash difference', () => {
-    const urls = real('https://www.tcgplayer.com/product/12345/');
-    assert.equal(urlIsReal('https://www.tcgplayer.com/product/12345', urls), true);
-  });
-
-  test('rejects a URL from a host that was never visited', () => {
-    const urls = real('https://www.tcgplayer.com/product/12345');
-    assert.equal(urlIsReal('https://example.com/product/12345', urls), false);
-  });
-
-  test('rejects empty and unparseable input', () => {
-    const urls = real('https://www.tcgplayer.com/product/12345');
-    assert.equal(urlIsReal('', urls), false);
-    assert.equal(urlIsReal(null, urls), false);
-    assert.equal(urlIsReal('not a url', urls), false);
-    assert.equal(urlIsReal('javascript:alert(1)', urls), false);
-    assert.equal(urlIsReal('data:text/html,bad', urls), false);
-  });
-
-  test('does not let a retrieved path unlock changed claims', () => {
-    const urls = real('https://real.example.com/item/1?q=real');
-    assert.equal(urlIsReal('https://real.example.com/item/1?q=fake', urls), false);
-    assert.equal(urlIsReal('http://real.example.com/item/1?q=real', urls), false);
-    assert.equal(urlIsReal('https://real.example.com/item/1/reviews?q=real', urls), false);
-  });
-});
-
-describe('urlIsReal — the path-prefix hole (regression)', () => {
-  // A real '/products/foo' once unlocked a fabricated '/products-fake',
-  // because the check was a bare startsWith with no slash boundary.
-  test('a real path does not unlock a sibling sharing its prefix', () => {
-    const urls = real('https://shop.example.com/products/foo');
-    assert.equal(urlIsReal('https://shop.example.com/products-fake', urls), false);
-  });
-
-  test('a deeper path must have been retrieved itself', () => {
-    const urls = real('https://shop.example.com/products/foo');
-    assert.equal(urlIsReal('https://shop.example.com/products/foo/reviews', urls), false);
-  });
-
-  test('a bare host root vouches for nothing on that host', () => {
-    const urls = real('https://shop.example.com/');
-    assert.equal(urlIsReal('https://shop.example.com/anything/at/all', urls), false);
-  });
-});
-
-describe('urlIsReal — the YouTube hole (regression)', () => {
-  // One real /watch URL must not vouch for unlimited invented video IDs, which
-  // is what happens if you compare pathnames — the ID lives in the query
-  // string, and URL.pathname excludes it.
-  test('accepts the same video via a different YouTube URL form', () => {
-    const urls = real('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-    assert.equal(urlIsReal('https://youtu.be/dQw4w9WgXcQ', urls), true);
-    assert.equal(urlIsReal('https://www.youtube.com/embed/dQw4w9WgXcQ', urls), true);
-  });
-
-  test('rejects a different video ID on the same host', () => {
-    const urls = real('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-    assert.equal(urlIsReal('https://www.youtube.com/watch?v=aaaaaaaaaaa', urls), false);
-  });
-
-  test('rejects a YouTube URL carrying no extractable video ID', () => {
-    const urls = real('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-    assert.equal(urlIsReal('https://www.youtube.com/results?search_query=umbreon', urls), false);
-  });
-
-  test('rejects a lookalike host carrying the same video ID', () => {
-    const urls = real('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-    assert.equal(urlIsReal('https://notyoutube.com/watch?v=dQw4w9WgXcQ', urls), false);
-    assert.equal(extractYouTubeId('https://notyoutube.com/watch?v=dQw4w9WgXcQ'), null);
-  });
-});
 
 describe('extractYouTubeId', () => {
   test('handles every URL shape the app encounters', () => {
@@ -112,99 +32,175 @@ describe('extractYouTubeId', () => {
   });
 });
 
-describe('collectPrefetchUrls', () => {
-  // Regression for the bug where honestly-cited pre-fetched sources were
-  // silently deleted: those URLs never appear in a web_search_tool_result
-  // block, so the filter had no idea they were real.
-  test('gathers URLs from every pre-fetch block', () => {
-    const urls = collectPrefetchUrls({
-      cardData: { tcgplayerUrl: 'https://www.tcgplayer.com/product/1' },
-      community: { posts: [{ url: 'https://www.reddit.com/r/PokemonTCG/comments/abc/title/' }] },
-      creators: { videos: [{ url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }] },
-      ebay: { buy_it_now: [{ url: 'https://www.ebay.com/itm/1234567890' }], auction: [] },
-      jp: { jpVideos: [{ url: 'https://www.youtube.com/watch?v=bbbbbbbbbbb' }] },
-    });
-    assert.equal(urls.size, 5);
-    assert.equal(urlIsReal('https://www.reddit.com/r/PokemonTCG/comments/abc/title/', urls), true);
-    assert.equal(urlIsReal('https://www.ebay.com/itm/1234567890', urls), true);
-  });
+describe('locked evidence records', () => {
+  const keys = ['creator', 'community', 'ip_momentum', 'editorial', 'competitive', 'scarcity', 'jp_hype', 'jp_release'];
+  const deltiaUrl = 'https://deltiasgaming.com/pokemon-tcg-best-shedinja-deck-guide-mega-evolution/';
 
-  test('survives every block being absent', () => {
-    assert.equal(collectPrefetchUrls({}).size, 0);
-    assert.equal(collectPrefetchUrls().size, 0);
-  });
-});
-
-describe('extractRealUrls', () => {
-  test('reads only web_search_tool_result blocks', () => {
-    const urls = extractRealUrls([
-      { type: 'text', text: 'https://fake.example.com/nope' },
-      {
-        type: 'web_search_tool_result',
-        content: [
-          { type: 'web_search_result', url: 'https://real.example.com/page' },
-          { type: 'other', url: 'https://ignored.example.com/x' },
-        ],
-      },
-    ]);
-    assert.equal(urls.size, 1);
-    assert.equal(urls.has(normalizeUrl('https://real.example.com/page')), true);
-  });
-
-  test('survives a missing or empty content array', () => {
-    assert.equal(extractRealUrls().size, 0);
-    assert.equal(extractRealUrls([{ type: 'web_search_tool_result' }]).size, 0);
-  });
-});
-
-describe('filterHallucinatedSources', () => {
-  const urls = real('https://real.example.com/page');
-
-  test('keeps verified sources, bins the rest, records the count', () => {
-    const out = filterHallucinatedSources({
-      signals: [{
-        key: 'creator',
-        sources: [
-          { url: 'https://real.example.com/page' },
-          { url: 'https://invented.example.com/made-up' },
-        ],
+  test('native web citations become locked title and quoted evidence text', () => {
+    const registry = extractSearchEvidence([{
+      type: 'text',
+      text: 'A cited statement.',
+      citations: [{
+        type: 'web_search_result_location',
+        title: 'Real tournament page',
+        url: 'https://limitlesstcg.com/cards/MEG/144/decklists/jp',
+        cited_text: '12th place at a City League event.',
       }],
-    }, urls);
-    assert.equal(out.signals[0].sources.length, 1);
-    assert.equal(out.signals[0].dropped, 1);
-    assert.equal(out._droppedTotal, 1);
+    }]);
+    const locked = lockSourcesToEvidence({
+      signals: [{ key: 'competitive', level: 2, detail: 'model', sources: [{
+        url: 'https://limitlesstcg.com/cards/MEG/144/decklists/jp', implication: 'neutral',
+      }] }],
+    }, registry);
+    assert.equal(locked.signals[0].sources[0].title, 'Real tournament page');
+    assert.equal(locked.signals[0].sources[0].summary, '12th place at a City League event.');
+    assert.equal(locked.signals[0].detail, '12th place at a City League event.');
   });
 
-  test('separates "found nothing" from "rejected something"', () => {
-    const out = filterHallucinatedSources({
-      signals: [
-        { key: 'editorial', sources: [] },
-        { key: 'scarcity', sources: [{ url: 'https://invented.example.com/x' }] },
-      ],
-    }, urls);
-    assert.equal(out.signals[0].dropped, 0);   // genuinely nothing found
-    assert.equal(out.signals[1].dropped, 1);   // caught a fabrication
+  test('the Shedinja failure cannot turn eight filled boxes into eight sourced areas', () => {
+    const search = extractSearchEvidence([{
+      type: 'web_search_tool_result',
+      content: [{
+        type: 'web_search_result',
+        title: 'Pokemon TCG: Best Shedinja Deck Guide (Mega Evolution) - Deltia\'s Gaming',
+        url: deltiaUrl,
+        page_age: 'September 30, 2025',
+      }],
+    }]);
+    const report = {
+      summary: 'Model-written summary must not survive.',
+      signals: keys.map((key) => ({
+        key,
+        level: 4,
+        detail: 'Model-written claim must not survive.',
+        sources: ['editorial', 'competitive'].includes(key) ? [{
+          type: 'made-up',
+          source: 'Invented publisher',
+          title: 'Invented title',
+          date: '2099-01-01',
+          summary: 'Invented source summary',
+          implication: key === 'editorial' ? 'up' : 'neutral',
+          url: deltiaUrl,
+          reach: 'T1',
+          audience: '9 million',
+        }] : [],
+      })),
+    };
+
+    const locked = lockSourcesToEvidence(report, search);
+    const editorial = locked.signals.find((signal) => signal.key === 'editorial');
+    const empty = locked.signals.find((signal) => signal.key === 'creator');
+    assert.equal(editorial.sources[0].source, "Deltia's Gaming");
+    assert.equal(editorial.sources[0].title, 'Pokemon TCG: Best Shedinja Deck Guide (Mega Evolution) - Deltia\'s Gaming');
+    assert.equal(editorial.sources[0].date, 'September 30, 2025');
+    assert.equal(editorial.sources[0].summary, '');
+    assert.equal(editorial.sources[0].audience, null);
+    assert.equal(editorial.sources[0].reach, 'unknown');
+    assert.doesNotMatch(editorial.detail, /Model-written/);
+    assert.equal(empty.level, 0);
+    assert.equal(empty.sources.length, 0);
+    assert.equal(empty.detail, 'No verified evidence was retrieved for this area.');
+    assert.deepEqual(reportEvidenceStats(locked.signals), {
+      sourcedSignalCount: 2,
+      expectedSignalCount: 8,
+      uniqueSourceCount: 1,
+    });
+    assert.equal(locked._evidenceVersion, 1);
   });
 
-  test('marks a response with no signals array as truncated', () => {
-    const out = filterHallucinatedSources({}, urls);
-    assert.deepEqual(out.signals, []);
-    assert.equal(out._truncated, true);
+  test('an unknown URL is rejected and its model claim is erased', () => {
+    const locked = lockSourcesToEvidence({
+      signals: [{
+        key: 'scarcity',
+        level: 5,
+        detail: 'Only ten copies exist.',
+        sources: [{ url: 'https://invented.example/not-real', implication: 'up' }],
+      }],
+    }, new Map());
+    assert.equal(locked.signals[0].level, 0);
+    assert.equal(locked.signals[0].sources.length, 0);
+    assert.equal(locked.signals[0].dropped, 1);
+    assert.doesNotMatch(locked.signals[0].detail, /ten copies/i);
   });
 
-  test('filters model-returned eBay listings against retrieved item URLs', () => {
-    const ebayUrls = real('https://www.ebay.com/itm/123');
-    const out = filterHallucinatedSources({
+  test('one retrieved path cannot unlock a fabricated sibling or deeper path', () => {
+    const registry = extractSearchEvidence([{
+      type: 'web_search_tool_result',
+      content: [{ type: 'web_search_result', title: 'Real page', url: 'https://shop.example.com/products/foo' }],
+    }]);
+    for (const url of [
+      'https://shop.example.com/products-fake',
+      'https://shop.example.com/products/foo/reviews',
+    ]) {
+      const locked = lockSourcesToEvidence({
+        signals: [{ key: 'scarcity', level: 5, detail: 'fake', sources: [{ url, implication: 'up' }] }],
+      }, registry);
+      assert.equal(locked.signals[0].sources.length, 0);
+      assert.equal(locked.signals[0].level, 0);
+    }
+  });
+
+  test('YouTube matches the same video ID but never a different video', () => {
+    const registry = collectPrefetchEvidence({ creators: { videos: [{
+      channel: 'Real Channel', title: 'Real video', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    }] } });
+    const report = (url) => lockSourcesToEvidence({
+      signals: [{ key: 'creator', level: 4, detail: 'model', sources: [{ url, implication: 'up' }] }],
+    }, registry);
+    assert.equal(report('https://youtu.be/dQw4w9WgXcQ').signals[0].sources.length, 1);
+    assert.equal(report('https://www.youtube.com/watch?v=aaaaaaaaaaa').signals[0].sources.length, 0);
+  });
+
+  test('pre-fetched metadata replaces every model-owned source field', () => {
+    const prefetch = collectPrefetchEvidence({
+      creators: { videos: [{
+        channel: 'Real Channel',
+        title: 'Real Umbreon video',
+        description: 'The real API description.',
+        date: '2026-09-01',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      }] },
+    });
+    const registry = mergeEvidenceRegistries(new Map(), prefetch);
+    const locked = lockSourcesToEvidence({
+      signals: [{
+        key: 'creator', level: 5, detail: 'fake', sources: [{
+          url: 'https://youtu.be/dQw4w9WgXcQ', implication: 'up',
+          source: 'Fake Channel', title: 'Fake title', summary: 'Fake summary',
+        }],
+      }],
+    }, registry);
+    assert.deepEqual(locked.signals[0].sources[0], {
+      type: 'youtube',
+      source: 'Real Channel',
+      title: 'Real Umbreon video',
+      date: '2026-09-01',
+      summary: 'The real API description.',
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      reach: 'unknown',
+      audience: null,
+      implication: 'up',
+    });
+    assert.equal(locked.signals[0].detail, 'The real API description.');
+  });
+
+  test('the report summary is built from trusted price history and source counts', () => {
+    const summary = buildVerifiedSummary({
+      cardName: 'Shedinja',
+      prices: { en_price: '$3.38', history: { change30: -1.2, sold30: 615 } },
+      signals: [{ key: 'editorial', sources: [{ url: deltiaUrl }] }],
+    });
+    assert.equal(summary, 'Shedinja is $3.38 for this exact printing. Its market price moved -1.2% over 30 days with 615 copies sold. 1 of 8 research areas has verified evidence from 1 unique source.');
+  });
+
+  test('real eBay rows replace model-modified listing fields', () => {
+    const locked = lockSourcesToEvidence({
       signals: [],
-      ebay_listings: {
-        buy_it_now: [
-          { title: 'real', url: 'https://www.ebay.com/itm/123' },
-          { title: 'invented', url: 'https://www.ebay.com/itm/999' },
-        ],
-        auction: [],
-      },
-    }, ebayUrls);
-    assert.equal(out.ebay_listings.buy_it_now.length, 1);
-    assert.equal(out._droppedListings, 1);
+      ebay_listings: { buy_it_now: [{ title: 'fake', price_usd: 1, url: 'https://www.ebay.com/itm/123' }], auction: [] },
+    }, new Map(), {
+      ebay: { buy_it_now: [{ title: 'real', price_usd: 25, url: 'https://www.ebay.com/itm/123' }], auction: [] },
+    });
+    assert.equal(locked.ebay_listings.buy_it_now[0].title, 'real');
+    assert.equal(locked.ebay_listings.buy_it_now[0].price_usd, 25);
   });
 });

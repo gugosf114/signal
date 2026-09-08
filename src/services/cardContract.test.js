@@ -21,6 +21,8 @@ const sources = {
   cache: read('./scanCache.js'),
   session: read('./scanSession.js'),
   analysis: read('./analyzeCard.js'),
+  evidence: read('./citations.js'),
+  validation: read('./validateAnalysis.js'),
   cardData: read('./fetchCardData.js'),
   signals: read('../config/signals.js'),
   styles: read('../styles/animations.css'),
@@ -103,5 +105,19 @@ describe('every card door uses one exact record', () => {
     }
     assert.doesNotMatch(sources.signals, /30[- ]?day|trend_30d/i);
     assert.doesNotMatch(sources.latest, /SAMPLE_DATA|Sample Signal/);
+  });
+
+  test('source identity belongs to retrieval and empty schema slots never pose as evidence', () => {
+    assert.match(sources.analysis, /lockSourcesToEvidence\(normalized, evidenceRegistry/);
+    assert.match(sources.analysis, /buildVerifiedSummary/);
+    assert.match(sources.evidence, /Model-written metadata and factual[\s\S]*prose are discarded/);
+    assert.match(sources.evidence, /level: sources\.length \? signal\.level : 0/);
+    assert.match(sources.score, /AREAS SOURCED/);
+    assert.match(sources.score, /UNIQUE SOURCE/);
+    assert.doesNotMatch(sources.score, /SIGNALS · .*VERIFIED SOURCES/);
+    assert.match(sources.cache, /signal_scan_cache_v2/);
+    assert.match(sources.session, /signal_active_scan_v2/);
+    assert.doesNotMatch(sources.validation, /source: text\(source\.source/);
+    assert.doesNotMatch(sources.validation, /title: text\(source\.title/);
   });
 });

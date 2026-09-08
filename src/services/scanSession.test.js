@@ -23,6 +23,13 @@ let storage;
 describe('scan session recovery', () => {
   beforeEach(() => { storage = memoryStorage(); });
 
+  test('a completed report from the old source-trust session cannot reopen', () => {
+    storage.setItem('signal_active_scan_v1', JSON.stringify({
+      status: 'complete', name: 'Old report', result: { summary: 'old model prose' }, completedAt: 1000,
+    }));
+    assert.equal(loadRecoverableScanSession(storage, 2000), null);
+  });
+
   test('keeps the exact pending printing and original start time', () => {
     const pin = { id: '32807846', printingId: '32807846:RA01-EN047', game: 'yugioh', name: 'Reinforcement of the Army', setName: '25th Anniversary Rarity Collection', number: 'RA01-EN047' };
     savePendingScanSession({

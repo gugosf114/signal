@@ -21,9 +21,11 @@ import { fetchJpSignal, jpBlock } from './fetchJpSignal';
 import { fetchCatalysts, catalystBlock } from './fetchCatalysts';
 import { alignmentFromHistory, fetchPriceHistory, historyBlock } from './priceHistory';
 import {
-  extractRealUrls,
-  collectPrefetchUrls,
-  filterHallucinatedSources,
+  extractSearchEvidence,
+  collectPrefetchEvidence,
+  mergeEvidenceRegistries,
+  lockSourcesToEvidence,
+  buildVerifiedSummary,
 } from './citations';
 import { tryParseSignalJSON } from './jsonRepair';
 import { normalizeAnalysis } from './validateAnalysis';
@@ -46,7 +48,7 @@ const ANALYSIS_MODEL = 'claude-haiku-4-5';
 // written before the creator, Japan, and Reddit lanes were repaired (2026-09-06)
 // froze a synthesis that never saw that evidence; a new key lets it refresh
 // once instead of serving the old answer for a week.
-export const PREFETCH_VERSION = 2;
+export const PREFETCH_VERSION = 3;
 
 function sharedCacheKey(cardName, game, pin) {
   const identity = printingIdentity(pin) || '';
@@ -100,13 +102,14 @@ OUTPUT SHAPE:
     "note": "one sentence — e.g. Reserved List card, PSA 10 pop is low, or card grades well due to black border"
   },
   "signals": [
-    /* exactly 8 — one per signal key. Each: { "key", "level" (1-5 int), "detail" (1 sentence), "sources": [ { "type","source","title","date","summary","implication","url","reach","audience" } ] } */
+    /* exactly 8 — one per signal key. Each: { "key", "level" (0-5 int), "detail" (1 sentence), "sources": [ { "url", "implication" } ] } */
   ],
   "summary": ""
 }
 
 RULES:
-- Every cited "url" MUST come from a web_search you actually ran OR from a pre-fetched block above. Never invent. No real source → "sources": [] (empty > fake).
+- Every cited "url" MUST be copied exactly from a web_search result OR from a pre-fetched block above. Never invent. No real source → "sources": [] (empty > fake).
+- The app owns source names, titles, dates, summaries, audience, reach, and types. Do NOT return those fields. Return only url and implication. Model-written source metadata is discarded.
 - EXACTLY 1 source per signal (the single strongest); [] if none. Keeps the response small and fast.
 - Detail = 1 short sentence. Summary = 1 sentence. Be terse.
 - eBay listings: include ONLY if a pre-fetched "EBAY LISTINGS" block is provided (copy those). Otherwise both arrays empty. NEVER invent eBay listings.
@@ -175,11 +178,10 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   const searchTargets = selectSearchTargets(resolvedGame, { catalysts, community, creators });
   const maxSearches = searchTargets.length;
 
-  // Every URL handed to the model in a pre-fetch block is REAL — it came from a
-  // live API call we made ourselves. The citation filter below must know about
-  // these or it drops every honestly-cited Reddit / YouTube / eBay / JP source,
-  // since those never appear in a web_search_tool_result block.
-  const prefetchUrls = collectPrefetchUrls({ cardData, community, creators, ebay, jp });
+  // Preserve the complete API-owned records behind every pre-fetched URL.
+  // Search results are added after the model call. Together they become the
+  // only source registry the finished report is allowed to use.
+  const prefetchEvidence = collectPrefetchEvidence({ cardData, community, creators, ebay, jp });
 
   const model = ANALYSIS_MODEL;
 
@@ -233,12 +235,13 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   });
   const result = shared.result;
 
-  // Build the set of URLs that provably exist: everything Claude retrieved via
-  // web_search, PLUS everything we handed it in a pre-fetch block (those came
-  // from our own live API calls, so they're at least as trustworthy).
-  // Anything Claude cites outside this set is hallucinated and gets dropped.
-  const realUrls = extractRealUrls(result.content || []);
-  for (const u of prefetchUrls) realUrls.add(u);
+  // Keep the complete records returned by search and the app's own API
+  // pre-fetches. The model may select one of these URLs. It may not create or
+  // alter the publisher, title, date, summary, audience, reach, or source type.
+  const evidenceRegistry = mergeEvidenceRegistries(
+    extractSearchEvidence(result.content || []),
+    prefetchEvidence,
+  );
 
   // Web search responses have many content blocks: text, tool_use, tool_result
   // The structured JSON is typically in the LAST text block after all searches complete.
@@ -282,8 +285,8 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
         cardName: cardData?.name || cardName,
         game: resolvedGame || parsed.game,
       });
-      const verified = filterHallucinatedSources(normalized, realUrls);
-      const exactCreators = enforceExactCreatorSources(verified, {
+      const locked = lockSourcesToEvidence(normalized, evidenceRegistry, { ebay });
+      const exactCreators = enforceExactCreatorSources(locked, {
         cardName: cardData?.name || cardName,
         pin: printingInfo || pin,
         creatorVideos: creators?.videos || [],
@@ -312,6 +315,13 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
         clean.prices.history = history;
         clean.prices.signal_vs_market = alignmentFromHistory(score, history.change30) || clean.prices.signal_vs_market;
       }
+      // Model prose never becomes the report summary. This sentence is built
+      // only from the exact price/history and the locked evidence count.
+      clean.summary = buildVerifiedSummary({
+        cardName: clean.card_name,
+        prices: clean.prices,
+        signals: clean.signals,
+      });
       clean._sharedCache = Boolean(shared.cached);
       clean._sharedCacheCreatedAt = shared.createdAt || null;
       await recordSignalMeasurement({

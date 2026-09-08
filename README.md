@@ -1,6 +1,6 @@
 # 株 Signal
 
-### ⬇ [Download the latest APK — 3.3 (versionCode 24), built 2026-09-06](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.3/signal-3.3.apk)
+### ⬇ [Download the latest APK — 3.4 (versionCode 25), built 2026-09-07](https://github.com/gugosf114/portfolio-assets/releases/download/signal-v3.4/signal-3.4.apk)
 
 Tap that on the phone, then open the downloaded file to install. It is signed
 with the laptop's debug key, the same one every previous sideload used, so it
@@ -32,6 +32,7 @@ JP set release calendars).
 Designed as Bloomberg-terminal-meets-Tokyo-3am, not "AI-powered TCG dashboard."
 
 The system-wide card rule is in [docs/CARD_DATA_CONTRACT.md](docs/CARD_DATA_CONTRACT.md).
+The source-truth rule is in [docs/SOURCE_EVIDENCE_CONTRACT.md](docs/SOURCE_EVIDENCE_CONTRACT.md).
 
 ---
 
@@ -1635,3 +1636,30 @@ PDF, and its tier blurbs speak of attention, not pressure. Tier names,
 weights, and math are unchanged; the forward test on 2026-10-06 decides
 whether the label earns anything more. Version 3.3 (`versionCode 24`).
 
+---
+
+## Session log — 2026-09-07 sources belong to retrieval, never the model
+
+A real Shedinja 144/132 phone scan exposed the remaining truth failure. The
+screen said `8/8 SIGNALS` even though six areas had no source and the other two
+reused one page. The model was also allowed to write the visible publisher,
+title, date, summary, reach, audience, listing details, and report summary. The
+old URL allow-list proved only that a URL appeared in retrieval; it did not
+prove those model-written fields.
+
+The model may now return only a selected URL and its `up`, `down`, or `neutral`
+reading. Signal rebuilds every visible source from the actual web-search result
+or pre-fetch API record. A URL absent from that locked registry is rejected. An
+area with no locked evidence becomes neutral, loses all model prose, and says
+that no verified evidence was retrieved. eBay rows come straight from the eBay
+response. The report summary is built from exact price history and locked
+source counts.
+
+The header now says sourced areas and unique sources. The exact Shedinja raw
+response reads `2/8 AREAS SOURCED · 1 UNIQUE SOURCE`; its six unsupported claims
+are erased. Old reports cannot return: local scan cache and active-session keys
+both moved to v2, and the shared report key moved to pre-fetch version 3.
+
+Regression coverage pins the Shedinja failure, invented metadata, invented
+URLs, changed paths, YouTube ID substitution, eBay field changes, and both old
+cache doors. Version 3.4 (`versionCode 25`).

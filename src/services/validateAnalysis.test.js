@@ -26,15 +26,17 @@ describe('normalizeAnalysis', () => {
     assert.equal(out._truncated, false);
   });
 
-  test('sanitizes source enums and refuses model-invented grading math', () => {
+  test('keeps only source URL and direction and refuses model-invented grading math', () => {
     const out = normalizeAnalysis({
       signals: SIGNAL_KEYS.map((key) => signal(key, {
         sources: [{ type: 'made-up', implication: 'moon', reach: 'huge', url: 'https://real.example/x' }],
       })),
       grading_roi: { raw_price_usd: 10, psa10_est_usd: 1000, verdict: 'worth_grading' },
     }, { game: 'pokemon' });
-    assert.equal(out.signals[0].sources[0].type, 'other');
-    assert.equal(out.signals[0].sources[0].implication, 'neutral');
+    assert.deepEqual(out.signals[0].sources[0], {
+      implication: 'neutral',
+      url: 'https://real.example/x',
+    });
     assert.equal(out.grading_roi.verdict, 'insufficient_data');
   });
 

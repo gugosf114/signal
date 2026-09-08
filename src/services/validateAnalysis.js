@@ -1,12 +1,7 @@
 import { SIGNAL_KEYS } from '../config/signals.js';
 
 const GAMES = new Set(['pokemon', 'yugioh', 'mtg']);
-const SOURCE_TYPES = new Set([
-  'youtube', 'tournament', 'reddit', 'twitter', 'marketplace_en',
-  'marketplace_jp', 'editorial', 'population_report', 'other',
-]);
 const IMPLICATIONS = new Set(['up', 'down', 'neutral']);
-const REACH = new Set(['T1', 'T2', 'T3', 'unknown']);
 
 function text(value, max = 500) {
   if (typeof value !== 'string') return '';
@@ -28,16 +23,12 @@ function alignment(value) {
 
 function cleanSource(source) {
   if (!source || typeof source !== 'object') return null;
+  // The model may select a retrieved URL and judge its direction. It never
+  // owns source metadata. citations.js replaces these two fields with the
+  // locked retrieval record before anything reaches the screen.
   return {
-    type: SOURCE_TYPES.has(source.type) ? source.type : 'other',
-    source: text(source.source, 120),
-    title: text(source.title, 240),
-    date: text(source.date, 40) || null,
-    summary: text(source.summary, 500),
     implication: IMPLICATIONS.has(source.implication) ? source.implication : 'neutral',
     url: typeof source.url === 'string' ? source.url.trim() : '',
-    reach: REACH.has(source.reach) ? source.reach : 'unknown',
-    audience: text(source.audience, 80) || null,
   };
 }
 

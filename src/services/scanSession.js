@@ -1,7 +1,8 @@
 import { isExactScanTarget } from './scanIdentity.js';
 import { normalizeCardRecord, withCardRecord } from './cardRecord.js';
 
-const SESSION_KEY = 'signal_active_scan_v1';
+// v2 prevents a completed pre-lock report from reopening after the app update.
+const SESSION_KEY = 'signal_active_scan_v2';
 const PENDING_MAX_AGE_MS = 10 * 60 * 1000;
 const COMPLETE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
