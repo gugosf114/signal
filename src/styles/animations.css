@@ -2066,26 +2066,10 @@
 .lookup-mode-toggle:disabled { cursor: default; opacity: 0.45; }
 
 .signal-search-helper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   margin-top: 7px;
   color: var(--signal-text-muted);
   font: 9px 'JetBrains Mono', monospace;
 }
-.signal-search-helper button {
-  flex: none;
-  min-height: 32px;
-  padding: 0 10px;
-  border: 1px solid #34373E;
-  border-radius: 4px;
-  background: transparent;
-  color: #B6B1A8;
-  font: 700 9px 'Syne', sans-serif;
-  cursor: pointer;
-}
-.signal-search-helper button:disabled { opacity: 0.4; }
 
 .sb-searching {
   display: flex;
@@ -2235,6 +2219,51 @@
   color: #A8A498;
 }
 
+.photo-choice-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  z-index: 75;
+  width: min(280px, calc(100vw - 32px));
+  padding: 5px;
+  background: var(--signal-panel);
+  border: 1px solid #2A2D34;
+  border-radius: 4px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.72);
+}
+.photo-choice-menu button {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #E8E4DC;
+  text-align: left;
+  cursor: pointer;
+}
+.photo-choice-menu button + button { border-top: 1px solid #171A20; }
+.photo-choice-menu button:hover, .photo-choice-menu button:focus-visible { background: var(--signal-raised); outline: none; }
+.photo-choice-menu button > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.photo-choice-menu strong { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 650; }
+.photo-choice-menu small { color: var(--signal-text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 9px; }
+.photo-choice-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #2A2D34;
+  border-radius: 50%;
+  color: #C44040;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+}
+
 .compact-scroll-fade {
   position: absolute;
   z-index: 2;
@@ -2255,6 +2284,7 @@
   color: #F5F1E8;
   font-family: 'Syne', sans-serif;
 }
+.live-scanner--native-wait { opacity: 0; pointer-events: none; }
 .live-scanner-stage { position: absolute; inset: 0; overflow: hidden; background: #050607; }
 .live-scanner-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .live-scanner-topbar {
@@ -3626,6 +3656,7 @@
 .ac-actions button,
 .cl-close,
 .cl-btn,
+.photo-choice-menu button,
 .quick-price-actions button {
   -webkit-tap-highlight-color: transparent;
 }
@@ -3858,6 +3889,7 @@
 .dos-button { transition: transform 0.13s ease, filter 0.15s ease, border-color 0.15s ease; }
 .dos-button:active { transform: translateY(1px) scale(0.97); filter: brightness(1.18); }
 
+.photo-choice-menu button:active,
 .quick-price-actions button:active,
 .sb-item:active,
 .lt-cancel:active,
@@ -4002,6 +4034,7 @@
   .cb-set-chip:active,
   .cb-card:active,
   .dos-button:active,
+  .photo-choice-menu button:active,
   .quick-price-actions button:active,
   .sb-item:active,
   .lt-cancel:active,

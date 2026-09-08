@@ -28,6 +28,10 @@ public class NativeCardScannerPlugin extends Plugin {
         int pageLimit = Boolean.TRUE.equals(call.getBoolean("batch", false)) ? 50 : 1;
         Intent intent = new Intent(getContext(), NativeCardScannerActivity.class);
         intent.putExtra(NativeCardScannerActivity.EXTRA_PAGE_LIMIT, pageLimit);
+        intent.putExtra(
+            NativeCardScannerActivity.EXTRA_PHOTOS_ONLY,
+            Boolean.TRUE.equals(call.getBoolean("photos", false))
+        );
         setOverlayProtection(true);
         startActivityForResult(call, intent, "scanResult");
         suppressLaunchAnimation();

@@ -135,9 +135,11 @@ describe('every card door uses one exact record', () => {
   });
 
   test('native card scans preserve the explicit Price and Full Signal modes', () => {
-    assert.match(sources.search, /aria-label="Scan a card"/);
+    assert.match(sources.search, /aria-label="Choose scan or upload"/);
     assert.match(sources.search, /LookupModeToggle/);
-    assert.doesNotMatch(sources.search, /photo-choice-menu/);
+    assert.match(sources.search, /<strong>Scan card<\/strong>/);
+    assert.match(sources.search, /<strong>Batch scan<\/strong>/);
+    assert.match(sources.search, /<strong>Upload photo<\/strong>/);
     assert.match(sources.scanner, /const priceOnly/);
     assert.match(sources.scanner, />Add to collection</);
     assert.match(sources.scanner, />Confirm & run full Signal</);
@@ -148,5 +150,7 @@ describe('every card door uses one exact record', () => {
     assert.match(sources.nativeCamera, /LifecycleCameraController/);
     assert.match(sources.nativeCamera, /CAPTURE_MODE_MAXIMIZE_QUALITY/);
     assert.match(sources.nativeCamera, /setHideOverlayWindows\(true\)/);
+    assert.match(sources.scanner, /live-scanner--native-wait/);
+    assert.doesNotMatch(sources.scanner, /if \(!shouldRenderScannerShell[^\n]*\) return null/);
   });
 });

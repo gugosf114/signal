@@ -53,6 +53,7 @@ import java.util.concurrent.Executors;
  */
 public class NativeCardScannerActivity extends AppCompatActivity {
     public static final String EXTRA_PAGE_LIMIT = "pageLimit";
+    public static final String EXTRA_PHOTOS_ONLY = "photosOnly";
     public static final String EXTRA_PATHS = "paths";
     public static final String EXTRA_ERROR = "error";
 
@@ -69,6 +70,7 @@ public class NativeCardScannerActivity extends AppCompatActivity {
     private int pageLimit = 1;
     private boolean torchOn;
     private boolean finishingWithResult;
+    private boolean photosOnly;
     private int flashChecks;
 
     private final ActivityResultLauncher<String> cameraPermission = registerForActivityResult(
@@ -102,6 +104,7 @@ public class NativeCardScannerActivity extends AppCompatActivity {
         }
 
         pageLimit = Math.max(1, Math.min(50, getIntent().getIntExtra(EXTRA_PAGE_LIMIT, 1)));
+        photosOnly = getIntent().getBooleanExtra(EXTRA_PHOTOS_ONLY, false);
         if (savedInstanceState != null) {
             ArrayList<String> restored = savedInstanceState.getStringArrayList("paths");
             if (restored != null) paths.addAll(restored);
@@ -109,6 +112,12 @@ public class NativeCardScannerActivity extends AppCompatActivity {
         pruneOldScans();
         buildInterface();
         updateBatchControls();
+
+        if (photosOnly) {
+            statusView.setText(R.string.scanner_opening_photos);
+            galleryPicker.launch(new String[]{"image/*"});
+            return;
+        }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             startCamera();
@@ -310,7 +319,10 @@ public class NativeCardScannerActivity extends AppCompatActivity {
     }
 
     private void handleGalleryResult(List<Uri> selected) {
-        if (selected == null || selected.isEmpty()) return;
+        if (selected == null || selected.isEmpty()) {
+            if (photosOnly) cancelScanner();
+            return;
+        }
         setCaptureEnabled(false);
         statusView.setText(R.string.scanner_opening_photos);
         fileExecutor.execute(() -> {

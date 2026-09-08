@@ -19,6 +19,7 @@ import {
 } from '../services/scannerMatch';
 import { setScannerOverlayProtection } from '../services/scannerDisplay';
 import {
+  deliverNativeScannerResult,
   nativeCardScannerAvailable,
   scanCardsNatively,
   shouldRenderScannerShell,
@@ -78,6 +79,7 @@ const CardScanner = forwardRef(function CardScanner({
   onManualSearch,
   mode = 'single',
   lookupMode = 'price',
+  source = 'camera',
 }, ref) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -160,16 +162,16 @@ const CardScanner = forwardRef(function CardScanner({
     const cameraToken = ++cameraTokenRef.current;
     try {
       if (nativeScanner) {
-        const nativeResult = await scanCardsNatively({ batch: batchMode });
+        const nativeResult = await scanCardsNatively({
+          batch: batchMode,
+          photos: source === 'photos',
+        });
         if (cameraToken !== cameraTokenRef.current) return;
-        if (nativeResult.cancelled) {
-          onCancelRef.current?.();
-          return;
-        }
-        pendingFilesRef.current = nativeResult.files.slice(1);
-        // CameraX returns a full-resolution still. Let the existing image
-        // preparation make its full-photo and code-area crops from that file.
-        await identifyRef.current?.(nativeResult.files[0], false);
+        await deliverNativeScannerResult(nativeResult, {
+          identify: identifyRef.current,
+          onCancel: () => onCancelRef.current?.(),
+          onPending: (files) => { pendingFilesRef.current = files; },
+        });
         return;
       }
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('Live camera is unavailable on this device.');
@@ -248,7 +250,7 @@ const CardScanner = forwardRef(function CardScanner({
       });
       setPhase('error');
     }
-  }, [batchMode, nativeScanner, stop]);
+  }, [batchMode, nativeScanner, source, stop]);
 
   useEffect(() => {
     if (!open) {
@@ -274,7 +276,7 @@ const CardScanner = forwardRef(function CardScanner({
   }, [open, start, stop, clearPreview]);
 
   if (!open) return null;
-  if (!shouldRenderScannerShell({ open, native: nativeScanner, phase })) return null;
+  const shellVisible = shouldRenderScannerShell({ open, native: nativeScanner, phase });
 
   const requestFocus = async (event = null) => {
     const frame = frameRef.current;
@@ -473,7 +475,7 @@ const CardScanner = forwardRef(function CardScanner({
   const cameraVisible = phase === 'opening' || phase === 'ready' || phase === 'capturing';
 
   return (
-    <div className={`live-scanner live-scanner--${phase}`} role="dialog" aria-modal="true" aria-label="Scan a trading card">
+    <div className={`live-scanner live-scanner--${phase}${shellVisible ? '' : ' live-scanner--native-wait'}`} role="dialog" aria-modal="true" aria-label="Scan a trading card">
       <div ref={stageRef} className="live-scanner-stage">
         <input
           ref={fileInputRef}

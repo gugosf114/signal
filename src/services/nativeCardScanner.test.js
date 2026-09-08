@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { nativeScannerPagesToFiles, shouldRenderScannerShell } from './nativeCardScanner.js';
+import {
+  deliverNativeScannerResult,
+  nativeScannerPagesToFiles,
+  shouldRenderScannerShell,
+} from './nativeCardScanner.js';
 
 test('native launch never paints the retired scanner underneath', () => {
   assert.equal(shouldRenderScannerShell({ open: true, native: true, phase: 'opening' }), false);
@@ -36,4 +40,23 @@ test('native scanner refuses an empty or unreadable result', async () => {
     [{ url: 'https://localhost/missing' }],
     { fetcher: async () => ({ ok: false }) },
   ), /could not be opened/);
+});
+
+test('a returned camera photo always reaches identification', async () => {
+  const calls = [];
+  const files = [{ name: 'first.jpg' }, { name: 'second.jpg' }];
+  const status = await deliverNativeScannerResult({ files }, {
+    identify: async (file, framed) => calls.push(['identify', file.name, framed]),
+    onPending: (pending) => calls.push(['pending', pending.map((file) => file.name)]),
+  });
+
+  assert.equal(status, 'delivered');
+  assert.deepEqual(calls, [
+    ['pending', ['second.jpg']],
+    ['identify', 'first.jpg', false],
+  ]);
+  await assert.rejects(
+    () => deliverNativeScannerResult({ files }, {}),
+    /photo receiver is unavailable/,
+  );
 });

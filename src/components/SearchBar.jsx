@@ -102,13 +102,16 @@ export default function SearchBar({
   const [scanError, setScanError] = useState(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerMode, setScannerMode] = useState('single');
+  const [scannerSource, setScannerSource] = useState('camera');
   const [scannerSession, setScannerSession] = useState(0);
+  const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const formRef = useRef(null);
+  const photoMenuRef = useRef(null);
   // Bumped on every keystroke and every pick, so a slow catalogue reply that
   // lands after the user moved on can't repopulate the list.
   const reqToken = useRef(0);
@@ -168,6 +171,22 @@ export default function SearchBar({
     document.addEventListener('pointerdown', onDocDown);
     return () => document.removeEventListener('pointerdown', onDocDown);
   }, [open]);
+
+  useEffect(() => {
+    if (!photoMenuOpen) return;
+    const close = (event) => {
+      if (!photoMenuRef.current?.contains(event.target)) setPhotoMenuOpen(false);
+    };
+    const escape = (event) => {
+      if (event.key === 'Escape') setPhotoMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    window.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      window.removeEventListener('keydown', escape);
+    };
+  }, [photoMenuOpen]);
 
   const routeResolvedCard = async (pricedCard) => {
     const resolvedCard = stampCardPrice(normalizeCardRecord(await withResolvedCardImage(pricedCard)));
@@ -345,18 +364,38 @@ export default function SearchBar({
     }
   });
 
+  const openPhotoMenu = () => {
+    setScanError(null);
+    setOpen(false);
+    setPhotoMenuOpen((value) => !value);
+  };
+
   const scanCard = () => {
+    setPhotoMenuOpen(false);
     setScanError(null);
     setOpen(false);
     setScannerMode('single');
+    setScannerSource('camera');
     setScannerSession((value) => value + 1);
     setScannerOpen(true);
   };
 
   const batchScan = () => {
+    setPhotoMenuOpen(false);
     setScanError(null);
     setOpen(false);
     setScannerMode('batch');
+    setScannerSource('camera');
+    setScannerSession((value) => value + 1);
+    setScannerOpen(true);
+  };
+
+  const uploadPhoto = () => {
+    setPhotoMenuOpen(false);
+    setScanError(null);
+    setOpen(false);
+    setScannerMode('single');
+    setScannerSource('photos');
     setScannerSession((value) => value + 1);
     setScannerOpen(true);
   };
@@ -435,6 +474,7 @@ export default function SearchBar({
     setLookupMode((current) => current === 'price' ? 'full' : 'price');
     setQuickResult(null);
     setScanError(null);
+    setPhotoMenuOpen(false);
   };
 
   const addQuickResult = async () => {
@@ -460,14 +500,16 @@ export default function SearchBar({
         maxWidth: 580,
       }}>
       <div style={{ position: 'relative', width: '100%', minWidth: 0 }}>
-        {/* A normal tap now means exactly one thing: open the card camera. */}
+        {/* Signal and Collection share the same scan, batch, and photo menu. */}
         <button
           type="button"
           className="signal-photo-trigger"
-          onClick={scanCard}
+          onClick={openPhotoMenu}
           disabled={busy}
-          aria-label="Scan a card"
-          title="Scan a card"
+          aria-label="Choose scan or upload"
+          aria-expanded={photoMenuOpen}
+          aria-haspopup="menu"
+          title="Scan or upload a card photo"
           style={{
             position: 'absolute',
             left: 6,
@@ -494,6 +536,23 @@ export default function SearchBar({
             <circle cx="12" cy="13" r="4" />
           </svg>
         </button>
+
+        {photoMenuOpen && !busy && (
+          <div ref={photoMenuRef} className="photo-choice-menu" role="menu" aria-label="Card photo source">
+            <button type="button" role="menuitem" onClick={scanCard}>
+              <span className="photo-choice-icon" aria-hidden>◎</span>
+              <span><strong>Scan card</strong><small>Open the live camera</small></span>
+            </button>
+            <button type="button" role="menuitem" onClick={batchScan}>
+              <span className="photo-choice-icon" aria-hidden>＋</span>
+              <span><strong>Batch scan</strong><small>Camera or select many photos</small></span>
+            </button>
+            <button type="button" role="menuitem" onClick={uploadPhoto}>
+              <span className="photo-choice-icon" aria-hidden>↑</span>
+              <span><strong>Upload photo</strong><small>Use a saved image</small></span>
+            </button>
+          </div>
+        )}
 
         {/* No explicit submit button — camera icon on the left handles image scans,
             Enter key on the keyboard submits a typed card name. The previous
@@ -580,9 +639,6 @@ export default function SearchBar({
         <span>{lookupMode === 'price'
           ? 'Price Only: exact printing and current market price.'
           : 'Full Signal: confirm the exact printing before the paid report runs.'}</span>
-        {onScannerBatch && (
-          <button type="button" onClick={batchScan} disabled={busy}>Scan a stack</button>
-        )}
       </div>
 
       {(suggesting || resolving) && query.trim().length >= MIN_CHARS && (
@@ -620,6 +676,7 @@ export default function SearchBar({
         open={scannerOpen}
         mode={scannerMode}
         lookupMode={lookupMode}
+        source={scannerSource}
         onCancel={() => setScannerOpen(false)}
         onIdentify={identifyPhoto}
         onAdd={(match) => finishPhotoMatch(match, 'add')}

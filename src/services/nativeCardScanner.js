@@ -34,10 +34,29 @@ export async function nativeScannerPagesToFiles(pages, {
   return files;
 }
 
-export async function scanCardsNatively({ batch = false } = {}) {
-  const result = await NativeCardScanner.scan({ batch: Boolean(batch) });
+export async function scanCardsNatively({ batch = false, photos = false } = {}) {
+  const result = await NativeCardScanner.scan({
+    batch: Boolean(batch),
+    photos: Boolean(photos),
+  });
   if (result?.cancelled) return { cancelled: true, files: [], pages: [] };
   const pages = Array.isArray(result?.pages) ? result.pages : [];
   const files = await nativeScannerPagesToFiles(pages);
   return { cancelled: false, files, pages };
+}
+
+export async function deliverNativeScannerResult(result, {
+  identify,
+  onCancel,
+  onPending,
+} = {}) {
+  if (result?.cancelled) {
+    onCancel?.();
+    return 'cancelled';
+  }
+  if (!result?.files?.length) throw new Error('The card scanner returned no photo.');
+  if (typeof identify !== 'function') throw new Error('The scanner photo receiver is unavailable.');
+  onPending?.(result.files.slice(1));
+  await identify(result.files[0], false);
+  return 'delivered';
 }
