@@ -1782,3 +1782,14 @@ not used. Browser screenshots verified the preview layout; Android's hidden
 display returned a black screenshot, so native verification used the live DOM,
 cropped image dimensions, and catalog result. The normal APK build is 3.7
 (`versionCode 28`), so its eventual installation clears the temporary web path.
+
+## Session log — 2026-09-28 scanner results fit the phone
+
+Long printing details forced the scanner's choice rows wider than the phone.
+The selected name was also cut off. Results now use constrained columns and
+wrapped names/details, with the summary price below the text. Choice prices
+stay inside each row. The sheet scrolls vertically. Typed price-result names
+use the same wrapping behavior. The real scanner component at 393px measured
+393px content width, zero overflowing children, and fully fitting text/prices.
+All 14 existing style tests and the production build passed. The new web
+bundle was copied into the installed app and its CSS checksum verified.
