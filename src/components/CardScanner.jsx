@@ -2,6 +2,7 @@ import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef,
 import { drawCameraFrame } from '../services/cameraCanvas';
 import { computeVideoCrop } from '../services/scannerCrop';
 import { prepareCardPhoto } from '../services/prepareCardPhoto';
+import CardLightbox from './CardLightbox';
 import {
   cameraTorchSupported,
   focusCameraTrack,
@@ -106,6 +107,9 @@ const CardScanner = forwardRef(function CardScanner({
   const [error, setError] = useState(null);
   const [match, setMatch] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const viewerOpenRef = useRef(false);
+  viewerOpenRef.current = viewerOpen;
   const [focusSupported, setFocusSupported] = useState(false);
   const [focusPoint, setFocusPoint] = useState(null);
   const [focusMessage, setFocusMessage] = useState('');
@@ -119,6 +123,7 @@ const CardScanner = forwardRef(function CardScanner({
   const batchSummary = scannerBatchSummary(batch);
 
   const clearPreview = useCallback(() => {
+    setViewerOpen(false);
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
     previewRef.current = null;
     setPreviewUrl(null);
@@ -264,7 +269,9 @@ const CardScanner = forwardRef(function CardScanner({
     const oldOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     start();
-    const escape = (event) => { if (event.key === 'Escape') onCancel?.(); };
+    const escape = (event) => {
+      if (event.key === 'Escape' && !viewerOpenRef.current) onCancel?.();
+    };
     window.addEventListener('keydown', escape);
     return () => {
       abortRef.current?.abort();
@@ -479,6 +486,7 @@ const CardScanner = forwardRef(function CardScanner({
     ? { ...match, card: { ...(match.card || {}), name: candidates[0].name, game: candidates[0].game } }
     : match;
   const details = scannerMatchDetails(displayMatch || {});
+  const matchImageUrl = details.imageUrl || previewUrl;
   const needsChoice = candidates.length > 0 && !match?.pin;
   const cameraVisible = phase === 'opening' || phase === 'ready' || phase === 'capturing';
 
@@ -602,8 +610,14 @@ const CardScanner = forwardRef(function CardScanner({
               </span>
             </div>
             <div className="live-match-card">
-              {details.imageUrl || previewUrl
-                ? <img src={details.imageUrl || previewUrl} alt="" />
+              {matchImageUrl
+                ? <button
+                    type="button"
+                    className="live-match-image"
+                    aria-label={`Enlarge ${details.name}`}
+                    aria-haspopup="dialog"
+                    onClick={() => setViewerOpen(true)}
+                  ><img src={matchImageUrl} alt={details.name} /></button>
                 : <span className="live-match-art" aria-hidden />}
               <div>
                 <strong>{details.name}</strong>
@@ -771,6 +785,14 @@ const CardScanner = forwardRef(function CardScanner({
           </div>
         )}
       </div>
+      <CardLightbox
+        isOpen={viewerOpen}
+        lockScroll={false}
+        onClose={() => setViewerOpen(false)}
+        imageUrl={matchImageUrl}
+        cardName={details.name}
+        cardMeta={[scannerMatchMeta(details), scannerMatchDisplayPrice(details, candidates.length)].filter(Boolean).join(' · ')}
+      />
     </div>
   );
 });

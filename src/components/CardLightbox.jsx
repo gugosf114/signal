@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 // ─── Card viewer ─────────────────────────────────────────────────────────────
-// Hold the card up to the light: drag to turn it, pinch or double-tap to zoom.
+// Move the original image: drag to turn it, pinch or double-tap to zoom.
 //
 // The previous version tilted on `onMouseMove` only, so on the phone — the only
 // device this app runs on — the card just appeared slightly larger and sat
@@ -25,7 +25,7 @@ const TAP_SLOP = 8;             // px of travel still counted as a tap, not a dr
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, cardMeta = null, onScan, scanLabel = 'Scan this card', onRemove }) {
+export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, cardMeta = null, onScan, scanLabel = 'Scan this card', onRemove, lockScroll = true }) {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [settling, setSettling] = useState(false);
@@ -81,16 +81,16 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
     window.addEventListener('keydown', onKey);
     priorFocus.current = document.activeElement;
     const priorOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    if (lockScroll) document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => closeRef.current?.focus());
     const hintTimer = setTimeout(() => setHintVisible(false), 3200);
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = priorOverflow;
+      if (lockScroll) document.body.style.overflow = priorOverflow;
       priorFocus.current?.focus?.();
       clearTimeout(hintTimer);
     };
-  }, [isOpen, reset]);
+  }, [isOpen, reset, lockScroll]);
 
   useEffect(() => {
     if (confirmRemove) requestAnimationFrame(() => removeConfirmRef.current?.focus());
@@ -172,10 +172,6 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
     ? 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)'
     : 'transform 0.06s linear';
 
-  // The light stays put while the card turns under it.
-  const shineX = 50 - tilt.y * 0.55;
-  const shineY = 50 + tilt.x * 0.55;
-  const lit = (Math.abs(tilt.x) + Math.abs(tilt.y)) / (TILT_LIMIT * 2);
   const moved = Math.abs(tilt.x) > 1 || Math.abs(tilt.y) > 1 || Math.abs(scale - 1) > 0.02;
 
   return (
@@ -219,26 +215,6 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
             <div className="cl-placeholder">?</div>
           )}
 
-          {/* Gloss — travels opposite the tilt, so the card reads as catching a
-              light that isn't moving. */}
-          <div
-            className="cl-shine"
-            style={{
-              background:
-                `radial-gradient(circle at ${shineX}% ${shineY}%, rgba(255,255,255,0.28) 0%, ` +
-                `rgba(255,255,255,0.06) 42%, transparent 68%)`,
-            }}
-          />
-          {/* Foil sheen, only once it's off-square. */}
-          <div
-            className="cl-foil"
-            style={{
-              opacity: Math.min(0.85, lit * 1.7),
-              background:
-                `linear-gradient(${tilt.y * 2.2}deg, rgba(196,64,64,0.22) 0%, ` +
-                `rgba(160,144,96,0.18) 35%, rgba(96,136,112,0.2) 68%, rgba(112,128,160,0.2) 100%)`,
-            }}
-          />
         </div>
       </div>
 

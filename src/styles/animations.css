@@ -1854,15 +1854,6 @@
   color: #1A1D24;
 }
 
-.cl-shine, .cl-foil {
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  pointer-events: none;
-}
-.cl-shine { transform: translateZ(1px); }
-.cl-foil  { transform: translateZ(2px); mix-blend-mode: overlay; transition: opacity 0.2s; }
-
 .cl-hint {
   position: absolute;
   bottom: 30px;
@@ -2612,6 +2603,18 @@
 .live-match-card img,
 .live-match-art { grid-row: 1 / span 2; width: 58px; height: 80px; border-radius: 5px; object-fit: cover; background: #171A20; }
 .live-match-card > div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.live-match-image {
+  grid-row: 1 / span 2;
+  width: 58px;
+  height: 80px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  cursor: zoom-in;
+  line-height: 0;
+}
+.live-match-image:focus-visible { outline: 2px solid #F5F1E8; outline-offset: 3px; }
 .live-match-card strong { color: #F5F1E8; font-size: 16px; line-height: 1.4; overflow-wrap: anywhere; }
 .live-match-card span { color: #B6B1A8; font: 700 10px 'Syne', sans-serif; }
 .live-match-card p { margin: 0; color: #77736B; font: 10px/1.5 'JetBrains Mono', monospace; overflow-wrap: anywhere; }

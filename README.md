@@ -1793,3 +1793,18 @@ use the same wrapping behavior. The real scanner component at 393px measured
 393px content width, zero overflowing children, and fully fitting text/prices.
 All 14 existing style tests and the production build passed. The new web
 bundle was copied into the installed app and its CSS checksum verified.
+
+## Session log — 2026-09-28 enlarge the selected scanner image
+
+Tapping the scanner's small card image now opens the existing large viewer.
+The thumbnail and viewer use the same selected image URL; switching the
+printing switches that image. Drag-to-tilt, pinch, and double-tap zoom remain.
+The viewer's artificial gloss and foil layers were removed so it shows the
+supplied image without simulated shine. Closing the viewer preserves the
+scanner and selection; Escape closes only the viewer. The nested viewer uses
+the scanner's existing scroll lock.
+
+The off-screen interaction check verified both variant image URLs, enlarged
+image size, drag rotation, double-tap zoom, close and Escape behavior, and zero
+artificial shine layers. The production build passed. The installed web
+bundle was updated and its index checksum verified.
