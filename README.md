@@ -1775,8 +1775,9 @@ All 345 JavaScript tests and 4 Python tests pass; the production build passes.
 
 The phone received the web-only change through Capacitor's existing persistent
 web-bundle path; its signed 3.6 Android shell and Collection data stayed intact.
-A cold start loaded the new bundle. Saved-photo handoffs in the installed app
-matched Pidgeot 217 and both BLZD-EN024 foil choices. The physical camera was
+A cold start loaded the new bundle. A saved-photo handoff in the installed app
+matched Pidgeot 217. The browser's Signal flow also returned both BLZD-EN024
+foil choices. The physical camera was
 not used. Browser screenshots verified the preview layout; Android's hidden
 display returned a black screenshot, so native verification used the live DOM,
 cropped image dimensions, and catalog result. The normal APK build is 3.7
