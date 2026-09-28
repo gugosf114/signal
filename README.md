@@ -1749,3 +1749,26 @@ Collection. He then confirmed the scanner opens as one screen. A clean app
 start selected Collection on the installed Fold with all 12 cards and the
 $428.95 total intact. The native handoff, focused page-order checks, production
 web build, Android debug build, Android unit tests, and Android lint passed.
+
+---
+
+## Session log — 2026-09-28 automatic card crop
+
+Both search pages now prepare each camera or uploaded photo before reading it.
+A small local worker finds four supported card edges, keeps a border around
+the printed text, and straightens the photo. Unclear edges, multiple competing
+cards, an unsupported browser, cancellation, or a processing failure keep the
+original photo or cancel the scan. No new runtime dependency or paid call is
+needed for the crop.
+
+The resulting photo stays visible above the reading status. There is no crop
+approval screen or extra tap. The reader receives that same photo, with a
+full-width lower detail crop so both lower corners remain available. Single
+and batch scans share the preparation step.
+
+Four saved native camera photos (two Pokémon and two Yu-Gi-Oh photos) retained
+their full card borders and numbers in the off-screen image checks. A black
+photo kept the original. A background line initially distorted one crop;
+tighter parallel-edge and continuous-support checks fixed it, with regression
+coverage. Both rendered page flows returned the expected catalog printings.
+All 345 JavaScript tests and 4 Python tests pass; the production build passes.

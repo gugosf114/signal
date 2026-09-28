@@ -1,6 +1,7 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { drawCameraFrame } from '../services/cameraCanvas';
 import { computeVideoCrop } from '../services/scannerCrop';
+import { prepareCardPhoto } from '../services/prepareCardPhoto';
 import {
   cameraTorchSupported,
   focusCameraTrack,
@@ -307,12 +308,19 @@ const CardScanner = forwardRef(function CardScanner({
     setTorchOn(false);
     setError(null);
     setMatch(null);
-    setPhase('identifying');
+    setPhase('preparing');
     try {
       if (!onIdentify) throw new Error('Card identification is unavailable.');
-      const found = await onIdentify(file, { framed, signal: controller.signal });
+      const prepared = await prepareCardPhoto(file, { signal: controller.signal });
       if (controller.signal.aborted) return;
-      setMatch({ ...found, file });
+      showPreview(prepared.file);
+      setPhase('identifying');
+      const found = await onIdentify(prepared.file, {
+        framed: prepared.cropped || framed,
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+      setMatch({ ...found, file: prepared.file });
       setPhase('match');
     } catch (scanError) {
       if (controller.signal.aborted) return;
@@ -568,17 +576,17 @@ const CardScanner = forwardRef(function CardScanner({
           </>
         )}
 
-        {(phase === 'identifying' || phase === 'launching') && (
+        {(phase === 'preparing' || phase === 'identifying' || phase === 'launching') && (
           <div className="live-scan-readout" role="status" aria-live="polite">
             <span className="live-scan-spinner" aria-hidden />
             <strong>{phase === 'launching'
               ? (launchAction === 'batch' ? 'Adding batch to Collection'
                 : launchAction === 'add' ? 'Opening collection form' : 'Running full Signal')
-              : 'Finding the exact printing'}</strong>
+              : phase === 'preparing' ? 'Finding the card edges' : 'Finding the exact printing'}</strong>
             <span>{phase === 'launching'
               ? (launchAction === 'batch' ? `Saving ${batchSummary.cards} cards.`
                 : launchAction === 'add' ? 'Preparing this exact printing.' : 'Starting the complete market report.')
-              : 'Reading the name, set, number, and variant.'}</span>
+              : phase === 'preparing' ? 'Keeping the whole card in view.' : 'Reading the name, set, number, and variant.'}</span>
           </div>
         )}
 

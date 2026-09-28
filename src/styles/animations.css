@@ -2535,6 +2535,23 @@
 }
 .live-scan-readout strong { font-size: 18px; }
 .live-scan-readout > span:last-child { color: #AAA69D; font: 11px/1.5 'JetBrains Mono', monospace; }
+.live-scanner--preparing .live-scanner-preview,
+.live-scanner--identifying .live-scanner-preview {
+  inset: calc(84px + env(safe-area-inset-top)) 14px calc(190px + env(safe-area-inset-bottom));
+  width: calc(100% - 28px);
+  height: calc(100% - 274px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+.live-scanner--preparing .live-scan-readout,
+.live-scanner--identifying .live-scan-readout {
+  top: auto;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  left: 14px;
+  right: 14px;
+  transform: none;
+  padding: 18px 16px;
+}
+.live-scanner--preparing .live-scan-spinner,
+.live-scanner--identifying .live-scan-spinner { width: 28px; height: 28px; }
 .live-scan-spinner {
   width: 44px;
   height: 44px;
