@@ -1766,7 +1766,7 @@ approval screen or extra tap. The reader receives that same photo, with a
 full-width lower detail crop so both lower corners remain available. Single
 and batch scans share the preparation step.
 
-Four saved native camera photos (two Pokémon and two Yu-Gi-Oh photos) retained
+Four saved native camera photos (Pokémon and Yu-Gi-Oh) retained
 their full card borders and numbers in the off-screen image checks. A black
 photo kept the original. A background line initially distorted one crop;
 tighter parallel-edge and continuous-support checks fixed it, with regression
