@@ -1826,3 +1826,33 @@ The live Scryfall record for HOB 207 supplies one image set for both nonfoil
 and foil prices. Its stock picture does not show a separate foil appearance.
 Showing the physical finish requires an actual photo of that finish; the
 viewer preserves the supplied image and does not fabricate that detail.
+
+## Session log — 2026-09-28 MTG treatments and exact-product pictures
+
+MTG records now preserve Scryfall's treatment tags. Surge, Galaxy, Textured,
+and other tagged foils keep their names through matching, the full report,
+the add dialog, and Collection save/load. Normal/foil/etched remain the price
+keys and part of the exact printing identity. The selected finish is kept
+when adding a card, including single-finish cards.
+
+The image lookup checks TCGplayer using the product ID supplied for the exact
+Scryfall printing. Etched products use their separate ID where supplied. A
+successful full-size image replaces the catalog picture without changing the
+card or price; an unavailable image keeps the catalog fallback. Checks have a
+three-second ceiling and a bounded per-session cache. A shared product's
+headline price cannot fill a missing price for one particular finish.
+
+Sources that share one picture across finishes are labeled in the scanner
+and viewer. The live check covered all seven finish choices across The Lonely
+Mountain's four printings. HOB 284 showed Surge Foil and product image 707062;
+HOB 207 retained its separate non-foil/foil prices and explicitly shared photo
+707061. No finish appearance was generated. This does not create missing
+physical foil photos where both catalogs supply the same stock image.
+
+All 354 JavaScript tests, 4 Python tests, and the production build passed.
+Coverage includes labels surviving save/load and reports, etched image IDs,
+missing-image fallback, and missing finish prices. The browser image probes
+and rendered result/viewer used real catalog records and TCGplayer images.
+The stale three-column layout assertions were updated for the previously
+requested wrapped two-column layout. The phone web bundle was updated and
+its index checksum verified.

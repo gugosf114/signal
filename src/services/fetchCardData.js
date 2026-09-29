@@ -12,6 +12,7 @@ import { fetchWithTimeout } from './http.js';
 import { isExactScanTarget } from './scanIdentity.js';
 import { normalizeCardRecord } from './cardRecord.js';
 import { toTcgdexId } from './pokemonIds.js';
+import { mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
 
 // `pin` is the exact card record chosen by search, number lookup, camera,
 // upload, Trending, Recent, Watched, or Collection. A broad name is refused.
@@ -297,14 +298,21 @@ function shapeMTG(card, pin = null) {
     number: card.collector_number,
     rarity: card.rarity,
     form: pin?.form || null,
-    finish: pin?.finish || null,
+    finish: mtgFinishLabel({ ...card, finish: pin?.finish }, pin?.form),
+    promoTypes: mtgPromoTypes(card),
+    availableFinishes: (card.finishes || []).map(form => form === 'nonfoil' ? 'normal' : form),
+    tcgplayerEtchedId: card.tcgplayer_etched_id || pin?.tcgplayerEtchedId || null,
+    tcgplayerProductIds: pin?.tcgplayerProductIds || null,
+    imageSharedFinishes: pin?.imageSharedFinishes
+      ?? ((card.finishes || []).length > 1 ? card.finishes.map(form => form === 'nonfoil' ? 'normal' : form) : []),
     typeLine: card.type_line,
     priceLines: priceLines.length ? priceLines : null,
     priceScope: pin?.form ? (priceLines.length ? 'exact finish' : 'exact-print price unavailable') : null,
     priceSource: 'Scryfall',
     legalFormats,
     edhrecRank: card.edhrec_rank,
-    imageUrl: card.image_uris?.large || card.card_faces?.[0]?.image_uris?.large,
+    imageUrl: pin?.imageLarge || pin?.imageUrl || card.image_uris?.png || card.image_uris?.large
+      || card.card_faces?.[0]?.image_uris?.png || card.card_faces?.[0]?.image_uris?.large,
     scryfallUri: card.scryfall_uri,
   };
 }

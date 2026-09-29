@@ -1,0 +1,36 @@
+// Scryfall's finish (nonfoil/foil/etched) selects the price bucket. Its promo
+// tags describe the physical foil treatment. Keep those two facts separate.
+const FOIL_TREATMENTS = {
+  surgefoil: 'Surge Foil', galaxyfoil: 'Galaxy Foil', halofoil: 'Halo Foil',
+  confettifoil: 'Confetti Foil', fracturefoil: 'Fracture Foil',
+  fracturedfoil: 'Fractured Foil', ripplefoil: 'Ripple Foil',
+  textured: 'Textured Foil', texturedfoil: 'Textured Foil',
+  raisedfoil: 'Raised Foil', manafoil: 'Mana Foil', cosmicfoil: 'Cosmic Foil',
+  rainbowfoil: 'Rainbow Foil', doublerainbow: 'Double Rainbow Foil',
+  silverfoil: 'Silver Foil', gilded: 'Gilded Foil',
+  stepandcompleat: 'Step-and-Compleat Foil', oilraised: 'Oil-Slick Raised Foil',
+};
+
+export function mtgPromoTypes(card) {
+  const values = card?.promoTypes || card?.promo_types || [];
+  return [...new Set((Array.isArray(values) ? values : [])
+    .filter(value => typeof value === 'string').map(value => value.trim().toLowerCase()).filter(Boolean))];
+}
+
+export function mtgFinishLabel(card, form = card?.form) {
+  if (form === 'normal' || form === 'nonfoil') return 'Non-foil';
+  if (form === 'etched') return 'Etched';
+  if (form !== 'foil') return card?.finish || null;
+  const labels = mtgPromoTypes(card).map(tag => FOIL_TREATMENTS[tag]
+    || (/^[a-z]+foil$/.test(tag) ? `${tag.slice(0, -4).replace(/^./, c => c.toUpperCase())} Foil` : null))
+    .filter(Boolean);
+  if (labels.length) return [...new Set(labels)].join(' / ');
+  const supplied = String(card?.finish || '').trim();
+  return supplied && !/^(?:normal|non-foil|foil|etched)$/i.test(supplied) ? supplied : 'Foil';
+}
+
+export function sharedCardImageNote(card) {
+  const forms = card?.imageSharedFinishes;
+  if (!Array.isArray(forms) || forms.length < 2) return null;
+  return `Photo shared by ${forms.map(form => mtgFinishLabel(card, form)).join(' and ')}.`;
+}

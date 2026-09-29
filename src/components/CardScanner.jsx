@@ -624,6 +624,7 @@ const CardScanner = forwardRef(function CardScanner({
                 <strong>{details.name}</strong>
                 <span>{details.gameLabel}</span>
                 <p>{needsChoice ? 'Choose an exact printing below' : `${scannerMatchMeta(details)}${details.priceSource ? ` · ${details.priceSource}` : ''}`}</p>
+                {details.imageNote && <p>{details.imageNote}</p>}
               </div>
               <b>{scannerMatchDisplayPrice(details, candidates.length)}</b>
             </div>
@@ -792,7 +793,7 @@ const CardScanner = forwardRef(function CardScanner({
         onClose={() => setViewerOpen(false)}
         imageUrl={viewerImageUrl}
         cardName={details.name}
-        cardMeta={[scannerMatchMeta(details), scannerMatchDisplayPrice(details, candidates.length)].filter(Boolean).join(' · ')}
+        cardMeta={[scannerMatchMeta(details), scannerMatchDisplayPrice(details, candidates.length), details.imageNote].filter(Boolean).join(' · ')}
       />
     </div>
   );

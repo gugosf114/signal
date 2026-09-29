@@ -18,6 +18,7 @@ import {
 } from '../services/fetchTcgplayerPrice';
 import { fetchCardImage } from '../services/fetchCardImage';
 import CardLightbox from './CardLightbox';
+import { sharedCardImageNote } from '../services/mtgFinish';
 import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
 import CollectionCurrencies from './CollectionCurrencies';
@@ -229,7 +230,7 @@ export default function Collection({
     const details = [];
     if (card.game === 'yugioh' && card.rarity) details.push(card.rarity);
     details.push(CONDITION_LABEL[card.condition] || 'Near mint');
-    const formLabel = collectionFormLabel(card.game, card.form);
+    const formLabel = collectionFormLabel(card.game, card.form, card);
     if (formLabel) details.push(formLabel);
     return details.join(' · ');
   };
@@ -411,6 +412,7 @@ export default function Collection({
         cardName={viewing?.name}
         cardMeta={viewing ? [
           printingLabel(viewing),
+          sharedCardImageNote(viewing),
           `${formatCollectionMoney(viewing.marketPrice)} each`,
           viewing.priceSource,
           `${viewing.qty} cop${viewing.qty === 1 ? 'y' : 'ies'}`,

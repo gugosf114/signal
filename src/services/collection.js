@@ -6,6 +6,8 @@
 import { applyCardPricePatch, cardPriceNeedsRefresh, normalizeCardRecord, stampCardPrice } from './cardRecord.js';
 import { isExactScanTarget } from './scanIdentity.js';
 import { printingIdentity } from './printing.js';
+import { mtgFinishLabel } from './mtgFinish.js';
+import { tcgplayerProductImageUrl } from './fetchTcgplayerPrice.js';
 
 const KEY = 'signal_collection_v1';
 const MAX_ENTRIES = 2000;
@@ -70,11 +72,12 @@ export function collectionFormOptions(game, card = null) {
   const forms = [...new Set((listed.length ? listed : defaults)
     .map((form) => cleanFormForGame(key, form))
     .filter((form) => Object.prototype.hasOwnProperty.call(labels, form)))];
-  return forms.map((value) => ({ value, label: labels[value] }));
+  return forms.map((value) => ({ value, label: key === 'mtg' ? mtgFinishLabel(card, value) : labels[value] }));
 }
 
-export function collectionFormLabel(game, form) {
+export function collectionFormLabel(game, form, card = null) {
   const key = String(game || '').toLowerCase();
+  if (key === 'mtg') return mtgFinishLabel(card, cleanFormForGame(key, form));
   return FORM_LABELS[key]?.[cleanFormForGame(key, form)] || '';
 }
 
@@ -134,22 +137,33 @@ function normalizeEntry(card) {
     && ['tcgplayer', 'exact-catalogue'].includes(card.imageSource)
     ? card.imageSource
     : null;
-  const form = cleanFormForGame(card.game, card.form);
+  const form = cleanFormForGame(card.game, card.form
+    || (card.availableFinishes?.length === 1 ? card.availableFinishes[0] : null));
   const record = normalizeCardRecord({
     ...card,
     form,
-    finish: collectionFormLabel(card.game, form) || card.finish,
+    finish: collectionFormLabel(card.game, form, card) || card.finish,
     imageUrl: smallImage || largeImage,
     imageLarge: largeImage || smallImage,
     imageSource,
+    tcgplayerProductId,
+    tcgplayerImageUrl,
     price: marketPriceFor(card, form),
   });
   if (!record) return null;
+  if (record.game === 'mtg' && imageSource === 'tcgplayer' && record.tcgplayerProductId !== tcgplayerProductId) {
+    // Changing an etched finish must also change the product photo, not just
+    // its price and label. The ID comes from Scryfall's finish mapping.
+    const url = tcgplayerProductImageUrl(record.tcgplayerProductId);
+    record.imageUrl = record.imageLarge = record.tcgplayerImageUrl = url;
+    const shared = (record.availableFinishes || []).filter(value => record.tcgplayerProductIds?.[value] === record.tcgplayerProductId);
+    record.imageSharedFinishes = shared.length > 1 ? shared : [];
+  }
   return {
     ...record,
     scanImagePath: null,
-    tcgplayerProductId,
-    tcgplayerImageUrl,
+    tcgplayerProductId: record.tcgplayerProductId,
+    tcgplayerImageUrl: record.tcgplayerImageUrl,
     form,
     condition: cleanCondition(card.condition),
     qty,
@@ -260,13 +274,13 @@ export function addToCollection(card, details = {}, at = null) {
   }
   const exactCard = stampCardPrice(normalizeCardRecord(card || {}));
   if (!exactCard || !isExactScanTarget(exactCard.game, exactCard)) return loadCollection();
-  const form = cleanFormForGame(card.game, details.form);
+  const form = cleanFormForGame(card.game, details.form ?? exactCard.form);
   const quantity = cleanQty(details.quantity);
   const paidPerCard = cleanMoney(details.paidPerCard);
   const entry = {
     ...exactCard,
     form,
-    finish: collectionFormLabel(exactCard.game, form) || exactCard.finish,
+    finish: collectionFormLabel(exactCard.game, form, exactCard) || exactCard.finish,
     condition: cleanCondition(details.condition),
     qty: quantity,
     marketPrice: marketPriceFor(exactCard, form),

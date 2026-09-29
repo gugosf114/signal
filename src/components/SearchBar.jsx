@@ -9,6 +9,7 @@ import { scannerMatchDetails, scannerMatchMeta, scannerMatchPrice } from '../ser
 import CardScanner from './CardScanner';
 import { normalizeCardRecord, stampCardPrice } from '../services/cardRecord';
 import { isExactScanTarget } from '../services/scanIdentity';
+import { resolveMtgCardImage } from '../services/mtgCardImage';
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
 // Typing "Charizard" and hitting Enter used to scan whatever printing the API
@@ -71,6 +72,7 @@ function QuickPriceResult({ card, onAdd, onDone }) {
 
 async function withResolvedCardImage(pin, fallbackCard = null) {
   if (!pin) return pin;
+  if (pin.game === 'mtg') return resolveMtgCardImage(pin);
   const name = pin.name || fallbackCard?.name;
   const game = pin.game || fallbackCard?.game || null;
   const tcgplayerImage = pin.tcgplayerImageUrl || null;
@@ -330,11 +332,12 @@ export default function SearchBar({
       // A camera read is not yet a printing. The catalog must accept it before
       // Signal shows a price or spends money on the full report.
       const options = await resolvePrintingOptions(card).catch(() => []);
-      const candidates = await Promise.all(options.map((option) => addTcgplayerPrice(
+      const priced = await Promise.all(options.map((option) => addTcgplayerPrice(
         option,
         signal,
         { requireProductId: option.game === 'yugioh' },
       )));
+      const candidates = await Promise.all(priced.map(option => resolveMtgCardImage(option, { signal })));
       return {
         card,
         pin: candidates.length === 1 && !candidates[0]?.requiresOwnerChoice

@@ -64,7 +64,7 @@ describe('every card door uses one exact record', () => {
     }
   });
 
-  test('compact cards keep their old shapes and pass the full record underneath', () => {
+  test('cards pass the full record and price rows leave room for wrapped text', () => {
     assert.equal((sources.browser.match(/minmax\(100px, 1fr\)/g) || []).length, 2);
     assert.match(sources.browser, /onCardSelect\(c\.name, c\.game, \{ pin: c \}\)/);
 
@@ -86,8 +86,8 @@ describe('every card door uses one exact record', () => {
     assert.match(sources.collection, /onLookup\(card\.name, card\.game, \{ pin: card \}\)/);
 
     assert.doesNotMatch(sources.loading, /lt-cardslate-price/);
-    assert.match(sources.styles, /\.quick-price-card \{[\s\S]*?grid-template-columns: 52px minmax\(0, 1fr\) auto;/);
-    assert.match(sources.styles, /\.live-match-card \{[\s\S]*?grid-template-columns: 58px minmax\(0, 1fr\) auto;/);
+    assert.match(sources.styles, /\.quick-price-card \{[\s\S]*?grid-template-columns: 52px minmax\(0, 1fr\);/);
+    assert.match(sources.styles, /\.live-match-card \{[\s\S]*?grid-template-columns: 58px minmax\(0, 1fr\);/);
   });
 
   test('cache and reopen storage are identity-only', () => {

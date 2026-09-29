@@ -12,6 +12,7 @@
 // No import-free rule here beyond keeping it pure — this is called from render.
 
 import { canonicalPokemonId } from './pokemonIds.js';
+import { mtgFinishLabel } from './mtgFinish.js';
 
 export function printingLabel(printing) {
   if (!printing) return null;
@@ -74,6 +75,7 @@ export function toPrinting(game, pin, cardData) {
     && (!pin.number || String(pin.number).toLowerCase() === String(src.number || '').toLowerCase())
   );
   const mayEnrichPin = !pin || sameId || sameFields;
+  const promoTypes = (mayEnrichPin ? src.promoTypes : null) ?? pin?.promoTypes ?? null;
   const out = {
     game: normalizedGame,
     catalogId: pin?.id || src.catalogId || null,
@@ -89,13 +91,19 @@ export function toPrinting(game, pin, cardData) {
     imageUrl: pin?.imageUrl || src.imageUrl || null,
     imageLarge: pin?.imageLarge || src.imageLarge || null,
     form: pin?.form || src.form || null,
-    finish: pin?.finish || src.finish || null,
+    finish: normalizedGame === 'mtg'
+      ? mtgFinishLabel({ promoTypes, finish: pin?.finish || src.finish }, pin?.form || src.form)
+      : pin?.finish || src.finish || null,
+    promoTypes,
     availableFinishes: pin?.availableFinishes || src.availableFinishes || null,
     marketPrices: pin?.marketPrices || src.marketPrices || null,
     price: pin?.price ?? src.price ?? null,
     priceSource: pin?.priceSource || src.priceSource || null,
     priceUrl: pin?.priceUrl || src.priceUrl || null,
     tcgplayerProductId: pin?.tcgplayerProductId || src.tcgplayerProductId || null,
+    tcgplayerEtchedId: pin?.tcgplayerEtchedId || src.tcgplayerEtchedId || null,
+    tcgplayerProductIds: pin?.tcgplayerProductIds || src.tcgplayerProductIds || null,
+    imageSharedFinishes: pin?.imageSharedFinishes ?? src.imageSharedFinishes ?? null,
     tcgplayerImageUrl: pin?.tcgplayerImageUrl || src.tcgplayerImageUrl || null,
     pinned: !!pin,
   };

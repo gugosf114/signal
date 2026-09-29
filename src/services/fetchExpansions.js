@@ -8,6 +8,7 @@
 import { looksLikeSetCode, lookupBySetCode } from './lookupBySetCode.js';
 import { fetchCatalogueJSON } from './signalGateway.js';
 import { baseTcgplayerName, searchTcgplayerProducts } from './fetchTcgplayerPrice.js';
+import { mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
 
 const CACHE_KEY = 'signal_expansions_v3';
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -83,7 +84,9 @@ export function expandFinishRows(row) {
   return finishes.map((finish) => ({
     ...row,
     form: finish.form,
-    finish: finish.label,
+    finish: row.game === 'mtg' ? mtgFinishLabel(row, finish.form) : finish.label,
+    ...(row.game === 'mtg' && row.tcgplayerProductIds
+      ? { tcgplayerProductId: row.tcgplayerProductIds[finish.form] || null } : {}),
     price: prices[finish.form] ?? null,
     priceScope: 'exact finish',
   }));
@@ -137,10 +140,19 @@ export function mtgRow(c, fallbackSetName = '') {
     price: normalPrice ?? foilPrice ?? etchedPrice,
     priceSource: 'Scryfall',
     tcgplayerProductId: c.tcgplayer_id || null,
+    tcgplayerEtchedId: c.tcgplayer_etched_id || null,
+    tcgplayerProductIds: {
+      normal: c.tcgplayer_id || null,
+      foil: c.tcgplayer_id || null,
+      etched: c.tcgplayer_etched_id || (sourceFinishes.size === 1 && sourceFinishes.has('etched') ? c.tcgplayer_id : null) || null,
+    },
+    promoTypes: mtgPromoTypes(c),
     marketPrices,
     availableFinishes,
     imageUrl: c.image_uris?.small || c.card_faces?.[0]?.image_uris?.small || null,
     imageLarge: mtgLargeArt(c),
+    imageSource: 'exact-catalogue',
+    imageSharedFinishes: availableFinishes.length > 1 ? availableFinishes : [],
   };
 }
 

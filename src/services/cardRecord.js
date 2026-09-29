@@ -2,6 +2,8 @@
 // Catalogue rows, scans, saved cards, cache hits, and reports all become this
 // record before they can start a full Signal or be saved.
 
+import { mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
+
 export const CARD_RECORD_VERSION = 1;
 export const CARD_PRICE_TTL_MS = 24 * 60 * 60 * 1000;
 // Version 3 adds the exact TCGplayer product route to saved Pokémon and
@@ -80,7 +82,11 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
   if (!name || !GAMES.has(game)) return null;
 
   const id = clean(first(current.id, current.catalogId, prior.id, prior.catalogId)) || null;
-  const tcgplayerProductId = cardPriceNumber(first(current.tcgplayerProductId, prior.tcgplayerProductId));
+  let tcgplayerProductId = cardPriceNumber(first(current.tcgplayerProductId, prior.tcgplayerProductId));
+  const rawProductIds = first(current.tcgplayerProductIds, prior.tcgplayerProductIds);
+  const tcgplayerProductIds = rawProductIds && typeof rawProductIds === 'object'
+    ? Object.fromEntries(['normal', 'foil', 'etched'].filter(form => Object.hasOwn(rawProductIds, form))
+      .map(form => [form, cardPriceNumber(rawProductIds[form])])) : null;
   const suppliedPrintingId = clean(first(current.printingId, prior.printingId, game !== 'yugioh' ? id : null)) || null;
   // TCGplayer has one product ID per Yu-Gi-Oh! rarity/art product. A set code
   // can be shared by Common, Secret, and Starlight cards, so once that exact
@@ -91,10 +97,17 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
   const availableFinishes = cleanList(first(current.availableFinishes, prior.availableFinishes));
   let form = game === 'yugioh' ? null : clean(first(current.form, prior.form)) || null;
   if (!form && availableFinishes.length === 1) form = availableFinishes[0];
+  if (game === 'mtg' && form && tcgplayerProductIds && Object.hasOwn(tcgplayerProductIds, form)) {
+    tcgplayerProductId = tcgplayerProductIds[form];
+  }
   const defaultFinish = game === 'mtg' && form === 'normal' ? 'Non-foil' : FINISH_LABELS[form];
+  const rawPromoTypes = first(current.promoTypes, current.promo_types, prior.promoTypes, prior.promo_types);
+  const promoTypes = rawPromoTypes === undefined ? null : mtgPromoTypes({ promoTypes: rawPromoTypes });
   const finish = game === 'yugioh'
     ? null
-    : clean(first(current.finish, prior.finish, defaultFinish)) || null;
+    : game === 'mtg'
+      ? mtgFinishLabel({ promoTypes, finish: first(current.finish, prior.finish) }, form)
+      : clean(first(current.finish, prior.finish, defaultFinish)) || null;
   const marketPrices = cleanPrices(first(current.marketPrices, prior.marketPrices));
   const suppliedPrice = first(
     current.price,
@@ -133,10 +146,13 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
     rarity: clean(first(current.rarity, prior.rarity)) || null,
     form,
     finish,
+    promoTypes,
     availableFinishes,
     imageUrl: clean(first(current.imageUrl, prior.imageUrl)) || null,
     imageLarge: clean(first(current.imageLarge, prior.imageLarge, current.imageUrl, prior.imageUrl)) || null,
     imageSource: clean(first(current.imageSource, prior.imageSource)) || null,
+    imageSharedFinishes: first(current.imageSharedFinishes, prior.imageSharedFinishes) === undefined
+      ? null : cleanList(first(current.imageSharedFinishes, prior.imageSharedFinishes)),
     scanImagePath: clean(first(current.scanImagePath, prior.scanImagePath)) || null,
     price,
     marketPrices,
@@ -145,6 +161,8 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
     priceCheckedAt: cleanDate(first(current.priceCheckedAt, current.price_checked_at, prior.priceCheckedAt, prior.price_checked_at)),
     priceLookupVersion,
     tcgplayerProductId,
+    tcgplayerProductIds,
+    tcgplayerEtchedId: cardPriceNumber(first(current.tcgplayerEtchedId, prior.tcgplayerEtchedId)),
     tcgplayerImageUrl: clean(first(current.tcgplayerImageUrl, prior.tcgplayerImageUrl)) || null,
     source: clean(first(current.source, prior.source)) || null,
     releaseDate: clean(first(current.releaseDate, prior.releaseDate)) || null,
