@@ -15,9 +15,9 @@ import { canonicalPokemonId } from './pokemonIds.js';
 import { mtgFinishLabel } from './mtgFinish.js';
 import { pokemonVariantFields } from './pokemonVariants.js';
 
-export function printingLabel(printing) {
+export function printingNumber(printing) {
   if (!printing) return null;
-  const { game, setName, setId, number, printedTotal, rarity, finish } = printing;
+  const { game, setId, number, printedTotal } = printing;
 
   let id = null;
   if (game === 'pokemon' && number) {
@@ -38,7 +38,13 @@ export function printingLabel(printing) {
   } else if (setId) {
     id = String(setId).toUpperCase();
   }
+  return id;
+}
 
+export function printingLabel(printing) {
+  if (!printing) return null;
+  const { setName, rarity, finish } = printing;
+  const id = printingNumber(printing);
   const parts = [];
   if (setName && setName !== id) parts.push(setName);
   if (id) parts.push(id);

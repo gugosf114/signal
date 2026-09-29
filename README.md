@@ -1992,3 +1992,12 @@ The actual card was replayed offscreen against live catalogs. Lookup choices
 and the large viewer showed TG23/TG30 beside the same $3.71 price; Collection
 save/load retained the full label and the existing card identity. All 42
 focused checks and the production build pass. No GitHub checks were run.
+
+## Session log — 2026-09-29 Collection name and printed number
+
+Collection cards now show their printed identifier beside the name, using
+the same formatter as lookup and the large viewer: Pokémon TG23/TG30,
+Yu-Gi-Oh! L26D-ENS08, and Magic HOB 207. Button labels and titles include the
+identifier too. Long names and numbers wrap instead of being truncated.
+Rendered Collection checks covered all three games at 320px and 393px with
+no horizontal overflow. All 57 focused checks and the production build pass.

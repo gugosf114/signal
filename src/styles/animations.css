@@ -4150,10 +4150,10 @@
   font-size: 11px;
   color: var(--signal-text-secondary);
   line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
+.col-number { display: inline-block; max-width: 100%; margin-left: 0.3em; font-weight: 600; font-variant-numeric: tabular-nums; }
 .col-card-meta {
   display: flex;
   flex-direction: column;

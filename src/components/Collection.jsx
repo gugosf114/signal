@@ -24,7 +24,7 @@ import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
 import CollectionCurrencies from './CollectionCurrencies';
 import ScrollReveal from './ScrollReveal';
-import { printingIdentity, printingLabel } from '../services/printing';
+import { printingIdentity, printingLabel, printingNumber } from '../services/printing';
 import { normalizeCardRecord, stampCardPrice } from '../services/cardRecord';
 import { isExactScanTarget } from '../services/scanIdentity';
 import { refreshPrices } from '../services/refreshPrices';
@@ -364,7 +364,8 @@ export default function Collection({
                 type="button"
                 className="col-card card-shine-surface"
                 onClick={() => setViewing(card)}
-                title={`${card.name}${card.setName ? ` · ${card.setName}` : ''}`}
+                title={[card.name, printingNumber(card), card.setName].filter(Boolean).join(' · ')}
+                aria-label={['View ' + card.name, printingNumber(card)].filter(Boolean).join(' · ')}
               >
                 {card.imageUrl || card.imageLarge ? (
                   <><img src={card.imageUrl || card.imageLarge} alt={card.name} loading="lazy" /><CardShine card={card} /></>
@@ -383,7 +384,10 @@ export default function Collection({
                   onClick={() => setCards(addOne(card))}
                 >+</button>
               </div>
-              <div className="col-name">{card.name}</div>
+              <div className="col-name">
+                {card.name}
+                {printingNumber(card) && <span className="col-number">· {printingNumber(card)}</span>}
+              </div>
               <div className="col-card-meta">
                 <strong>{formatCollectionMoney(card.marketPrice)}</strong>
                 <span>{holdingMeta(card)}</span>
