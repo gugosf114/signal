@@ -41,6 +41,15 @@ function variantDetails(variant, form) {
 
 export function pokemonVariantRows(card, base = {}) {
   if (!Array.isArray(card?.variants_detailed) || !card.variants_detailed.length) return [];
+  base = {
+    game: 'pokemon', id: card.id, printingId: card.id, name: card.name,
+    number: card.localId, setId: card.set?.id, setName: card.set?.name,
+    setCode: card.set?.abbreviation?.official || card.set?.id,
+    rarity: card.rarity, source: 'tcgdex',
+    imageUrl: card.image ? `${card.image}/low.webp` : null,
+    imageLarge: card.image ? `${card.image}/high.webp` : null,
+    ...base,
+  };
   const rows = [];
   for (const variant of card.variants_detailed) {
     if (variant.languages?.length && !variant.languages.includes('en')) continue;
@@ -66,13 +75,20 @@ export function pokemonVariantRows(card, base = {}) {
       pokemonVariantKey: key,
       pokemonVariantLabel: label,
       pokemonPriceKey: chosen?.[0] || null,
+      pokemonVerifiedProductId: null,
+      pokemonProductBinding: null,
+      pokemonProductCheckedAt: null,
+      pokemonCatalogImageUrl: base.imageUrl || null,
+      pokemonCatalogImageLarge: base.imageLarge || base.imageUrl || null,
       tcgplayerProductId: id,
+      pokemonCatalogProductId: id,
       price, marketPrices: { [form]: price }, availableFinishes: [form],
       priceSource: price === null ? null : 'TCGplayer',
       priceScope: 'exact finish',
     });
   }
   return rows.map(row => ({ ...row,
+    pokemonProductCandidates: [...new Set(rows.map(other => other.tcgplayerProductId).filter(Boolean))],
     pokemonImageShared: rows.length > 1,
     pokemonProductImageShared: !!row.tcgplayerProductId && rows.filter(other => other.tcgplayerProductId === row.tcgplayerProductId).length > 1,
   }));
@@ -105,5 +121,12 @@ export function pokemonVariantFields(current = {}, fallback = {}) {
     pokemonPriceKey: source.pokemonPriceKey || null,
     pokemonImageShared: source.pokemonImageShared ?? null,
     pokemonProductImageShared: source.pokemonProductImageShared ?? null,
+    pokemonProductCandidates: Array.isArray(source.pokemonProductCandidates) ? source.pokemonProductCandidates : null,
+    pokemonVerifiedProductId: source.pokemonVerifiedProductId || null,
+    pokemonProductBinding: source.pokemonProductBinding || null,
+    pokemonCatalogProductId: source.pokemonCatalogProductId || null,
+    pokemonProductCheckedAt: source.pokemonProductCheckedAt || null,
+    pokemonCatalogImageUrl: source.pokemonCatalogImageUrl || null,
+    pokemonCatalogImageLarge: source.pokemonCatalogImageLarge || null,
   };
 }

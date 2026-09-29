@@ -13,9 +13,12 @@ import { fetchCardData } from './fetchCardData.js';
 import { pricePatchFromCardData } from './refreshPrices.js';
 import { addTcgplayerPrice } from './fetchTcgplayerPrice.js';
 import { resolveProductId, pickHistorySku } from './priceHistory.js';
+import { verifyPokemonProduct } from './pokemonProduct.js';
 
 // Reduced snapshot of https://api.tcgdex.net/v2/en/cards/sv08.5-074.
 const catalog = JSON.parse(readFileSync(new URL('./fixtures/pokemon-eevee-variants.json', import.meta.url)));
+const products = JSON.parse(readFileSync(new URL('./fixtures/pokemon-products.json', import.meta.url)));
+const verifyProduct = card => verifyPokemonProduct(card, { getProduct: async id => products[id] || null });
 const rows = () => expandFinishRows(tcgdexPokemonRow(catalog));
 const originalFetch = globalThis.fetch;
 const originalStorage = globalThis.localStorage;
@@ -65,28 +68,30 @@ test('ordinary Reverse retains its old collection key and clears a prior pattern
 });
 
 test('actual pattern photos use their exact product IDs; shared or missing photos stay labeled', async () => {
-  const [normal, reverse, poke, master, cosmos] = await Promise.all(rows().map(card => resolveCardProductImage(card, { checkImage: async () => true })));
+  const [normal, reverse, poke, master, cosmos] = await Promise.all(rows().map(card => resolveCardProductImage(card, { checkImage: async () => true, verifyProduct })));
   assert.match(poke.imageLarge, /610590\.jpg$/);
   assert.match(master.imageLarge, /610691\.jpg$/);
-  assert.equal(master.price, 14.73);
+  assert.equal(master.price, products[610691].marketPrice);
   assert.equal(sharedCardImageNote(master), null);
   assert.ok(sharedCardImageNote(normal));
   assert.ok(sharedCardImageNote(reverse));
   assert.ok(sharedCardImageNote(cosmos));
-  const failed = await resolveCardProductImage(rows()[3], { checkImage: async () => false });
+  const failed = await resolveCardProductImage(rows()[3], { checkImage: async () => false, verifyProduct });
   assert.equal(failed.imageLarge, rows()[3].imageLarge);
   assert.ok(sharedCardImageNote(failed));
 });
 
 test('refresh reads the selected pattern price, including a pattern sold as Holofoil', async () => {
   globalThis.fetch = async url => {
+    const productId = String(url).match(/\/product\/(\d+)\/details$/)?.[1];
+    if (productId) return response(products[productId]);
     assert.match(String(url), /tcgdex\.net\/v2\/en\/cards\/sv08\.5-074$/);
     return response(catalog);
   };
   const master = rows()[3];
   const data = await fetchCardData('Eevee', 'pokemon', { ...master, price: 99 });
-  assert.deepEqual(data.priceLines, ['Master Ball · Reverse Holo: $14.73 market']);
-  assert.equal(pricePatchFromCardData(data).en_price, '$14.73');
+  assert.deepEqual(data.priceLines, [`Master Ball · Reverse Holo: $${products[610691].marketPrice.toFixed(2)} market`]);
+  assert.equal(pricePatchFromCardData(data).en_price, `$${products[610691].marketPrice.toFixed(2)}`);
   assert.equal(data.pokemonVariantKey, master.pokemonVariantKey);
   const cosmos = await fetchCardData('Eevee', 'pokemon', rows()[4]);
   assert.equal(cosmos.priceLines, null);

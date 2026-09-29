@@ -1,4 +1,5 @@
 import { tcgplayerProductImageUrl } from './fetchTcgplayerPrice.js';
+import { verifyPokemonProduct, pokemonCatalogPhoto } from './pokemonProduct.js';
 
 const checks = new Map();
 function browserImageExists(url) {
@@ -22,11 +23,15 @@ function browserImageExists(url) {
   return promise;
 }
 
-// Use only the product ID supplied for this exact catalog printing. A name
-// search can return another treatment. This image lookup never changes price.
-export async function resolveMtgCardImage(card, { signal, checkImage = browserImageExists } = {}) {
+// Pokémon product IDs are verified against the physical version first.
+// Magic retains its Scryfall printing/finish mapping.
+export async function resolveMtgCardImage(card, { signal, checkImage = browserImageExists, verifyProduct = verifyPokemonProduct } = {}) {
   if (!card || !['mtg', 'pokemon'].includes(card.game)) return card;
   if (card.game === 'pokemon' && !card.pokemonVariantsResolved) return card;
+  if (card.game === 'pokemon') {
+    card = await verifyProduct(card, { signal });
+    if (!card.pokemonVerifiedProductId || card.pokemonVerifiedProductId !== card.tcgplayerProductId) return card;
+  }
   if (signal?.aborted) throw new DOMException('Image lookup cancelled.', 'AbortError');
   const id = card.game === 'pokemon' ? card.tcgplayerProductId
     : card.tcgplayerProductIds && Object.hasOwn(card.tcgplayerProductIds, card.form)
@@ -36,7 +41,7 @@ export async function resolveMtgCardImage(card, { signal, checkImage = browserIm
   if (!imageUrl) return card;
   const available = await checkImage(imageUrl).catch(() => false);
   if (signal?.aborted) throw new DOMException('Image lookup cancelled.', 'AbortError');
-  if (!available) return card;
+  if (!available) return card.game === 'pokemon' ? pokemonCatalogPhoto(card) : card;
   const forms = card.availableFinishes || [];
   const shared = card.tcgplayerProductIds
     ? forms.filter(form => card.tcgplayerProductIds[form] === id)

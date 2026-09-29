@@ -12,6 +12,7 @@ import { fetchWithTimeout } from './http.js';
 import { fetchCatalogueJSON } from './signalGateway.js';
 import { fetchTcgplayerPrice } from './fetchTcgplayerPrice.js';
 import { pokemonMarketForm } from './pokemonVariants.js';
+import { verifyPokemonProduct } from './pokemonProduct.js';
 
 const CACHE_KEY = 'signal_price_history_v1';
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -184,9 +185,12 @@ async function loadHistory(productId, range, signal) {
 }
 
 export async function resolveProductId(pin, signal) {
+  if (pin?.game === 'pokemon' && pin.pokemonVariantsResolved) {
+    const verified = await verifyPokemonProduct(pin, { signal });
+    return verified?.pokemonVerifiedProductId || null;
+  }
   const own = Number(pin?.tcgplayerProductId);
   if (Number.isInteger(own) && own > 0) return own;
-  if (pin?.game === 'pokemon' && pin.pokemonVariantsResolved) return null;
   const found = await fetchTcgplayerPrice(pin, signal).catch(() => null);
   const id = Number(found?.productId);
   return Number.isInteger(id) && id > 0 ? id : null;
@@ -194,6 +198,7 @@ export async function resolveProductId(pin, signal) {
 
 export async function fetchPriceHistory(pin, { signal, range = 'quarter', now = Date.now() } = {}) {
   if (!pin?.game) return null;
+  pin = await verifyPokemonProduct(pin, { signal });
   const productId = await resolveProductId(pin, signal);
   if (!productId) return null;
   const key = `${productId}:${pin.form || ''}:${range}`;

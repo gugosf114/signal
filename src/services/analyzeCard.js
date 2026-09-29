@@ -14,6 +14,7 @@ import {
   buildCardDataBlock,
 } from './fetchCardData';
 import { printingIdentity, toPrinting } from './printing';
+import { verifyPokemonProduct } from './pokemonProduct';
 import { fetchCommunity, communityBlock } from './fetchCommunity';
 import { fetchCreators, creatorsBlock } from './fetchCreators';
 import { fetchEbayListings, ebayBlock } from './fetchEbayListings';
@@ -128,7 +129,8 @@ GRADING ROI:
 }
 
 export async function analyzeCard(cardName, game = null, opts = {}) {
-  const pin = stampCardPrice(normalizeCardRecord(opts.pin || {}, { name: cardName, game }));
+  let pin = stampCardPrice(await verifyPokemonProduct(
+    normalizeCardRecord(opts.pin || {}, { name: cardName, game }), { signal: opts.signal }));
   if (!isExactScanTarget(game, pin)) {
     throw new Error('Choose one exact printing from the card list before running Full Signal.');
   }
@@ -150,6 +152,9 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   ]);
   if (printingIdentity(pin) && !cardData) {
     throw new Error('The exact printing could not be loaded. Pick it again from the catalogue and retry.');
+  }
+  if (cardData?.card && printingIdentity(cardData.card) === printingIdentity(pin)) {
+    pin = stampCardPrice(normalizeCardRecord({ ...pin, ...cardData.card }));
   }
   const dataBlock = buildCardDataBlock(cardData);
   const extraBlocks = [historyBlock(history), communityBlock(community), creatorsBlock(creators), ebayBlock(ebay), jpBlock(jp), catalystBlock(catalysts)].filter(Boolean);

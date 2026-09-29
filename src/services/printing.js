@@ -68,6 +68,10 @@ export function printingIdentity(pin) {
 // the user chose; `cardData` is the free-API pre-fetch.
 export function toPrinting(game, pin, cardData) {
   const src = cardData || {};
+  const updated = src.card;
+  if (pin?.game === 'pokemon' && updated?.game === 'pokemon'
+    && canonicalPokemonId(pin.id || pin.printingId) === canonicalPokemonId(updated.id || updated.printingId)
+    && pin.form === updated.form && pin.pokemonVariantKey === updated.pokemonVariantKey) pin = { ...pin, ...updated };
   const normalizedGame = game || src.game || pin?.game || null;
   const pinId = pin?.printingId || pin?.id || null;
   const sourceId = src.printingId || src.catalogId || null;

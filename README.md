@@ -1944,3 +1944,37 @@ explicitly unpriced. A live Magic replay returned only HOB 207 and its two
 finish prices. The name/number regression cases failed before the repair.
 
 All 375 JavaScript tests, 4 Python tests, and the production build pass.
+
+## Session log — 2026-09-29 verified Pokémon product prices and photos
+
+The correct Eevee SVP 173 choices were unpriced because detailed Pokémon
+records skipped the entire price fallback. Live TCGplayer records exposed
+another problem: TCGdex linked the standard and Pokémon Center variants to
+each other's product IDs. Their real product descriptions and photos proved
+the reversal. Simply removing the price guard would have swapped their prices.
+
+A shared resolver now checks the known product candidates against the game,
+name, set, collector number, physical treatment/stamp, and English finish
+SKUs. It chooses a unique verified product and binds its photo and price to
+that version. No card-specific ID swap or broad name-price guess is used.
+Dedicated products can supply their market price; products that combine
+Normal and Reverse keep the selected catalog finish price. Unknown or
+conflicting links stay unpriced and use catalog art.
+
+The verified fields survive scans, typed choices, reports, Collection, and
+price history. Old saved entries recover their candidates from the exact
+catalog record. Refresh applies corrected price, image, and product ID
+together. A change to the selected version invalidates the earlier binding.
+Product requests share a bounded five-minute cache.
+
+The live scanner replay showed standard Eevee at $9.44 with unstamped image
+610758 and Pokémon Center Eevee at $82.70 with stamped image 610757. Selecting
+each changed its small picture and price together; the large stamped image
+loaded at 734×1024. The lookup made two product-detail requests for both
+choices. Offscreen browser reads used a local mirror of Android's enabled
+native HTTP transport to reach the same live product endpoint.
+
+All 124 focused service checks and the production build pass, including
+reversed links, existing wrong prices/photos, mixed-finish prices, rejected
+product metadata, saved entries, report conversion, refresh, and history.
+GitHub checks were not run, per George's instruction.

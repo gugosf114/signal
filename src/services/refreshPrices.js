@@ -48,7 +48,7 @@ export async function refreshPrices(cardName, game, pin = null) {
       if (exactPatch) return withHistory({ ...exactPatch, tcgplayer_product_id: exactPatch.tcgplayer_product_id }, { ...pin, tcgplayerProductId: pin.tcgplayerProductId || exactPatch.tcgplayer_product_id });
     }
     const data = await fetchCardData(cardName, game, pin);
-    return withHistory(pricePatchFromCardData(data), pin);
+    return withHistory(pricePatchFromCardData(data), data?.card || pin);
   } catch {
     return null;
   }
@@ -69,11 +69,13 @@ export function pricePatchFromTcgplayer(data) {
 export function pricePatchFromCardData(data) {
   if (!data) return null;
   const checked = new Date().toISOString();
+  const record = data.card ? { card: data.card, tcgplayer_product_id: data.card.tcgplayerProductId } : {};
   if (data.priceScope === 'exact-print price unavailable') {
-    return { en_price: '', price_source: '', price_url: '', price_checked_at: checked };
+    return { ...record, en_price: '', price_source: '', price_url: '', price_checked_at: checked };
   }
   const en = headlinePrice(data.priceLines);
   return en ? {
+    ...record,
     en_price: en,
     price_source: data.priceSource || '',
     price_url: data.priceUrl || data.tcgplayerUrl || data.scryfallUri || '',

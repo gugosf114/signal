@@ -1,0 +1,108 @@
+{
+  "610429": {
+    "productId": 610429,
+    "productLineName": "Pokemon",
+    "productName": "Eevee",
+    "setName": "SV: Prismatic Evolutions",
+    "setCode": "PRE",
+    "sealed": false,
+    "marketPrice": 0.23,
+    "customAttributes": {
+      "number": "074/131"
+    },
+    "skus": [
+      {
+        "sku": 8489058,
+        "condition": "Near Mint",
+        "variant": "Normal",
+        "language": "English"
+      },
+      {
+        "sku": 8489063,
+        "condition": "Near Mint",
+        "variant": "Reverse Holofoil",
+        "language": "English"
+      }
+    ]
+  },
+  "610590": {
+    "productId": 610590,
+    "productLineName": "Pokemon",
+    "productName": "Eevee (Poke Ball Pattern)",
+    "setName": "SV: Prismatic Evolutions",
+    "setCode": "PRE",
+    "sealed": false,
+    "marketPrice": 1.34,
+    "customAttributes": {
+      "number": "074/131"
+    },
+    "skus": [
+      {
+        "sku": 8490098,
+        "condition": "Near Mint",
+        "variant": "Holofoil",
+        "language": "English"
+      }
+    ]
+  },
+  "610691": {
+    "productId": 610691,
+    "productLineName": "Pokemon",
+    "productName": "Eevee (Master Ball Pattern)",
+    "setName": "SV: Prismatic Evolutions",
+    "setCode": "PRE",
+    "sealed": false,
+    "marketPrice": 14.71,
+    "customAttributes": {
+      "number": "074/131"
+    },
+    "skus": [
+      {
+        "sku": 8490603,
+        "condition": "Near Mint",
+        "variant": "Holofoil",
+        "language": "English"
+      }
+    ]
+  },
+  "610757": {
+    "productId": 610757,
+    "productLineName": "Pokemon",
+    "productName": "Eevee - 173 (Pokemon Center Exclusive)",
+    "setName": "SV: Scarlet & Violet Promo Cards",
+    "setCode": "SVP",
+    "sealed": false,
+    "marketPrice": 82.7,
+    "customAttributes": {
+      "number": "173"
+    },
+    "skus": [
+      {
+        "sku": 8490975,
+        "condition": "Near Mint",
+        "variant": "Holofoil",
+        "language": "English"
+      }
+    ]
+  },
+  "610758": {
+    "productId": 610758,
+    "productLineName": "Pokemon",
+    "productName": "Eevee - 173",
+    "setName": "SV: Scarlet & Violet Promo Cards",
+    "setCode": "SVP",
+    "sealed": false,
+    "marketPrice": 9.44,
+    "customAttributes": {
+      "number": "173"
+    },
+    "skus": [
+      {
+        "sku": 8490980,
+        "condition": "Near Mint",
+        "variant": "Holofoil",
+        "language": "English"
+      }
+    ]
+  }
+}

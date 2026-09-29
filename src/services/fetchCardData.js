@@ -14,6 +14,7 @@ import { normalizeCardRecord } from './cardRecord.js';
 import { toTcgdexId } from './pokemonIds.js';
 import { mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
 import { selectedPokemonVariant, pokemonVariantFields } from './pokemonVariants.js';
+import { verifyPokemonProduct } from './pokemonProduct.js';
 
 // `pin` is the exact card record chosen by search, number lookup, camera,
 // upload, Trending, Recent, Watched, or Collection. A broad name is refused.
@@ -27,7 +28,7 @@ export async function fetchCardData(cardName, game, pin = null) {
     // name search can join the pin's set/number to another printing's price,
     // rarity, and set total. A dead pin is therefore a miss, not permission
     // to guess.
-    return cardDataFromPin(cardName, game, exactPin);
+    return cardDataFromPin(cardName, game, await verifyPokemonProduct(exactPin));
   } catch {
     return null;
   }
@@ -55,6 +56,7 @@ function cardDataFromPin(cardName, game, pin) {
     priceSource: hasPrice ? pin.priceSource : null,
     priceUrl: pin.priceUrl || null,
     imageUrl: pin.imageLarge || pin.imageUrl || null,
+    ...(pin.pokemonVariantsResolved ? { card: pin } : {}),
   };
 }
 
@@ -152,7 +154,7 @@ async function fetchTcgDexPokemonData(cardId, pin = null) {
   if (!res.ok) return null;
   const card = await res.json();
   if (!card?.id || !card?.name) return null;
-  const selected = pin?.pokemonVariantsResolved ? selectedPokemonVariant(card, pin) : null;
+  const selected = pin?.pokemonVariantsResolved ? await verifyPokemonProduct(selectedPokemonVariant(card, pin)) : null;
   if (pin?.pokemonVariantsResolved && !selected) return null;
   const priceLines = [];
   const labels = {
@@ -208,8 +210,10 @@ async function fetchTcgDexPokemonData(cardId, pin = null) {
     priceSource: 'TCGplayer',
     legalFormats,
     tcgplayerUrl: null,
-    imageUrl: pin?.imageLarge || pin?.imageUrl || (card.image ? `${card.image}/high.webp` : null),
-  }, pin);
+    priceUrl: selected?.priceUrl || null,
+    imageUrl: selected?.imageLarge || pin?.imageLarge || pin?.imageUrl || (card.image ? `${card.image}/high.webp` : null),
+    ...(selected ? { card: normalizeCardRecord({ ...pin, ...selected }) } : {}),
+  }, selected || pin);
 }
 
 const POKEMON_FORM_KEYS = {

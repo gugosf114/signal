@@ -4,6 +4,7 @@
 
 import { mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
 import { pokemonFinishLabel, pokemonVariantFields } from './pokemonVariants.js';
+import { canonicalPokemonId } from './pokemonIds.js';
 
 export const CARD_RECORD_VERSION = 1;
 export const CARD_PRICE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -258,14 +259,21 @@ export function stampCardPrice(card, now = Date.now()) {
 }
 
 export function cardPriceNeedsRefresh(card, now = Date.now()) {
+  if (card?.game === 'pokemon' && card.pokemonVariantsResolved && !card.pokemonProductCheckedAt) return true;
   if (Number(card?.priceLookupVersion) !== CARD_PRICE_LOOKUP_VERSION) return true;
   const checked = new Date(card?.priceCheckedAt || '').getTime();
   return !Number.isFinite(checked) || now - checked < 0 || now - checked > CARD_PRICE_TTL_MS;
 }
 
 export function applyCardPricePatch(card, patch) {
-  const current = normalizeCardRecord(card || {});
+  let current = normalizeCardRecord(card || {});
   if (!current || !patch || !Object.prototype.hasOwnProperty.call(patch, 'en_price')) return current;
+  const replacement = patch.card;
+  if (current.game === 'pokemon' && replacement?.game === 'pokemon'
+    && canonicalPokemonId(current.id || current.printingId) === canonicalPokemonId(replacement.id || replacement.printingId)
+    && current.form === replacement.form && current.pokemonVariantKey === replacement.pokemonVariantKey) {
+    current = normalizeCardRecord({ ...current, ...replacement });
+  }
   const price = cardPriceNumber(patch.en_price);
   const marketPrices = current.form
     ? { ...(current.marketPrices || {}), [current.form]: price }
@@ -280,6 +288,6 @@ export function applyCardPricePatch(card, patch) {
       : current.priceUrl,
     priceCheckedAt: patch.price_checked_at || new Date().toISOString(),
     priceLookupVersion: CARD_PRICE_LOOKUP_VERSION,
-    tcgplayerProductId: patch.tcgplayer_product_id || current.tcgplayerProductId,
+    tcgplayerProductId: Object.hasOwn(patch, 'tcgplayer_product_id') ? patch.tcgplayer_product_id : current.tcgplayerProductId,
   });
 }

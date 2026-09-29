@@ -6,6 +6,9 @@ import { mtgRow, tcgdexPokemonRow, expandFinishRows } from './fetchExpansions.js
 import { resolveCardProductImage } from './mtgCardImage.js';
 import { normalizeCardRecord } from './cardRecord.js';
 import { scannerMatchDetails } from './scannerMatch.js';
+import { verifyPokemonProduct } from './pokemonProduct.js';
+const products = JSON.parse(readFileSync(new URL('./fixtures/pokemon-products.json', import.meta.url)));
+const verifyProduct = card => verifyPokemonProduct(card, { getProduct: async id => products[id] || null });
 
 test('shared MTG picture shines only on the foil choice and keeps its own price', async () => {
   const rows = expandFinishRows(mtgRow({ id: 'shine-mountain', name: 'The Lonely Mountain',
@@ -22,7 +25,7 @@ test('shared MTG picture shines only on the foil choice and keeps its own price'
 test('real Pokemon pattern photos stay untouched; shared Reverse and Cosmos get a preview', async () => {
   const catalog = JSON.parse(readFileSync(new URL('./fixtures/pokemon-eevee-variants.json', import.meta.url)));
   const cards = await Promise.all(expandFinishRows(tcgdexPokemonRow(catalog))
-    .map(row => resolveCardProductImage(row, { checkImage: async () => true })));
+    .map(row => resolveCardProductImage(row, { checkImage: async () => true, verifyProduct })));
   const before = JSON.stringify(cards);
   assert.deepEqual(cards.map(cardShinePreview), [null, 'foil', null, null, 'foil']);
   assert.deepEqual(cards.map(row => cardShinePreview(normalizeCardRecord(row))), [null, 'foil', null, null, 'foil']);
