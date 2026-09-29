@@ -58,7 +58,8 @@ export function scannerMatchDisplayPrice(details = {}, candidateCount = 0) {
 export function scannerPrintingKey(card = {}) {
   const identity = card.tcgplayerProductId || card.printingId || card.id
     || [card.name, card.setName, card.number].filter(Boolean).join(':');
-  return [identity || 'unknown', card.form || 'normal', card.rarity || ''].join(':');
+  const basic = [identity || 'unknown', card.form || 'normal', card.rarity || ''].join(':');
+  return card.pokemonVariantKey ? `${basic}:${card.pokemonVariantKey}` : basic;
 }
 
 export function scannerBatchFormOptions(game, card = null) {

@@ -3,6 +3,7 @@
 // record before they can start a full Signal or be saved.
 
 import { mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
+import { pokemonFinishLabel, pokemonVariantFields } from './pokemonVariants.js';
 
 export const CARD_RECORD_VERSION = 1;
 export const CARD_PRICE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -103,10 +104,13 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
   const defaultFinish = game === 'mtg' && form === 'normal' ? 'Non-foil' : FINISH_LABELS[form];
   const rawPromoTypes = first(current.promoTypes, current.promo_types, prior.promoTypes, prior.promo_types);
   const promoTypes = rawPromoTypes === undefined ? null : mtgPromoTypes({ promoTypes: rawPromoTypes });
+  const pokemon = pokemonVariantFields(current, prior);
   const finish = game === 'yugioh'
     ? null
     : game === 'mtg'
       ? mtgFinishLabel({ promoTypes, finish: first(current.finish, prior.finish) }, form)
+      : game === 'pokemon' && pokemon.pokemonVariantsResolved
+        ? pokemonFinishLabel({ ...pokemon, form }, form)
       : clean(first(current.finish, prior.finish, defaultFinish)) || null;
   const marketPrices = cleanPrices(first(current.marketPrices, prior.marketPrices));
   const suppliedPrice = first(
@@ -147,6 +151,7 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
     form,
     finish,
     promoTypes,
+    ...pokemon,
     availableFinishes,
     imageUrl: clean(first(current.imageUrl, prior.imageUrl)) || null,
     imageLarge: clean(first(current.imageLarge, prior.imageLarge, current.imageUrl, prior.imageUrl)) || null,

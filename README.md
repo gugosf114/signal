@@ -1856,3 +1856,35 @@ and rendered result/viewer used real catalog records and TCGplayer images.
 The stale three-column layout assertions were updated for the previously
 requested wrapped two-column layout. The phone web bundle was updated and
 its index checksum verified.
+
+## Session log — 2026-09-29 Pokémon foil variants
+
+Pokémon matches now read TCGdex's detailed variants, including Poké Ball,
+Master Ball, Cosmos, named foil patterns, and stamps. Matches from the primary
+Pokémon catalog are enriched with the same detailed data. Typed searches open
+the full version list before selection; scan/upload matches retain all
+versions of the matching card. Both pages use the shared scanner.
+
+Each special version keeps a stable identity, label, exact marketplace ID,
+price, and image through Price Only, Full Signal, Collection save/load, and
+price refresh. Existing ordinary Normal/Holo/Reverse identities stay intact.
+TCGplayer's price bucket can differ from the physical finish: Master Ball is
+a reverse holo sold in its dedicated product's Holofoil bucket. Versions
+without USD pricing remain unpriced. A broad name search cannot replace them
+with the ordinary card's price or history.
+
+Exact-product photos use the catalog's verified TCGplayer links. Shared or
+missing variant photos retain the catalog fallback and a shared-photo note.
+The offscreen browser check used the real Eevee PRE 074 catalog response:
+five choices survived selection; Poké Ball and Master Ball switched to their
+own photos and prices; Cosmos retained an unavailable USD price. The enlarged
+Master Ball image loaded at 734×1024, and the 393px screen had no horizontal
+overflow. Typed search selected the same version once, without reopening its
+picker. This checked matching and rendering with recorded catalog input,
+not a new physical camera scan.
+
+All 362 JavaScript tests, 4 Python tests, and the production build pass.
+Eight new tests cover detailed prices, identities, collection/report survival,
+refresh/history selection, image fallbacks, primary-catalog enrichment, and
+more than eight variants. The phone's persistent web bundle was updated and
+its index checksum matched the build.

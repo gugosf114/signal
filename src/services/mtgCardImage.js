@@ -22,12 +22,14 @@ function browserImageExists(url) {
   return promise;
 }
 
-// Use only the product ID supplied for this exact Scryfall printing. A name
+// Use only the product ID supplied for this exact catalog printing. A name
 // search can return another treatment. This image lookup never changes price.
 export async function resolveMtgCardImage(card, { signal, checkImage = browserImageExists } = {}) {
-  if (!card || card.game !== 'mtg') return card;
+  if (!card || !['mtg', 'pokemon'].includes(card.game)) return card;
+  if (card.game === 'pokemon' && !card.pokemonVariantsResolved) return card;
   if (signal?.aborted) throw new DOMException('Image lookup cancelled.', 'AbortError');
-  const id = card.tcgplayerProductIds && Object.hasOwn(card.tcgplayerProductIds, card.form)
+  const id = card.game === 'pokemon' ? card.tcgplayerProductId
+    : card.tcgplayerProductIds && Object.hasOwn(card.tcgplayerProductIds, card.form)
     ? card.tcgplayerProductIds[card.form]
     : card.form === 'etched' && card.tcgplayerEtchedId ? card.tcgplayerEtchedId : card.tcgplayerProductId;
   const imageUrl = tcgplayerProductImageUrl(id);
@@ -47,5 +49,9 @@ export async function resolveMtgCardImage(card, { signal, checkImage = browserIm
     imageSource: 'tcgplayer',
     tcgplayerImageUrl: imageUrl,
     imageSharedFinishes: shared.length > 1 ? shared : [],
+    ...(card.game === 'pokemon' ? { pokemonImageShared: Boolean(card.pokemonProductImageShared) } : {}),
   };
 }
+
+// Both games use IDs provided by their catalog, never a name-only image match.
+export const resolveCardProductImage = resolveMtgCardImage;

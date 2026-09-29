@@ -30,6 +30,7 @@ export function mtgFinishLabel(card, form = card?.form) {
 }
 
 export function sharedCardImageNote(card) {
+  if (card?.game === 'pokemon') return card.pokemonImageShared ? 'Catalog photo shared by several versions.' : null;
   const forms = card?.imageSharedFinishes;
   if (!Array.isArray(forms) || forms.length < 2) return null;
   return `Photo shared by ${forms.map(form => mtgFinishLabel(card, form)).join(' and ')}.`;

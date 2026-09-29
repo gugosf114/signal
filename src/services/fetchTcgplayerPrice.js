@@ -225,6 +225,9 @@ export async function fetchTcgplayerPrice(printing, signal) {
 export async function addTcgplayerPrice(printing, signal, { requireProductId = false } = {}) {
   if (!printing) return printing;
   if (positiveNumber(printing.price) && (!requireProductId || printing.tcgplayerProductId)) return printing;
+  // Detailed Pokémon prices belong to the selected variant. A broad product
+  // search must not fill Cosmos or Master Ball with an ordinary card's price.
+  if (printing.game === 'pokemon' && printing.pokemonVariantsResolved) return printing;
   if (printing.game === 'mtg' && printing.form) {
     // One marketplace product can combine normal and foil SKUs. Its headline
     // price cannot replace a missing price for one of those finishes.

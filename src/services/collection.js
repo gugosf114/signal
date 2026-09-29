@@ -7,6 +7,7 @@ import { applyCardPricePatch, cardPriceNeedsRefresh, normalizeCardRecord, stampC
 import { isExactScanTarget } from './scanIdentity.js';
 import { printingIdentity } from './printing.js';
 import { mtgFinishLabel } from './mtgFinish.js';
+import { pokemonFinishLabel } from './pokemonVariants.js';
 import { tcgplayerProductImageUrl } from './fetchTcgplayerPrice.js';
 
 const KEY = 'signal_collection_v1';
@@ -72,12 +73,14 @@ export function collectionFormOptions(game, card = null) {
   const forms = [...new Set((listed.length ? listed : defaults)
     .map((form) => cleanFormForGame(key, form))
     .filter((form) => Object.prototype.hasOwnProperty.call(labels, form)))];
-  return forms.map((value) => ({ value, label: key === 'mtg' ? mtgFinishLabel(card, value) : labels[value] }));
+  return forms.map((value) => ({ value, label: key === 'mtg' ? mtgFinishLabel(card, value)
+    : key === 'pokemon' ? pokemonFinishLabel(card, value) : labels[value] }));
 }
 
 export function collectionFormLabel(game, form, card = null) {
   const key = String(game || '').toLowerCase();
   if (key === 'mtg') return mtgFinishLabel(card, cleanFormForGame(key, form));
+  if (key === 'pokemon') return pokemonFinishLabel(card, cleanFormForGame(key, form));
   return FORM_LABELS[key]?.[cleanFormForGame(key, form)] || '';
 }
 

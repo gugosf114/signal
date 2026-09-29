@@ -42,7 +42,7 @@ export async function refreshPrices(cardName, game, pin = null) {
     // Yu-Gi-Oh! printings even when TCGplayer has a live exact-product market
     // price. Use the same strict name + set + number + rarity selector as
     // search. It returns null rather than borrowing another printing's price.
-    if (['pokemon', 'yugioh'].includes(game) && pin) {
+    if (['pokemon', 'yugioh'].includes(game) && pin && !pin.pokemonVariantsResolved) {
       const tcgplayer = await fetchTcgplayerPrice(pin).catch(() => null);
       const exactPatch = pricePatchFromTcgplayer(tcgplayer);
       if (exactPatch) return withHistory({ ...exactPatch, tcgplayer_product_id: exactPatch.tcgplayer_product_id }, { ...pin, tcgplayerProductId: pin.tcgplayerProductId || exactPatch.tcgplayer_product_id });

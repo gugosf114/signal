@@ -13,6 +13,7 @@ import { isExactScanTarget } from './scanIdentity.js';
 import { normalizeCardRecord } from './cardRecord.js';
 import { toTcgdexId } from './pokemonIds.js';
 import { mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
+import { selectedPokemonVariant, pokemonVariantFields } from './pokemonVariants.js';
 
 // `pin` is the exact card record chosen by search, number lookup, camera,
 // upload, Trending, Recent, Watched, or Collection. A broad name is refused.
@@ -89,7 +90,7 @@ async function fetchPinned(pin) {
     if (pin.game === 'pokemon') {
       const id = pin.id || pin.catalogId || pin.printingId;
       if (!id) return null;
-      if (pin.source === 'tcgdex') return fetchTcgDexPokemonData(id, pin);
+      if (pin.source === 'tcgdex' || pin.pokemonVariantsResolved) return fetchTcgDexPokemonData(toTcgdexId(id), pin);
       try {
         const res = await retryFetch(`https://api.pokemontcg.io/v2/cards/${encodeURIComponent(id)}`);
         if (res.ok) {
@@ -151,6 +152,8 @@ async function fetchTcgDexPokemonData(cardId, pin = null) {
   if (!res.ok) return null;
   const card = await res.json();
   if (!card?.id || !card?.name) return null;
+  const selected = pin?.pokemonVariantsResolved ? selectedPokemonVariant(card, pin) : null;
+  if (pin?.pokemonVariantsResolved && !selected) return null;
   const priceLines = [];
   const labels = {
     normal: 'Normal',
@@ -169,6 +172,7 @@ async function fetchTcgDexPokemonData(cardId, pin = null) {
     unlimited_holo: ['unlimited-holofoil'],
   };
   for (const [variant, value] of Object.entries(card.pricing?.tcgplayer || {})) {
+    if (selected) break;
     const allowed = pin?.form ? formKeys[pin.form] || [] : null;
     if (allowed && !allowed.includes(variant)) continue;
     const market = Number(value?.marketPrice);
@@ -180,6 +184,7 @@ async function fetchTcgDexPokemonData(cardId, pin = null) {
     if (Number.isFinite(high) && high > 0) parts.push(`$${high.toFixed(2)} high`);
     priceLines.push(`${labels[variant] || variant}: ${parts.join(' / ')}`);
   }
+  if (selected?.price != null) priceLines.push(`${selected.finish}: $${selected.price.toFixed(2)} market`);
   const legalFormats = Object.entries(card.legal || {})
     .filter(([, value]) => String(value).toLowerCase() === 'legal')
     .map(([format]) => format);
@@ -195,13 +200,15 @@ async function fetchTcgDexPokemonData(cardId, pin = null) {
     printedTotal: card.set?.cardCount?.official || card.set?.cardCount?.total || null,
     rarity: card.rarity || null,
     form: pin?.form || null,
-    finish: pin?.finish || null,
+    finish: selected?.finish || pin?.finish || null,
+    ...pokemonVariantFields(selected || {}, pin || {}),
+    tcgplayerProductId: selected ? selected.tcgplayerProductId : pin?.tcgplayerProductId || null,
     priceLines: priceLines.length ? priceLines : null,
     priceScope: pin?.form ? (priceLines.length ? 'exact finish' : 'exact-print price unavailable') : null,
     priceSource: 'TCGplayer',
     legalFormats,
     tcgplayerUrl: null,
-    imageUrl: card.image ? `${card.image}/high.webp` : null,
+    imageUrl: pin?.imageLarge || pin?.imageUrl || (card.image ? `${card.image}/high.webp` : null),
   }, pin);
 }
 

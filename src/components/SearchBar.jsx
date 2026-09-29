@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { scanCardImage } from '../services/scanCardImage';
-import { looksLikeYgoPasscode, resolvePrintingOptions, suggestCards } from '../services/fetchExpansions';
+import { fetchPokemonVariantChoices, looksLikeYgoPasscode, resolvePrintingOptions, suggestCards } from '../services/fetchExpansions';
 import { looksLikeSetCode, lookupBySetCode } from '../services/lookupBySetCode';
 import { withScanKeepAlive } from '../services/scanKeepAlive';
 import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
@@ -9,7 +9,8 @@ import { scannerMatchDetails, scannerMatchMeta, scannerMatchPrice } from '../ser
 import CardScanner from './CardScanner';
 import { normalizeCardRecord, stampCardPrice } from '../services/cardRecord';
 import { isExactScanTarget } from '../services/scanIdentity';
-import { resolveMtgCardImage } from '../services/mtgCardImage';
+import { resolveCardProductImage } from '../services/mtgCardImage';
+import { canonicalPokemonId } from '../services/pokemonIds';
 
 // ─── Suggestions ─────────────────────────────────────────────────────────────
 // Typing "Charizard" and hitting Enter used to scan whatever printing the API
@@ -72,7 +73,7 @@ function QuickPriceResult({ card, onAdd, onDone }) {
 
 async function withResolvedCardImage(pin, fallbackCard = null) {
   if (!pin) return pin;
-  if (pin.game === 'mtg') return resolveMtgCardImage(pin);
+  if (['mtg', 'pokemon'].includes(pin.game)) return resolveCardProductImage(pin);
   const name = pin.name || fallbackCard?.name;
   const game = pin.game || fallbackCard?.game || null;
   const tcgplayerImage = pin.tcgplayerImageUrl || null;
@@ -123,6 +124,7 @@ export default function SearchBar({
   // result. The list stays shut until the user actually types something else.
   const quietFor = useRef(null);
   const scanSearchFor = useRef(null);
+  const pokemonFinishPicker = useRef(null);
 
   useEffect(() => {
     const q = query.trim();
@@ -191,12 +193,14 @@ export default function SearchBar({
   }, [photoMenuOpen]);
 
   const routeResolvedCard = async (pricedCard) => {
+    pokemonFinishPicker.current = null;
     const resolvedCard = stampCardPrice(normalizeCardRecord(await withResolvedCardImage(pricedCard)));
     if (!resolvedCard || !isExactScanTarget(resolvedCard.game, resolvedCard)) {
       throw new Error('Choose one exact printing before continuing.');
     }
     reqToken.current += 1;
     quietFor.current = resolvedCard.name;
+    setScanError(null);
     setSuggestions([]);
     setOpen(false);
     setActive(-1);
@@ -216,6 +220,24 @@ export default function SearchBar({
   const pick = async (card) => {
     setResolving(true);
     try {
+      if (card.game === 'pokemon') {
+        const key = canonicalPokemonId(card.catalogId || card.id || card.printingId);
+        if (pokemonFinishPicker.current !== key) {
+          const token = ++reqToken.current;
+          quietFor.current = query.trim();
+          const choices = await fetchPokemonVariantChoices(card);
+          if (token !== reqToken.current) return;
+          if (choices.length > 1) {
+            pokemonFinishPicker.current = key;
+            setSuggestions(choices);
+            setActive(-1);
+            setOpen(true);
+            setScanError('Choose the exact version of your card.');
+            return;
+          }
+          if (choices.length === 1) card = choices[0];
+        }
+      }
       const pricedCard = await addTcgplayerPrice(
         card,
         undefined,
@@ -337,7 +359,7 @@ export default function SearchBar({
         signal,
         { requireProductId: option.game === 'yugioh' },
       )));
-      const candidates = await Promise.all(priced.map(option => resolveMtgCardImage(option, { signal })));
+      const candidates = await Promise.all(priced.map(option => resolveCardProductImage(option, { signal })));
       return {
         card,
         pin: candidates.length === 1 && !candidates[0]?.requiresOwnerChoice
@@ -565,7 +587,7 @@ export default function SearchBar({
           className="signal-main-input"
           type="text"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setQuickResult(null); setScanError(null); }}
+          onChange={(e) => { pokemonFinishPicker.current = null; setQuery(e.target.value); setQuickResult(null); setScanError(null); }}
           onKeyDown={handleKeyDown}
           onFocus={() => { setFocused(true); if (suggestions.length) setOpen(true); }}
           onBlur={() => setFocused(false)}

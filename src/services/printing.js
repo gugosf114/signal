@@ -13,6 +13,7 @@
 
 import { canonicalPokemonId } from './pokemonIds.js';
 import { mtgFinishLabel } from './mtgFinish.js';
+import { pokemonVariantFields } from './pokemonVariants.js';
 
 export function printingLabel(printing) {
   if (!printing) return null;
@@ -59,7 +60,8 @@ export function printingIdentity(pin) {
   const rarity = pin.game === 'yugioh'
     ? String(pin.rarity || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
     : '';
-  return [identityBase, form, rarity].join('::');
+  const basic = [identityBase, form, rarity].join('::');
+  return pin.game === 'pokemon' && pin.pokemonVariantKey ? `${basic}::${pin.pokemonVariantKey}` : basic;
 }
 
 // Normalizes whatever we know about a printing into one shape. `pin` is a card
@@ -95,6 +97,7 @@ export function toPrinting(game, pin, cardData) {
       ? mtgFinishLabel({ promoTypes, finish: pin?.finish || src.finish }, pin?.form || src.form)
       : pin?.finish || src.finish || null,
     promoTypes,
+    ...pokemonVariantFields(pin || {}, mayEnrichPin ? src : {}),
     availableFinishes: pin?.availableFinishes || src.availableFinishes || null,
     marketPrices: pin?.marketPrices || src.marketPrices || null,
     price: pin?.price ?? src.price ?? null,

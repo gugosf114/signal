@@ -1,0 +1,134 @@
+{
+  "id": "sv08.5-074",
+  "name": "Eevee",
+  "localId": "074",
+  "rarity": "Common",
+  "image": "https://assets.tcgdex.net/en/sv/sv08.5/074",
+  "set": {
+    "id": "sv08.5",
+    "name": "Prismatic Evolutions",
+    "cardCount": {
+      "official": 131,
+      "total": 180
+    }
+  },
+  "variants": {
+    "firstEdition": false,
+    "holo": false,
+    "normal": true,
+    "reverse": true,
+    "wPromo": false
+  },
+  "pricing": {
+    "tcgplayer": {
+      "unit": "USD",
+      "reverse-holofoil": {
+        "productId": 610429,
+        "marketPrice": 0.26
+      },
+      "normal": {
+        "productId": 610429,
+        "marketPrice": 0.26
+      }
+    }
+  },
+  "variants_detailed": [
+    {
+      "type": "normal",
+      "size": "standard",
+      "thirdParty": {
+        "cardmarket": 805463,
+        "tcgplayer": 610429
+      },
+      "variantId": "endfynwn4n10gzq",
+      "pricing": {
+        "tcgplayer": {
+          "unit": "USD",
+          "reverse-holofoil": {
+            "productId": 610429,
+            "marketPrice": 0.26
+          },
+          "normal": {
+            "productId": 610429,
+            "marketPrice": 0.26
+          }
+        }
+      }
+    },
+    {
+      "type": "reverse",
+      "size": "standard",
+      "thirdParty": {
+        "cardmarket": 805463,
+        "tcgplayer": 610429
+      },
+      "variantId": "cm4kqul3x1bwlz1f",
+      "pricing": {
+        "tcgplayer": {
+          "unit": "USD",
+          "reverse-holofoil": {
+            "productId": 610429,
+            "marketPrice": 0.26
+          },
+          "normal": {
+            "productId": 610429,
+            "marketPrice": 0.26
+          }
+        }
+      }
+    },
+    {
+      "type": "reverse",
+      "size": "standard",
+      "foil": "pokeball",
+      "thirdParty": {
+        "cardmarket": 806514,
+        "tcgplayer": 610590
+      },
+      "variantId": "3739bbtj3i910y5ynn9xc6ryf",
+      "pricing": {
+        "tcgplayer": {
+          "unit": "USD",
+          "holofoil": {
+            "productId": 610590,
+            "marketPrice": 1.34
+          }
+        }
+      }
+    },
+    {
+      "type": "reverse",
+      "size": "standard",
+      "foil": "masterball",
+      "thirdParty": {
+        "cardmarket": 806515,
+        "tcgplayer": 610691
+      },
+      "variantId": "2asus05yghmpd1ud1sdmlq3as4e",
+      "pricing": {
+        "tcgplayer": {
+          "unit": "USD",
+          "holofoil": {
+            "productId": 610691,
+            "marketPrice": 14.73
+          }
+        }
+      }
+    },
+    {
+      "type": "reverse",
+      "size": "standard",
+      "foil": "cosmos",
+      "thirdParty": {
+        "cardmarket": 813897
+      },
+      "variantId": "3ts5hd5swdcuwzv63t639rp",
+      "pricing": {
+        "cardmarket": {
+          "unit": "EUR",
+          "avg30": 2.92
+        }
+      }
+    }
+  ]
+}

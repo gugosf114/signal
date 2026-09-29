@@ -9,6 +9,8 @@ import { looksLikeSetCode, lookupBySetCode } from './lookupBySetCode.js';
 import { fetchCatalogueJSON } from './signalGateway.js';
 import { baseTcgplayerName, searchTcgplayerProducts } from './fetchTcgplayerPrice.js';
 import { mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
+import { pokemonVariantRows } from './pokemonVariants.js';
+import { canonicalPokemonId, toTcgdexId } from './pokemonIds.js';
 
 const CACHE_KEY = 'signal_expansions_v3';
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -29,7 +31,8 @@ export function suggestionSearch(promise, timeoutMs = SUGGEST_TIMEOUT_MS) {
 export function cardBrowserRowKey(card) {
   const identity = card?.printingId || card?.id
     || [card?.name, card?.setName, card?.number].filter(Boolean).join(':');
-  return [card?.game || 'unknown', identity || 'unknown', card?.rarity || '', card?.form || ''].join(':');
+  const key = [card?.game || 'unknown', identity || 'unknown', card?.rarity || '', card?.form || ''].join(':');
+  return card?.pokemonVariantKey ? `${key}:${card.pokemonVariantKey}` : key;
 }
 
 export function normalizeCardBrowserResults(results, activeGame) {
@@ -75,6 +78,7 @@ function pokemonPrices(variants, readMarket) {
 }
 
 export function expandFinishRows(row) {
+  if (row?.game === 'pokemon' && row.pokemonVariants?.length) return row.pokemonVariants;
   if (!row || !['pokemon', 'mtg'].includes(row.game)) return row ? [row] : [];
   const definitions = row.game === 'pokemon' ? POKEMON_FINISHES : MTG_FINISHES;
   const prices = row.marketPrices || {};
@@ -393,7 +397,8 @@ export async function resolvePrintingOptions(input = {}) {
         || cardNumberEndsWith(number, wantedNumber);
       const setName = String(row.setName || '').trim().toLowerCase();
       const setId = String(row.setId || '').trim().toLowerCase();
-      const setMatches = !wantedSet || setName === wantedSet || setId === wantedSet
+      const setCode = String(row.setCode || '').trim().toLowerCase();
+      const setMatches = !wantedSet || setName === wantedSet || setId === wantedSet || setCode === wantedSet
         || setName.includes(wantedSet) || wantedSet.includes(setName);
       return numberMatches && setMatches;
     });
@@ -404,12 +409,13 @@ export async function resolvePrintingOptions(input = {}) {
     const choices = matches.length
       ? matches
       : (exactName.length ? exactName : (!wantedNumber ? pool : []));
-    const unique = [...new Map(choices.map((row) => [
-      `${row.printingId || row.id}:${row.form || 'normal'}`,
+    const detailed = input.game === 'pokemon' ? await hydratePokemonChoices(choices) : choices;
+    const unique = [...new Map(detailed.map((row) => [
+      `${row.printingId || row.id}:${row.form || 'normal'}:${row.pokemonVariantKey || ''}`,
       row,
     ])).values()];
     if (unique.length) {
-      const limited = unique.slice(0, 8);
+      const limited = input.game === 'pokemon' ? limitPokemonGroups(unique, matches.length ? Infinity : 8) : unique.slice(0, 8);
       return conflicted ? requireOwnerChoice(limited, 'code-conflict') : limited;
     }
   }
@@ -500,7 +506,7 @@ export function tcgdexPokemonRow(card, fallbackSet = null) {
   const images = tcgdexImages(card?.image);
   const { marketPrices, availableFinishes } = tcgdexPrices(card);
   const set = card?.set || fallbackSet || {};
-  return {
+  const row = {
     id: card?.id || null,
     printingId: card?.id || null,
     name: card?.name || '',
@@ -520,6 +526,8 @@ export function tcgdexPokemonRow(card, fallbackSet = null) {
     imageLarge: images.large,
     source: 'tcgdex',
   };
+  const detailed = pokemonVariantRows(card, row);
+  return detailed.length ? { ...row, pokemonVariants: detailed } : row;
 }
 
 function isTcgDexPhysicalSet(set, today) {
@@ -568,6 +576,44 @@ async function fetchTcgDexRecentSets() {
 async function fetchTcgDexPokemonCard(cardId) {
   const card = await getJSON(`${TCGDEX_BASE}/cards/${encodeURIComponent(cardId)}`, 2);
   return card ? expandFinishRows(tcgdexPokemonRow(card)) : [];
+}
+
+const pokemonVariantRequests = new Map();
+export async function fetchPokemonVariantChoices(card) {
+  if (card?.game !== 'pokemon') return card ? [card] : [];
+  const id = toTcgdexId(card.catalogId || card.id || card.printingId);
+  if (!id) return [card];
+  if (!pokemonVariantRequests.has(id)) {
+    if (pokemonVariantRequests.size >= 100) pokemonVariantRequests.delete(pokemonVariantRequests.keys().next().value);
+    const request = fetchTcgDexPokemonCard(id).catch(() => []);
+    pokemonVariantRequests.set(id, request);
+  }
+  const rows = await pokemonVariantRequests.get(id);
+  if (!rows.length) pokemonVariantRequests.delete(id);
+  return rows.length ? rows : [card];
+}
+
+async function hydratePokemonChoices(choices) {
+  const groups = new Map();
+  for (const row of choices) {
+    const id = canonicalPokemonId(row.id || row.printingId);
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(row);
+  }
+  return (await Promise.all([...groups.values()].map(async rows => {
+    const detailed = await fetchPokemonVariantChoices(rows[0]);
+    return detailed.some(row => row.pokemonVariantsResolved) ? detailed : rows;
+  }))).flat();
+}
+
+function limitPokemonGroups(rows, limit) {
+  const groups = new Set();
+  return rows.filter(row => {
+    const id = canonicalPokemonId(row.id || row.printingId);
+    if (!groups.has(id) && groups.size >= limit) return false;
+    groups.add(id);
+    return true;
+  });
 }
 
 async function fetchTcgDexSetCards(set, priceSort = null) {
