@@ -44,6 +44,7 @@ export function pokemonVariantRows(card, base = {}) {
   base = {
     game: 'pokemon', id: card.id, printingId: card.id, name: card.name,
     number: card.localId, setId: card.set?.id, setName: card.set?.name,
+    printedTotal: card.set?.cardCount?.official || null,
     setCode: card.set?.abbreviation?.official || card.set?.id,
     rarity: card.rarity, source: 'tcgdex',
     imageUrl: card.image ? `${card.image}/low.webp` : null,

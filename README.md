@@ -1978,3 +1978,17 @@ All 124 focused service checks and the production build pass, including
 reversed links, existing wrong prices/photos, mixed-finish prices, rejected
 product metadata, saved entries, report conversion, refresh, and history.
 GitHub checks were not run, per George's instruction.
+
+## Session log — 2026-09-29 complete printed card numbers
+
+Adventurer's Discovery displayed only TG23 because the scanner's text helper
+dropped numeric set totals. The shared Pokémon label also needed the gallery
+prefix on the denominator. It now displays TG23/TG30 and GG33/GG70, accepts
+already-complete numbers without repeating the denominator, and preserves the
+full denominator supplied by a verified product record. Variant records keep
+their set totals through refresh and report conversion.
+
+The actual card was replayed offscreen against live catalogs. Lookup choices
+and the large viewer showed TG23/TG30 beside the same $3.71 price; Collection
+save/load retained the full label and the existing card identity. All 42
+focused checks and the production build pass. No GitHub checks were run.

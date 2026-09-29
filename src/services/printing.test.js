@@ -25,6 +25,15 @@ describe('printingLabel', () => {
     );
   });
 
+  test('Pokemon gallery labels retain the full printed number without duplicate prefixes or fractions', () => {
+    for (const total of [30, '30', 'TG30']) {
+      assert.equal(printingLabel({ game: 'pokemon', number: 'TG23', printedTotal: total }), 'TG23/TG30');
+    }
+    assert.equal(printingLabel({ game: 'pokemon', number: 'GG33', printedTotal: 70 }), 'GG33/GG70');
+    assert.equal(printingLabel({ game: 'pokemon', number: 'TG23/TG30', printedTotal: 'TG30' }), 'TG23/TG30');
+    assert.equal(printingLabel({ game: 'pokemon', number: '173' }), '173');
+  });
+
   test('mtg pairs the set code with the collector number', () => {
     assert.equal(
       printingLabel({ game: 'mtg', setName: 'Limited Edition Alpha', setId: 'lea', number: '233', rarity: 'rare' }),

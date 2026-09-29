@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { expandFinishRows, mtgRow } from './fetchExpansions.js';
+import { expandFinishRows, mtgRow, tcgdexPokemonRow } from './fetchExpansions.js';
 import {
   createScannerBatchEntry,
   scannerBatchFormOptions,
@@ -13,6 +13,14 @@ import {
 } from './scannerMatch.js';
 
 describe('scanner match display', () => {
+  test('a gallery scan displays TG23/TG30 from the numeric catalog total', () => {
+    const [pin] = expandFinishRows(tcgdexPokemonRow({ id: 'swsh11tg-TG23', name: "Adventurer's Discovery", localId: 'TG23',
+      set: { id: 'swsh11tg', name: 'Lost Origin Trainer Gallery', cardCount: { official: 30, total: 30 } },
+      variants_detailed: [{ type: 'holo' }] }));
+    const details = scannerMatchDetails({ pin });
+    assert.equal(details.printedTotal, '30');
+    assert.match(scannerMatchMeta(details), /TG23\/TG30/);
+  });
   test('keeps Scryfall full-size art through finish selection for the large viewer', () => {
     const card = {
       id: 'mountain-207', name: 'The Lonely Mountain', set: 'hob',

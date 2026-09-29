@@ -21,7 +21,13 @@ export function printingLabel(printing) {
 
   let id = null;
   if (game === 'pokemon' && number) {
-    id = printedTotal ? `${number}/${printedTotal}` : String(number);
+    const printedNumber = String(number).trim();
+    let total = printedTotal ? String(printedTotal).trim() : '';
+    // Gallery sets use their prefix on BOTH sides: TG23/TG30, GG33/GG70.
+    // Some catalogs provide only the numeric set total; others give TG30.
+    const prefix = printedNumber.match(/^(TG|GG|RC|SV)\d+$/i)?.[1].toUpperCase();
+    if (prefix && /^\d+$/.test(total)) total = `${prefix}${total}`;
+    id = printedNumber.includes('/') || !total ? printedNumber : `${printedNumber}/${total}`;
   } else if (game === 'mtg' && number) {
     // The set code is the half people quote; without it a collector number is
     // ambiguous across twenty years of sets.

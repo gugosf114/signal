@@ -124,7 +124,10 @@ export async function verifyPokemonProduct(input, { signal, refresh = false, get
     ? (id === card.tcgplayerProductId && card.pokemonPriceKey === match.priceKey ? positive(card.price) : null)
     : positive(product.marketPrice);
   const image = `https://product-images.tcgplayer.com/${id}.jpg`;
+  const denominator = String(product.customAttributes?.number || product.number || '').split('/')[1]?.trim();
+  const printedTotal = denominator && /^[A-Z]*\d+$/i.test(denominator) ? denominator.toUpperCase() : card.printedTotal;
   return { ...card, tcgplayerProductId: id, pokemonVerifiedProductId: id, pokemonProductCheckedAt: checked,
+    printedTotal,
     pokemonProductBinding: binding({ ...card, tcgplayerProductId: id }),
     pokemonPriceKey: match.priceKey, pokemonProductImageShared: match.shared, pokemonImageShared: match.shared,
     priceCheckedAt: checked,

@@ -9,7 +9,7 @@ import { fetchCardData } from './fetchCardData.js';
 import { pricePatchFromCardData } from './refreshPrices.js';
 import { normalizeCardRecord, cardPriceNeedsRefresh, withCardRecord } from './cardRecord.js';
 import { addToCollection, loadCollection, applyCollectionPricePatch } from './collection.js';
-import { printingIdentity, toPrinting } from './printing.js';
+import { printingIdentity, printingLabel, toPrinting } from './printing.js';
 import { resolveProductId } from './priceHistory.js';
 
 const fixture = name => JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url)));
@@ -126,4 +126,21 @@ test('changing the physical version invalidates an earlier product verification'
     pokemonVariantLabel: stamped.pokemonVariantLabel, finish: stamped.finish }, { getProduct });
   assert.equal(changed.tcgplayerProductId, 610757);
   assert.equal(changed.price, 82.7);
+});
+
+test('a verified product keeps its full printed number through reports and collection storage', async () => {
+  const card = pokemonVariantRows({ id: 'swsh11tg-TG23', name: "Adventurer's Discovery", localId: 'TG23',
+    set: { id: 'swsh11tg', name: 'Lost Origin Trainer Gallery', cardCount: { official: 30 } },
+    variants_detailed: [{ type: 'holo', thirdParty: { tcgplayer: 284296 } }] })[0];
+  const verified = await verifyPokemonProduct(card, { getProduct: async () => ({ productId: 284296, productLineName: 'Pokemon',
+    productName: "Adventurer's Discovery", setName: 'Lost Origin Trainer Gallery', setCode: 'SWSH11',
+    customAttributes: { number: 'TG23/TG30' }, marketPrice: 3.71, skus: [{ language: 'English', variant: 'Holofoil' }] }) });
+  assert.equal(verified.printedTotal, 'TG30');
+  assert.equal(verified.number, 'TG23');
+  assert.equal(printingIdentity(verified), printingIdentity(card));
+  assert.match(printingLabel(toPrinting('pokemon', verified)), /TG23\/TG30/);
+  const store = new Map(); globalThis.localStorage = { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+  addToCollection(verified);
+  assert.match(printingLabel(loadCollection()[0]), /TG23\/TG30/);
+  assert.equal(loadCollection()[0].marketPrice, 3.71);
 });

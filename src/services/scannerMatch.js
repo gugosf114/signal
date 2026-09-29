@@ -27,7 +27,7 @@ export function scannerMatchDetails(match = {}) {
     setName: clean(source.setName) || clean(source.set) || clean(vision.set) || 'Set unknown',
     setId: clean(source.setId) || null,
     number: clean(source.number) || clean(source.setCode) || clean(vision.number) || clean(vision.passcode) || null,
-    printedTotal: clean(source.printedTotal) || null,
+    printedTotal: source.printedTotal == null ? null : String(source.printedTotal).trim() || null,
     rarity: clean(source.rarity) || null,
     finish: clean(source.finish) || null,
     form: source.form || 'normal',
