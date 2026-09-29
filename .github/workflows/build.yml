@@ -1,9 +1,8 @@
 name: Build
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
+  # George requested manual checks on 2026-09-29. See AGENTS.md.
+  workflow_dispatch:
 
 # The gateway only spends money for callers that present this token. It is a
 # repository secret so a CI-built APK can scan; a fork's pull request builds
