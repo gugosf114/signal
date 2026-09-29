@@ -108,6 +108,7 @@ test('primary catalog matches load full TCGdex variants and do not cut the list 
   for (let i = 0; i < 5; i++) many.variants_detailed.push({ type: 'reverse', foil: `test-pattern-${i}`, variantId: `test-${i}` });
   let detailsFetched = 0;
   globalThis.fetch = async url => {
+    if (String(url).includes('api.tcgdex.net/v2/en/cards?')) return response([]);
     if (String(url).includes('api.pokemontcg.io/v2/cards')) return response({ data: [{ id: 'sv8pt5-75', name: 'Eevee', number: '75', set: { id: 'sv8pt5', name: 'Prismatic Evolutions' }, tcgplayer: { prices: { normal: { market: 0.26 } } } }] });
     assert.match(String(url), /tcgdex\.net\/v2\/en\/cards\/sv08\.5-075$/);
     detailsFetched++;

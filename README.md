@@ -1914,3 +1914,33 @@ typed Price Only enlargement, Collection save/load, drag-controlled shine,
 reduced motion, and 393px/1280px widths were checked. A stale layout assertion
 was updated to accept the added image-container class while retaining its
 collection-button check.
+
+## Session log — 2026-09-29 printed-number lookup repair
+
+George's Eevee photo was read correctly at 11:44:13: the actual Gemini reply
+said Eevee, Scarlet & Violet Black Star Promos, and `SVPEN 173`. The lookup
+compared that whole string with catalog number `173`, searched only a capped
+name list, then returned unrelated Eevee printings. The exact catalog card
+already existed as `svp-173`. This was a matching failure, not an OCR failure.
+
+Pokémon and Magic scans now query the printed number before display limits.
+Printed set/language badges are separated from the number; zero padding and
+promo-set aliases are normalized while meaningful TG/GG/SWSH number prefixes
+remain distinct. Pokémon reads TCGdex's detailed versions first, validates
+the set (including official abbreviations) and printed total, then falls back
+to a number-filtered Pokémon TCG API query. Magic searches Scryfall by set and
+collector number and validates the read name, including either face of a
+double-faced card. A numbered miss now returns no unrelated-number choices,
+allowing the existing second reader to retry. Numberless manual choices still
+work. Yu-Gi-Oh!'s existing exact-code and passcode paths were verified.
+
+The recorded reader reply was replayed against live catalogs and the real
+scanner component, using George's saved native photo without another paid
+OCR call. It now returns only `svp-173` Holo and Pokémon Center Holo. The
+catalog lookup took 0.96 seconds; the offscreen result including real product
+image checks took 1.53 seconds. Both photos and numbers matched. This catalog
+currently supplies no USD prices for those two promo variants; they remain
+explicitly unpriced. A live Magic replay returned only HOB 207 and its two
+finish prices. The name/number regression cases failed before the repair.
+
+All 375 JavaScript tests, 4 Python tests, and the production build pass.

@@ -1,0 +1,105 @@
+{
+  "id": "svp-173",
+  "name": "Eevee",
+  "localId": "173",
+  "image": "https://assets.tcgdex.net/en/sv/svp/173",
+  "rarity": "Promo",
+  "set": {
+    "cardCount": {
+      "official": 225,
+      "total": 226
+    },
+    "id": "svp",
+    "name": "SVP Black Star Promos"
+  },
+  "variants": {
+    "firstEdition": false,
+    "holo": true,
+    "normal": false,
+    "reverse": false,
+    "wPromo": false
+  },
+  "variants_detailed": [
+    {
+      "type": "holo",
+      "size": "standard",
+      "thirdParty": {
+        "cardmarket": 805370,
+        "tcgplayer": 610757
+      },
+      "variantId": "jr7oetx1mqug9",
+      "pricing": {
+        "cardmarket": {
+          "updated": "2026-09-28T22:54:33.238Z",
+          "unit": "EUR",
+          "idProduct": 805370,
+          "avg": 19.17,
+          "low": 8,
+          "trend": 14.61,
+          "avg1": 16.11,
+          "avg7": 17.94,
+          "avg30": 19.34,
+          "avg-holo": null,
+          "low-holo": null,
+          "trend-holo": 0,
+          "avg1-holo": null,
+          "avg7-holo": null,
+          "avg30-holo": null
+        },
+        "tcgplayer": null
+      }
+    },
+    {
+      "type": "holo",
+      "size": "standard",
+      "stamp": [
+        "pokemon-center"
+      ],
+      "thirdParty": {
+        "cardmarket": 806407,
+        "tcgplayer": 610758
+      },
+      "variantId": "23hmnvtwdrrnjw8wxr5005pugcpk",
+      "pricing": {
+        "cardmarket": {
+          "updated": "2026-09-28T22:54:33.238Z",
+          "unit": "EUR",
+          "idProduct": 806407,
+          "avg": 122.43,
+          "low": 85,
+          "trend": 147.83,
+          "avg1": 142.48,
+          "avg7": 113.39,
+          "avg30": 148.82,
+          "avg-holo": null,
+          "low-holo": null,
+          "trend-holo": 0,
+          "avg1-holo": null,
+          "avg7-holo": null,
+          "avg30-holo": null
+        },
+        "tcgplayer": null
+      }
+    }
+  ],
+  "pricing": {
+    "cardmarket": {
+      "updated": "2026-09-28T22:54:33.238Z",
+      "unit": "EUR",
+      "idProduct": 805370,
+      "avg": 19.17,
+      "low": 8,
+      "trend": 14.61,
+      "avg1": 16.11,
+      "avg7": 17.94,
+      "avg30": 19.34,
+      "avg-holo": null,
+      "low-holo": null,
+      "trend-holo": 0,
+      "avg1-holo": null,
+      "avg7-holo": null,
+      "avg30-holo": null
+    },
+    "tcgplayer": null
+  }
+}

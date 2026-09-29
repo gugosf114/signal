@@ -11,6 +11,7 @@ import { baseTcgplayerName, searchTcgplayerProducts } from './fetchTcgplayerPric
 import { mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
 import { pokemonVariantRows } from './pokemonVariants.js';
 import { canonicalPokemonId, toTcgdexId } from './pokemonIds.js';
+import { scannedPrintingTarget, sameCollectorNumber, scannedSetMatches } from './printedIdentity.js';
 
 const CACHE_KEY = 'signal_expansions_v3';
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -385,30 +386,22 @@ export async function resolvePrintingOptions(input = {}) {
   }
 
   if (input.game === 'pokemon' || input.game === 'mtg') {
+    const target = scannedPrintingTarget(input);
+    // The catalog must search the printed number before any display limit.
+    // A miss lets the second reader retry; unrelated numbers aren't choices.
+    if (target.number) return resolveNumberedPrintingOptions(input, target);
     const rows = await searchCardsByName(input.game, name, null).catch(() => []);
     const exactName = rows.filter((row) => String(row.name || '').trim().toLowerCase() === name.toLowerCase());
     const pool = exactName.length ? exactName : rows;
-    const wantedNumber = String(input.number || '').split('/')[0].trim().toLowerCase();
-    const rawSet = String(input.set || '').trim().toLowerCase();
-    const wantedSet = /unknown|unable|unreadable|not (?:clear|visible)/i.test(rawSet) ? '' : rawSet;
-    const matches = pool.filter((row) => {
-      const number = String(row.number || '').trim().toLowerCase();
-      const numberMatches = !wantedNumber || number === wantedNumber
-        || cardNumberEndsWith(number, wantedNumber);
-      const setName = String(row.setName || '').trim().toLowerCase();
-      const setId = String(row.setId || '').trim().toLowerCase();
-      const setCode = String(row.setCode || '').trim().toLowerCase();
-      const setMatches = !wantedSet || setName === wantedSet || setId === wantedSet || setCode === wantedSet
-        || setName.includes(wantedSet) || wantedSet.includes(setName);
-      return numberMatches && setMatches;
-    });
+    const wantedSet = target.set;
+    const matches = pool.filter(row => scannedSetMatches(row, wantedSet));
     // Vision's set and number are hints until the catalog confirms them. When
     // they conflict but the printed name is exact, show exact-name rows and
     // require a human choice. Never silently replace the bad code with a card.
-    const conflicted = !matches.length && Boolean(wantedNumber || wantedSet);
+    const conflicted = !matches.length && Boolean(wantedSet);
     const choices = matches.length
       ? matches
-      : (exactName.length ? exactName : (!wantedNumber ? pool : []));
+      : (exactName.length ? exactName : pool);
     const detailed = input.game === 'pokemon' ? await hydratePokemonChoices(choices) : choices;
     const unique = [...new Map(detailed.map((row) => [
       `${row.printingId || row.id}:${row.form || 'normal'}:${row.pokemonVariantKey || ''}`,
@@ -485,6 +478,52 @@ async function getJSON(url, tries = 3) {
 }
 
 const TCGDEX_BASE = 'https://api.tcgdex.net/v2/en';
+
+const quotedSearch = value => `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+
+function scannedNameMatches(row, name) {
+  return String(row.name || '').split('//').some(face => namesCompatibleForCode(name, face.trim()));
+}
+
+function exactScannedRows(rows, input, target) {
+  return rows.filter(row => scannedNameMatches(row, input.name)
+    && sameCollectorNumber(row.number, target.number)
+    && scannedSetMatches(row, target.set)
+    && (input.game !== 'pokemon' || !target.total || !row.printedTotal || Number(row.printedTotal) === target.total));
+}
+
+async function resolveNumberedPrintingOptions(input, target) {
+  if (input.game === 'mtg') {
+    const scope = target.set ? `set:${quotedSearch(target.set)}` : `!${quotedSearch(input.name)}`;
+    const query = `${scope} cn:${target.number} game:paper`;
+    const data = await getJSON(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints`).catch(() => null);
+    return exactScannedRows((data?.data || []).flatMap(card => expandFinishRows(mtgRow(card))), input, target);
+  }
+
+  // TCGdex already supplies the detailed physical variants. Try its small
+  // numbered query first, instead of waiting on the older name catalogue.
+  // Search the numeric part of prefixed numbers too: its substring filter
+  // doesn't equate SWSH42 with SWSH042. Exact comparison below keeps them safe.
+  const lookupNumber = target.number.replace(/^[A-Z]+(?=\d)/, '');
+  const listed = await getJSON(`${TCGDEX_BASE}/cards?name=${encodeURIComponent(input.name)}&localId=${encodeURIComponent(lookupNumber)}`, 2).catch(() => null);
+  // TCGdex's filter is a substring match: 74 can also return 174 or SM174.
+  const candidates = (Array.isArray(listed) ? listed : []).filter(card => scannedNameMatches(card, input.name) && sameCollectorNumber(card.localId, target.number));
+  const rows = (await Promise.all(candidates.map(card => fetchTcgDexPokemonCard(card.id).catch(() => [])))).flat();
+  const sets = new Map();
+  const withSetCodes = await Promise.all(rows.map(async row => {
+    if (!target.set || scannedSetMatches(row, target.set) || !row.setId) return row;
+    if (!sets.has(row.setId)) sets.set(row.setId, getJSON(`${TCGDEX_BASE}/sets/${encodeURIComponent(row.setId)}`, 1).catch(() => null));
+    const set = await sets.get(row.setId);
+    return { ...row, setCode: set?.abbreviation?.official || row.setCode };
+  }));
+  const detailed = exactScannedRows(withSetCodes, input, target);
+  if (detailed.length) return detailed;
+
+  const query = `name:${quotedSearch(input.name)} number:${quotedSearch(target.number)}`;
+  const primary = await getJSON(`https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}&pageSize=250`, 2).catch(() => null);
+  const matches = exactScannedRows((primary?.data || []).flatMap(card => expandFinishRows(pokemonRow(card))), input, target);
+  return matches.length ? hydratePokemonChoices(matches) : [];
+}
 
 function tcgdexImages(base) {
   return {

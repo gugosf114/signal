@@ -311,7 +311,7 @@ describe('camera printing resolution', () => {
     ]);
   });
 
-  test('a wrong Magic collector number returns exact-name choices without auto-picking', async () => {
+  test('a wrong Magic collector number leaves a miss for the second reader to retry', async () => {
     const card = {
       id: 'nick-25', name: 'Nick Fury, Agent of S.H.I.E.L.D.', set: 'msh',
       set_name: 'Marvel Super Heroes', collector_number: '25', rarity: 'rare',
@@ -332,9 +332,7 @@ describe('camera printing resolution', () => {
       name: 'Nick Fury, Agent of S.H.I.E.L.D.', game: 'mtg',
       set: 'Marvel Super Heroes', number: '125',
     });
-    assert.equal(options.length, 1);
-    assert.equal(options[0].number, '25');
-    assert.equal(options[0].requiresOwnerChoice, true);
+    assert.deepEqual(options, []);
   });
 
   test('one bad code letter cannot turn Chaos Magical Hats into an unrelated card', async () => {
