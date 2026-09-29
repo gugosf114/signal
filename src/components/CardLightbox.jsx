@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import CardShine from './CardShine';
+import { cardShinePreview } from '../services/cardShine';
 
 // ─── Card viewer ─────────────────────────────────────────────────────────────
 // Move the original image: drag to turn it, pinch or double-tap to zoom.
@@ -25,7 +27,7 @@ const TAP_SLOP = 8;             // px of travel still counted as a tap, not a dr
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, cardMeta = null, onScan, scanLabel = 'Scan this card', onRemove, lockScroll = true }) {
+export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, cardMeta = null, card = null, onScan, scanLabel = 'Scan this card', onRemove, lockScroll = true }) {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [settling, setSettling] = useState(false);
@@ -192,7 +194,10 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
       </button>
 
       {cardName && <div className="cl-name">{cardName}</div>}
-      {cardMeta && <div className="cl-meta">{cardMeta}</div>}
+      {(cardMeta || cardShinePreview(card)) && <div className="cl-meta">
+        {cardMeta}
+        {imageUrl && cardShinePreview(card) && <span className="cl-shine-label">Shine preview</span>}
+      </div>}
 
       <div
         className="cl-stage"
@@ -203,14 +208,17 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
         onPointerCancel={endPointer}
       >
         <div
-          className="cl-card"
+          className="cl-card card-shine-surface"
           style={{
             transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(${scale})`,
             transition,
           }}
         >
           {imageUrl ? (
-            <img src={imageUrl} alt={cardName || ''} className="cl-img" draggable={false} />
+            <>
+              <img src={imageUrl} alt={cardName || ''} className="cl-img" draggable={false} />
+              <CardShine card={card} follow={moved} tilt={tilt} />
+            </>
           ) : (
             <div className="cl-placeholder">?</div>
           )}

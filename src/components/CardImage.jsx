@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCardImage } from '../services/fetchCardImage';
+import CardShine from './CardShine';
 
 export default function CardImage({ cardName, game, pin = null, size = 200, glowColor = '#C44040', onLoad, onClick }) {
   const [imageUrl, setImageUrl] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const pinKey = [pin?.printingId || pin?.number || pin?.setId || pin?.id || '', pin?.form || '', pin?.scanImagePath || ''].join(':');
+  const pinKey = [pin?.printingId || pin?.number || pin?.setId || pin?.id || '', pin?.form || '', pin?.pokemonVariantKey || '', pin?.imageLarge || pin?.imageUrl || '', pin?.scanImagePath || ''].join(':');
 
   useEffect(() => {
     if (!cardName) return;
@@ -53,7 +54,7 @@ export default function CardImage({ cardName, game, pin = null, size = 200, glow
   return (
     <Wrapper
       type={onClick ? 'button' : undefined}
-      className="card-image-reveal"
+      className="card-image-reveal card-shine-surface"
       style={{ position: 'relative', flexShrink: 0, cursor: onClick ? 'zoom-in' : 'default', padding: 0, border: 'none', background: 'transparent' }}
       onClick={onClick}
       title={onClick ? 'Open card viewer' : undefined}
@@ -89,6 +90,7 @@ export default function CardImage({ cardName, game, pin = null, size = 200, glow
           setError(true);
         }}
       />
+      {loaded && <CardShine card={pin} />}
     </Wrapper>
   );
 }

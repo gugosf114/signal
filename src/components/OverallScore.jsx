@@ -356,6 +356,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
       </div>
 
       <CardLightbox
+        card={exactCard}
         isOpen={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
         imageUrl={cardImageUrl}

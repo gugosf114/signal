@@ -7,6 +7,9 @@ import { addTcgplayerPrice } from '../services/fetchTcgplayerPrice';
 import { fetchCardImage } from '../services/fetchCardImage';
 import { scannerMatchDetails, scannerMatchMeta, scannerMatchPrice } from '../services/scannerMatch';
 import CardScanner from './CardScanner';
+import CardLightbox from './CardLightbox';
+import CardShine from './CardShine';
+import { cardShinePreview } from '../services/cardShine';
 import { normalizeCardRecord, stampCardPrice } from '../services/cardRecord';
 import { isExactScanTarget } from '../services/scanIdentity';
 import { resolveCardProductImage } from '../services/mtgCardImage';
@@ -45,6 +48,7 @@ function LookupModeToggle({ value, onToggle, disabled }) {
 }
 
 function QuickPriceResult({ card, onAdd, onDone }) {
+  const [viewerOpen, setViewerOpen] = useState(false);
   const details = scannerMatchDetails({ card, pin: card });
   return (
     <section className="quick-price-result" aria-label="Price lookup complete" aria-live="polite">
@@ -54,12 +58,15 @@ function QuickPriceResult({ card, onAdd, onDone }) {
       </div>
       <div className="quick-price-card">
         {details.imageUrl
-          ? <img src={details.imageUrl} alt={details.name} />
+          ? <button type="button" className="quick-price-image card-shine-surface" aria-label={`Enlarge ${details.name}`} aria-haspopup="dialog" onClick={() => setViewerOpen(true)}>
+              <img src={details.imageUrl} alt={details.name} /><CardShine card={card} />
+            </button>
           : <span className="quick-price-noart" aria-hidden>?</span>}
         <div>
           <strong>{details.name}</strong>
           <span>{details.gameLabel}</span>
           <small>{scannerMatchMeta(details)}{details.priceSource ? ` · ${details.priceSource}` : ''}</small>
+          {cardShinePreview(card) && <small>Shine preview</small>}
         </div>
         <b>{scannerMatchPrice(details)}</b>
       </div>
@@ -67,6 +74,9 @@ function QuickPriceResult({ card, onAdd, onDone }) {
         {onAdd && <button type="button" className="quick-price-add" onClick={onAdd}>Add to collection</button>}
         <button type="button" className="quick-price-done" onClick={onDone}>Done · Price only</button>
       </div>
+      <CardLightbox isOpen={viewerOpen} onClose={() => setViewerOpen(false)} card={card}
+        imageUrl={details.imageLarge || details.imageUrl} cardName={details.name}
+        cardMeta={[scannerMatchMeta(details), scannerMatchPrice(details), details.priceSource].filter(Boolean).join(' · ')} />
     </section>
   );
 }

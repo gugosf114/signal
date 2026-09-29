@@ -33,6 +33,18 @@ const notFound = () => ({ ok: false, status: 404, json: async () => ({}) });
 
 const { fetchCardImage, officialArtNumber } = await import('./fetchCardImage.js');
 
+test('same-number foil variants and upgraded photos keep their exact supplied image', async () => {
+  const base = { id: 'shine-image-1', printingId: 'shine-image-1', form: 'reverse' };
+  const poke = { ...base, pokemonVariantKey: 'pokeball', imageLarge: 'https://example.com/poke.jpg' };
+  const master = { ...base, pokemonVariantKey: 'masterball', imageLarge: 'https://example.com/master.jpg' };
+  assert.equal(await fetchCardImage('Eevee shine cache', 'pokemon', poke), poke.imageLarge);
+  assert.equal(await fetchCardImage('Eevee shine cache', 'pokemon', master), master.imageLarge);
+  const upgraded = { ...master, imageLarge: 'https://example.com/master-new.jpg' };
+  assert.equal(await fetchCardImage('Eevee shine cache', 'pokemon', upgraded), upgraded.imageLarge);
+  const mtg = { id: 'shine-image-2', form: 'foil', imageLarge: 'https://example.com/mtg-foil.jpg' };
+  assert.equal(await fetchCardImage('Mountain shine cache', 'mtg', mtg), mtg.imageLarge);
+});
+
 describe('fetchCardImage cache', () => {
   beforeEach(() => {
     store = {};

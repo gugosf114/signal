@@ -18,6 +18,7 @@ import {
 } from '../services/fetchTcgplayerPrice';
 import { fetchCardImage } from '../services/fetchCardImage';
 import CardLightbox from './CardLightbox';
+import CardShine from './CardShine';
 import { sharedCardImageNote } from '../services/mtgFinish';
 import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
@@ -361,12 +362,12 @@ export default function Collection({
             <div className="col-cell" key={cardKey(card)}>
               <button
                 type="button"
-                className="col-card"
+                className="col-card card-shine-surface"
                 onClick={() => setViewing(card)}
                 title={`${card.name}${card.setName ? ` · ${card.setName}` : ''}`}
               >
                 {card.imageUrl || card.imageLarge ? (
-                  <img src={card.imageUrl || card.imageLarge} alt={card.name} loading="lazy" />
+                  <><img src={card.imageUrl || card.imageLarge} alt={card.name} loading="lazy" /><CardShine card={card} /></>
                 ) : <span className="col-noart">{card.name}</span>}
               </button>
               <div className="col-count-control" role="group" aria-label={`Quantity for ${card.name}`}>
@@ -410,6 +411,7 @@ export default function Collection({
         onClose={() => setViewing(null)}
         imageUrl={viewing?.imageLarge || viewing?.imageUrl}
         cardName={viewing?.name}
+        card={viewing}
         cardMeta={viewing ? [
           printingLabel(viewing),
           sharedCardImageNote(viewing),

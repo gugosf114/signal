@@ -1888,3 +1888,29 @@ Eight new tests cover detailed prices, identities, collection/report survival,
 refresh/history selection, image fallbacks, primary-catalog enrichment, and
 more than eight variants. The phone's persistent web bundle was updated and
 its index checksum matched the build.
+
+## Session log — 2026-09-29 foil shine previews
+
+George authorized a visual shine effect where a distinct foil photo is
+missing. A shared display rule now adds a light sweep to foil/reverse-holo
+catalog fallbacks, with a silver sweep for etched finishes. Non-foil choices
+and resolved distinct product photos keep their original appearance. The
+large viewer labels the effect "Shine preview" and moves the light with the
+existing drag gesture. Reduced-motion mode disables automatic movement.
+
+Both scanner entry points, Price Only results, Collection cards, and the
+full-report card use the selected record. Price Only thumbnails now open the
+same large viewer. The effect does not alter card identity, finish, price,
+or stored image data. Missing prices remain unavailable. The image cache
+also distinguishes Pokémon patterns and changed exact-photo URLs, and MTG
+reports retain supplied full-size product pictures.
+
+All 367 JavaScript tests, 4 Python tests, and the production build pass.
+Offscreen checks used recorded live Eevee and The Lonely Mountain catalog
+data plus actual product images. Normal cards stayed plain; shared foil
+photos received the preview; Poké Ball/Master Ball and the resolved Surge
+Foil photo stayed unmodified. Prices followed each selection. Scanner,
+typed Price Only enlargement, Collection save/load, drag-controlled shine,
+reduced motion, and 393px/1280px widths were checked. A stale layout assertion
+was updated to accept the added image-container class while retaining its
+collection-button check.

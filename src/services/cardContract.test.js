@@ -81,7 +81,7 @@ describe('every card door uses one exact record', () => {
     assert.match(sources.watched, /onSelect\(card\.name, card\.game, \{ pin: card\.pin \|\| null \}\)/);
     assert.doesNotMatch(sources.watched, /flexDirection: 'column'/);
 
-    assert.match(sources.collection, /className="col-card"/);
+    assert.match(sources.collection, /className="col-card(?:\s[^"]*)?"/);
     assert.doesNotMatch(sources.collection, /className="col-printing"/);
     assert.match(sources.collection, /onLookup\(card\.name, card\.game, \{ pin: card \}\)/);
 

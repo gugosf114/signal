@@ -3,6 +3,7 @@ import { drawCameraFrame } from '../services/cameraCanvas';
 import { computeVideoCrop } from '../services/scannerCrop';
 import { prepareCardPhoto } from '../services/prepareCardPhoto';
 import CardLightbox from './CardLightbox';
+import CardShine from './CardShine';
 import {
   cameraTorchSupported,
   focusCameraTrack,
@@ -614,11 +615,11 @@ const CardScanner = forwardRef(function CardScanner({
               {matchImageUrl
                 ? <button
                     type="button"
-                    className="live-match-image"
+                    className="live-match-image card-shine-surface"
                     aria-label={`Enlarge ${details.name}`}
                     aria-haspopup="dialog"
                     onClick={() => setViewerOpen(true)}
-                  ><img src={matchImageUrl} alt={details.name} /></button>
+                  ><img src={matchImageUrl} alt={details.name} /><CardShine card={match.pin} /></button>
                 : <span className="live-match-art" aria-hidden />}
               <div>
                 <strong>{details.name}</strong>
@@ -793,7 +794,8 @@ const CardScanner = forwardRef(function CardScanner({
         onClose={() => setViewerOpen(false)}
         imageUrl={viewerImageUrl}
         cardName={details.name}
-        cardMeta={[scannerMatchMeta(details), scannerMatchDisplayPrice(details, candidates.length), details.imageNote].filter(Boolean).join(' · ')}
+        card={match?.pin}
+        cardMeta={[scannerMatchMeta(details), scannerMatchDisplayPrice(details, candidates.length)].filter(Boolean).join(' · ')}
       />
     </div>
   );

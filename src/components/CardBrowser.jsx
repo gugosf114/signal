@@ -431,6 +431,7 @@ export default function CardBrowser({
         onClose={() => setViewing(null)}
         imageUrl={viewing?.imageLarge || viewing?.imageUrl}
         cardName={viewing?.name}
+        card={viewing}
         cardMeta={viewing ? [printingLabel(viewing), cardPriceLabel(viewing), viewing.priceSource].filter(Boolean).join(' · ') : null}
         scanLabel={actionLabel}
         onScan={() => {

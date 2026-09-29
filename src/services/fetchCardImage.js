@@ -55,7 +55,11 @@ function imgKey(name, game, pin) {
   const rarity = pin?.rarity || '';
   const form = pin?.form || '';
   const scan = pin?.scanImagePath ? 'scan' : '';
-  return `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}::${identity}::${rarity}::${form}::${scan}`;
+  const base = `${(game || 'auto').toLowerCase()}::${String(name || '').trim().toLowerCase()}::${identity}::${rarity}::${form}::${scan}`;
+  // Several Pokémon patterns share one catalog ID and the same "reverse"
+  // form. A new exact photo must not reuse another pattern's cached image.
+  return pin?.pokemonVariantKey || pin?.imageLarge || pin?.imageUrl
+    ? `${base}::${pin.pokemonVariantKey || ''}::${pin.imageLarge || pin.imageUrl || ''}` : base;
 }
 
 function readImgCache() {
@@ -149,6 +153,7 @@ async function fetchCardImageUncached(cardName, game, pin) {
 }
 
 async function fetchMTGImage(name, pin = null) {
+  if (pin?.imageLarge || pin?.imageUrl) return pin.imageLarge || pin.imageUrl;
   let res;
   try {
     const id = pin?.printingId || pin?.id;
