@@ -487,6 +487,7 @@ const CardScanner = forwardRef(function CardScanner({
     : match;
   const details = scannerMatchDetails(displayMatch || {});
   const matchImageUrl = details.imageUrl || previewUrl;
+  const viewerImageUrl = details.imageLarge || matchImageUrl;
   const needsChoice = candidates.length > 0 && !match?.pin;
   const cameraVisible = phase === 'opening' || phase === 'ready' || phase === 'capturing';
 
@@ -789,7 +790,7 @@ const CardScanner = forwardRef(function CardScanner({
         isOpen={viewerOpen}
         lockScroll={false}
         onClose={() => setViewerOpen(false)}
-        imageUrl={matchImageUrl}
+        imageUrl={viewerImageUrl}
         cardName={details.name}
         cardMeta={[scannerMatchMeta(details), scannerMatchDisplayPrice(details, candidates.length)].filter(Boolean).join(' · ')}
       />

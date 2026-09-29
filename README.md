@@ -1808,3 +1808,21 @@ The off-screen interaction check verified both variant image URLs, enlarged
 image size, drag rotation, double-tap zoom, close and Escape behavior, and zero
 artificial shine layers. The production build passed. The installed web
 bundle was updated and its index checksum verified.
+
+## Session log — 2026-09-28 use full-size scanner art
+
+The scanner viewer incorrectly enlarged `imageUrl`, which is Scryfall's
+146×204 thumbnail. The display record now retains `imageLarge`, and the viewer
+uses that selected printing's full-size image. For The Lonely Mountain HOB 207,
+the supplied PNG is 744×1040. The thumbnail still uses the small source.
+
+The earlier interaction check verified URL switching but did not represent a
+catalog with separate small and full-size images. Regression coverage now
+passes an MTG catalog record through finish expansion and scanner display,
+and checks that large art stays tied to the selected printing. All 8 scanner
+match tests and the production build pass; the phone bundle was updated.
+
+The live Scryfall record for HOB 207 supplies one image set for both nonfoil
+and foil prices. Its stock picture does not show a separate foil appearance.
+Showing the physical finish requires an actual photo of that finish; the
+viewer preserves the supplied image and does not fabricate that detail.

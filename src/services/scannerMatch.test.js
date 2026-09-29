@@ -1,5 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { expandFinishRows, mtgRow } from './fetchExpansions.js';
 import {
   createScannerBatchEntry,
   scannerBatchFormOptions,
@@ -12,6 +13,30 @@ import {
 } from './scannerMatch.js';
 
 describe('scanner match display', () => {
+  test('keeps Scryfall full-size art through finish selection for the large viewer', () => {
+    const card = {
+      id: 'mountain-207', name: 'The Lonely Mountain', set: 'hob',
+      set_name: 'The Hobbit', collector_number: '207', rarity: 'rare',
+      finishes: ['nonfoil', 'foil'], prices: { usd: '5.69', usd_foil: '10.14' },
+      image_uris: { small: 'https://cards.example/small.jpg', png: 'https://cards.example/full.png' },
+    };
+    const choices = expandFinishRows(mtgRow(card));
+    assert.equal(choices.length, 2);
+    for (const pin of choices) {
+      const details = scannerMatchDetails({ pin });
+      assert.equal(details.imageUrl, card.image_uris.small);
+      assert.equal(details.imageLarge, card.image_uris.png);
+    }
+  });
+
+  test('large art follows the selected printing and falls back only within that printing', () => {
+    const card = { imageUrl: 'wrong-card-small.jpg', imageLarge: 'wrong-card-large.jpg' };
+    const first = scannerMatchDetails({ card, pin: { name: 'First', imageUrl: 'first-small.jpg', imageLarge: 'first-large.jpg' } });
+    const second = scannerMatchDetails({ card, pin: { name: 'Second', imageUrl: 'second.jpg' } });
+    assert.equal(first.imageLarge, 'first-large.jpg');
+    assert.equal(second.imageLarge, 'second.jpg');
+  });
+
   test('uses the live catalogue printing instead of the vision guess', () => {
     const details = scannerMatchDetails({
       card: { name: 'Reinforcement of the Army', game: 'yugioh', set: 'L26D', number: 'ENS08', confidence: 'high' },

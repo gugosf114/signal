@@ -30,6 +30,7 @@ export function scannerMatchDetails(match = {}) {
     finish: clean(source.finish) || null,
     form: source.form || 'normal',
     imageUrl: clean(source.imageUrl) || null,
+    imageLarge: clean(source.imageLarge) || clean(source.imageUrl) || null,
     price: Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : null,
     priceSource: clean(source.priceSource) || null,
     priceCheckedAt: clean(source.priceCheckedAt) || null,
