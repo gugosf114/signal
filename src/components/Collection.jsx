@@ -19,7 +19,6 @@ import {
 import { fetchCardImage } from '../services/fetchCardImage';
 import CardLightbox from './CardLightbox';
 import CardShine from './CardShine';
-import { sharedCardImageNote } from '../services/mtgFinish';
 import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
 import CollectionCurrencies from './CollectionCurrencies';
@@ -418,9 +417,7 @@ export default function Collection({
         card={viewing}
         cardMeta={viewing ? [
           printingLabel(viewing),
-          sharedCardImageNote(viewing),
           `${formatCollectionMoney(viewing.marketPrice)} each`,
-          viewing.priceSource,
           `${viewing.qty} cop${viewing.qty === 1 ? 'y' : 'ies'}`,
           holdingMeta(viewing),
           `Added ${addedLabel(viewing.addedAt)}`,

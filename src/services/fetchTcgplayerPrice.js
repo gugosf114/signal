@@ -1,6 +1,7 @@
 import { fetchWithTimeout } from './http.js';
 import { gateway } from './signalGateway.js';
 import { verifyPokemonProduct } from './pokemonProduct.js';
+import { fillMtgPrice } from './mtgProduct.js';
 
 const PRODUCT_LINE = {
   pokemon: 'Pokemon',
@@ -226,15 +227,8 @@ export async function fetchTcgplayerPrice(printing, signal) {
 export async function addTcgplayerPrice(printing, signal, { requireProductId = false } = {}) {
   if (!printing) return printing;
   if (printing.game === 'pokemon' && printing.pokemonVariantsResolved) return verifyPokemonProduct(printing, { signal });
+  if (printing.game === 'mtg' && printing.form) return fillMtgPrice(printing, { signal });
   if (positiveNumber(printing.price) && (!requireProductId || printing.tcgplayerProductId)) return printing;
-  if (printing.game === 'mtg' && printing.form) {
-    // One marketplace product can combine normal and foil SKUs. Its headline
-    // price cannot replace a missing price for one of those finishes.
-    const forms = printing.availableFinishes || [];
-    const ids = printing.tcgplayerProductIds;
-    const sharesProduct = !forms.length || forms.filter(form => !ids || ids[form] === printing.tcgplayerProductId).length > 1;
-    if (sharesProduct) return printing;
-  }
   try {
     const result = await fetchTcgplayerPrice(printing, signal);
     return result ? {

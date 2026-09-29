@@ -65,7 +65,7 @@ function QuickPriceResult({ card, onAdd, onDone }) {
         <div>
           <strong>{details.name}</strong>
           <span>{details.gameLabel}</span>
-          <small>{scannerMatchMeta(details)}{details.priceSource ? ` · ${details.priceSource}` : ''}</small>
+          <small>{scannerMatchMeta(details)}</small>
           {cardShinePreview(card) && <small>Shine preview</small>}
         </div>
         <b>{scannerMatchPrice(details)}</b>
@@ -76,7 +76,7 @@ function QuickPriceResult({ card, onAdd, onDone }) {
       </div>
       <CardLightbox isOpen={viewerOpen} onClose={() => setViewerOpen(false)} card={card}
         imageUrl={details.imageLarge || details.imageUrl} cardName={details.name}
-        cardMeta={[scannerMatchMeta(details), scannerMatchPrice(details), details.priceSource].filter(Boolean).join(' · ')} />
+        cardMeta={[scannerMatchMeta(details), scannerMatchPrice(details)].filter(Boolean).join(' · ')} />
     </section>
   );
 }
@@ -657,7 +657,6 @@ export default function SearchBar({
                       {card.number ? ` · ${card.number}` : ''}
                       {card.rarity ? ` · ${card.rarity}` : ''}
                       {card.finish ? ` · ${card.finish}` : ''}
-                      {card.priceSource ? ` · ${card.priceSource}` : ''}
                     </span>
                   </span>
                   {card.price != null && (

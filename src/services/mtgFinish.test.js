@@ -6,7 +6,7 @@ import { resolveMtgCardImage } from './mtgCardImage.js';
 import { normalizeCardRecord, withCardRecord } from './cardRecord.js';
 import { printingLabel, toPrinting } from './printing.js';
 import { addToCollection, loadCollection, collectionFormOptions } from './collection.js';
-import { addTcgplayerPrice } from './fetchTcgplayerPrice.js';
+import { fillMtgPrice } from './mtgProduct.js';
 
 let store;
 beforeEach(() => {
@@ -97,7 +97,10 @@ test('a shared product price cannot fill a missing price for the foil SKU', asyn
     promo_types: [], prices: { usd: '5.69', usd_foil: null },
   })));
   const foil = choices.find(card => card.form === 'foil');
-  assert.equal(await addTcgplayerPrice(foil), foil);
+  const product = { productId: foil.tcgplayerProductId, productLineName: 'Magic: The Gathering',
+    productName: foil.name, setCode: 'HOB', setName: 'The Hobbit', customAttributes: { number: foil.number },
+    marketPrice: 99, skus: [{ language: 'English', variant: 'Normal' }, { language: 'English', variant: 'Foil' }] };
+  assert.equal(await fillMtgPrice(foil, { getProduct: async () => product, search: async () => [product] }), foil);
   assert.equal(foil.price, null);
 });
 

@@ -47,13 +47,17 @@ export async function resolveMtgCardImage(card, { signal, checkImage = browserIm
     ? forms.filter(form => card.tcgplayerProductIds[form] === id)
     : card.form === 'etched' && card.tcgplayerEtchedId
       ? [] : forms.filter(form => form !== 'etched' || !card.tcgplayerEtchedId);
+  // A separate foil price/product ID does not establish a real foil photo.
+  // Preserve the existing labeled shine preview for shared catalog art.
+  const sharedFoilArt = card.game === 'mtg' && card.form === 'foil'
+    && card.imageSharedFinishes?.includes('normal') && card.imageSharedFinishes.includes('foil');
   return {
     ...card,
     imageUrl,
     imageLarge: imageUrl,
     imageSource: 'tcgplayer',
     tcgplayerImageUrl: imageUrl,
-    imageSharedFinishes: shared.length > 1 ? shared : [],
+    imageSharedFinishes: shared.length > 1 ? shared : sharedFoilArt ? card.imageSharedFinishes : [],
     ...(card.game === 'pokemon' ? { pokemonImageShared: Boolean(card.pokemonProductImageShared) } : {}),
   };
 }

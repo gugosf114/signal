@@ -1,6 +1,5 @@
 import { collectionFormOptions, marketPriceFor } from './collection.js';
 import { printingLabel } from './printing.js';
-import { sharedCardImageNote } from './mtgFinish.js';
 import { cardShinePreview } from './cardShine.js';
 
 const GAME_LABELS = {
@@ -33,7 +32,7 @@ export function scannerMatchDetails(match = {}) {
     form: source.form || 'normal',
     imageUrl: clean(source.imageUrl) || null,
     imageLarge: clean(source.imageLarge) || clean(source.imageUrl) || null,
-    imageNote: cardShinePreview(source) ? 'Shine preview · catalog photo.' : sharedCardImageNote(source),
+    imageNote: cardShinePreview(source) ? 'Shine preview' : null,
     price: Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : null,
     priceSource: clean(source.priceSource) || null,
     priceCheckedAt: clean(source.priceCheckedAt) || null,

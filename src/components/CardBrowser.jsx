@@ -432,7 +432,7 @@ export default function CardBrowser({
         imageUrl={viewing?.imageLarge || viewing?.imageUrl}
         cardName={viewing?.name}
         card={viewing}
-        cardMeta={viewing ? [printingLabel(viewing), cardPriceLabel(viewing), viewing.priceSource].filter(Boolean).join(' · ') : null}
+        cardMeta={viewing ? [printingLabel(viewing), cardPriceLabel(viewing)].filter(Boolean).join(' · ') : null}
         scanLabel={actionLabel}
         onScan={() => {
           const c = viewing;

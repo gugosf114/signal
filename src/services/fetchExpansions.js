@@ -8,7 +8,7 @@
 import { looksLikeSetCode, lookupBySetCode } from './lookupBySetCode.js';
 import { fetchCatalogueJSON } from './signalGateway.js';
 import { baseTcgplayerName, searchTcgplayerProducts } from './fetchTcgplayerPrice.js';
-import { mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
+import { mtgCardNames, mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
 import { pokemonVariantRows } from './pokemonVariants.js';
 import { canonicalPokemonId, toTcgdexId } from './pokemonIds.js';
 import { scannedPrintingTarget, sameCollectorNumber, scannedSetMatches } from './printedIdentity.js';
@@ -136,7 +136,9 @@ export function mtgRow(c, fallbackSetName = '') {
   return {
     id: c.id,
     printingId: c.id,
-    name: c.name,
+    name: c.flavor_name || c.name,
+    oracleName: c.name,
+    nameAliases: mtgCardNames(c),
     game: 'mtg',
     setName: c.set_name || fallbackSetName,
     setId: c.set || null,
@@ -391,7 +393,8 @@ export async function resolvePrintingOptions(input = {}) {
     // A miss lets the second reader retry; unrelated numbers aren't choices.
     if (target.number) return resolveNumberedPrintingOptions(input, target);
     const rows = await searchCardsByName(input.game, name, null).catch(() => []);
-    const exactName = rows.filter((row) => String(row.name || '').trim().toLowerCase() === name.toLowerCase());
+    const exactName = rows.filter(row => [row.name, ...(row.nameAliases || [])].filter(Boolean)
+      .some(alias => String(alias).trim().toLowerCase() === name.toLowerCase()));
     const pool = exactName.length ? exactName : rows;
     const wantedSet = target.set;
     const matches = pool.filter(row => scannedSetMatches(row, wantedSet));
@@ -482,7 +485,8 @@ const TCGDEX_BASE = 'https://api.tcgdex.net/v2/en';
 const quotedSearch = value => `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 
 function scannedNameMatches(row, name) {
-  return String(row.name || '').split('//').some(face => namesCompatibleForCode(name, face.trim()));
+  return [row.name, ...(row.nameAliases || [])].filter(Boolean)
+    .flatMap(value => String(value).split('//')).some(face => namesCompatibleForCode(name, face.trim()));
 }
 
 function exactScannedRows(rows, input, target) {
@@ -497,7 +501,15 @@ async function resolveNumberedPrintingOptions(input, target) {
     const scope = target.set ? `set:${quotedSearch(target.set)}` : `!${quotedSearch(input.name)}`;
     const query = `${scope} cn:${target.number} game:paper`;
     const data = await getJSON(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints`).catch(() => null);
-    return exactScannedRows((data?.data || []).flatMap(card => expandFinishRows(mtgRow(card))), input, target);
+    const matches = exactScannedRows((data?.data || []).flatMap(card => expandFinishRows(mtgRow(card))), input, target);
+    if (matches.length || !target.set || /^[a-z0-9]{2,6}$/i.test(target.set)) return matches;
+    // A full set name can be a model's family guess (main set vs Commander).
+    // Retry the SAME number and name, then validate the set family locally.
+    const familyQuery = `!${quotedSearch(input.name)} cn:${target.number} game:paper`;
+    const family = await getJSON(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(familyQuery)}&unique=prints`).catch(() => null);
+    const numbered = exactScannedRows((family?.data || []).flatMap(card => expandFinishRows(mtgRow(card))), input, { ...target, set: '' });
+    const related = numbered.filter(row => scannedSetMatches(row, target.set));
+    return related.length ? related : requireOwnerChoice(numbered, 'set-conflict');
   }
 
   // TCGdex already supplies the detailed physical variants. Try its small
@@ -1170,7 +1182,8 @@ export async function resolvePrinting({ name, game, number, set, passcode, rarit
   const hits = settled.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
   if (!hits.length) return null;
 
-  const exactName = hits.filter((c) => (c.name || '').toLowerCase() === n.toLowerCase());
+  const exactName = hits.filter(card => [card.name, ...(card.nameAliases || [])].filter(Boolean)
+    .some(alias => String(alias).trim().toLowerCase() === n.toLowerCase()));
   const pool = exactName.length ? exactName : hits;
 
   // If the photo cannot expose a tiny code but the live catalogue has exactly

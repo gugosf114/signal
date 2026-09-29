@@ -1,0 +1,556 @@
+{
+  "cards": {
+    "5": {
+      "id": "61a51b67-d941-4e07-9c12-ffe583cb65d4",
+      "name": "Captain America, Team Leader",
+      "set": "msc",
+      "set_name": "Marvel Super Heroes Commander",
+      "collector_number": "5",
+      "rarity": "mythic",
+      "finishes": [
+        "nonfoil",
+        "foil"
+      ],
+      "promo_types": [
+        "universesbeyond"
+      ],
+      "frame_effects": [
+        "legendary",
+        "inverted"
+      ],
+      "prices": {
+        "usd": "3.42",
+        "usd_foil": "0.68",
+        "usd_etched": null,
+        "eur": "0.38",
+        "eur_foil": "0.36",
+        "tix": "1.75"
+      },
+      "tcgplayer_id": 696391,
+      "image_uris": {
+        "small": "https://cards.scryfall.io/small/front/6/1/61a51b67-d941-4e07-9c12-ffe583cb65d4.jpg?1783903303",
+        "normal": "https://cards.scryfall.io/normal/front/6/1/61a51b67-d941-4e07-9c12-ffe583cb65d4.jpg?1783903303",
+        "large": "https://cards.scryfall.io/large/front/6/1/61a51b67-d941-4e07-9c12-ffe583cb65d4.jpg?1783903303",
+        "png": "https://cards.scryfall.io/png/front/6/1/61a51b67-d941-4e07-9c12-ffe583cb65d4.png?1783903303",
+        "art_crop": "https://cards.scryfall.io/art_crop/front/6/1/61a51b67-d941-4e07-9c12-ffe583cb65d4.jpg?1783903303",
+        "border_crop": "https://cards.scryfall.io/border_crop/front/6/1/61a51b67-d941-4e07-9c12-ffe583cb65d4.jpg?1783903303",
+        "thumb": "https://cards.scryfall.io/thumb/front/6/1/61a51b67-d941-4e07-9c12-ffe583cb65d4.webp?1783903303",
+        "grid": "https://cards.scryfall.io/grid/front/6/1/61a51b67-d941-4e07-9c12-ffe583cb65d4.webp?1783903303",
+        "display": "https://cards.scryfall.io/display/front/6/1/61a51b67-d941-4e07-9c12-ffe583cb65d4.webp?1783903303",
+        "art": "https://cards.scryfall.io/art/front/6/1/61a51b67-d941-4e07-9c12-ffe583cb65d4.webp?1783903303",
+        "crop": "https://cards.scryfall.io/crop/front/6/1/61a51b67-d941-4e07-9c12-ffe583cb65d4.webp?1783903303"
+      }
+    },
+    "37": {
+      "id": "1b03fa4e-b3a1-4c23-8341-e9ce89aa872f",
+      "name": "Professor Hulk",
+      "set": "msc",
+      "set_name": "Marvel Super Heroes Commander",
+      "collector_number": "37",
+      "rarity": "rare",
+      "finishes": [
+        "nonfoil",
+        "foil"
+      ],
+      "promo_types": [
+        "surgefoil",
+        "universesbeyond"
+      ],
+      "frame_effects": [
+        "legendary"
+      ],
+      "prices": {
+        "usd": "0.68",
+        "usd_foil": null,
+        "usd_etched": null,
+        "eur": "0.80",
+        "eur_foil": null,
+        "tix": "2.34"
+      },
+      "tcgplayer_id": 697181,
+      "image_uris": {
+        "small": "https://cards.scryfall.io/small/front/1/b/1b03fa4e-b3a1-4c23-8341-e9ce89aa872f.jpg?1783903291",
+        "normal": "https://cards.scryfall.io/normal/front/1/b/1b03fa4e-b3a1-4c23-8341-e9ce89aa872f.jpg?1783903291",
+        "large": "https://cards.scryfall.io/large/front/1/b/1b03fa4e-b3a1-4c23-8341-e9ce89aa872f.jpg?1783903291",
+        "png": "https://cards.scryfall.io/png/front/1/b/1b03fa4e-b3a1-4c23-8341-e9ce89aa872f.png?1783903291",
+        "art_crop": "https://cards.scryfall.io/art_crop/front/1/b/1b03fa4e-b3a1-4c23-8341-e9ce89aa872f.jpg?1783903291",
+        "border_crop": "https://cards.scryfall.io/border_crop/front/1/b/1b03fa4e-b3a1-4c23-8341-e9ce89aa872f.jpg?1783903291",
+        "thumb": "https://cards.scryfall.io/thumb/front/1/b/1b03fa4e-b3a1-4c23-8341-e9ce89aa872f.webp?1783903291",
+        "grid": "https://cards.scryfall.io/grid/front/1/b/1b03fa4e-b3a1-4c23-8341-e9ce89aa872f.webp?1783903291",
+        "display": "https://cards.scryfall.io/display/front/1/b/1b03fa4e-b3a1-4c23-8341-e9ce89aa872f.webp?1783903291",
+        "art": "https://cards.scryfall.io/art/front/1/b/1b03fa4e-b3a1-4c23-8341-e9ce89aa872f.webp?1783903291",
+        "crop": "https://cards.scryfall.io/crop/front/1/b/1b03fa4e-b3a1-4c23-8341-e9ce89aa872f.webp?1783903291"
+      }
+    },
+    "77": {
+      "id": "8c2bf77c-9acf-4e2c-9cad-e74546f26070",
+      "name": "Black Widow, Agile Avenger",
+      "set": "msc",
+      "set_name": "Marvel Super Heroes Commander",
+      "collector_number": "77",
+      "rarity": "rare",
+      "finishes": [
+        "nonfoil",
+        "foil"
+      ],
+      "promo_types": [
+        "surgefoil",
+        "universesbeyond"
+      ],
+      "frame_effects": [
+        "legendary"
+      ],
+      "prices": {
+        "usd": "6.10",
+        "usd_foil": null,
+        "usd_etched": null,
+        "eur": "7.58",
+        "eur_foil": null,
+        "tix": "2.38"
+      },
+      "tcgplayer_id": 696944,
+      "image_uris": {
+        "small": "https://cards.scryfall.io/small/front/8/c/8c2bf77c-9acf-4e2c-9cad-e74546f26070.jpg?1783903270",
+        "normal": "https://cards.scryfall.io/normal/front/8/c/8c2bf77c-9acf-4e2c-9cad-e74546f26070.jpg?1783903270",
+        "large": "https://cards.scryfall.io/large/front/8/c/8c2bf77c-9acf-4e2c-9cad-e74546f26070.jpg?1783903270",
+        "png": "https://cards.scryfall.io/png/front/8/c/8c2bf77c-9acf-4e2c-9cad-e74546f26070.png?1783903270",
+        "art_crop": "https://cards.scryfall.io/art_crop/front/8/c/8c2bf77c-9acf-4e2c-9cad-e74546f26070.jpg?1783903270",
+        "border_crop": "https://cards.scryfall.io/border_crop/front/8/c/8c2bf77c-9acf-4e2c-9cad-e74546f26070.jpg?1783903270",
+        "thumb": "https://cards.scryfall.io/thumb/front/8/c/8c2bf77c-9acf-4e2c-9cad-e74546f26070.webp?1783903270",
+        "grid": "https://cards.scryfall.io/grid/front/8/c/8c2bf77c-9acf-4e2c-9cad-e74546f26070.webp?1783903270",
+        "display": "https://cards.scryfall.io/display/front/8/c/8c2bf77c-9acf-4e2c-9cad-e74546f26070.webp?1783903270",
+        "art": "https://cards.scryfall.io/art/front/8/c/8c2bf77c-9acf-4e2c-9cad-e74546f26070.webp?1783903270",
+        "crop": "https://cards.scryfall.io/crop/front/8/c/8c2bf77c-9acf-4e2c-9cad-e74546f26070.webp?1783903270"
+      }
+    },
+    "278": {
+      "id": "ce9347e8-962f-4fc1-808f-b59ac751de13",
+      "name": "Raise the Palisade",
+      "flavor_name": "Raise Repulsor Shields",
+      "set": "msc",
+      "set_name": "Marvel Super Heroes Commander",
+      "collector_number": "278",
+      "rarity": "rare",
+      "finishes": [
+        "nonfoil",
+        "foil"
+      ],
+      "promo_types": [
+        "surgefoil",
+        "universesbeyond"
+      ],
+      "prices": {
+        "usd": "5.08",
+        "usd_foil": null,
+        "usd_etched": null,
+        "eur": "5.54",
+        "eur_foil": null,
+        "tix": "1.58"
+      },
+      "tcgplayer_id": 697187,
+      "image_uris": {
+        "small": "https://cards.scryfall.io/small/front/c/e/ce9347e8-962f-4fc1-808f-b59ac751de13.jpg?1783903190",
+        "normal": "https://cards.scryfall.io/normal/front/c/e/ce9347e8-962f-4fc1-808f-b59ac751de13.jpg?1783903190",
+        "large": "https://cards.scryfall.io/large/front/c/e/ce9347e8-962f-4fc1-808f-b59ac751de13.jpg?1783903190",
+        "png": "https://cards.scryfall.io/png/front/c/e/ce9347e8-962f-4fc1-808f-b59ac751de13.png?1783903190",
+        "art_crop": "https://cards.scryfall.io/art_crop/front/c/e/ce9347e8-962f-4fc1-808f-b59ac751de13.jpg?1783903190",
+        "border_crop": "https://cards.scryfall.io/border_crop/front/c/e/ce9347e8-962f-4fc1-808f-b59ac751de13.jpg?1783903190",
+        "thumb": "https://cards.scryfall.io/thumb/front/c/e/ce9347e8-962f-4fc1-808f-b59ac751de13.webp?1783903190",
+        "grid": "https://cards.scryfall.io/grid/front/c/e/ce9347e8-962f-4fc1-808f-b59ac751de13.webp?1783903190",
+        "display": "https://cards.scryfall.io/display/front/c/e/ce9347e8-962f-4fc1-808f-b59ac751de13.webp?1783903190",
+        "art": "https://cards.scryfall.io/art/front/c/e/ce9347e8-962f-4fc1-808f-b59ac751de13.webp?1783903190",
+        "crop": "https://cards.scryfall.io/crop/front/c/e/ce9347e8-962f-4fc1-808f-b59ac751de13.webp?1783903190"
+      }
+    }
+  },
+  "products": {
+    "696391": {
+      "productId": 696391,
+      "productLineName": "Magic: The Gathering",
+      "productName": "Captain America, Team Leader (Borderless)",
+      "setName": "Commander: Marvel Super Heroes",
+      "setCode": "MSC",
+      "sealed": false,
+      "marketPrice": 3.42,
+      "customAttributes": {
+        "number": "5"
+      },
+      "skus": [
+        {
+          "sku": 9306413,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "English"
+        },
+        {
+          "sku": 9306433,
+          "condition": "Near Mint",
+          "variant": "Foil",
+          "language": "English"
+        },
+        {
+          "sku": 9306418,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "French"
+        },
+        {
+          "sku": 9306438,
+          "condition": "Near Mint",
+          "variant": "Foil",
+          "language": "French"
+        },
+        {
+          "sku": 9306423,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "German"
+        },
+        {
+          "sku": 9306443,
+          "condition": "Near Mint",
+          "variant": "Foil",
+          "language": "German"
+        },
+        {
+          "sku": 9306428,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "Japanese"
+        },
+        {
+          "sku": 9306448,
+          "condition": "Near Mint",
+          "variant": "Foil",
+          "language": "Japanese"
+        }
+      ]
+    },
+    "696944": {
+      "productId": 696944,
+      "productLineName": "Magic: The Gathering",
+      "productName": "Black Widow, Agile Avenger",
+      "setName": "Commander: Marvel Super Heroes",
+      "setCode": "MSC",
+      "sealed": false,
+      "marketPrice": 6.13,
+      "customAttributes": {
+        "number": "77"
+      },
+      "skus": [
+        {
+          "sku": 9318517,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "English"
+        },
+        {
+          "sku": 9318527,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "French"
+        },
+        {
+          "sku": 9318537,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "German"
+        },
+        {
+          "sku": 9318547,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "Italian"
+        },
+        {
+          "sku": 9318557,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "Japanese"
+        },
+        {
+          "sku": 9318567,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "Spanish"
+        }
+      ]
+    },
+    "696952": {
+      "productId": 696952,
+      "productLineName": "Magic: The Gathering",
+      "productName": "Black Widow, Agile Avenger (Surge Foil)",
+      "setName": "Commander: Marvel Super Heroes",
+      "setCode": "MSC",
+      "sealed": false,
+      "marketPrice": 29.56,
+      "customAttributes": {
+        "number": "77"
+      },
+      "skus": [
+        {
+          "sku": 9318942,
+          "condition": "Near Mint",
+          "variant": "Foil",
+          "language": "English"
+        }
+      ]
+    },
+    "697181": {
+      "productId": 697181,
+      "productLineName": "Magic: The Gathering",
+      "productName": "Professor Hulk",
+      "setName": "Commander: Marvel Super Heroes",
+      "setCode": "MSC",
+      "sealed": false,
+      "marketPrice": 0.69,
+      "customAttributes": {
+        "number": "37"
+      },
+      "skus": [
+        {
+          "sku": 9330127,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "English"
+        },
+        {
+          "sku": 9330132,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "French"
+        },
+        {
+          "sku": 9330137,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "German"
+        },
+        {
+          "sku": 9330142,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "Italian"
+        },
+        {
+          "sku": 9330147,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "Japanese"
+        },
+        {
+          "sku": 9330152,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "Spanish"
+        }
+      ]
+    },
+    "697187": {
+      "productId": 697187,
+      "productLineName": "Magic: The Gathering",
+      "productName": "Raise Repulsor Shields - Raise the Palisade",
+      "setName": "Commander: Marvel Super Heroes",
+      "setCode": "MSC",
+      "sealed": false,
+      "marketPrice": 5.09,
+      "customAttributes": {
+        "number": "278"
+      },
+      "skus": [
+        {
+          "sku": 9330307,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "English"
+        },
+        {
+          "sku": 9330312,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "French"
+        },
+        {
+          "sku": 9330317,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "German"
+        },
+        {
+          "sku": 9330322,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "Italian"
+        },
+        {
+          "sku": 9330327,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "Japanese"
+        },
+        {
+          "sku": 9330332,
+          "condition": "Near Mint",
+          "variant": "Normal",
+          "language": "Spanish"
+        }
+      ]
+    },
+    "697901": {
+      "productId": 697901,
+      "productLineName": "Magic: The Gathering",
+      "productName": "Professor Hulk (Surge Foil)",
+      "setName": "Commander: Marvel Super Heroes",
+      "setCode": "MSC",
+      "sealed": false,
+      "marketPrice": 5.34,
+      "customAttributes": {
+        "number": "37"
+      },
+      "skus": [
+        {
+          "sku": 9346231,
+          "condition": "Near Mint",
+          "variant": "Foil",
+          "language": "English"
+        }
+      ]
+    },
+    "697957": {
+      "productId": 697957,
+      "productLineName": "Magic: The Gathering",
+      "productName": "Raise Repulsor Shields - Raise the Palisade (Surge Foil)",
+      "setName": "Commander: Marvel Super Heroes",
+      "setCode": "MSC",
+      "sealed": false,
+      "marketPrice": 7.56,
+      "customAttributes": {
+        "number": "278"
+      },
+      "skus": [
+        {
+          "sku": 9346511,
+          "condition": "Near Mint",
+          "variant": "Foil",
+          "language": "English"
+        }
+      ]
+    }
+  },
+  "search": {
+    "hulk": [
+      {
+        "productId": 697181,
+        "productLineName": "Magic: The Gathering",
+        "productName": "Professor Hulk",
+        "setName": "Commander: Marvel Super Heroes",
+        "setCode": "MSC",
+        "sealed": false,
+        "marketPrice": 0.69,
+        "customAttributes": {
+          "number": "37"
+        }
+      },
+      {
+        "productId": 699573,
+        "productLineName": "Magic: The Gathering",
+        "productName": "Professor Hulk (Extended Art)",
+        "setName": "Commander: Marvel Super Heroes",
+        "setCode": "MSC",
+        "sealed": false,
+        "marketPrice": 6.54,
+        "customAttributes": {
+          "number": "338"
+        }
+      },
+      {
+        "productId": 697901,
+        "productLineName": "Magic: The Gathering",
+        "productName": "Professor Hulk (Surge Foil)",
+        "setName": "Commander: Marvel Super Heroes",
+        "setCode": "MSC",
+        "sealed": false,
+        "marketPrice": 5.34,
+        "customAttributes": {
+          "number": "37"
+        }
+      }
+    ],
+    "widow": [
+      {
+        "productId": 696944,
+        "productLineName": "Magic: The Gathering",
+        "productName": "Black Widow, Agile Avenger",
+        "setName": "Commander: Marvel Super Heroes",
+        "setCode": "MSC",
+        "sealed": false,
+        "marketPrice": 6.13,
+        "customAttributes": {
+          "number": "77"
+        }
+      },
+      {
+        "productId": 699638,
+        "productLineName": "Magic: The Gathering",
+        "productName": "Black Widow, Agile Avenger (Extended Art)",
+        "setName": "Commander: Marvel Super Heroes",
+        "setCode": "MSC",
+        "sealed": false,
+        "marketPrice": 15.25,
+        "customAttributes": {
+          "number": "395"
+        }
+      },
+      {
+        "productId": 696952,
+        "productLineName": "Magic: The Gathering",
+        "productName": "Black Widow, Agile Avenger (Surge Foil)",
+        "setName": "Commander: Marvel Super Heroes",
+        "setCode": "MSC",
+        "sealed": false,
+        "marketPrice": 29.56,
+        "customAttributes": {
+          "number": "77"
+        }
+      }
+    ],
+    "shields": [
+      {
+        "productId": 697187,
+        "productLineName": "Magic: The Gathering",
+        "productName": "Raise Repulsor Shields - Raise the Palisade",
+        "setName": "Commander: Marvel Super Heroes",
+        "setCode": "MSC",
+        "sealed": false,
+        "marketPrice": 5.09,
+        "customAttributes": {
+          "number": "278"
+        }
+      },
+      {
+        "productId": 699575,
+        "productLineName": "Magic: The Gathering",
+        "productName": "Raise Repulsor Shields - Raise the Palisade (Extended Art)",
+        "setName": "Commander: Marvel Super Heroes",
+        "setCode": "MSC",
+        "sealed": false,
+        "marketPrice": 8.15,
+        "customAttributes": {
+          "number": "340"
+        }
+      },
+      {
+        "productId": 697957,
+        "productLineName": "Magic: The Gathering",
+        "productName": "Raise Repulsor Shields - Raise the Palisade (Surge Foil)",
+        "setName": "Commander: Marvel Super Heroes",
+        "setCode": "MSC",
+        "sealed": false,
+        "marketPrice": 7.56,
+        "customAttributes": {
+          "number": "278"
+        }
+      }
+    ]
+  }
+}

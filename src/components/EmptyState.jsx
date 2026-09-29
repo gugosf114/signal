@@ -79,8 +79,7 @@ function LatestSignalPanel({ data }) {
   const checked = Number.isNaN(checkedDate.getTime())
     ? null
     : checkedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  const priceNote = [prices.price_source || data.pin?.priceSource, checked ? `checked ${checked}` : null]
-    .filter(Boolean).join(' · ');
+  const priceNote = checked ? `checked ${checked}` : null;
 
   return (
     <section

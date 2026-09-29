@@ -132,6 +132,8 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
   return {
     recordVersion: CARD_RECORD_VERSION,
     name,
+    oracleName: clean(first(current.oracleName, prior.oracleName)) || null,
+    nameAliases: cleanList(first(current.nameAliases, prior.nameAliases)),
     game,
     id,
     catalogId: clean(first(current.catalogId, prior.catalogId, id)) || null,
@@ -269,7 +271,7 @@ export function applyCardPricePatch(card, patch) {
   let current = normalizeCardRecord(card || {});
   if (!current || !patch || !Object.prototype.hasOwnProperty.call(patch, 'en_price')) return current;
   const replacement = patch.card;
-  if (current.game === 'pokemon' && replacement?.game === 'pokemon'
+  if (['pokemon', 'mtg'].includes(current.game) && replacement?.game === current.game
     && canonicalPokemonId(current.id || current.printingId) === canonicalPokemonId(replacement.id || replacement.printingId)
     && current.form === replacement.form && current.pokemonVariantKey === replacement.pokemonVariantKey) {
     current = normalizeCardRecord({ ...current, ...replacement });

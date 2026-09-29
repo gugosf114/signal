@@ -361,7 +361,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
         onClose={() => setLightboxOpen(false)}
         imageUrl={cardImageUrl}
         cardName={cardName}
-        cardMeta={[printingLabel(exactCard), enPrice || 'Exact price unavailable', exactCard?.priceSource].filter(Boolean).join(' · ')}
+        cardMeta={[printingLabel(exactCard), enPrice || 'Exact price unavailable'].filter(Boolean).join(' · ')}
       />
     </>
   );

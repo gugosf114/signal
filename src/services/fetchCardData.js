@@ -12,9 +12,10 @@ import { fetchWithTimeout } from './http.js';
 import { isExactScanTarget } from './scanIdentity.js';
 import { normalizeCardRecord } from './cardRecord.js';
 import { toTcgdexId } from './pokemonIds.js';
-import { mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
+import { mtgCardNames, mtgFinishLabel, mtgPromoTypes } from './mtgFinish.js';
 import { selectedPokemonVariant, pokemonVariantFields } from './pokemonVariants.js';
 import { verifyPokemonProduct } from './pokemonProduct.js';
+import { fillMtgPrice } from './mtgProduct.js';
 
 // `pin` is the exact card record chosen by search, number lookup, camera,
 // upload, Trending, Recent, Watched, or Collection. A broad name is refused.
@@ -56,7 +57,7 @@ function cardDataFromPin(cardName, game, pin) {
     priceSource: hasPrice ? pin.priceSource : null,
     priceUrl: pin.priceUrl || null,
     imageUrl: pin.imageLarge || pin.imageUrl || null,
-    ...(pin.pokemonVariantsResolved ? { card: pin } : {}),
+    ...(pin.pokemonVariantsResolved || pin.game === 'mtg' ? { card: pin } : {}),
   };
 }
 
@@ -112,7 +113,17 @@ async function fetchPinned(pin) {
       });
       if (!res.ok) return null;
       const card = await res.json();
-      return card.object === 'error' ? null : applyTrustedPinMarketPrice(shapeMTG(card, pin), pin);
+      if (card.object === 'error') return null;
+      const shaped = shapeMTG(card, pin);
+      if (pin.form && !shaped.priceLines?.some(line => /\$/.test(line))) {
+        const priced = await fillMtgPrice(normalizeCardRecord({ ...pin, ...shaped, id: card.id,
+          price: null, marketPrices: { ...pin.marketPrices, [pin.form]: null } }));
+        if (priced?.price > 0) return { ...shaped, priceLines: [`${priced.finish}: $${priced.price.toFixed(2)} market`],
+          priceSource: priced.priceSource, priceScope: 'exact finish', priceUrl: priced.priceUrl,
+          tcgplayerProductId: priced.tcgplayerProductId, tcgplayerProductIds: priced.tcgplayerProductIds,
+          imageUrl: priced.imageLarge || priced.imageUrl, card: priced };
+      }
+      return applyTrustedPinMarketPrice(shaped, pin);
     }
     if (pin.game === 'yugioh') {
       const lookup = pin.id
@@ -303,7 +314,9 @@ function shapeMTG(card, pin = null) {
     game: 'mtg',
     catalogId: card.id || null,
     printingId: card.id || null,
-    name: card.name,
+    name: card.flavor_name || card.name,
+    oracleName: card.name,
+    nameAliases: mtgCardNames(card),
     setName: card.set_name,
     setId: card.set,
     number: card.collector_number,
@@ -313,6 +326,7 @@ function shapeMTG(card, pin = null) {
     promoTypes: mtgPromoTypes(card),
     availableFinishes: (card.finishes || []).map(form => form === 'nonfoil' ? 'normal' : form),
     tcgplayerEtchedId: card.tcgplayer_etched_id || pin?.tcgplayerEtchedId || null,
+    tcgplayerProductId: pin?.tcgplayerProductId || card.tcgplayer_id || null,
     tcgplayerProductIds: pin?.tcgplayerProductIds || null,
     imageSharedFinishes: pin?.imageSharedFinishes
       ?? ((card.finishes || []).length > 1 ? card.finishes.map(form => form === 'nonfoil' ? 'normal' : form) : []),

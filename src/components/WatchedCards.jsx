@@ -140,7 +140,7 @@ export default function WatchedCards({ onSelect }) {
               <button
                 className="watched-chip-open"
                 onClick={() => onSelect(card.name, card.game, { pin: card.pin || null })}
-                title={[card.name, printingLabel(card.pin), cardPriceLabel({ ...card.pin, price: card.pin?.price ?? card.enPrice }), card.pin?.priceSource].filter(Boolean).join(' · ')}
+                title={[card.name, printingLabel(card.pin), cardPriceLabel({ ...card.pin, price: card.pin?.price ?? card.enPrice })].filter(Boolean).join(' · ')}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',

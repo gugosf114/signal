@@ -103,7 +103,6 @@ export default function AddToCollectionDialog({ card, isOpen, onClose, onAdded }
               <span>Market price</span>
               <strong>{formatCollectionMoney(marketPrice)}</strong>
               {marketPrice == null && <em>Exact price unavailable</em>}
-              {card.priceSource && <em>{card.priceSource}</em>}
             </div>
           </div>
         </div>

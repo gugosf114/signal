@@ -42,7 +42,9 @@ export function scannedPrintingTarget(input = {}) {
     else if (olderPromo) { set = PROMO_SERIES[olderPromo[1].toUpperCase()]; number = olderPromo[1] + olderPromo[2]; }
     else if (subset) number = subset[1] + subset[2];
   } else if (input.game === 'mtg') {
-    number = number.replace(/^[CURMSBL]\s+(?=\d)/i, '');
+    const badge = number.match(/^([CURMSBL])(\s*)(\d{1,5}[A-Z★*]?)$/i);
+    const rarity = clean(input.rarity).slice(0, 1).toUpperCase();
+    if (badge && (badge[2] || badge[1].toUpperCase() === rarity || /^\d{3,}/.test(badge[3]))) number = badge[3];
   }
   // A model can copy the nearby printed set/language badge into "number".
   const combined = number.match(/^([A-Z][A-Z0-9]{1,6})(?:\s+(?:ENG|EN))?[\s-]+(\d{1,5}[A-Z★*]?)$/i)

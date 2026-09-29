@@ -3,9 +3,9 @@ import { fetchCatalogueJSON } from './signalGateway.js';
 import { sameCollectorNumber, scannedSetMatches } from './printedIdentity.js';
 import { selectedPokemonVariant } from './pokemonVariants.js';
 import { toTcgdexId } from './pokemonIds.js';
+import { fetchTcgplayerProduct as fetchPokemonProduct } from './tcgplayerProduct.js';
 
 const TTL = 5 * 60 * 1000;
-const products = new Map();
 const key = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const idNumber = value => Number.isSafeInteger(Number(value)) && Number(value) > 0 ? Number(value) : null;
 const positive = value => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : null;
@@ -17,29 +17,6 @@ const PRICE_KEYS = { normal: 'normal', holofoil: 'holofoil', reverseholofoil: 'r
   unlimited: 'unlimited-normal', unlimitednormal: 'unlimited-normal', unlimitedholofoil: 'unlimited-holofoil' };
 const binding = card => JSON.stringify([card.id || card.catalogId || card.printingId, key(card.name),
   card.setId, card.setCode, card.setName, card.number, card.form, card.pokemonVariantKey, card.tcgplayerProductId]);
-
-export async function fetchPokemonProduct(productId, signal) {
-  const id = idNumber(productId);
-  if (!id) return null;
-  const cached = products.get(id);
-  if (cached && Date.now() - cached.at < TTL) return cached.promise;
-  if (products.size >= 128) products.delete(products.keys().next().value);
-  const promise = fetchWithTimeout(`https://mp-search-api.tcgplayer.com/v2/product/${id}/details`,
-    { signal, headers: { Accept: 'application/json' } }, 6000)
-    .then(async response => {
-      if (!response.ok) return null;
-      const data = await response.json();
-      return idNumber(data?.productId) === id ? data : null;
-    }).catch(error => {
-      products.delete(id);
-      if (signal?.aborted) throw error;
-      return null;
-    });
-  products.set(id, { at: Date.now(), promise });
-  const result = await promise;
-  if (!result) products.delete(id);
-  return result;
-}
 
 // Match the physical version, not merely its catalog-provided product ID.
 // The qualifiers come from the same version key used by Collection identity.

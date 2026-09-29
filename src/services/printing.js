@@ -81,9 +81,9 @@ export function printingIdentity(pin) {
 export function toPrinting(game, pin, cardData) {
   const src = cardData || {};
   const updated = src.card;
-  if (pin?.game === 'pokemon' && updated?.game === 'pokemon'
+  if (['pokemon', 'mtg'].includes(pin?.game) && updated?.game === pin.game
     && canonicalPokemonId(pin.id || pin.printingId) === canonicalPokemonId(updated.id || updated.printingId)
-    && pin.form === updated.form && pin.pokemonVariantKey === updated.pokemonVariantKey) pin = { ...pin, ...updated };
+    && pin.form === updated.form && (pin.pokemonVariantKey || null) === (updated.pokemonVariantKey || null)) pin = { ...pin, ...updated };
   const normalizedGame = game || src.game || pin?.game || null;
   const pinId = pin?.printingId || pin?.id || null;
   const sourceId = src.printingId || src.catalogId || null;
@@ -96,6 +96,8 @@ export function toPrinting(game, pin, cardData) {
   const promoTypes = (mayEnrichPin ? src.promoTypes : null) ?? pin?.promoTypes ?? null;
   const out = {
     game: normalizedGame,
+    oracleName: pin?.oracleName || (mayEnrichPin ? src.oracleName : null) || null,
+    nameAliases: pin?.nameAliases?.length ? pin.nameAliases : (mayEnrichPin ? src.nameAliases : null) || [],
     catalogId: pin?.id || src.catalogId || null,
     printingId: pin?.printingId || (pin?.id && normalizedGame !== 'yugioh' ? pin.id : null) || src.printingId || null,
     setName: pin?.setName || src.setName || null,

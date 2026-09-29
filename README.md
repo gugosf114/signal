@@ -2001,3 +2001,35 @@ Yu-Gi-Oh! L26D-ENS08, and Magic HOB 207. Button labels and titles include the
 identifier too. Long names and numbers wrap instead of being truncated.
 Rendered Collection checks covered all three games at 320px and 393px with
 no horizontal overflow. All 57 focused checks and the production build pass.
+
+## Session log — 2026-09-29 shared matching and foil-price regressions
+
+George's failed scans exposed gaps in the shared rules. MTG alternate printed
+names were rejected against the underlying rules name; an inferred main-set
+name excluded Commander cards; and a rarity badge attached to a number
+(`M0005`) was treated as part of the collector number. The matching rules now
+handle catalog-provided aliases, full set-name guesses, and rarity prefixes
+while retaining exact collector-number checks. Explicit set codes remain
+strict. These are general rules, with no card-specific production overrides.
+
+Some named foils have separate marketplace products, while Scryfall links
+both finishes to the normal-only product and leaves the foil price blank.
+The shared price fallback now validates game, names/aliases, set, number,
+named treatment, and English finish SKUs before using a dedicated product's
+price and picture. It preserves available catalog prices and never substitutes
+a combined Normal/Foil headline for an unknown foil price. Corrected links
+survive reports, Collection refresh, and price history. Recovering a price
+keeps the labeled shine preview for catalog art already known to be shared.
+
+Provider names and shared-photo implementation notes were removed from card
+results, suggestions, add dialogs, and viewers. Source records remain in the
+data. The five recent cards were replayed through the real scanner component
+using their saved photos and recorded reader output, with live catalog and
+marketplace requests. All matched and displayed both finish prices, with no
+provider names or horizontal overflow. Enlarged views kept the selected price.
+The live Surge Foil checks returned Hulk $5.34, Black Widow $29.56, Repulsor
+Shields $7.56, and Plaza of Heroes $7.66; Captain America matched both reader
+outputs and kept its $3.42 non-foil/$0.68 foil quotes. Focused regression checks
+also cover another named foil, wrong-number/normal-product rejection, renamed
+printings, saved-card refresh, and preservation of the Pokémon and Yu-Gi-Oh!
+paths. GitHub checks remain manual.
