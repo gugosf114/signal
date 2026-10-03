@@ -2,6 +2,7 @@ import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef,
 import { drawCameraFrame } from '../services/cameraCanvas';
 import { computeVideoCrop } from '../services/scannerCrop';
 import { prepareCardPhoto } from '../services/prepareCardPhoto';
+import { readScannerBatch, scannerBatchDetails } from '../services/scannerBatch';
 import CardLightbox from './CardLightbox';
 import CardShine from './CardShine';
 import {
@@ -11,7 +12,6 @@ import {
   setCameraTorch,
 } from '../services/cameraFocus';
 import {
-  createScannerBatchEntry,
   scannerBatchFormOptions,
   scannerBatchSummary,
   scannerMatchDetails,
@@ -64,14 +64,6 @@ function FlashIcon({ on }) {
   );
 }
 
-const BATCH_CONDITIONS = [
-  { value: 'near_mint', label: 'Near mint' },
-  { value: 'lightly_played', label: 'Lightly played' },
-  { value: 'moderately_played', label: 'Moderately played' },
-  { value: 'heavily_played', label: 'Heavily played' },
-  { value: 'damaged', label: 'Damaged' },
-];
-
 const CardScanner = forwardRef(function CardScanner({
   open,
   onCancel,
@@ -97,8 +89,10 @@ const CardScanner = forwardRef(function CardScanner({
   const previewTimerRef = useRef(null);
   const previewPausedRef = useRef(false);
   const cameraTokenRef = useRef(0);
-  const pendingFilesRef = useRef([]);
   const identifyRef = useRef(null);
+  const identifyBatchRef = useRef(null);
+  const batchRef = useRef([]);
+  const batchPhotoUrlsRef = useRef(new Set());
   const onCancelRef = useRef(onCancel);
   onCancelRef.current = onCancel;
   useImperativeHandle(ref, () => ({
@@ -118,6 +112,9 @@ const CardScanner = forwardRef(function CardScanner({
   const [torchOn, setTorchOn] = useState(false);
   const [launchAction, setLaunchAction] = useState(null);
   const [batch, setBatch] = useState([]);
+  batchRef.current = batch;
+  const [batchProgress, setBatchProgress] = useState(null);
+  const [batchViewer, setBatchViewer] = useState(null);
   const batchMode = mode === 'batch';
   const priceOnly = !batchMode && lookupMode === 'price';
   const nativeScanner = nativeCardScannerAvailable();
@@ -125,6 +122,7 @@ const CardScanner = forwardRef(function CardScanner({
 
   const clearPreview = useCallback(() => {
     setViewerOpen(false);
+    setBatchViewer(null);
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
     previewRef.current = null;
     setPreviewUrl(null);
@@ -176,8 +174,8 @@ const CardScanner = forwardRef(function CardScanner({
         if (cameraToken !== cameraTokenRef.current) return;
         await deliverNativeScannerResult(nativeResult, {
           identify: identifyRef.current,
-          onCancel: () => onCancelRef.current?.(),
-          onPending: (files) => { pendingFilesRef.current = files; },
+          identifyBatch: batchMode ? identifyBatchRef.current : undefined,
+          onCancel: () => batchRef.current.length ? setPhase('review') : onCancelRef.current?.(),
         });
         return;
       }
@@ -279,6 +277,8 @@ const CardScanner = forwardRef(function CardScanner({
       stop();
       clearPreview();
       setScannerOverlayProtection(false);
+      for (const url of batchPhotoUrlsRef.current) URL.revokeObjectURL(url);
+      batchPhotoUrlsRef.current.clear();
       document.body.style.overflow = oldOverflow;
       window.removeEventListener('keydown', escape);
     };
@@ -342,6 +342,44 @@ const CardScanner = forwardRef(function CardScanner({
   };
   identifyRef.current = identify;
 
+  const identifyBatch = async (files, retryId = null) => {
+    const controller = new AbortController();
+    abortRef.current?.abort();
+    abortRef.current = controller;
+    stop();
+    clearPreview();
+    setError(null);
+    setMatch(null);
+    setPhase('batch-processing');
+    const runId = Date.now();
+    try {
+      await readScannerBatch(files, {
+        prepare: prepareCardPhoto,
+        identify: onIdentify,
+        signal: controller.signal,
+        onProgress: setBatchProgress,
+        onEntry: (entry, index) => {
+          const photoUrl = URL.createObjectURL(entry.match.file);
+          batchPhotoUrlsRef.current.add(photoUrl);
+          const result = { ...entry, id: retryId || `${runId}-${index}`, photoUrl };
+          setBatch((current) => retryId
+            ? current.map((previous) => previous.id === retryId ? result : previous)
+            : [...current, result]);
+        },
+      });
+      if (!controller.signal.aborted) {
+        setBatchProgress(null);
+        setPhase('review');
+      }
+    } catch (failure) {
+      if (controller.signal.aborted) return;
+      setError({ title: 'Batch stopped', message: failure?.message });
+      setBatchProgress(null);
+      setPhase('review');
+    }
+  };
+  identifyBatchRef.current = identifyBatch;
+
   const capture = async () => {
     const stage = stageRef.current;
     const frame = frameRef.current;
@@ -378,7 +416,9 @@ const CardScanner = forwardRef(function CardScanner({
         0, 0, canvas.width, canvas.height,
       );
       bitmap?.close?.();
-      await identify(await canvasFile(canvas), true);
+      const file = await canvasFile(canvas);
+      if (batchMode) await identifyBatch([file]);
+      else await identify(file, true);
     } catch (captureError) {
       setError({ title: 'Photo failed', message: captureError?.message || 'The card photo could not be captured.' });
       setPhase('error');
@@ -391,7 +431,7 @@ const CardScanner = forwardRef(function CardScanner({
     const files = [...(event.target.files || [])];
     if (event.target) event.target.value = '';
     if (!files.length) return;
-    pendingFilesRef.current = batchMode ? files.slice(1) : [];
+    if (batchMode) return identifyBatch(files);
     await identify(files[0], false);
   };
 
@@ -402,27 +442,9 @@ const CardScanner = forwardRef(function CardScanner({
     setPhase('review');
   };
 
-  const continueBatch = async () => {
+  const continueBatch = () => {
     clearPreview();
-    const next = pendingFilesRef.current.shift();
-    if (next) await identify(next, false);
-    else start();
-  };
-
-  const keepForBatch = async (destination = 'scan') => {
-    const entry = createScannerBatchEntry(match, `${Date.now()}-${batch.length}`);
-    if (!entry) return;
-    setBatch((current) => [...current, entry]);
-    setMatch(null);
-    clearPreview();
-    if (destination === 'review') {
-      stop();
-      setPhase('review');
-      return;
-    }
-    const next = pendingFilesRef.current.shift();
-    if (next) await identify(next, false);
-    else start();
+    start();
   };
 
   const updateBatchEntry = (id, patch) => {
@@ -434,7 +456,7 @@ const CardScanner = forwardRef(function CardScanner({
   };
 
   const addBatch = async () => {
-    if (!batch.length || !onBatchAdd) return;
+    if (!batch.length || batch.some((entry) => !entry.match?.pin) || !onBatchAdd) return;
     setLaunchAction('batch');
     setPhase('launching');
     try {
@@ -525,11 +547,11 @@ const CardScanner = forwardRef(function CardScanner({
         )}
 
         <div className="live-scanner-topbar">
-          <button type="button" onClick={cancel}>Cancel</button>
+          <button type="button" onClick={cancel}>{phase === 'review' ? 'Done' : 'Cancel'}</button>
           <strong>{batchMode ? 'Batch scan' : priceOnly ? 'Price only' : 'Full Signal'}</strong>
           {batchMode ? (
-            <button type="button" className="live-batch-count" onClick={reviewBatch} disabled={!batch.length}>
-              {batchSummary.cards} saved
+            <button type="button" className="live-batch-count" onClick={reviewBatch} disabled={!batch.length || phase === 'batch-processing'}>
+              {batchSummary.cards} cards
             </button>
           ) : <span aria-hidden />}
         </div>
@@ -665,13 +687,7 @@ const CardScanner = forwardRef(function CardScanner({
             </p>
             <div className={`live-match-actions ${details.exact ? 'live-match-actions--complete' : ''}`}>
               {details.exact ? (
-                batchMode ? (
-                  <>
-                    <button type="button" className="live-match-primary" onClick={() => keepForBatch('scan')}>Keep & scan next</button>
-                    <button type="button" className="live-match-add" onClick={() => keepForBatch('review')}>Keep & review</button>
-                    <button type="button" className="live-match-secondary" onClick={scanAgain}>Scan again</button>
-                  </>
-                ) : priceOnly ? (
+                priceOnly ? (
                   <>
                     <button type="button" className="live-match-add" onClick={() => launch('add')}>Add to collection</button>
                     <button type="button" className="live-match-done" onClick={cancel}>Done · Price only</button>
@@ -699,48 +715,61 @@ const CardScanner = forwardRef(function CardScanner({
           </section>
         )}
 
-        {phase === 'review' && (
+        {(phase === 'review' || phase === 'batch-processing') && (
           <section className="live-batch-review" aria-label="Review scanned cards">
             <div className="live-batch-heading">
               <div>
-                <span>Batch review</span>
+                <span>Batch prices</span>
                 <strong>{batchSummary.cards} card{batchSummary.cards === 1 ? '' : 's'}</strong>
               </div>
               <div>
-                <span>Market total</span>
+                <span>Near-mint total</span>
                 <strong>${batchSummary.value.toFixed(2)}{batchSummary.unpriced ? '+' : ''}</strong>
                 {batchSummary.unpriced > 0 && <small>{batchSummary.unpriced} unpriced</small>}
               </div>
             </div>
 
+            {batchProgress && <p className="live-batch-status" role="status">Pricing card {batchProgress.current} of {batchProgress.total}…</p>}
+            {error && <p className="live-batch-status" role="alert">{error.message}</p>}
             {batch.length ? (
               <div className="live-batch-list">
                 {batch.map((entry) => {
-                  const item = scannerMatchDetails(entry.match);
+                  const item = scannerBatchDetails(entry);
                   const forms = scannerBatchFormOptions(item.game, entry.match?.pin);
+                  const options = entry.match?.candidates || [];
+                  const imageUrl = item.imageUrl || entry.photoUrl;
                   return (
                     <article className="live-batch-item" key={entry.id}>
-                      {item.imageUrl
-                        ? <img src={item.imageUrl} alt="" />
+                      {imageUrl
+                        ? <button type="button" className="live-batch-image" aria-label={`Enlarge ${item.name}`} onClick={() => { setBatchViewer({ ...item, imageUrl: item.imageLarge || imageUrl, pin: entry.match?.pin }); setViewerOpen(true); }}><img src={imageUrl} alt={item.name} /></button>
                         : <span className="live-batch-noart" aria-hidden>?</span>}
                       <div className="live-batch-copy">
                         <strong>{item.name}</strong>
                         <small>{scannerMatchMeta(item)}</small>
-                        <b>{scannerMatchPrice(item)}</b>
+                        <b>{scannerMatchDisplayPrice(item, options.length)}</b>
+                        {entry.error && <small>{entry.error}</small>}
                       </div>
                       <button
                         type="button"
                         className="live-batch-remove"
+                        disabled={phase === 'batch-processing'}
                         onClick={() => removeBatchEntry(entry.id)}
                         aria-label={`Remove ${item.name} from batch`}
                       >×</button>
-                      <div className="live-batch-fields">
-                        <label>
-                          <span>Condition</span>
-                          <select value={entry.condition} onChange={(event) => updateBatchEntry(entry.id, { condition: event.target.value })}>
-                            {BATCH_CONDITIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      {options.length > 1 || (!entry.match?.pin && options.length) ? (
+                        <label className="live-batch-printing">
+                          <span>Choose printing / finish</span>
+                          <select aria-label={`Printing for ${item.name}`} value={entry.match?.pin ? scannerPrintingKey(entry.match.pin) : ''} onChange={(event) => {
+                            const pin = options.find((option) => scannerPrintingKey(option) === event.target.value);
+                            if (pin) updateBatchEntry(entry.id, { match: { ...entry.match, pin }, form: pin.form || 'normal' });
+                          }}>
+                            <option value="" disabled>Choose your card</option>
+                            {options.map((option) => <option key={scannerPrintingKey(option)} value={scannerPrintingKey(option)}>{scannerMatchMeta(scannerMatchDetails({ pin: option }))} · {scannerMatchPrice(scannerMatchDetails({ pin: option }))}</option>)}
                           </select>
                         </label>
+                      ) : null}
+                      {!entry.match?.pin && !options.length && <button type="button" className="live-match-secondary live-batch-retry" disabled={phase === 'batch-processing'} onClick={() => identifyBatch([entry.match.file], entry.id)}>Retry this photo</button>}
+                      {entry.match?.pin && forms.length > 1 && options.length <= 1 && <div className="live-batch-fields">
                         {forms.length > 0 && (
                           <label>
                             <span>Finish</span>
@@ -749,29 +778,21 @@ const CardScanner = forwardRef(function CardScanner({
                             </select>
                           </label>
                         )}
-                        <div className="live-batch-qty" role="group" aria-label={`Quantity for ${item.name}`}>
-                          <span>Quantity</span>
-                          <div>
-                            <button type="button" onClick={() => updateBatchEntry(entry.id, { quantity: Math.max(1, entry.quantity - 1) })}>−</button>
-                            <b>{entry.quantity}</b>
-                            <button type="button" onClick={() => updateBatchEntry(entry.id, { quantity: Math.min(999, entry.quantity + 1) })}>+</button>
-                          </div>
-                        </div>
-                      </div>
+                      </div>}
                     </article>
                   );
                 })}
               </div>
             ) : (
               <div className="live-batch-empty">
-                <strong>No cards kept yet</strong>
-                <span>Continue scanning to build this batch.</span>
+                <strong>{batchProgress ? 'Reading your cards…' : 'No cards in this batch'}</strong>
+                <span>{batchProgress ? 'Each picture and price will appear here.' : 'Continue scanning to build this batch.'}</span>
               </div>
             )}
 
             <div className="live-batch-actions">
-              <button type="button" className="live-match-secondary" onClick={continueBatch}>Continue scanning</button>
-              <button type="button" className="live-match-add" onClick={addBatch} disabled={!batch.length}>Add all to Collection</button>
+              <button type="button" className="live-match-secondary" onClick={continueBatch} disabled={phase === 'batch-processing'}>Scan more</button>
+              <button type="button" className="live-match-add" onClick={addBatch} disabled={!batch.length || phase === 'batch-processing' || batch.some((entry) => !entry.match?.pin)}>Add all to Collection</button>
             </div>
           </section>
         )}
@@ -791,11 +812,11 @@ const CardScanner = forwardRef(function CardScanner({
       <CardLightbox
         isOpen={viewerOpen}
         lockScroll={false}
-        onClose={() => setViewerOpen(false)}
-        imageUrl={viewerImageUrl}
-        cardName={details.name}
-        card={match?.pin}
-        cardMeta={[scannerMatchMeta(details), scannerMatchDisplayPrice(details, candidates.length)].filter(Boolean).join(' · ')}
+        onClose={() => { setViewerOpen(false); setBatchViewer(null); }}
+        imageUrl={batchViewer?.imageUrl || viewerImageUrl}
+        cardName={batchViewer?.name || details.name}
+        card={batchViewer?.pin || match?.pin}
+        cardMeta={batchViewer ? [scannerMatchMeta(batchViewer), scannerMatchDisplayPrice(batchViewer)].join(' · ') : [scannerMatchMeta(details), scannerMatchDisplayPrice(details, candidates.length)].filter(Boolean).join(' · ')}
       />
     </div>
   );

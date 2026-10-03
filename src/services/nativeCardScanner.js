@@ -47,6 +47,7 @@ export async function scanCardsNatively({ batch = false, photos = false } = {}) 
 
 export async function deliverNativeScannerResult(result, {
   identify,
+  identifyBatch,
   onCancel,
   onPending,
 } = {}) {
@@ -55,6 +56,10 @@ export async function deliverNativeScannerResult(result, {
     return 'cancelled';
   }
   if (!result?.files?.length) throw new Error('The card scanner returned no photo.');
+  if (typeof identifyBatch === 'function') {
+    await identifyBatch(result.files);
+    return 'delivered';
+  }
   if (typeof identify !== 'function') throw new Error('The scanner photo receiver is unavailable.');
   onPending?.(result.files.slice(1));
   await identify(result.files[0], false);

@@ -2033,3 +2033,28 @@ outputs and kept its $3.42 non-foil/$0.68 foil quotes. Focused regression checks
 also cover another named foil, wrong-number/normal-product rejection, renamed
 printings, saved-card refresh, and preservation of the Pokémon and Yu-Gi-Oh!
 paths. GitHub checks remain manual.
+
+## Session log — 2026-10-02 batch scanner prices and pictures
+
+Native batch Done used to send only the first photo into the single-card
+confirmation screen. Each next photo required Keep, and finishing the queue
+opened the camera again. Done now reads and prices every returned photo in
+order, then leaves the batch picture-and-price list open. Photo uploads and
+the web camera use the same batch reader. Progress shows the current card.
+
+Unreadable photos stay in the list with Retry; ambiguous printings stay with
+a choice of exact printing/finish. Neither stops the remaining cards. Results
+show enlarged card pictures on tap, individual prices, and the near-mint total.
+Changing a finish updates both its displayed price and the total. Scan more
+appends to the batch; cancelling that camera returns to the existing results.
+Saving to Collection is optional and requires every remaining card to have an
+exact printing. The old Keep loop and extra condition/quantity fields are gone.
+
+Proof: 18 focused local tests passed, including native multi-photo delivery,
+a failed middle photo, cancellation, and finish-sensitive prices/totals. A
+390px browser check rendered the real scanner with controlled identification
+results: four photos, printing selection, failed-photo retry, image enlargement,
+finish changes, and Collection handoff passed. Production build passed. The
+web update was copied into the installed app's existing persistent bundle;
+its index and entry assets match the local build by SHA-256. Physical card
+scanning is left to George's requested phone check. No GitHub checks started.

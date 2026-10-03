@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readScannerBatch } from './scannerBatch.js';
 import {
   deliverNativeScannerResult,
   nativeScannerPagesToFiles,
@@ -59,4 +60,27 @@ test('a returned camera photo always reaches identification', async () => {
     () => deliverNativeScannerResult({ files }, {}),
     /photo receiver is unavailable/,
   );
+});
+
+test('native batch Done delivers every photo to pricing without single-card confirmation', async () => {
+  const files = [{ name: 'one.jpg' }, { name: 'two.jpg' }, { name: 'three.jpg' }];
+  const priced = [];
+  await deliverNativeScannerResult({ files }, {
+    identify: () => assert.fail('Batch must not enter the single-card Keep screen'),
+    identifyBatch: (photos) => readScannerBatch(photos, {
+      prepare: async (file) => ({ file, cropped: true }),
+      identify: async (file) => ({ pin: { name: file.name, price: 2 } }),
+      onEntry: (entry) => priced.push(entry.match.pin.name),
+    }),
+  });
+  assert.deepEqual(priced, files.map((file) => file.name));
+});
+
+test('cancelled native batch never starts pricing', async () => {
+  let cancelled = false;
+  await deliverNativeScannerResult({ cancelled: true }, {
+    onCancel: () => { cancelled = true; },
+    identifyBatch: () => assert.fail('Cancelled batch was priced'),
+  });
+  assert.equal(cancelled, true);
 });

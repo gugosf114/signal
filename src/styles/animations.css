@@ -2646,7 +2646,7 @@
 .live-match-chip--exact { border-color: #356252; color: #9FD9C0; background: rgba(53,98,82,0.2); }
 .live-match-card {
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
+  grid-template-columns: 90px minmax(0, 1fr);
   align-items: center;
   gap: 13px;
   min-height: 86px;
@@ -2748,10 +2748,17 @@
 .live-batch-heading strong { color: #F5F1E8; font: 700 18px 'JetBrains Mono', monospace; }
 .live-batch-heading small { color: #A09060; font: 8px 'JetBrains Mono', monospace; text-transform: uppercase; }
 .live-batch-list { display: grid; gap: 10px; }
+.live-batch-status { color: #D8D4CC; font-size: 14px; line-height: 1.5; }
+.live-batch-image { align-self: start; padding: 0; border: 0; border-radius: 5px; background: transparent; cursor: pointer; }
+.live-batch-image img { display: block; width: 100%; height: auto; border-radius: 5px; }
+.live-batch-printing { grid-column: 1 / -1; display: grid; gap: 6px; min-width: 0; color: #D8D4CC; font-size: 12px; }
+.live-batch-printing select { width: 100%; min-width: 0; min-height: 44px; border: 1px solid #34373E; border-radius: 5px; background: #0A0C10; color: #F5F1E8; }
+.live-batch-retry { grid-column: 1 / -1; min-height: 44px; border-radius: 5px; }
+.live-batch-actions button:disabled { opacity: 0.4; cursor: default; }
 .live-batch-item {
   position: relative;
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
+  grid-template-columns: 90px minmax(0, 1fr);
   gap: 11px;
   padding: 11px;
   border: 1px solid #24272D;
@@ -4352,3 +4359,6 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Batch results keep the pictures and prices in view. */
+.live-batch-item .live-batch-fields { grid-column: 2; grid-template-columns: minmax(0, 1fr); }
