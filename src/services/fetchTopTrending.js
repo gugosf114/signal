@@ -11,13 +11,14 @@ import { fetchCatalogueJSON } from './signalGateway.js';
 import { normalizeCardRecord, stampCardPrice } from './cardRecord.js';
 import { isExactScanTarget } from './scanIdentity.js';
 
-const CACHE_KEY = 'signal_top_trending_v3';
+export const TOP_TRENDING_COUNT = 4;
+const CACHE_KEY = 'signal_top_trending_v4';
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 const VERTICALS = [
-  { id: 'pokemon', game: 'pokemon', target: 2 },
-  { id: 'magic', game: 'mtg', target: 2 },
-  { id: 'yugioh', game: 'yugioh', target: 1 },
+  { id: 'pokemon', game: 'pokemon' },
+  { id: 'magic', game: 'mtg' },
+  { id: 'yugioh', game: 'yugioh' },
 ];
 
 const TRENDING_TITLE_PATTERNS = [
@@ -217,14 +218,14 @@ export async function resolveTrendingCard(ref) {
   return null;
 }
 
-async function resolveEnough(refs, target) {
+export async function resolveEnough(refs, target, resolve = resolveTrendingCard) {
   const cards = [];
   let index = 0;
   while (cards.length < target && index < refs.length) {
     const count = target - cards.length;
     const batch = refs.slice(index, index + count);
     index += batch.length;
-    const settled = await Promise.allSettled(batch.map(resolveTrendingCard));
+    const settled = await Promise.allSettled(batch.map(resolve));
     cards.push(...settled
       .filter((result) => result.status === 'fulfilled' && isExactScanTarget(result.value?.game, result.value))
       .map((result) => result.value));
@@ -260,7 +261,7 @@ function readCache() {
     if (!raw) return null;
     const { ts, data } = JSON.parse(raw);
     const age = Date.now() - ts;
-    if (age < 0 || age > CACHE_TTL_MS) return null;
+    if (age < 0 || age > (data?.length >= TOP_TRENDING_COUNT ? CACHE_TTL_MS : 5 * 60 * 1000)) return null;
     if (!Array.isArray(data) || !data.length || !data.every((card) => isExactScanTarget(card?.game, card))) return null;
     return data;
   } catch {
@@ -283,14 +284,19 @@ export async function getTopTrending() {
       const article = await findLatestTrendingArticle(vertical.id);
       if (!article?.uuid) return [];
       const body = await fetchArticleBody(article.uuid);
-      const refs = parseTrendingCardsFromBody(body, vertical.game, vertical.target * 3, article);
-      return resolveEnough(refs, vertical.target);
+      return parseTrendingCardsFromBody(body, vertical.game, TOP_TRENDING_COUNT * 3, article);
     } catch {
       return [];
     }
   }));
 
-  const cards = groups.flat();
+  // Try all games in turn, then fill from the remaining verified movers.
+  // A dead catalogue must not cap the whole panel at another game's quota.
+  const refs = [];
+  for (let index = 0; index < Math.max(0, ...groups.map((group) => group.length)); index += 1) {
+    for (const group of groups) if (group[index]) refs.push(group[index]);
+  }
+  const cards = await resolveEnough(refs, TOP_TRENDING_COUNT);
   if (cards.length) writeCache(cards);
   return cards;
 }

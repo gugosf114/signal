@@ -5,6 +5,8 @@ import {
   pokemonArticleIdentity,
   selectPokemonTrendingCard,
   selectTcgplayerTrendingProduct,
+  resolveEnough,
+  TOP_TRENDING_COUNT,
 } from './fetchTopTrending.js';
 
 describe('exact TCGplayer trending parser', () => {
@@ -51,4 +53,19 @@ describe('exact TCGplayer trending parser', () => {
     assert.equal(picked.tcgplayerProductId, 592579);
     assert.equal(selectTcgplayerTrendingProduct([{ tcgplayerProductId: 111 }], 592579), null);
   });
+});
+
+test('fills all four slots from verified movers when other games fail', async () => {
+  const refs = ['pokemon', 'magic1', 'yugioh', 'magic2', 'magic3', 'magic4', 'magic5'];
+  const cards = await resolveEnough(refs, TOP_TRENDING_COUNT, async (name) => {
+    if (name === 'pokemon') throw new Error('Catalogue unavailable');
+    if (name === 'yugioh') return null;
+    return { id: name, game: 'mtg', name, setName: 'Set', number: '1', form: 'normal' };
+  });
+  assert.deepEqual(cards.map((card) => card.name), ['magic1', 'magic2', 'magic3', 'magic4']);
+});
+
+test('does not fill a trending slot with an unresolved printing', async () => {
+  const cards = await resolveEnough(['broad name'], TOP_TRENDING_COUNT, async (name) => ({ game: 'mtg', name }));
+  assert.deepEqual(cards, []);
 });

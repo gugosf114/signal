@@ -2058,3 +2058,18 @@ finish changes, and Collection handoff passed. Production build passed. The
 web update was copied into the installed app's existing persistent bundle;
 its index and entry assets match the local build by SHA-256. Physical card
 scanning is left to George's requested phone check. No GitHub checks started.
+
+## Session log — 2026-10-02 four Top Trending cards
+
+Top Trending now shows four cards in a two-column, two-row grid. Removed the
+panel's internal scrolling and fade, and made each card a 44px touch target.
+The feed now fills four verified printing slots across the available games
+instead of stopping at each game's quota. This fixes the two-card result when
+only Magic resolves. The cache version changed so the installed app refreshes
+the old two-card list; partial results retry after five minutes.
+
+Proof: seven focused feed tests pass. The live feed returned four exact Magic
+cards. A rendered check with those live records confirmed two rows and two
+columns without clipping or scrolling at 320, 390, and 800px. Production build
+passed. The phone's persistent web bundle was updated and all build files
+matched by SHA-256. GitHub checks remain manual and were not started.

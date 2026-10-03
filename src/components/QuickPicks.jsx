@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GAME_LABELS } from '../config/signals';
-import { getTopTrending } from '../services/fetchTopTrending';
+import { getTopTrending, TOP_TRENDING_COUNT } from '../services/fetchTopTrending';
 import { isExactScanTarget } from '../services/scanIdentity';
 import GameMark from './GameMark';
 import ScrollReveal from './ScrollReveal';
@@ -8,15 +8,6 @@ import ScrollReveal from './ScrollReveal';
 export default function QuickPicks({ onSelect, loading, introActive = false }) {
   const [trending, setTrending] = useState([]);
   const [trendStatus, setTrendStatus] = useState('loading');
-  const [showFade, setShowFade] = useState(false);
-  const listRef = useRef(null);
-
-  const updateFade = () => {
-    const list = listRef.current;
-    if (!list) return;
-    setShowFade(list.scrollTop + list.clientHeight < list.scrollHeight - 1);
-  };
-
   useEffect(() => {
     let cancelled = false;
     getTopTrending().then((picks) => {
@@ -25,16 +16,11 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
         setTrendStatus('unavailable');
         return;
       }
-      setTrending(picks.slice(0, 5));
+      setTrending(picks.slice(0, TOP_TRENDING_COUNT));
       setTrendStatus('live');
     }).catch(() => { if (!cancelled) setTrendStatus('unavailable'); });
     return () => { cancelled = true; };
   }, []);
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(updateFade);
-    return () => cancelAnimationFrame(frame);
-  }, [trending]);
 
   return (
     <ScrollReveal className={`quick-picks-panel quick-picks-panel--intro-${introActive ? 'active' : 'done'}`} style={{
@@ -87,17 +73,12 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
 
       <div style={{ position: 'relative' }}>
         <div
-          ref={listRef}
-          onScroll={updateFade}
+          className="quick-picks-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
             gap: 6,
-            maxHeight: 108,
-            overflowY: 'auto',
             alignContent: 'start',
-            paddingRight: 2,
-            scrollbarWidth: 'thin',
           }}
         >
           {trending.map((card, idx) => {
@@ -119,7 +100,7 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
                 gap: 6,
                 width: '100%',
                 minWidth: 0,
-                minHeight: 32,
+                minHeight: 44,
                 padding: '5px 10px',
                 background: 'var(--signal-tile)',
                 border: '1px solid #4A464F',
@@ -167,7 +148,6 @@ export default function QuickPicks({ onSelect, loading, introActive = false }) {
             );
           })}
         </div>
-        {showFade && <div className="compact-scroll-fade" aria-hidden />}
       </div>
     </ScrollReveal>
   );
