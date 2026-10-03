@@ -2073,3 +2073,17 @@ cards. A rendered check with those live records confirmed two rows and two
 columns without clipping or scrolling at 320, 390, and 800px. Production build
 passed. The phone's persistent web bundle was updated and all build files
 matched by SHA-256. GitHub checks remain manual and were not started.
+
+## Session log — 2026-10-03 visible batch version prices
+
+Batch results now show printing and finish choices as buttons directly below
+each card. Each button shows its version label and price; the chosen button
+has a check mark and green background. A tap updates the card price and total,
+and Collection receives the chosen printing and finish. This replaces both
+batch dropdowns. Single-card scanning is unchanged.
+
+Proof: production build passed. A rendered scanner check verified that both
+Yu-Gi-Oh rarity prices stay visible, selection updates the total, a selected
+Magic foil is passed to Collection, retry and image enlargement still work,
+and the layout fits 320px and 390px screens. The installed phone web bundle
+matches all local build files by SHA-256. No GitHub checks were started.

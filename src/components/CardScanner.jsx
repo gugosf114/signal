@@ -3,6 +3,7 @@ import { drawCameraFrame } from '../services/cameraCanvas';
 import { computeVideoCrop } from '../services/scannerCrop';
 import { prepareCardPhoto } from '../services/prepareCardPhoto';
 import { readScannerBatch, scannerBatchDetails } from '../services/scannerBatch';
+import { collectionFormLabel } from '../services/collection';
 import CardLightbox from './CardLightbox';
 import CardShine from './CardShine';
 import {
@@ -757,28 +758,44 @@ const CardScanner = forwardRef(function CardScanner({
                         aria-label={`Remove ${item.name} from batch`}
                       >×</button>
                       {options.length > 1 || (!entry.match?.pin && options.length) ? (
-                        <label className="live-batch-printing">
-                          <span>Choose printing / finish</span>
-                          <select aria-label={`Printing for ${item.name}`} value={entry.match?.pin ? scannerPrintingKey(entry.match.pin) : ''} onChange={(event) => {
-                            const pin = options.find((option) => scannerPrintingKey(option) === event.target.value);
-                            if (pin) updateBatchEntry(entry.id, { match: { ...entry.match, pin }, form: pin.form || 'normal' });
-                          }}>
-                            <option value="" disabled>Choose your card</option>
-                            {options.map((option) => <option key={scannerPrintingKey(option)} value={scannerPrintingKey(option)}>{scannerMatchMeta(scannerMatchDetails({ pin: option }))} · {scannerMatchPrice(scannerMatchDetails({ pin: option }))}</option>)}
-                          </select>
-                        </label>
+                        <div className="live-batch-choices" role="group" aria-label={`Choose version for ${item.name}`}>
+                          {options.map((option) => {
+                            const optionDetails = scannerMatchDetails({ pin: option });
+                            const selected = Boolean(entry.match?.pin && scannerPrintingKey(entry.match.pin) === scannerPrintingKey(option));
+                            const label = collectionFormLabel(option.game, option.form, option) || option.finish || option.rarity || 'This printing';
+                            return <button
+                              type="button"
+                              key={scannerPrintingKey(option)}
+                              className="live-batch-choice"
+                              aria-pressed={selected}
+                              onClick={() => updateBatchEntry(entry.id, { match: { ...entry.match, pin: option }, form: option.form || 'normal' })}
+                            >
+                              <span>{selected ? '✓ ' : ''}{label}</span>
+                              <strong>{scannerMatchPrice(optionDetails)}</strong>
+                              <small>{scannerMatchMeta(optionDetails)}</small>
+                            </button>;
+                          })}
+                        </div>
                       ) : null}
                       {!entry.match?.pin && !options.length && <button type="button" className="live-match-secondary live-batch-retry" disabled={phase === 'batch-processing'} onClick={() => identifyBatch([entry.match.file], entry.id)}>Retry this photo</button>}
-                      {entry.match?.pin && forms.length > 1 && options.length <= 1 && <div className="live-batch-fields">
-                        {forms.length > 0 && (
-                          <label>
-                            <span>Finish</span>
-                            <select value={entry.form} onChange={(event) => updateBatchEntry(entry.id, { form: event.target.value })}>
-                              {forms.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                            </select>
-                          </label>
-                        )}
-                      </div>}
+                      {entry.match?.pin && forms.length > 1 && options.length <= 1 && (
+                        <div className="live-batch-choices" role="group" aria-label={`Choose finish for ${item.name}`}>
+                          {forms.map((option) => {
+                            const selected = entry.form === option.value;
+                            const optionDetails = scannerBatchDetails({ ...entry, form: option.value });
+                            return <button
+                              type="button"
+                              key={option.value}
+                              className="live-batch-choice"
+                              aria-pressed={selected}
+                              onClick={() => updateBatchEntry(entry.id, { form: option.value })}
+                            >
+                              <span>{selected ? '✓ ' : ''}{option.label}</span>
+                              <strong>{scannerMatchPrice(optionDetails)}</strong>
+                            </button>;
+                          })}
+                        </div>
+                      )}
                     </article>
                   );
                 })}
