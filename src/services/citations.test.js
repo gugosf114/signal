@@ -274,3 +274,18 @@ describe('area-aware research subjects', () => {
     assert.equal(result.signals[0].sources.length, 0);
   });
 });
+
+// Strength measures attention; neutral is a direction, not a zero rating.
+test('keeps assessed strength independent of source direction', () => {
+  const evidence = { type: 'editorial', title: 'Meowth review', url: 'https://example.com/meowth-review' };
+  for (const implication of ['up', 'down', 'neutral']) {
+    const parsed = { signals: [{ key: 'editorial', level: 4, sources: [{ url: evidence.url, implication }] }] };
+    const result = lockSourcesToEvidence(parsed, new Map([[evidence.url, evidence]]), { cardName: 'Meowth' });
+    assert.equal(result.signals[0].level, 4);
+    assert.equal(result.signals[0].strengthAssessed, true);
+    assert.equal(result.signals[0].sources[0].implication, implication);
+  }
+  const recovered = fillEvidenceGaps({ signals: [{ key: 'editorial', level: 4, sources: [] }] }, new Map([[evidence.url, evidence]]), { cardName: 'Meowth' });
+  assert.equal(recovered.signals[0].strengthAssessed, false);
+  assert.equal(recovered.signals[0].level, 0);
+});

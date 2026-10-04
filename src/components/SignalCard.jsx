@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import HeatBar from './HeatBar';
+import SourceCount from './SourceCount';
 import SourceCitation from './SourceCitation';
-import { SIGNAL_TYPES } from '../config/signals';
-import { extractYouTubeId, BrandIcon, brandFromUrl } from '../config/brandIcons';
+import { SIGNAL_TYPES, sourceDirection } from '../config/signals';
+import { extractYouTubeId } from '../config/brandIcons';
 
 const MARKS = {
   creator: (c) => (
@@ -163,6 +163,11 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
   }, [expanded]);
 
   const sources = Array.isArray(signal.sources) ? signal.sources : [];
+  const strength = Math.max(0, Math.min(5, Number(signal.level) || 0));
+  const strengthAssessed = sources.length > 0 && (signal.strengthAssessed ?? strength > 0);
+  const direction = sourceDirection(sources);
+  const directionLabel = direction > 0 ? 'Up' : direction < 0 ? 'Down'
+    : sources.some(source => source.implication === 'up' || source.implication === 'down') ? 'Mixed' : 'Neutral';
   // Model-selected URLs that could not be joined to a locked retrieval record.
   // Source title, publisher, date, and summary never come from the model.
   const ytSources = sources.filter(s => extractYouTubeId(s.url));
@@ -206,7 +211,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
           cursor: 'pointer',
         }}
       >
-      {/* Row: mark + label + heatbar + chevron */}
+      {/* Row: mark + label + source count + chevron */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ flexShrink: 0, width: 16, display: 'flex', alignItems: 'center' }}>
           {markFn ? markFn(meta.color) : null}
@@ -228,36 +233,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
           {meta.label}
         </span>
 
-        <HeatBar level={signal.level} color={meta.color} />
-
-        {/* Source preview: dominant brand logos + count, surfaces what's behind
-            the score before the row is even expanded. */}
-        {!expanded && sources.length > 0 && (() => {
-          const brands = [];
-          const seen = new Set();
-          for (const s of sources) {
-            const b = brandFromUrl(s.url) || (s.type === 'youtube' ? 'youtube' : null);
-            if (b && !seen.has(b)) { seen.add(b); brands.push(b); }
-            if (brands.length === 3) break;
-          }
-          return (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-              {brands.map((b) => (
-                <BrandIcon key={b} brand={b} size={11} style={{ opacity: 0.65 }} />
-              ))}
-              <span style={{
-                fontSize: 8,
-                fontFamily: "'JetBrains Mono', monospace",
-                color: meta.color,
-                opacity: 0.55,
-                letterSpacing: '0.04em',
-                marginLeft: brands.length ? 2 : 0,
-              }}>
-                {sources.length}
-              </span>
-            </span>
-          );
-        })()}
+        <SourceCount sources={sources} />
 
         <span className={`signal-card-chevron${expanded ? ' signal-card-chevron--open' : ''}`} style={{
           fontSize: 14,
@@ -293,6 +269,10 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
               paddingLeft: 14,
               borderLeft: `1px solid ${isJapan ? 'rgba(196,64,64,0.12)' : '#1A1D24'}`,
             }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 18px', marginBottom: 12, fontSize: 12, color: 'var(--signal-text-secondary)' }}>
+                <span>Strength: {strengthAssessed ? `${strength}/5` : 'Not rated'}</span>
+                <span>Direction: {sources.length ? directionLabel : 'Not rated'}</span>
+              </div>
               <div style={{
                 fontSize: 14,
                 color: '#92897C',

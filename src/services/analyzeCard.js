@@ -50,7 +50,7 @@ const ANALYSIS_MODEL = 'claude-haiku-4-5';
 // written before the creator, Japan, and Reddit lanes were repaired (2026-09-06)
 // froze a synthesis that never saw that evidence; a new key lets it refresh
 // once instead of serving the old answer for a week.
-export const PREFETCH_VERSION = 6;
+export const PREFETCH_VERSION = 7;
 
 function sharedCacheKey(cardName, game, pin) {
   const identity = printingIdentity(pin) || '';
@@ -120,7 +120,7 @@ RULES:
 
 ${creatorBlocks}
 For "creator": use the directory only to recognize a matched channel. Cite the strongest verified hit. Never claim a creator was silent unless a creator-specific search was actually run.
-For release and supply areas, accept retrieved news about the selected expansion even without this card name or number. Japanese release, restock, reservation and lottery articles belong in jp_release. For franchise attention, accept relevant character/game news. Set/franchise context is neutral; it does not prove demand or a price move for this printing.
+For release and supply areas, accept retrieved news about the selected expansion even without this card name or number. Japanese release, restock, reservation and lottery articles belong in jp_release. For franchise attention, accept relevant character/game news. Set/franchise context has neutral direction; it does not prove demand or a price move for this printing. Rate strength independently from direction: neutral evidence can have strength above zero. Never use source count as the strength rating.
 For "jp_hype": JP creators from the directory when present.
 For creator and JP YouTube evidence, a card-family video is not evidence for this printing. Use only a video that names the exact set, set code, or printed card number. Otherwise leave sources empty and level 0.
 

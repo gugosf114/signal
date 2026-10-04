@@ -2312,3 +2312,20 @@ cases cover the actual missing Japanese articles, wrong expansions, franchise
 matching and expansion-only videos. The production build completed and the
 phone web bundle was updated. Tests and GitHub checks were not run, per
 George's instruction.
+
+## Session log — 2026-10-04 clear source counts and separate strength
+
+Replaced unlabeled strength rectangles in Jump to and category headings with
+a shared plain source count (1 source / 2 sources). Expanded categories show
+labeled Strength and Direction separately. The previous citation change had
+incorrectly cleared assessed strength when every accepted source was neutral;
+accepted ratings now survive regardless of direction. Sources recovered or
+reassigned without a rating explicitly remain unassessed, shown as Not rated.
+Older neutral zero ratings are also shown as unrated rather than guessed.
+
+The existing overall score already treats neutral direction separately from
+strength. The prompt now states this distinction, and cache versions advance
+for fresh research. Added a regression case covering equal strength across
+up/down/neutral and unrated recovered evidence. Production build completed,
+and the phone bundle was updated. No test runs, visual checks, or GitHub
+checks were performed, per George's instruction.

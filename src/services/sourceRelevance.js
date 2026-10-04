@@ -214,7 +214,7 @@ export function enforceExactCreatorSources(analysis, {
       const key = normalizedUrl(source.url);
       const alreadyUsed = inputSignals.some(signal => signal.key !== 'jp_hype' && signal.sources.some(item => normalizedUrl(item.url) === key));
       if (!alreadyUsed) {
-        if (!creator.sources.length) creator.level = 0;
+        if (!creator.sources.length) { creator.level = 0; creator.strengthAssessed = false; }
         creator.sources.push({ ...source, implication: 'neutral' });
         creator.detail = creator.sources[0].summary || creator.sources[0].title;
         sourceAudit.push({ signal: 'jp_hype', url: source.url, reason: 'japanese_language_unverified', action: 'reassigned', evidenceArea: 'creator' });

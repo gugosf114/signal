@@ -1,6 +1,6 @@
 import React from 'react';
 import { SIGNAL_TYPES } from '../config/signals';
-import HeatBar from './HeatBar';
+import SourceCount from './SourceCount';
 
 export default function SignalNav({ signals }) {
   if (!signals || signals.length === 0) return null;
@@ -39,6 +39,7 @@ export default function SignalNav({ signals }) {
         if (!meta) return null;
         return (
           <button
+            type="button"
             key={signal.key}
             className="signal-jump-button"
             onClick={() => handleJump(signal.key)}
@@ -69,7 +70,7 @@ export default function SignalNav({ signals }) {
             }}
           >
             {meta.label}
-            <HeatBar level={signal.level} color={meta.color} />
+            <SourceCount sources={signal.sources} />
           </button>
         );
       })}

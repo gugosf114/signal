@@ -333,7 +333,9 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
     totalDropped += dropped;
     return {
       ...signal,
-      level: sources.some(source => source.implication !== 'neutral') ? signal.level : 0,
+      // Direction does not determine strength: strong evidence can be neutral.
+      level: sources.length ? Math.max(0, Math.min(5, Number(signal.level) || 0)) : 0,
+      strengthAssessed: sources.length > 0 && Number.isFinite(signal.level),
       detail: evidenceDetail(sources),
       sources,
       dropped,
@@ -344,7 +346,7 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
     const target = parsed.signals.find(signal => signal.key === area);
     if (!target || usedAcrossReport.has(evidence.url)) { audit.action = 'already_used_or_no_area'; continue; }
     const { area: _area, ...trusted } = evidence;
-    if (!target.sources.length) target.level = 0;
+    if (!target.sources.length) { target.level = 0; target.strengthAssessed = false; }
     target.sources.push({ ...trusted, evidenceScope: scope, implication: 'neutral' });
     target.detail = evidenceDetail(target.sources);
     usedAcrossReport.add(evidence.url);
@@ -388,6 +390,7 @@ export function fillEvidenceGaps(parsed, registry, { cardName = '', pin = null }
     parsed.signals[index] = {
       ...parsed.signals[index],
       level: 0,
+      strengthAssessed: false,
       detail: evidenceDetail([visibleEvidence]),
       sources: [{ ...visibleEvidence, evidenceScope: evidenceScope(evidence, cardName, pin), implication: 'neutral' }],
     };
