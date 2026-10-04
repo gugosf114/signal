@@ -271,56 +271,49 @@ export default function Collection({
         ))}
       </ScrollReveal>
 
-      <ScrollReveal delay={70} className="col-summary">
-        <div className="col-summary-count">
-          <span className="col-summary-label">{activeBinder.label} · cards</span>
-          <strong className="col-summary-count-value">{total}</strong>
-          {topPricedCards.length > 0 && (
-            <div className="col-top-cards" aria-label={`${activeBinder.label}: three highest unit-price cards`}>
-              {topPricedCards.map((card, index) => {
-                const imageUrl = card.imageUrl || card.imageLarge;
-                return (
-                  <div
-                    className="col-top-card"
-                    key={cardKey(card)}
-                    title={`${index + 1}. ${card.name} — ${formatCollectionMoney(marketPriceFor(card))}`}
-                    style={{
-                      '--top-card-entry-delay': `${0.72 + (index * 0.09)}s`,
-                    }}
-                  >
-                    <div className="col-top-card-art">
-                      <span className="col-top-card-noart" aria-hidden="true">?</span>
-                      {imageUrl && (
-                        <img
-                          src={imageUrl}
-                          alt={card.name}
-                          loading="eager"
-                          referrerPolicy="no-referrer"
-                          onError={(event) => { event.currentTarget.style.display = 'none'; }}
-                        />
-                      )}
-                      <b aria-hidden="true">{index + 1}</b>
-                    </div>
-                    <span className="col-top-card-price">{formatCollectionMoney(marketPriceFor(card))}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+      <ScrollReveal delay={70} className="col-summary col-summary--stacked">
+        <div className="col-summary-heading">
+          <div className="col-summary-count">
+            <span className="col-summary-label">{activeBinder.label}</span>
+            <strong className="col-summary-count-value">{total} <small>cards</small></strong>
+          </div>
+          <div className="col-summary-market">
+            <span className="col-summary-label">Market estimate</span>
+            <strong className="col-summary-market-value">{marketDisplay}</strong>
+          </div>
         </div>
-        <div className="col-summary-market">
-          <span className="col-summary-label">{activeBinder.label} · market estimate</span>
-          <strong className="col-summary-market-value">{marketDisplay}</strong>
-          <CollectionCurrencies
-            usdTotal={market.total}
-            hasKnownValue={market.pricedQty > 0 || market.unpricedQty === 0}
-            partial={market.unpricedQty > 0}
-          />
+        {topPricedCards.length > 0 && <div className="col-summary-highlights">
+          <span className="col-summary-section-label">Highest priced · per card</span>
+          <div className="col-top-cards" aria-label={`${activeBinder.label}: three highest unit-price cards`}>
+            {topPricedCards.map((card, index) => {
+              const imageUrl = card.imageUrl || card.imageLarge;
+              return <button
+                type="button"
+                className="col-top-card"
+                key={cardKey(card)}
+                onClick={() => setViewing(card)}
+                aria-label={`Open ${card.name} · ${formatCollectionMoney(marketPriceFor(card))} each`}
+                style={{ '--top-card-entry-delay': `${0.72 + (index * 0.09)}s` }}
+              >
+                <span className="col-top-card-art">
+                  <span className="col-top-card-noart" aria-hidden="true">?</span>
+                  {imageUrl && <img src={imageUrl} alt={card.name} loading="eager" referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.style.display = 'none'; }} />}
+                  <b aria-hidden="true">{index + 1}</b>
+                </span>
+                <span className="col-top-card-price">{formatCollectionMoney(marketPriceFor(card))}</span>
+                <span className="col-top-card-name">{card.name}</span>
+              </button>;
+            })}
+          </div>
+        </div>}
+        <div className="col-summary-footer">
+          <CollectionCurrencies usdTotal={market.total} hasKnownValue={market.pricedQty > 0 || market.unpricedQty === 0} partial={market.unpricedQty > 0} />
           <div className="col-price-coverage" role="status">
-            <span>{market.pricedQty} of {total} cards priced{market.unpricedQty ? ` · ${market.unpricedQty} missing prices` : ''}</span>
-            {refreshingPrices > 0 && <span>Updating prices…</span>}
-            {priceStatus.staleQty > 0 && <span>{priceStatus.staleQty} need a fresh price check</span>}
+            <span>{market.pricedQty} of {total} priced</span>
+            {market.unpricedQty > 0 && <span>{market.unpricedQty} missing prices</span>}
             {priceStatus.oldestCheckedAt && <span>Prices checked {checkedDate(priceStatus.oldestCheckedAt)}{checkedDate(priceStatus.oldestCheckedAt) !== checkedDate(priceStatus.newestCheckedAt) ? ` – ${checkedDate(priceStatus.newestCheckedAt)}` : ''}</span>}
+            {refreshingPrices > 0 && <span>Updating…</span>}
+            {priceStatus.staleQty > 0 && <span>{priceStatus.staleQty} need a fresh check</span>}
             {priceStatus.undatedQty > 0 && <span>{priceStatus.undatedQty} have no price date</span>}
             <small>These prices do not adjust for wear.</small>
           </div>

@@ -210,7 +210,7 @@ test('micro-detail pass gives quiet controls a fitting response without changing
   assert.match(citationSource, /yt-play-button/);
   assert.match(collectionSource, /col-summary-count-value/);
   assert.match(collectionSource, /--top-card-entry-delay/);
-  assert.match(collectionSource, /key=\{card\.qty\} className="col-qty-value"/);
+  assert.match(collectionSource, /className="col-copy-badge">×\{card\.qty\}/);
   assert.match(browserSource, /cb-sort-chip--on/);
   assert.match(browserSource, /cb-set-chip--on/);
   assert.match(browserSource, /cb-game-tab--on/);

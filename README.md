@@ -2133,3 +2133,19 @@ all tested tiles at 320/390/800px have only their 1px border above the art and
 below the content. The matching screenshot was inspected and the production
 build passed. All installed phone build files match by SHA-256. GitHub checks
 were not started.
+
+## Session log — 2026-10-04 balanced Collection summary
+
+Replaced the summary's two tall columns with a shared count/value heading,
+a full-width row of the three highest unit-price cards, and a compact footer.
+The larger card previews show their names and prices; each opens its exact
+saved-card management sheet. Currency conversions, rate date, quote coverage,
+price dates and wear note now share the full-width footer.
+
+Proof: the actual rendered Collection was checked at 320/390/800px with the
+Yu-Gi-Oh binder. The sections stack without overflow; all three card buttons
+open their matching records; the empty collection has no empty card row.
+The screenshot was inspected. All 60 focused collection, currency and layout
+checks pass, including the updated assertion for the quantity badge. The
+production build passed. Installed phone files match every local build file
+by SHA-256. No GitHub checks were started.
