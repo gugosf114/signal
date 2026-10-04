@@ -2210,3 +2210,19 @@ simulated keyboard hid the bar. Menu focus/Escape, bottom content clearance,
 and 320/390/800px layouts passed. Screenshots of the bar and scan menu were
 inspected. Production build passed. Installed phone files match the local
 build by SHA-256. No GitHub checks were started.
+
+## Session log — 2026-10-04 slimmer transparent bottom bar
+
+Reduced the bottom bar from 72px to 52px, narrowed its maximum width, and
+lowered its bottom offset. The background now uses a translucent 36% tint
+with a light blur, a finer border and less shadow. Removed the solid active
+and Scan button blocks; icons and labels have a smaller visual footprint.
+Tap targets remain 44px high. Reduced the page's reserved bottom space and
+lowered the save-message position to match the smaller bar.
+
+Proof: computed browser height is 52px and background alpha is 0.36. The
+rendered check used fixed quote dates to keep live price refreshes from
+moving the fixture layout. It passed page/binder/scroll memory, all scan
+routes, keyboard/dialog hiding, Escape/focus, 320/390/800px fit and bottom
+content clearance. Screenshot inspected; production build passed. Installed
+phone files match the local build by SHA-256. No GitHub checks started.

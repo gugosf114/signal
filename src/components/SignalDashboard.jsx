@@ -485,7 +485,7 @@ export default function SignalDashboard() {
     <div className="signal-dashboard" style={{
       maxWidth: 800,
       margin: '0 auto',
-      padding: isMobile ? '24px 16px calc(108px + env(safe-area-inset-bottom))' : '32px 24px calc(108px + env(safe-area-inset-bottom))',
+      padding: isMobile ? '24px 16px calc(84px + env(safe-area-inset-bottom))' : '32px 24px calc(84px + env(safe-area-inset-bottom))',
       position: 'relative',
     }}>
       <SignalAmbient active={!loading} page={page} />
@@ -1059,7 +1059,7 @@ export default function SignalDashboard() {
       {saveMsg && (
         <div style={{
           position: 'fixed',
-          bottom: 'calc(96px + env(safe-area-inset-bottom))',
+          bottom: 'calc(76px + env(safe-area-inset-bottom))',
           left: '50%',
           transform: 'translateX(-50%)',
           background: '#0E1014',

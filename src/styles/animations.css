@@ -4466,17 +4466,18 @@
 .col-detail-fields { margin-top: 18px; }
 
 /* Thumb navigation: matte charcoal, warm metal accent, restrained motion. */
-.bottom-dock-shell { position: fixed; z-index: 800; bottom: calc(12px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(calc(100% - 24px), 460px); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-.bottom-dock { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; padding: 6px; border: 1px solid #6D665545; border-radius: 21px; background: #191A18; box-shadow: 0 8px 32px #0007, 0 1px 0 #EBDCBD0D inset; animation: dockAppear .18s ease-out; }
-.bottom-dock-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 0; min-height: 58px; padding: 5px 2px; border: 0; border-radius: 15px; background: transparent; color: #AEAEA5; font: 500 11px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; letter-spacing: .01em; cursor: pointer; transition: color .15s, background .15s; }
-.bottom-dock-icon { display: grid; place-items: center; width: 30px; height: 28px; }
+.bottom-dock-shell { position: fixed; z-index: 800; bottom: calc(8px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(calc(100% - 40px), 360px); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.bottom-dock { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; padding: 3px; border: 1px solid #E5E6DB30; border-radius: 16px; background: rgba(14, 18, 16, .36); backdrop-filter: blur(14px) saturate(110%); -webkit-backdrop-filter: blur(14px) saturate(110%); box-shadow: 0 4px 16px #0004, 0 1px 0 #FFFFFF0A inset; animation: dockAppear .18s ease-out; }
+.bottom-dock-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 44px; padding: 2px 1px; border: 0; border-radius: 11px; background: transparent; color: #D5D8D0; font: 500 10px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; letter-spacing: .01em; text-shadow: 0 1px 2px #0008; cursor: pointer; transition: color .15s, background .15s; }
+.bottom-dock-icon { display: grid; place-items: center; width: 24px; height: 20px; }
 .bottom-dock svg, .bottom-dock-menu svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; }
-.bottom-dock-item--active { color: #F4EAD7; background: #34352D; }
-.bottom-dock-item--active::after { content: ''; position: absolute; bottom: 3px; width: 16px; height: 2px; border-radius: 2px; background: #C6AD76; }
+.bottom-dock svg { width: 19px; height: 19px; }
+.bottom-dock-item--active { color: #FFF3D6; background: #FFFFFF0B; }
+.bottom-dock-item--active::after { content: ''; position: absolute; bottom: 2px; width: 14px; height: 1.5px; border-radius: 2px; background: #C6AD76; }
 .bottom-dock-item--active > span:last-child { font-weight: 650; }
-.bottom-dock-scan .bottom-dock-icon { width: 34px; border-radius: 9px; background: #D0B67F; color: #1C201B; }
+.bottom-dock-scan .bottom-dock-icon { width: 24px; background: transparent; color: #E1C88F; }
 .bottom-dock-scan { color: #D9C698; }
-.bottom-dock-item:active { background: #414137; }
+.bottom-dock-item:active { background: #FFFFFF14; }
 .bottom-dock-item:focus-visible, .bottom-dock-menu button:focus-visible { outline: 2px solid #E0CCA0; outline-offset: 2px; }
 .bottom-dock-shade { position: fixed; width: 200vw; height: 200vh; bottom: -100vh; left: -100vw; border: 0; background: #080A08A8; touch-action: none; cursor: default; }
 .bottom-dock-menu { position: absolute; bottom: calc(100% + 10px); left: 0; right: 0; overflow: auto; max-height: calc(100dvh - 150px); padding: 8px 14px 12px; border: 1px solid #77705D66; border-radius: 20px; background: #1C1E1A; color: #F1ECDF; box-shadow: 0 12px 40px #0006; animation: dockAppear .16s ease-out; }
