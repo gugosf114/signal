@@ -2183,3 +2183,30 @@ pixel, art starts at the top, identifiers and expansion labels are present,
 and opening Kefka shows the full two-face name. The screenshot was inspected;
 the price-note box is absent. Production build passed, and installed phone
 files match all local build files by SHA-256. No GitHub checks were started.
+
+## Session log — 2026-10-04 floating bottom navigation
+
+Added a matte charcoal bottom bar with warm accents, line icons and clear
+Signal, Collection, Scan and Dossier controls. It appears after the top tabs
+leave the viewport and highlights the current page. Visited pages stay
+mounted while hidden, retaining Collection binder/sort choices and each
+page's scroll position. A result finishing on a hidden Signal page does not
+scroll the currently viewed page. Page swipes share the same position restore.
+
+Scan opens a focused three-choice menu: Single card, Batch scan and Saved
+photo. All three reuse the existing Collection SearchBar scanner handlers;
+the scanner now renders through a body portal so it can launch while that
+page is hidden. Manual-match fallback reveals Collection's search. The bar
+hides for scanner/card/add dialogs and keyboard use. Content has enough bottom
+space to clear the bar, and the save message sits above it. Motion respects
+reduced-motion preferences; scan choices support Escape and keyboard focus.
+
+Proof: 35 focused navigation, scanner, session and layout checks pass. The
+actual rendered app retained three independent scroll positions and the
+selected Yu-Gi-Oh binder/price sort. All three scan choices launched the
+correct scanner mode/source from Dossier with Collection hidden; browser
+camera access was stubbed for this navigation check. Card dialogs and a
+simulated keyboard hid the bar. Menu focus/Escape, bottom content clearance,
+and 320/390/800px layouts passed. Screenshots of the bar and scan menu were
+inspected. Production build passed. Installed phone files match the local
+build by SHA-256. No GitHub checks were started.

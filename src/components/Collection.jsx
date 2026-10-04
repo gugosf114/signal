@@ -66,6 +66,8 @@ export default function Collection({
   onAddCard,
   onAddBatch,
   entryActive = false,
+  scannerRef = null,
+  onRevealSearch = null,
 }) {
   const [cards, setCards] = useState(() => loadCollection());
   const [status, setStatus] = useState(null);
@@ -236,6 +238,8 @@ export default function Collection({
 
       <div className="col-finder">
         <SearchBar
+          ref={scannerRef}
+          onRevealSearch={onRevealSearch}
           onSearch={onLookup}
           onCardFound={(card) => onAddCard?.(card)}
           onScannerAdd={(card) => onAddCard?.(card)}

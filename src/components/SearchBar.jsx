@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { forwardRef, useImperativeHandle, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { scanCardImage } from '../services/scanCardImage';
 import { fetchPokemonVariantChoices, looksLikeYgoPasscode, resolvePrintingOptions, suggestCards } from '../services/fetchExpansions';
 import { looksLikeSetCode, lookupBySetCode } from '../services/lookupBySetCode';
@@ -101,13 +102,14 @@ async function withResolvedCardImage(pin, fallbackCard = null) {
   };
 }
 
-export default function SearchBar({
+const SearchBar = forwardRef(function SearchBar({
   onSearch,
   onCardFound = null,
   onScannerAdd = null,
   onScannerBatch = null,
   loading = false,
-}) {
+  onRevealSearch = null,
+}, ref) {
   const [lookupMode, setLookupMode] = useState('price');
   const [quickResult, setQuickResult] = useState(null);
   const [query, setQuery] = useState('');
@@ -435,6 +437,14 @@ export default function SearchBar({
     setScannerOpen(true);
   };
 
+  useImperativeHandle(ref, () => ({
+    openScanner: (kind) => {
+      if (kind === 'batch') batchScan();
+      else if (kind === 'photos') uploadPhoto();
+      else scanCard();
+    },
+  }));
+
   const preparePhotoMatch = async ({ card, pin }) => {
     if (!pin) return;
     const exactName = pin.name || card.name;
@@ -490,6 +500,7 @@ export default function SearchBar({
   };
 
   const searchPhotoMatch = ({ card } = {}) => {
+    onRevealSearch?.();
     const lookupValue = card?.number || card?.passcode || '';
     const name = looksLikeSetCode(lookupValue) || looksLikeYgoPasscode(lookupValue)
       ? lookupValue
@@ -705,7 +716,7 @@ export default function SearchBar({
         </div>
       )}
 
-      <CardScanner
+      {createPortal(<CardScanner
         key={scannerSession}
         open={scannerOpen}
         mode={scannerMode}
@@ -717,7 +728,9 @@ export default function SearchBar({
         onRun={(match) => finishPhotoMatch(match, 'run')}
         onBatchAdd={finishPhotoBatch}
         onManualSearch={searchPhotoMatch}
-      />
+      />, document.body)}
     </form>
   );
-}
+});
+
+export default SearchBar;

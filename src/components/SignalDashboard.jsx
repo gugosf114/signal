@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import SearchBar from './SearchBar';
 import QuickPicks from './QuickPicks';
 import RecentScans from './RecentScans';
@@ -15,6 +15,7 @@ import WatchedCards from './WatchedCards';
 import NewsStrip from './NewsStrip';
 import PdfReport from './PdfReport';
 import PageTabs from './PageTabs';
+import BottomNavigation from './BottomNavigation';
 import Collection from './Collection';
 import Dossier from './Dossier';
 import AddToCollectionDialog from './AddToCollectionDialog';
@@ -69,6 +70,13 @@ export default function SignalDashboard() {
   // Which page is showing. The header and tab strip are shared; everything
   // below them belongs to one page or the other.
   const [page, setPage] = useState(DEFAULT_PAGE);
+  const [visitedPages, setVisitedPages] = useState(() => new Set([DEFAULT_PAGE]));
+  const currentPageRef = useRef(DEFAULT_PAGE);
+  const pageScrollRef = useRef({});
+  const pendingScrollRef = useRef(null);
+  const resultScrollPendingRef = useRef(false);
+  const pageTabsRef = useRef(null);
+  const collectionScannerRef = useRef(null);
   const [pageEntryDirection, setPageEntryDirection] = useState(null);
   const [result, setResult] = useState(() =>
     initialScanSession?.status === 'complete' ? initialScanSession.result : null
@@ -94,9 +102,28 @@ export default function SignalDashboard() {
   const isMobile = useIsMobile();
 
   const openPage = (nextPage, entryDirection = null) => {
+    if (nextPage === currentPageRef.current) return;
+    pageScrollRef.current[currentPageRef.current] = window.scrollY;
+    pendingScrollRef.current = pageScrollRef.current[nextPage] || 0;
+    currentPageRef.current = nextPage;
+    setVisitedPages((previous) => new Set([...previous, nextPage]));
     setPageEntryDirection(entryDirection);
     setPage(nextPage);
   };
+
+  useLayoutEffect(() => {
+    if (pendingScrollRef.current === null) return;
+    const top = pendingScrollRef.current;
+    pendingScrollRef.current = null;
+    window.scrollTo({ top, left: 0, behavior: 'instant' });
+    const frame = requestAnimationFrame(() => {
+      if (page === 'signal' && resultScrollPendingRef.current) {
+        resultScrollPendingRef.current = false;
+        resultTopRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' });
+      } else window.scrollTo({ top, left: 0, behavior: 'instant' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [page]);
 
   const flashSaveMsg = (msg) => {
     setSaveMsg(msg);
@@ -128,8 +155,13 @@ export default function SignalDashboard() {
   const suppressPageSwipeClickRef = useRef(false);
 
   const scrollResultFirst = () => {
+    if (currentPageRef.current !== 'signal') {
+      resultScrollPendingRef.current = true;
+      return;
+    }
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        if (currentPageRef.current !== 'signal') { resultScrollPendingRef.current = true; return; }
         resultTopRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
       });
     });
@@ -434,7 +466,6 @@ export default function SignalDashboard() {
     const nextPage = pageAfterSwipe(page, direction);
     if (nextPage === page) return;
     changePage(nextPage, direction);
-    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
   };
 
   const cancelPageSwipe = () => {
@@ -454,7 +485,7 @@ export default function SignalDashboard() {
     <div className="signal-dashboard" style={{
       maxWidth: 800,
       margin: '0 auto',
-      padding: isMobile ? '24px 16px 60px' : '32px 24px 60px',
+      padding: isMobile ? '24px 16px calc(108px + env(safe-area-inset-bottom))' : '32px 24px calc(108px + env(safe-area-inset-bottom))',
       position: 'relative',
     }}>
       <SignalAmbient active={!loading} page={page} />
@@ -518,7 +549,7 @@ export default function SignalDashboard() {
         </div>
       </div>
 
-      <PageTabs page={page} onChange={changePage} />
+      <PageTabs page={page} onChange={changePage} tabsRef={pageTabsRef} />
 
       <div
         className="page-swipe-surface"
@@ -528,16 +559,22 @@ export default function SignalDashboard() {
         onClickCapture={stopSwipeClick}
       >
 
-      {page === 'dossier' && (
-        <div key="dossier" id="panel-dossier" className={pagePanelClass} role="tabpanel" aria-labelledby="tab-dossier">
-          <Dossier entryActive />
+      {visitedPages.has('dossier') && (
+        <div key="dossier" id="panel-dossier" hidden={page !== 'dossier'} className={page === 'dossier' ? pagePanelClass : ''} role="tabpanel" aria-labelledby="tab-dossier">
+          <Dossier entryActive={page === 'dossier'} />
         </div>
       )}
 
-      {page === 'collection' && (
-        <div key="collection" id="panel-collection" className={pagePanelClass} role="tabpanel" aria-labelledby="tab-collection">
+      {visitedPages.has('collection') && (
+        <div key="collection" id="panel-collection" hidden={page !== 'collection'} className={page === 'collection' ? pagePanelClass : ''} role="tabpanel" aria-labelledby="tab-collection">
           <Collection
-            entryActive
+            entryActive={page === 'collection'}
+            scannerRef={collectionScannerRef}
+            onRevealSearch={() => {
+              pageScrollRef.current.collection = 0;
+              openPage('collection');
+              requestAnimationFrame(() => document.querySelector('#panel-collection .col-finder')?.scrollIntoView({ behavior: 'instant', block: 'start' }));
+            }}
             onAddCard={(card) => setAddCard(card)}
             onAddBatch={addScannerBatch}
             onLookup={(name, game, opts) => {
@@ -548,8 +585,8 @@ export default function SignalDashboard() {
         </div>
       )}
 
-      {page === 'signal' && (
-      <div key="signal" id="panel-signal" className={pagePanelClass} role="tabpanel" aria-labelledby="tab-signal">
+      {visitedPages.has('signal') && (
+      <div key="signal" id="panel-signal" hidden={page !== 'signal'} className={page === 'signal' ? pagePanelClass : ''} role="tabpanel" aria-labelledby="tab-signal">
       {/* Search is the dashboard, not result-page furniture. Hiding it during
           work and after completion makes the scan/result the first thing seen
           without depending on a fragile saved scroll position. */}
@@ -993,6 +1030,13 @@ export default function SignalDashboard() {
       )}
       </div>{/* /.page-swipe-surface */}
 
+      <BottomNavigation
+        page={page}
+        tabsRef={pageTabsRef}
+        onChange={changePage}
+        onScan={(kind) => collectionScannerRef.current?.openScanner(kind)}
+      />
+
       {/* Off-screen premium PDF report — mounted only during Save PDF flow so
           html2pdf captures THIS clean editorial layout instead of the dark
           live dashboard. Positioned off-canvas, never visible to the user. */}
@@ -1015,7 +1059,7 @@ export default function SignalDashboard() {
       {saveMsg && (
         <div style={{
           position: 'fixed',
-          bottom: 24,
+          bottom: 'calc(96px + env(safe-area-inset-bottom))',
           left: '50%',
           transform: 'translateX(-50%)',
           background: '#0E1014',

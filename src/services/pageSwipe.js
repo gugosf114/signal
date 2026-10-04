@@ -16,6 +16,8 @@ export const PAGE_SWIPE_IGNORE_SELECTOR = [
   '.live-scanner',
   '.cl-backdrop',
   '.ac-backdrop',
+  '.col-detail-backdrop',
+  '.bottom-dock-shell',
 ].join(', ');
 
 export function pageSwipeDirection(deltaX, deltaY, {

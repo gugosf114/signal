@@ -123,7 +123,8 @@ test('page swipes move between tabs while horizontal rows keep their gestures', 
   assert.match(dashboardSource, /onTouchEnd=\{finishPageSwipe\}/);
   assert.match(dashboardSource, /onTouchCancel=\{cancelPageSwipe\}/);
   assert.match(dashboardSource, /onClickCapture=\{stopSwipeClick\}/);
-  assert.match(dashboardSource, /window\.scrollTo\(\{ top: 0, left: 0, behavior: 'auto' \}\)/);
+  assert.match(dashboardSource, /pageScrollRef\.current\[currentPageRef\.current\] = window\.scrollY/);
+  assert.match(dashboardSource, /window\.scrollTo\(\{ top, left: 0, behavior: 'instant' \}\)/);
   assert.match(dashboardSource, /page-swipe-panel--\$\{pageEntryDirection\}/);
   assert.match(browserSource, /className="cb-set-strip"/);
   assert.match(newsSource, /className="ns-track-outer"/);

@@ -9,7 +9,7 @@ const TABS = [
   { key: 'dossier', label: 'Dossier' },
 ];
 
-export default function PageTabs({ page, onChange }) {
+export default function PageTabs({ page, onChange, tabsRef }) {
   const onKeyDown = (event) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
@@ -22,7 +22,7 @@ export default function PageTabs({ page, onChange }) {
     requestAnimationFrame(() => document.getElementById(`tab-${TABS[next].key}`)?.focus());
   };
   return (
-    <div className="pt-strip" role="tablist" aria-label="Signal pages" onKeyDown={onKeyDown}>
+    <div ref={tabsRef} className="pt-strip" role="tablist" aria-label="Signal pages" onKeyDown={onKeyDown}>
       {TABS.map((t) => (
         <button
           key={t.key}

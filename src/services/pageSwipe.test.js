@@ -34,7 +34,7 @@ test('page swipes stop at Signal and Dossier instead of wrapping', () => {
 });
 
 test('horizontal rows and overlays keep their own gestures', () => {
-  for (const selector of ['.ns-track-outer', '.cb-set-strip', '.live-scanner', '.cl-backdrop', '.ac-backdrop']) {
+  for (const selector of ['.ns-track-outer', '.cb-set-strip', '.live-scanner', '.cl-backdrop', '.ac-backdrop', '.col-detail-backdrop', '.bottom-dock-shell']) {
     assert.match(PAGE_SWIPE_IGNORE_SELECTOR, new RegExp(selector.replace('.', '\\.')));
   }
 });
