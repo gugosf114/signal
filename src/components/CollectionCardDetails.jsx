@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import CardLightbox from './CardLightbox';
 import { collectionFormLabel, formatCollectionMoney, marketPriceFor } from '../services/collection';
 import { printingLabel } from '../services/printing';
@@ -21,6 +22,7 @@ export default function CollectionCardDetails({ card, onClose, onSave, onRemove,
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const dialogRef = useRef(null);
+  const backdropRef = useRef(null);
   const closeRef = useRef(null);
   const alive = useRef(true);
   const viewerRef = useRef(false);
@@ -38,7 +40,16 @@ export default function CollectionCardDetails({ card, onClose, onSave, onRemove,
     const priorFocus = document.activeElement;
     const oldOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    closeRef.current?.focus();
+    closeRef.current?.focus({ preventScroll: true });
+    const viewport = window.visualViewport;
+    const fitViewport = () => {
+      backdropRef.current?.style.setProperty('--detail-viewport-height', `${viewport?.height || window.innerHeight}px`);
+      backdropRef.current?.style.setProperty('--detail-viewport-top', `${viewport?.offsetTop || 0}px`);
+    };
+    fitViewport();
+    viewport?.addEventListener('resize', fitViewport);
+    viewport?.addEventListener('scroll', fitViewport);
+    window.addEventListener('resize', fitViewport);
     const keydown = (event) => {
       if (viewerRef.current) return;
       if (event.key === 'Escape') { event.preventDefault(); onClose(); }
@@ -53,7 +64,10 @@ export default function CollectionCardDetails({ card, onClose, onSave, onRemove,
       alive.current = false;
       document.body.style.overflow = oldOverflow;
       window.removeEventListener('keydown', keydown);
-      priorFocus?.focus?.();
+      viewport?.removeEventListener('resize', fitViewport);
+      viewport?.removeEventListener('scroll', fitViewport);
+      window.removeEventListener('resize', fitViewport);
+      priorFocus?.focus?.({ preventScroll: true });
     };
   }, []);
 
@@ -75,8 +89,8 @@ export default function CollectionCardDetails({ card, onClose, onSave, onRemove,
     } catch (failure) { setError(failure.message || 'Changes could not be saved.'); }
   };
 
-  return <>
-    <div className="col-detail-backdrop">
+  return createPortal(<>
+    <div ref={backdropRef} className="col-detail-backdrop">
       <section ref={dialogRef} className="col-detail" role="dialog" aria-modal="true" aria-labelledby="col-detail-title">
         <header className="col-detail-header">
           <div><span>Your card</span><h2 id="col-detail-title">{shown.name}</h2></div>
@@ -129,5 +143,5 @@ export default function CollectionCardDetails({ card, onClose, onSave, onRemove,
       </section>
     </div>
     <CardLightbox isOpen={viewerOpen} lockScroll={false} onClose={() => setViewerOpen(false)} imageUrl={shown.imageLarge || shown.imageUrl} cardName={shown.name} card={shown} cardMeta={[printingLabel(shown), `${formatCollectionMoney(price)} each`].join(' · ')} />
-  </>;
+  </>, document.body);
 }

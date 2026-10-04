@@ -2378,3 +2378,15 @@ until after shipping, as George requested. Production builds completed; the
 gateway deployment returned ACTIVE at 2026-10-04T20:50:04.891952528Z.
 The final production web bundle was installed on the phone. No test suites,
 GitHub checks, browser checks, or new paid scans were run during this repair.
+
+## Session log — 2026-10-04 collection card panel scrolling
+
+George's screenshot showed Your card opening halfway down the phone, with
+the lower form unreachable. The fixed overlay was rendered inside the page
+swipe animation, whose retained transform establishes a containing block.
+Moved the details panel and its image viewer to a document.body portal. The
+backdrop now follows the visible viewport (including keyboard resize), the
+panel is bounded to that space, and the form has an explicit flex scroll area.
+The header remains outside the scrolling form. Focus restoration no longer
+moves the collection page. Production build completed and the phone bundle
+was installed. Test runs and device gestures remain deferred as requested.
