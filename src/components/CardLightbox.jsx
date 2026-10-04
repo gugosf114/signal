@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import CardShine from './CardShine';
 import { cardShinePreview } from '../services/cardShine';
 
@@ -33,6 +34,8 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
   const [settling, setSettling] = useState(false);
   const [hintVisible, setHintVisible] = useState(true);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [loadedImage, setLoadedImage] = useState(null);
+  const [failedImage, setFailedImage] = useState(null);
 
   // Live gesture state. Refs, not state — these change on every pointermove and
   // must not queue a re-render each time.
@@ -84,12 +87,25 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
     priorFocus.current = document.activeElement;
     const priorOverflow = document.body.style.overflow;
     if (lockScroll) document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => closeRef.current?.focus());
+    const focusFrame = requestAnimationFrame(() => closeRef.current?.focus({ preventScroll: true }));
+    const viewport = window.visualViewport;
+    const fitViewport = () => {
+      dialogRef.current?.style.setProperty('--cl-viewport-height', `${viewport?.height || window.innerHeight}px`);
+      dialogRef.current?.style.setProperty('--cl-viewport-top', `${viewport?.offsetTop || 0}px`);
+    };
+    fitViewport();
+    viewport?.addEventListener('resize', fitViewport);
+    viewport?.addEventListener('scroll', fitViewport);
+    window.addEventListener('resize', fitViewport);
     const hintTimer = setTimeout(() => setHintVisible(false), 3200);
     return () => {
       window.removeEventListener('keydown', onKey);
       if (lockScroll) document.body.style.overflow = priorOverflow;
-      priorFocus.current?.focus?.();
+      cancelAnimationFrame(focusFrame);
+      viewport?.removeEventListener('resize', fitViewport);
+      viewport?.removeEventListener('scroll', fitViewport);
+      window.removeEventListener('resize', fitViewport);
+      priorFocus.current?.focus?.({ preventScroll: true });
       clearTimeout(hintTimer);
     };
   }, [isOpen, reset, lockScroll]);
@@ -176,7 +192,7 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
 
   const moved = Math.abs(tilt.x) > 1 || Math.abs(tilt.y) > 1 || Math.abs(scale - 1) > 0.02;
 
-  return (
+  return createPortal(
     <div
       ref={dialogRef}
       className="cl-backdrop"
@@ -193,11 +209,13 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
         </svg>
       </button>
 
+      <div className="cl-heading">
       {cardName && <div className="cl-name">{cardName}</div>}
       {(cardMeta || cardShinePreview(card)) && <div className="cl-meta">
         {cardMeta}
         {imageUrl && cardShinePreview(card) && <span className="cl-shine-label">Shine preview</span>}
       </div>}
+      </div>
 
       <div
         className="cl-stage"
@@ -214,13 +232,16 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
             transition,
           }}
         >
-          {imageUrl ? (
+          {imageUrl && failedImage !== imageUrl ? (
             <>
-              <img src={imageUrl} alt={cardName || ''} className="cl-img" draggable={false} />
+              <img src={imageUrl} alt={cardName || ''} className="cl-img" draggable={false}
+                onLoad={() => { setLoadedImage(imageUrl); setFailedImage(null); }}
+                onError={() => setFailedImage(imageUrl)} />
+              {loadedImage !== imageUrl && <div className="cl-image-status" role="status">Loading image…</div>}
               <CardShine card={card} follow={moved} tilt={tilt} />
             </>
           ) : (
-            <div className="cl-placeholder">?</div>
+            <div className="cl-placeholder" role="status">Image unavailable</div>
           )}
 
         </div>
@@ -282,6 +303,6 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
           </div>
         )}
       </div>
-    </div>
+    </div>, document.body
   );
 }

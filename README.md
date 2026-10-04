@@ -2423,3 +2423,22 @@ no-price images, ambiguous matches, distinct rarities and invalidation when
 rarity changes. Test runs and phone interaction checks remain deferred.
 The final production build completed and its web bundle was installed on
 the phone. No test suites or GitHub checks were run.
+
+## Session log — 2026-10-04 shared card viewer viewport
+
+George's Browse Cards screenshot showed the viewer header below the Signal
+page header, followed by a black area. CardLightbox was still rendered inline
+inside page/reveal transforms. Its fixed backdrop used the long page as its
+containing block, placing the centred card outside the phone viewport; normal
+focus also moved the underlying page. The earlier collection-dialog repair
+had missed this separate shared viewer.
+
+CardLightbox now portals to document.body for every caller, follows the visual
+viewport, and uses bounded rows for its heading, image, hint and actions.
+Focus and focus restoration prevent scrolling the underlying page. Explicit
+loading and failed-image states replace silent image failures. The collection
+editor's nested viewer uses this same path. Production build completed. A
+read-only attempt to inspect the background WebView did not return and was
+stopped; no live gesture or visual verification is claimed.
+The production web bundle was installed on the phone. No test suites or
+GitHub checks were run; the phone visual check remains next.
