@@ -8,7 +8,25 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { printingIdentity, printingLabel, resultCardPin, toPrinting } from './printing.js';
+import { printingIdentity, printingLabel, resultCardPin, toPrinting, collectionCardName, collectionCardNumber } from './printing.js';
+
+test('collection shows the front face while preserving the complete card name', () => {
+  const card = { game: 'mtg', name: 'Kefka, Court Mage // Kefka, Ruler of Ruin' };
+  assert.equal(collectionCardName(card), 'Kefka, Court Mage');
+  assert.equal(card.name, 'Kefka, Court Mage // Kefka, Ruler of Ruin');
+});
+
+test('collection Magic identifiers include the padded number, rarity letter, and set', () => {
+  assert.equal(collectionCardNumber({ game: 'mtg', number: '231', rarity: 'mythic', setId: 'fin' }), '0231 M · FIN');
+  assert.equal(collectionCardNumber({ game: 'mtg', number: '258', rarity: 'rare', setId: 'fin' }), '0258 R · FIN');
+  assert.equal(collectionCardNumber({ game: 'mtg', number: '123a', rarity: 'uncommon', setId: 'tst' }), '123a U · TST');
+  assert.equal(collectionCardNumber({ game: 'mtg', number: '0231', setId: 'fin' }), '0231 · FIN');
+});
+
+test('collection keeps Pokemon fractions and Yu-Gi-Oh set codes intact', () => {
+  assert.equal(collectionCardNumber({ game: 'pokemon', number: '119', printedTotal: '088' }), '119/088');
+  assert.equal(collectionCardNumber({ game: 'yugioh', number: 'BLZD-EN024' }), 'BLZD-EN024');
+});
 
 describe('printingLabel', () => {
   test('pokemon shows the number over the set total', () => {

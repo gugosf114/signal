@@ -24,7 +24,7 @@ import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
 import CollectionCurrencies from './CollectionCurrencies';
 import ScrollReveal from './ScrollReveal';
-import { printingIdentity, printingNumber } from '../services/printing';
+import { printingIdentity, printingNumber, collectionCardName, collectionCardNumber } from '../services/printing';
 import { normalizeCardRecord, stampCardPrice } from '../services/cardRecord';
 import { isExactScanTarget } from '../services/scanIdentity';
 import { refreshPrices } from '../services/refreshPrices';
@@ -351,11 +351,11 @@ export default function Collection({
                   <span className="col-copy-badge">×{card.qty}</span>
                 </span>
                 <span className="col-face-copy">
-                  <strong className="col-face-name">{card.name}</strong>
-                  <span className="col-face-number">{printingNumber(card) || card.setName}</span>
-                  {finish && <span className="col-finish-badge">{finish}</span>}
-                  <span className="col-face-price">{card.marketPrice == null ? 'Price unavailable' : <>{formatCollectionMoney(card.marketPrice)} <small>each</small></>}</span>
-                  {card.qty > 1 && card.marketPrice != null && <span className="col-face-total">{formatCollectionMoney(card.marketPrice * card.qty)} for {card.qty} copies</span>}
+                  <strong className="col-face-name" title={card.name}>{collectionCardName(card)}</strong>
+                  <span className="col-face-number">{collectionCardNumber(card)}</span>
+                  <span className="col-face-expansion" title={card.setName}>{card.setName}</span>
+                  <span className="col-face-finish">{finish && <span className="col-finish-badge" title={finish}>{finish}</span>}</span>
+                  <span className={`col-face-price${card.marketPrice == null ? ' col-face-price--missing' : ''}`}>{card.marketPrice == null ? 'Price unavailable' : <>{formatCollectionMoney(card.marketPrice)} <small>each</small></>}</span>
                 </span>
               </button>
             </div>;

@@ -4453,3 +4453,14 @@
 .col-summary-footer .col-currency-source { flex-basis: 100%; margin: 0; font-size: 9px; line-height: 1.4; }
 .col-summary-footer .col-price-coverage { flex-direction: row; flex-wrap: wrap; column-gap: 12px; row-gap: 4px; margin-top: 9px; font-size: 11px; }
 .col-summary-footer .col-price-coverage small { flex-basis: 100%; font-size: 11px; }
+
+/* Equal collection tiles: fixed text rows, with pictures always top-aligned. */
+.col-face-copy { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 38px 17px 31px 40px 23px; align-items: start; gap: 5px; }
+.col-face-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 19px; }
+.col-face-number { line-height: 17px; white-space: nowrap; }
+.col-face-expansion { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; color: #C8C4BC; font: 12px/15px 'Syne', sans-serif; }
+.col-face-finish { min-width: 0; max-width: 100%; }
+.col-face-finish .col-finish-badge { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; width: fit-content; max-width: 100%; max-height: 39px; box-sizing: border-box; overflow: hidden; line-height: 14px; }
+.col-face-price { font-size: clamp(13px, 3.8vw, 16px); line-height: 23px; white-space: nowrap; }
+.col-face-price--missing { font: 12px/23px 'Syne', sans-serif; }
+.col-detail-fields { margin-top: 18px; }

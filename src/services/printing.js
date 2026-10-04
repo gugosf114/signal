@@ -15,6 +15,20 @@ import { canonicalPokemonId } from './pokemonIds.js';
 import { mtgFinishLabel } from './mtgFinish.js';
 import { pokemonVariantFields } from './pokemonVariants.js';
 
+export function collectionCardName(card) {
+  const name = String(card?.name || '');
+  return card?.game === 'mtg' ? name.split(' // ')[0] : name;
+}
+
+export function collectionCardNumber(card) {
+  if (card?.game !== 'mtg') return printingNumber(card);
+  const raw = String(card.number || '').trim();
+  const number = /^\d+$/.test(raw) ? raw.padStart(4, '0') : raw;
+  const rarity = { common: 'C', uncommon: 'U', rare: 'R', mythic: 'M', special: 'S', bonus: 'B' }[String(card.rarity || '').toLowerCase()];
+  const code = String(card.setId || '').toUpperCase();
+  return [[number, number ? rarity : null].filter(Boolean).join(' '), code].filter(Boolean).join(' · ') || null;
+}
+
 export function printingNumber(printing) {
   if (!printing) return null;
   const { game, setId, number, printedTotal } = printing;

@@ -2161,3 +2161,25 @@ Proof: production build passed. The rendered summary has none of the removed
 text at 320/390/800px; all currency values and three working card links remain.
 The empty collection also has no notes. Installed phone files match the build
 by SHA-256. Font, color and effects changes await George's scope choice.
+
+## Session log — 2026-10-04 equal Collection tiles and printing details
+
+Collection tiles now use matching text rows so names, finishes, and quantities
+do not produce different card heights. Art remains anchored to the top.
+Double-faced Magic cards use the front-face name in the grid; the complete
+name stays in saved data, accessibility labels, and card details. Magic tile
+identifiers show a four-digit display number, rarity letter and set code
+(e.g. 0231 M · FIN), with the expansion name on its own line. Existing Pokemon
+fractions and Yu-Gi-Oh set codes are unchanged. Full text is kept in titles
+and card details when a two-line tile field runs out of room. Multi-copy
+totals remain in the detail screen; the grid keeps quantity and unit price.
+
+Also removed the remaining green price-check/date/wear box from card details
+that George flagged after the summary notes had been removed.
+
+Proof: 74 focused tests pass. The real Genji Glove and Kefka, Court Mage
+catalogue records were rendered at 320/390/800px. Tile heights match to the
+pixel, art starts at the top, identifiers and expansion labels are present,
+and opening Kefka shows the full two-face name. The screenshot was inspected;
+the price-note box is absent. Production build passed, and installed phone
+files match all local build files by SHA-256. No GitHub checks were started.

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import CardLightbox from './CardLightbox';
-import { collectionFormLabel, collectionPriceNeedsRefresh, formatCollectionMoney, marketPriceFor } from '../services/collection';
+import { collectionFormLabel, formatCollectionMoney, marketPriceFor } from '../services/collection';
 import { printingLabel } from '../services/printing';
 import { scannerPrintingKey } from '../services/scannerMatch';
 
@@ -8,12 +8,6 @@ const CONDITIONS = [
   ['near_mint', 'Near mint'], ['lightly_played', 'Lightly played'],
   ['moderately_played', 'Moderately played'], ['heavily_played', 'Heavily played'], ['damaged', 'Damaged'],
 ];
-
-export function quoteCheckedLabel(card) {
-  const date = new Date(card?.priceCheckedAt || '');
-  if (!Number.isFinite(date.getTime()) || date.getTime() > Date.now()) return 'Price check date unavailable';
-  return `Checked ${date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
-}
 
 export default function CollectionCardDetails({ card, onClose, onSave, onRemove, onLookup, onLoadFinishes }) {
   const [quantity, setQuantity] = useState(String(card.qty));
@@ -102,12 +96,6 @@ export default function CollectionCardDetails({ card, onClose, onSave, onRemove,
               <span className="col-finish-badge">{finish}</span>
             </div>
           </div>
-          <div className="col-detail-quote" role="status">
-            <strong>{price == null ? 'Price unavailable' : collectionPriceNeedsRefresh(shown) ? 'Price needs a fresh check' : 'Price checked'}</strong>
-            <span>{quoteCheckedLabel(shown)}</span>
-            <span>These prices do not adjust for wear.</span>
-          </div>
-
           <div className="col-detail-fields">
             <label><span>Quantity</span><input aria-label="Quantity" type="number" min="1" max="999" step="1" required value={quantity} onChange={(event) => setQuantity(event.target.value)} /></label>
             <label><span>Condition</span><select aria-label="Condition" value={condition} onChange={(event) => setCondition(event.target.value)}>{CONDITIONS.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
