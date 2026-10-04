@@ -1,3 +1,4 @@
+import { currentEvidence, supportedExcerpt, sameStory } from './evidencePolicy.js';
 import { normalizedEvidenceText, isJapaneseSource, matchesJapanesePrinting, nameInText } from './japaneseEvidence.js';
 // ─── Citation verification ───────────────────────────────────────────────────
 // The load-bearing honesty layer. A source may appear only when its URL joins
@@ -82,6 +83,8 @@ function canonicalEvidence(input, defaults = {}) {
     reach: defaults.reach || 'unknown',
     audience: cleanText(defaults.audience, 100) || null,
     area: EVIDENCE_AREAS.has(defaults.area) ? defaults.area : null,
+    checkedAt: input?.checkedAt || input?.retrievedAt || defaults.checkedAt || null,
+    factScope: defaults.factScope || input?.factScope || null,
     ...(defaults.language ? { language: defaults.language } : {}),
   };
 }
@@ -90,6 +93,7 @@ function putEvidence(registry, input, defaults = {}) {
   const evidence = canonicalEvidence(input, defaults);
   if (!evidence) return;
   const prior = registry.get(evidence.url);
+  if (prior && !input?.title && !defaults.title) evidence.title = prior.title;
   if (!prior) {
     registry.set(evidence.url, evidence);
     return;
@@ -143,8 +147,9 @@ export function extractSearchEvidence(contentBlocks) {
 // Pre-fetch records come from APIs the app called itself. They are source
 // records, not model prose. Their title, publisher, date, and description are
 // therefore safe to lock into the final report.
-export function collectPrefetchEvidence({ cardData, community, creators, ebay, jp } = {}) {
+export function collectPrefetchEvidence({ cardData, community, creators, ebay, jp, catalysts } = {}) {
   const registry = new Map();
+  for (const source of catalysts?.evidence || []) putEvidence(registry, source, source);
   for (const post of community?.posts || []) {
     const audience = Number.isFinite(post.score)
       ? `${post.score} points${Number.isFinite(post.comments) ? ` · ${post.comments} comments` : ''}`
@@ -221,7 +226,7 @@ function searchable(value) { return normalizedEvidenceText(value); }
 function evidenceScope(evidence, cardName, pin) {
   const area = classifyEvidenceArea(evidence);
   if (!area) return null;
-  if (evidence?.area) return 'card'; // app-owned, already matched prefetch
+  if (evidence?.area) return evidence.factScope || 'card'; // app-owned, already matched prefetch
   const text = [evidence?.title, evidence?.summary, evidence?.url].filter(Boolean).join(' ');
   const names = [cardName, pin?.name, ...(pin?.japaneseIdentity?.aliases || [])]
     .filter(Boolean).flatMap(name => String(name).split('//'));
@@ -275,7 +280,7 @@ export function classifyEvidenceArea(evidence) {
   if (evidence.type === 'tournament') return 'competitive';
   if (evidence.type === 'population_report'
     || /\b(?:population|pop report|print run|scarcity|supply|out of print|reprint)\b/.test(text)) return 'scarcity';
-  if (/\b(?:japan|japanese|jp|release date|released|launch|set calendar)\b/i.test(rawText)) return 'jp_release';
+  if (/\b(?:japan|japanese|jp|ocg)\b/i.test(rawText) && /\b(?:release|released|launch|restock|reprint|set calendar)\b/i.test(rawText)) return 'jp_release';
   if (/\b(?:tournament|decklists?|deck lists?|decks|championship|city league|ban list|banlist|legality|competitive|meta analysis)\b/.test(text)) return 'competitive';
   if (/\b(?:anime|movie|video game|franchise|anniversary|character spotlight)\b/.test(text)) return 'ip_momentum';
   if (evidence.type === 'editorial'
@@ -292,7 +297,7 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
     if (parsed) {
       parsed.signals = [];
       parsed._truncated = true;
-      parsed._evidenceVersion = 2;
+      parsed._evidenceVersion = 3;
     }
     return parsed;
   }
@@ -301,6 +306,7 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
   const sourceAudit = [];
   const reassigned = [];
   const usedAcrossReport = new Set();
+  const usedStories = [];
   parsed.signals = parsed.signals.map((signal) => {
     const seen = new Set();
     const sources = [];
@@ -312,7 +318,8 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
       const scope = evidenceScope(evidence, cardName, pin);
       const reason = !evidence ? 'not_retrieved' : !key ? 'invalid_url'
         : !scope ? 'card_mismatch' : !area ? 'not_signal_evidence'
-          : area !== signal.key ? 'wrong_area' : usedAcrossReport.has(key) ? 'already_used' : null;
+          : ['creator', 'jp_hype'].includes(area) && !currentEvidence(evidence, area) ? 'outside_time_window'
+          : area !== signal.key ? 'wrong_area' : usedAcrossReport.has(key) || usedStories.some(source => sameStory(source, evidence)) ? 'already_used' : null;
       if (reason) {
         const audit = { signal: signal.key, url: proposed?.url || null, reason, evidenceArea: area || null, title: evidence?.title || null };
         sourceAudit.push(audit);
@@ -323,19 +330,24 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
       if (!key || seen.has(key)) continue;
       seen.add(key);
       usedAcrossReport.add(key);
+      usedStories.push(evidence);
       const { area: _area, ...visibleEvidence } = evidence;
+      const support = supportedExcerpt(proposed, evidence);
+      const assessed = Boolean(support && currentEvidence(evidence, area) && !evidence.factScope);
       sources.push({
         ...visibleEvidence,
+        support,
+        directionAssessed: assessed && scope === 'card',
         evidenceScope: scope,
-        implication: scope === 'card' && IMPLICATIONS.has(proposed.implication) ? proposed.implication : 'neutral',
+        implication: assessed && scope === 'card' && IMPLICATIONS.has(proposed.implication) ? proposed.implication : 'neutral',
       });
     }
     totalDropped += dropped;
     return {
       ...signal,
       // Direction does not determine strength: strong evidence can be neutral.
-      level: sources.length ? Math.max(0, Math.min(5, Number(signal.level) || 0)) : 0,
-      strengthAssessed: sources.length > 0 && Number.isFinite(signal.level),
+      level: sources.some(source => source.support && currentEvidence(source, signal.key)) ? Math.max(0, Math.min(5, Number(signal.level) || 0)) : 0,
+      strengthAssessed: sources.some(source => source.support && currentEvidence(source, signal.key)) && Number.isFinite(signal.level) && signal.strengthSupplied !== false,
       detail: evidenceDetail(sources),
       sources,
       dropped,
@@ -344,10 +356,11 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
 
   for (const { evidence, area, scope, audit } of reassigned) {
     const target = parsed.signals.find(signal => signal.key === area);
-    if (!target || usedAcrossReport.has(evidence.url)) { audit.action = 'already_used_or_no_area'; continue; }
+    if (!target || usedAcrossReport.has(evidence.url) || usedStories.some(source => sameStory(source, evidence))) { audit.action = 'already_used_or_no_area'; continue; }
     const { area: _area, ...trusted } = evidence;
     if (!target.sources.length) { target.level = 0; target.strengthAssessed = false; }
-    target.sources.push({ ...trusted, evidenceScope: scope, implication: 'neutral' });
+    target.sources.push({ ...trusted, evidenceScope: scope, directionAssessed: false, implication: 'neutral' });
+    usedStories.push(evidence);
     target.detail = evidenceDetail(target.sources);
     usedAcrossReport.add(evidence.url);
     audit.action = 'reassigned';
@@ -362,12 +375,12 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
   parsed._droppedTotal = totalDropped;
   parsed._sourceAudit = sourceAudit;
   parsed._droppedListings = 0;
-  parsed._evidenceVersion = 2;
+  parsed._evidenceVersion = 3;
   return parsed;
 }
 
-// Haiku used to select one URL and silently discard the rest of the same paid
-// search result page. Fill empty areas from the already-retrieved records. The
+// Preserve every relevant retrieved record, including additional links in
+// already-populated areas. Exact/near-identical article titles are deduplicated. The
 // added records stay neutral because code can prove the page exists and matches
 // the card, but only analysis can judge whether its market direction is up or
 // down. This spends no extra search call.
@@ -380,20 +393,19 @@ export function fillEvidenceGaps(parsed, registry, { cardName = '', pin = null }
     .filter((evidence) => evidenceScope(evidence, cardName, pin))
     .sort((a, b) => Number(Boolean(b.area)) - Number(Boolean(a.area)));
 
+  const stories = parsed.signals.flatMap(signal => signal.sources || []);
   for (const evidence of candidates) {
     const url = normalizeUrl(evidence?.url);
     const area = classifyEvidenceArea(evidence);
-    if (!url || !area || used.has(url)) continue;
-    const index = parsed.signals.findIndex((signal) => signal?.key === area && !(signal.sources || []).length);
-    if (index < 0) continue;
+    if (!url || !area || used.has(url) || stories.some(source => sameStory(source, evidence))) continue;
+    if (['creator', 'jp_hype'].includes(area) && !currentEvidence(evidence, area)) continue;
+    const target = parsed.signals.find(signal => signal?.key === area);
+    if (!target) continue;
     const { area: _area, ...visibleEvidence } = evidence;
-    parsed.signals[index] = {
-      ...parsed.signals[index],
-      level: 0,
-      strengthAssessed: false,
-      detail: evidenceDetail([visibleEvidence]),
-      sources: [{ ...visibleEvidence, evidenceScope: evidenceScope(evidence, cardName, pin), implication: 'neutral' }],
-    };
+    if (!target.sources?.length) { target.sources = []; target.level = 0; target.strengthAssessed = false; }
+    target.sources.push({ ...visibleEvidence, evidenceScope: evidenceScope(evidence, cardName, pin), directionAssessed: false, implication: 'neutral' });
+    target.detail = evidenceDetail(target.sources);
+    stories.push(evidence);
     used.add(url);
   }
   return parsed;
@@ -419,7 +431,7 @@ export function reportEvidenceStats(signals, expected = 8) {
 export function buildVerifiedSummary({ cardName = '', prices = {}, signals = [] } = {}) {
   const parts = [];
   const price = cleanText(prices?.en_price, 40);
-  if (cardName && price) parts.push(`${cleanText(cardName, 180)} is ${price} for this exact printing.`);
+  if (cardName && price) parts.push(`${cleanText(cardName, 180)} has a recorded market price of ${price} for this printing.`);
   const history = prices?.history;
   if (Number.isFinite(history?.change30)) {
     const change = `${history.change30 > 0 ? '+' : ''}${history.change30.toFixed(1)}%`;

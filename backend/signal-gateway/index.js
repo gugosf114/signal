@@ -315,11 +315,13 @@ function validateYoutubeBody(body) {
   if (!YOUTUBE_REGIONS.has(regionCode) || !YOUTUBE_LANGUAGES.has(relevanceLanguage) || !YOUTUBE_ORDERS.has(order)) {
     throw Object.assign(new Error('Search options are not allowed.'), { status: 400 });
   }
-  return { q, regionCode, relevanceLanguage, order, maxResults };
+  const after = Date.parse(body?.publishedAfter || '');
+  const publishedAfter = Number.isFinite(after) ? new Date(after).toISOString().slice(0, 10) + 'T00:00:00.000Z' : '';
+  return { q, regionCode, relevanceLanguage, order, maxResults, publishedAfter };
 }
 
 function youtubeCacheKey(params) {
-  return hash(['yt-ja-v2', params.q.toLowerCase(), params.regionCode, params.relevanceLanguage, params.order, params.maxResults].join('::'));
+  return hash(['yt-fresh-v3', params.q.toLowerCase(), params.regionCode, params.relevanceLanguage, params.order, params.maxResults, params.publishedAfter].join('::'));
 }
 
 function shapeYoutubeItems(items) {
@@ -337,13 +339,14 @@ async function youtubeSearch(req, body, fetcher = fetch) {
   const params = validateYoutubeBody(body);
   const ref = db.collection(YOUTUBE_CACHE).doc(youtubeCacheKey(params));
   const saved = (await ref.get()).data();
-  if (Array.isArray(saved?.items) && timestampMillis(saved.expiresAt) > Date.now()) {
-    return { cached: true, items: saved.items };
+  if (!body.force && Array.isArray(saved?.items) && timestampMillis(saved.expiresAt) > Date.now()) {
+    return { cached: true, items: saved.items, checkedAt: saved.createdAt?.toDate?.()?.toISOString() || null };
   }
   const apiKey = process.env.YOUTUBE_API_KEY;
   if (!apiKey) throw Object.assign(new Error('Video search is unavailable.'), { status: 503 });
   await useQuota(req, 'youtube', DAILY_YOUTUBE_CALLS, DAILY_GLOBAL_YOUTUBE_CALLS);
   const search = new URLSearchParams({ part: 'snippet', type: 'video', order: params.order, maxResults: String(params.maxResults), q: params.q, key: apiKey });
+  if (params.publishedAfter) search.set('publishedAfter', params.publishedAfter);
   if (params.regionCode) search.set('regionCode', params.regionCode);
   if (params.relevanceLanguage) search.set('relevanceLanguage', params.relevanceLanguage);
   const response = await fetcher(`https://www.googleapis.com/youtube/v3/search?${search}`, { signal: AbortSignal.timeout(8000) });
@@ -365,7 +368,7 @@ async function youtubeSearch(req, body, fetcher = fetch) {
     createdAt: FieldValue.serverTimestamp(),
     expiresAt: Timestamp.fromMillis(Date.now() + YOUTUBE_CACHE_MS),
   });
-  return { cached: false, items };
+  return { cached: false, items, checkedAt: new Date().toISOString() };
 }
 
 function validateModelBody(body) {
@@ -603,8 +606,9 @@ async function analyze(req, body, retry = 0) {
 
 async function observe(body) {
   const measurement = body.measurement && typeof body.measurement === 'object' ? body.measurement : {};
-  const score = finite(measurement.score);
-  if (score === null || score < 0 || score > 100) throw new Error('Invalid score.');
+  const unrated = measurement.score == null && measurement.direction === 'unrated';
+  const score = unrated ? null : finite(measurement.score);
+  if (!unrated && (score === null || score < 0 || score > 100)) throw new Error('Invalid score.');
   const price = finite(measurement.price);
   await db.collection(MEASUREMENTS).add({
     cacheKey: safeText(body.cacheKey, 500),
@@ -613,6 +617,10 @@ async function observe(body) {
     cardId: safeText(measurement.cardId, 220),
     score,
     scoreVersion: finite(measurement.scoreVersion),
+    researchVersion: finite(measurement.researchVersion),
+    researchAt: safeText(measurement.researchAt, 40),
+    assessedAreas: finite(measurement.assessedAreas),
+    sourceCount: finite(measurement.sourceCount),
     direction: safeText(measurement.direction, 40),
     price,
     cached: Boolean(measurement.cached),

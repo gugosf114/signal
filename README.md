@@ -2329,3 +2329,52 @@ for fresh research. Added a regression case covering equal strength across
 up/down/neutral and unrated recovered evidence. Production build completed,
 and the phone bundle was updated. No test runs, visual checks, or GitHub
 checks were performed, per George's instruction.
+
+## Session log — 2026-10-04 research integrity repair
+
+Implemented the nine findings from the full Signal-run review. Price history
+now requires an explicit English Near Mint SKU and matching finish/edition;
+it never selects a neighbouring price, another language, or another condition.
+History rejects stale endpoints and out-of-window comparison dates. Saved
+price fallbacks retain their original checked time and are labelled saved.
+
+Research expiry uses the original shared-report timestamp rather than a new
+phone-save clock. Re-scan bypasses model, YouTube, history and Japanese-name
+lookup caches. YouTube queries include a seven-day window, and citation
+filtering also enforces it. The server preserves YouTube cache timestamps.
+The app shows research dates and per-lane checked, empty, partial, unavailable
+and not-checked states. Community is labelled Discussion, and source counts
+are explicitly a research sample rather than total activity.
+
+All relevant retrieved links can survive even in populated areas. Duplicate
+URLs and identical/near-identical article titles are removed. AI assessments
+require a matching excerpt from the retrieved title/snippet and a current
+source. This verifies the quoted text exists; it is not independent proof
+of the AI interpretation. Structured catalogue facts are citable neutral
+context, not evidence of purchase demand or print quantity. English launch
+news alone cannot qualify as Japanese release news. JP leading-indicator
+claims were removed. Card/set/franchise scope is visible with each source.
+
+Score version 3 has an explicit AI strength rubric, includes neutral context
+in directional weighting, and returns no score when nothing is assessed.
+It is labelled experimental with its rated-area count and no proven price
+prediction. Research version 8 and fresh local/session cache namespaces
+separate the new rules from prior reports. The measurement ledger accepts
+unrated scans and stores research version/date and assessment/source counts.
+The old September basket does not establish this version's predictive value.
+
+Price top-ups rebuild the summary and price-history alignment together.
+Alignment is unknown without measured history. The PDF uses the same rebuilt
+report and displays experimental ratings, source scope, supporting excerpts,
+research status and original timestamps. Recovered sources without a rating
+remain visibly unrated.
+
+Added researchIntegrity.test.js to the test command with regressions for exact
+SKU matching, neutral weighting, unrated results, excerpt/date requirements,
+multiple sources, duplicate stories, JP classification, citable facts, research
+age, lookup status and refreshed summaries. Updated the old nearest-price and
+neutral-weighting expectations. Test runs and live card scans are deferred
+until after shipping, as George requested. Production builds completed; the
+gateway deployment returned ACTIVE at 2026-10-04T20:50:04.891952528Z.
+The final production web bundle was installed on the phone. No test suites,
+GitHub checks, browser checks, or new paid scans were run during this repair.

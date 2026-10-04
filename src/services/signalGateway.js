@@ -98,9 +98,11 @@ export function getOfficialYugiohArt({ cardName, setCode, rarity }) {
 // The YouTube key lives on the server. A phone that was built without one
 // (CI, Termux) still gets the creator and Japan lanes. Results are cached on
 // the server for a day so repeat scans of one card cost no quota.
-export async function youtubeSearchViaGateway({ q, regionCode = '', relevanceLanguage = '', order = 'relevance', maxResults = 6 }, signal) {
-  const payload = await gateway({ action: 'youtubeSearch', q, regionCode, relevanceLanguage, order, maxResults }, signal, 1);
-  return Array.isArray(payload?.items) ? payload.items : [];
+export async function youtubeSearchViaGateway({ q, regionCode = '', relevanceLanguage = '', order = 'relevance', maxResults = 6, publishedAfter = '', force = false }, signal) {
+  const payload = await gateway({ action: 'youtubeSearch', q, regionCode, relevanceLanguage, order, maxResults, publishedAfter, force }, signal, 1);
+  const items = Array.isArray(payload?.items) ? payload.items.map(item => ({ ...item, checkedAt: payload.checkedAt || null })) : [];
+  items.checkedAt = payload.checkedAt || null;
+  return items;
 }
 
 // Android cannot reliably open the public card APIs itself. The same small

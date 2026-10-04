@@ -212,7 +212,7 @@ export default function SourceCitation({ source }) {
   const type = source.type || 'other';
   const color = TYPE_COLOR[type] || TYPE_COLOR.other;
   const markFn = TYPE_MARK[type] || TYPE_MARK.other;
-  const impl = IMPLICATION_META[source.implication] || IMPLICATION_META.neutral;
+  const impl = source.directionAssessed === true ? (IMPLICATION_META[source.implication] || IMPLICATION_META.neutral) : { ...IMPLICATION_META.neutral, label: 'Unrated context' };
   const host = tryHostname(source.url);
   // Resolve from URL only — `resolveBrand(source.source)` would substring-match
   // arbitrary text like "limitless options" to the Limitless TCG brand.
@@ -299,6 +299,11 @@ export default function SourceCitation({ source }) {
           )}
         </div>
 
+        <div style={{ fontSize: 11, color: 'var(--signal-text-secondary)', marginBottom: 6 }}>
+          {source.factScope ? 'Catalogue fact' : source.evidenceScope === 'set' ? 'Expansion context' : source.evidenceScope === 'franchise' ? 'Franchise context' : 'Card evidence'}
+          {source.directionAssessed ? ' · AI interpretation' : ' · Not used for direction'}
+        </div>
+        {source.support && <blockquote style={{ margin: '8px 0', paddingLeft: 10, borderLeft: '2px solid #80786C', fontSize: 12, color: 'var(--signal-text-secondary)' }}>{source.support}</blockquote>}
         {/* Title — link */}
         {href ? (
           <a

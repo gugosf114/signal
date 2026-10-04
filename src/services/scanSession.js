@@ -1,9 +1,10 @@
+import { researchTime, RESEARCH_TTL_MS, syncReport } from './reportIntegrity.js';
 import { enforceExactCreatorSources } from './sourceRelevance.js';
 import { isExactScanTarget } from './scanIdentity.js';
 import { normalizeCardRecord, withCardRecord } from './cardRecord.js';
 
 // v3 prevents a completed pre-full-result-page report from reopening.
-const SESSION_KEY = 'signal_active_scan_v3';
+const SESSION_KEY = 'signal_active_scan_v4';
 const PENDING_MAX_AGE_MS = 10 * 60 * 1000;
 const COMPLETE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
@@ -88,14 +89,14 @@ export function loadRecoverableScanSession(storage, now = Date.now()) {
       game: value.game || value.result?.game,
     });
     const game = value.game || value.result?.game;
-    if (age >= 0 && age <= COMPLETE_MAX_AGE_MS && isExactScanTarget(game, pin)) {
+    if (age >= 0 && age <= COMPLETE_MAX_AGE_MS && now - (researchTime(value.result) ?? 0) <= RESEARCH_TTL_MS && isExactScanTarget(game, pin)) {
       const result = withCardRecord(enforceExactCreatorSources(value.result, { cardName: value.name, pin }), pin);
       return writeSession({
         ...value,
         name: result?.card?.name || pin.name,
         game,
         pin: result?.card || pin,
-        result,
+        result: syncReport(result),
       }, storage);
     }
   }

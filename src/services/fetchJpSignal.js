@@ -13,7 +13,7 @@ import { resolveJapaneseIdentity } from './japaneseIdentity.js';
 import { isJapaneseSource } from './japaneseEvidence.js';
 import { searchYouTube } from './youtubeSearch.js';
 
-async function jpHype(cardName, pin, identity, signal) {
+async function jpHype(cardName, pin, identity, signal, force) {
   const alias = identity.aliases[0] || cardName;
   const number = identity.printingCodes[0] || (pin.printedTotal ? `${pin.number}/${pin.printedTotal}` : pin.number) || '';
   const gameWord = pin.game === 'pokemon' ? 'ポケカ' : pin.game === 'yugioh' ? '遊戯王' : 'MTG';
@@ -21,14 +21,14 @@ async function jpHype(cardName, pin, identity, signal) {
   const videos = [], diagnostics = [], seen = new Set();
   for (const q of queries) {
     try {
-      const found = await searchYouTube({ q, order: 'date', maxResults: 8, regionCode: 'JP', relevanceLanguage: 'ja' }, { signal });
+      const found = await searchYouTube({ q, order: 'date', maxResults: 8, regionCode: 'JP', relevanceLanguage: 'ja', force }, { signal });
       const rejected = [];
       for (const video of found) {
         if (!isJapaneseSource(video)) { rejected.push({ url: video.url, title: video.title, reason: 'japanese_language_unverified' }); continue; }
         if (!sourceMatchesExactPrinting(video, cardName, { ...pin, japaneseIdentity: identity })) { rejected.push({ url: video.url, title: video.title, reason: 'printing_mismatch' }); continue; }
         if (!seen.has(video.url)) { seen.add(video.url); videos.push(video); }
       }
-      diagnostics.push({ query: q, returned: found.length, rejected });
+      diagnostics.push({ query: q, checkedAt: found.checkedAt || found[0]?.checkedAt || null, returned: found.length, rejected });
     } catch (error) { if (signal?.aborted) throw error; diagnostics.push({ query: q, error: error.message }); }
     if (videos.length) break;
   }
@@ -68,14 +68,15 @@ async function jpVsUsTrend(term, japaneseTerm = term) {
   }
 }
 
-export async function fetchJpSignal(cardName, pin = null, { signal } = {}) {
+export async function fetchJpSignal(cardName, pin = null, { signal, force = false } = {}) {
   if (!pin) return null;
-  const identity = await resolveJapaneseIdentity(cardName, pin, { signal });
+  const identity = await resolveJapaneseIdentity(cardName, pin, { signal, force });
   const [hype, trend] = await Promise.all([
-    jpHype(cardName, pin, identity, signal),
+    jpHype(cardName, pin, identity, signal, force),
     jpVsUsTrend(cardName, identity.aliases[0] || cardName).catch(() => null),
   ]);
-  return { jpVideos: hype.videos, trend, identity, diagnostics: hype.diagnostics };
+  const checkedTimes = hype.diagnostics.map(row => Date.parse(row.checkedAt || '')).filter(Number.isFinite);
+  return { status: hype.diagnostics.some(row => row.error) ? (hype.diagnostics.every(row => row.error) ? 'unavailable' : 'partial') : hype.videos.length ? 'ok' : 'empty', checkedAt: new Date(checkedTimes.length ? Math.min(...checkedTimes) : Date.now()).toISOString(), jpVideos: hype.videos, trend, identity, diagnostics: hype.diagnostics };
 }
 
 export function jpBlock(data) {

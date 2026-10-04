@@ -1,3 +1,4 @@
+import { syncReport } from '../services/reportIntegrity';
 import React from 'react';
 import { getScoreLabel, GAME_LABELS, WEIGHTS } from '../config/signals';
 import { printingLabel } from '../services/printing';
@@ -19,7 +20,7 @@ const BRAND_RED = '#C44040';
 
 const SIGNAL_LABEL = {
   creator:     'Creator Attention',
-  community:   'Community Volume',
+  community:   'Community Discussion',
   ip_momentum: 'Franchise Buzz',
   editorial:   'Editorial Attention',
   competitive: 'Competitive Demand',
@@ -46,16 +47,18 @@ const fmtDate = (d) => d.toLocaleDateString('en-US', {
 
 export default function PdfReport({ result, score, cardImageUrl }) {
   if (!result) return null;
+  result = syncReport(result);
+  score = result._signalScore;
 
   const gameKey   = (result.game || 'pokemon').toLowerCase();
   const gameMeta  = GAME_LABELS[gameKey] || GAME_LABELS.pokemon;
-  const scoreMeta = getScoreLabel(score ?? 50);
+  const scoreMeta = getScoreLabel(score);
   const weights   = WEIGHTS[gameKey] || WEIGHTS.pokemon;
   const totalWeight = Object.values(weights).reduce((sum, value) => sum + value, 0) || 1;
 
   const scannedAt = result._scannedAt ? new Date(result._scannedAt) : null;
   const reportDate = scannedAt && Number.isFinite(scannedAt.getTime()) ? scannedAt : new Date();
-  const listingAge = scannedAt ? Date.now() - scannedAt.getTime() : Infinity;
+  const listingAge = Date.now() - Date.parse(result._listingsCheckedAt || result._scannedAt || '');
   const listingsFresh = !result._relatedPriceDataStale && listingAge >= 0 && listingAge <= 60 * 60 * 1000;
   const bin = listingsFresh && Array.isArray(result.ebay_listings?.buy_it_now) ? result.ebay_listings.buy_it_now : [];
   const auc = listingsFresh && Array.isArray(result.ebay_listings?.auction)     ? result.ebay_listings.auction     : [];
@@ -203,7 +206,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
             </div>
           )}
           <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.18em', color: INK_MUTE }}>
-            ATTENTION
+            EXPERIMENTAL AI SCORE
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
             <span style={{
@@ -213,7 +216,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
               color: scoreMeta.color,
               lineHeight: 1,
               letterSpacing: '-0.04em',
-            }}>{score ?? 0}</span>
+            }}>{score ?? '—'}</span>
             <span style={{
               fontFamily: "'JetBrains Mono', Menlo, monospace",
               fontSize: 20,
@@ -228,11 +231,15 @@ export default function PdfReport({ result, score, cardImageUrl }) {
             color: INK_MID,
             lineHeight: 1.4,
           }}>
-            {scoreMeta.blurb}
+            {scoreMeta.blurb} AI estimate; price prediction has not been proven.
           </div>
         </div>
       </div>
 
+      <div style={{ fontSize: 10, color: INK_MUTE, marginBottom: 12 }}>
+        Price checked: {result.prices?.price_checked_at || 'Unknown'}. Research: {result._researchAt || result._scannedAt || 'Unknown'}.
+        {(result._researchChecks || []).map(check => <div key={check.key}>{check.label}: {({ ok: 'Checked', empty: 'No matches', unavailable: 'Could not check', partial: 'Partly checked', not_checked: 'Not checked', saved: 'Saved value' })[check.status] || 'Not checked'}{check.checkedAt ? ` · ${check.checkedAt}` : ''}</div>)}
+      </div>
       {/* ─── SUMMARY ──────────────────────────────────────────────────────── */}
       {result.summary && (
         <div style={{
@@ -314,6 +321,7 @@ export default function PdfReport({ result, score, cardImageUrl }) {
                 key={key}
                 label={SIGNAL_LABEL[key]}
                 level={sig?.level ?? 0}
+                assessed={sig?.strengthAssessed === true}
                 detail={sig?.detail || '—'}
                 sources={sig?.sources || []}
                 dropped={sig?.dropped || 0}
@@ -469,8 +477,8 @@ function ListingRow({ listing }) {
   );
 }
 
-function SignalBlock({ label, level, detail, sources, dropped = 0, weightPct }) {
-  const bars = Array.from({ length: 5 }).map((_, i) => i < level);
+function SignalBlock({ label, level, detail, sources, dropped = 0, weightPct, assessed = false }) {
+  const bars = Array.from({ length: 5 }).map((_, i) => assessed && i < level);
   const realSources = (sources || []).filter((s) => s && (s.url || s.title));
 
   return (
@@ -506,7 +514,7 @@ function SignalBlock({ label, level, detail, sources, dropped = 0, weightPct }) 
           color: INK_FAINT,
           fontWeight: 700,
           letterSpacing: '0.04em',
-        }}>{level}/5</div>
+        }}>{assessed ? `AI strength ${level}/5` : 'Not rated'}</div>
         <div style={{ flex: 1 }} />
         <div style={{
           fontFamily: "'JetBrains Mono', Menlo, monospace",
@@ -576,11 +584,14 @@ function SourceLine({ src }) {
     src.implication === 'down' ? BRAND_RED :
                                  '#8A7A4A';
   const impGlyph =
+    src.directionAssessed !== true ? '—' :
     src.implication === 'up'   ? '▲' :
     src.implication === 'down' ? '▼' :
                                  '~';
   const meta = [
     src.type,
+    src.directionAssessed === true ? 'AI interpretation' : 'Unrated context',
+    src.factScope ? 'Catalogue fact' : src.evidenceScope === 'set' ? 'Expansion context' : src.evidenceScope === 'franchise' ? 'Franchise context' : null,
     src.date,
     src.audience,
     src.reach && src.reach !== 'unknown' ? src.reach : null,
@@ -635,7 +646,8 @@ function SourceLine({ src }) {
             marginBottom: src.summary ? 3 : 0,
           }}>“{src.title}”</div>
         )}
-        {/* Summary — model's one-line take on the source */}
+        {src.support && <div style={{ fontSize: 10, color: INK_MID, margin: '5px 0' }}>Supporting excerpt: “{src.support}”</div>}
+        {/* Retrieved source summary */}
         {src.summary && (
           <div style={{
             fontFamily: "'Instrument Serif', Georgia, serif",

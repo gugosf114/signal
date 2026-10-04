@@ -166,7 +166,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
   const strength = Math.max(0, Math.min(5, Number(signal.level) || 0));
   const strengthAssessed = sources.length > 0 && (signal.strengthAssessed ?? strength > 0);
   const direction = sourceDirection(sources);
-  const directionLabel = direction > 0 ? 'Up' : direction < 0 ? 'Down'
+  const directionLabel = !sources.some(source => source.directionAssessed === true) ? 'Not rated' : direction > 0 ? 'Up' : direction < 0 ? 'Down'
     : sources.some(source => source.implication === 'up' || source.implication === 'down') ? 'Mixed' : 'Neutral';
   // Model-selected URLs that could not be joined to a locked retrieval record.
   // Source title, publisher, date, and summary never come from the model.
@@ -270,7 +270,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
               borderLeft: `1px solid ${isJapan ? 'rgba(196,64,64,0.12)' : '#1A1D24'}`,
             }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 18px', marginBottom: 12, fontSize: 12, color: 'var(--signal-text-secondary)' }}>
-                <span>Strength: {strengthAssessed ? `${strength}/5` : 'Not rated'}</span>
+                <span>AI strength: {strengthAssessed ? `${strength}/5` : 'Not rated'}</span>
                 <span>Direction: {sources.length ? directionLabel : 'Not rated'}</span>
               </div>
               <div style={{

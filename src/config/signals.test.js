@@ -17,7 +17,7 @@ import {
   SIGNAL_COUNT,
 } from './signals.js';
 
-const src = (...impls) => impls.map((implication) => ({ implication, url: 'https://x.test/a' }));
+const src = (...impls) => impls.map((implication) => ({ implication, directionAssessed: true, url: 'https://x.test/a' }));
 
 describe('sourceDirection', () => {
   test('reads the balance of bullish against bearish', () => {
@@ -32,9 +32,9 @@ describe('sourceDirection', () => {
     assert.equal(sourceDirection(undefined), 0);
   });
 
-  test('neutrals do not dilute a lean', () => {
-    // Two bearish and one neutral is still fully bearish evidence.
-    assert.equal(sourceDirection(src('down', 'down', 'neutral')), -1);
+  test('neutral sources dilute a lean', () => {
+    // Two bearish and one neutral retains two-thirds of the lean.
+    assert.equal(sourceDirection(src('down', 'down', 'neutral')), -2 / 3);
   });
 });
 
@@ -49,7 +49,7 @@ describe('directionMultiplier', () => {
 });
 
 describe('calculateOverallScore', () => {
-  const maxed = (key, ...impls) => ({ key, level: 5, sources: src(...impls) });
+  const maxed = (key, ...impls) => ({ key, level: 5, strengthAssessed: true, sources: src(...impls) });
 
   test('all signals maxed and bullish scores 100', () => {
     const signals = SIGNAL_KEYS.map((k) => maxed(k, 'up'));

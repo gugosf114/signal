@@ -27,6 +27,7 @@ function cleanSource(source) {
   // owns source metadata. citations.js replaces these two fields with the
   // locked retrieval record before anything reaches the screen.
   return {
+    support: text(source.support, 500),
     implication: IMPLICATIONS.has(source.implication) ? source.implication : 'neutral',
     url: typeof source.url === 'string' ? source.url.trim() : '',
   };
@@ -36,6 +37,7 @@ function cleanSignal(signal) {
   if (!signal || typeof signal !== 'object' || !SIGNAL_KEYS.includes(signal.key)) return null;
   return {
     key: signal.key,
+    strengthSupplied: typeof signal.level === 'number' && Number.isFinite(signal.level),
     level: Math.max(0, Math.min(5, Math.round(finite(signal.level, 0)))),
     detail: text(signal.detail, 500),
     sources: (Array.isArray(signal.sources) ? signal.sources : [])
@@ -82,7 +84,7 @@ export function normalizeAnalysis(parsed, { cardName = '', game = null, now = Da
     game: resolvedGame,
     prices: {
       en_price: text(prices.en_price, 160),
-      signal_vs_market: alignment(prices.signal_vs_market),
+      signal_vs_market: 'unknown',
     },
     ebay_listings: {
       buy_it_now: (Array.isArray(ebay.buy_it_now) ? ebay.buy_it_now : []).map((item) => cleanListing(item, false)).filter(Boolean).slice(0, 2),

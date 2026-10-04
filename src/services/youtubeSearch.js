@@ -19,6 +19,7 @@ export function shapeYouTubeItems(items) {
       if (!videoId) return null;
       const snippet = item?.snippet || item;
       return {
+        checkedAt: item.checkedAt || null,
         title: snippet?.title || '',
         description: snippet?.description || '',
         channel: snippet?.channelTitle || snippet?.channel || '',
@@ -30,15 +31,21 @@ export function shapeYouTubeItems(items) {
     .filter(Boolean);
 }
 
-export async function searchYouTube({ q, regionCode = '', relevanceLanguage = '', order = 'relevance', maxResults = 6 }, { signal } = {}) {
+export async function searchYouTube({ q, regionCode = '', relevanceLanguage = '', order = 'relevance', maxResults = 6, force = false }, { signal } = {}) {
   const key = clientKey();
+  const publishedAfter = new Date(Date.now() - 7 * 86400000).toISOString();
   if (key) {
-    const params = new URLSearchParams({ part: 'snippet', type: 'video', order, maxResults: String(maxResults), q, key });
+    const params = new URLSearchParams({ part: 'snippet', type: 'video', order, maxResults: String(maxResults), q, key, publishedAfter });
     if (regionCode) params.set('regionCode', regionCode);
     if (relevanceLanguage) params.set('relevanceLanguage', relevanceLanguage);
     const res = await fetchWithTimeout(`https://www.googleapis.com/youtube/v3/search?${params}`, { signal }, 8000);
     if (!res.ok) throw new Error(`YouTube ${res.status}`);
-    return shapeYouTubeItems((await res.json())?.items);
+    const items = shapeYouTubeItems((await res.json())?.items);
+    items.checkedAt = new Date().toISOString();
+    return items.map(video => ({ ...video, checkedAt: items.checkedAt }));
   }
-  return shapeYouTubeItems(await youtubeSearchViaGateway({ q, regionCode, relevanceLanguage, order, maxResults }, signal));
+  const fetched = await youtubeSearchViaGateway({ q, regionCode, relevanceLanguage, order, maxResults, publishedAfter, force }, signal);
+  const items = shapeYouTubeItems(fetched);
+  items.checkedAt = fetched.checkedAt;
+  return items;
 }

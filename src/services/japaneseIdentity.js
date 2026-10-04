@@ -12,9 +12,9 @@ async function readJSON(url, signal) {
     return response.json();
   }
 }
-export async function resolveJapaneseIdentity(cardName, pin, { signal } = {}) {
+export async function resolveJapaneseIdentity(cardName, pin, { signal, force = false } = {}) {
   const key = `signal_japanese_identity_v1:${pin?.game}:${pin?.printingId || pin?.id}:${cardName}`;
-  try { const saved = JSON.parse(localStorage.getItem(key)); if (saved?.expires > Date.now()) return saved.value; } catch {}
+  try { const saved = JSON.parse(localStorage.getItem(key)); if (!force && saved?.expires > Date.now()) return saved.value; } catch {}
   let value = { aliases: [], setNames: [], numbers: [], printingCodes: [], references: [], releaseEvidence: [], scope: 'none' };
   try {
     if (pin?.game === 'pokemon') {

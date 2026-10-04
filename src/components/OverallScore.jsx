@@ -1,3 +1,5 @@
+import ResearchChecks, { checkedDate } from './ResearchChecks';
+import { calculateScoreDetails } from '../config/signals';
 import React, { useEffect, useState } from 'react';
 import { getScoreLabel, GAME_LABELS, SCORE_VERSION, SIGNAL_TYPES } from '../config/signals';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -10,7 +12,7 @@ import { reportMarketPrice } from '../services/reportDisplay';
 import { normalizeCardRecord } from '../services/cardRecord';
 import { isExactScanTarget } from '../services/scanIdentity';
 
-export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, expectedSignalCount = 8, sourcedSignalCount = 0, uniqueSourceCount = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null, prices = null, onAdd = null }) {
+export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, expectedSignalCount = 8, sourcedSignalCount = 0, uniqueSourceCount = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null, prices = null, onAdd = null, researchAt = null, researchChecks = [] }) {
   const { label, blurb } = getScoreLabel(score);
   const gameMeta = GAME_LABELS[game];
   const glowColor = gameMeta?.color || '#C44040';
@@ -37,7 +39,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
           : null;
       }).filter(Boolean);
       const identity = printingIdentity(pin);
-      const entry = { score, scoreVersion: SCORE_VERSION, date: new Date().toISOString(), cardName, game, pin };
+      const entry = { score, scoreVersion: SCORE_VERSION, date: researchAt || new Date().toISOString(), cardName, game, pin };
       const deduped = [entry, ...history.filter((item) => {
         const otherIdentity = printingIdentity(item?.pin);
         return !(item.cardName === cardName && item.game === game && otherIdentity === identity);
@@ -66,13 +68,15 @@ export default function OverallScore({ score, cardName, game, summary, truncated
         setPercentileInfo(null);
       }
     } catch {}
-  }, [score, cardName, game, pin, truncated]);
+  }, [score, cardName, game, pin, truncated, researchAt]);
 
+  const assessedCount = calculateScoreDetails(signals, game).assessedCount || 0;
+  const priceAge = Date.now() - Date.parse(prices?.price_checked_at || '');
   const hasAttention = Number.isFinite(score) && sourcedSignalCount > 0;
   const finding = summary || (hasAttention ? blurb : '');
   const marketPrice = reportMarketPrice(enPrice);
   const priceText = marketPrice === null ? 'Unavailable' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(marketPrice);
-  const attentionLabel = hasAttention ? `${label.charAt(0)}${label.slice(1).toLowerCase()} attention` : 'Attention unavailable';
+  const attentionLabel = hasAttention ? `${label.charAt(0)}${label.slice(1).toLowerCase()} · experimental` : 'Score not rated';
   const printingDetails = printingLabel({ ...(exactCard || {}), setName: null });
   return <>
     <section className="report-summary" aria-label="Card report">
@@ -89,14 +93,17 @@ export default function OverallScore({ score, cardName, game, summary, truncated
           <div className="report-market price-cell--market">
             <span>Market price</span>
             <strong className={marketPrice === null ? 'report-price-unavailable' : ''}>{priceText}</strong>
+            {marketPrice !== null && <small style={{ display: 'block', marginTop: 5, fontSize: 11, color: 'var(--signal-text-secondary)' }}>{!Number.isFinite(priceAge) || priceAge > 86400000 || prices?.price_refresh_status === 'saved' ? 'Saved price' : 'Price checked'} · {checkedDate(prices?.price_checked_at)}</small>}
           </div>
         </div>
       </div>
       <div className="report-finding">
         <div className="report-finding-heading"><h2>{attentionLabel}</h2>{hasAttention && <span className="report-attention-score">{score}<small>/100</small></span>}</div>
+        <p style={{ fontSize: 12 }}>AI estimate · {assessedCount} of {expectedSignalCount} areas rated. Price prediction has not been proven.</p>
         {finding && <p>{finding}</p>}
         <details className="report-evidence">
           <summary>Sources</summary>
+          <p>Research from {checkedDate(researchAt)}. These links are a research sample, not total market activity.</p>
           <p>{sourcedSignalCount} of {expectedSignalCount} areas have sources. {uniqueSourceCount} source{uniqueSourceCount === 1 ? '' : 's'} linked in the report.</p>
           {signals.some((signal) => !signal.sources?.length) && (
             <details className="report-empty-areas">
@@ -106,6 +113,7 @@ export default function OverallScore({ score, cardName, game, summary, truncated
               ))}</ul>
             </details>
           )}
+          <ResearchChecks checks={researchChecks} />
           {hasAttention && percentileInfo && <p>Top {percentileInfo.topPct}% of your last {percentileInfo.total} scans by attention.</p>}
         </details>
         {truncated && <div className="report-partial"><span>Partial report · {signalCount} of {expectedSignalCount} areas</span>{onRetry && <button type="button" className="score-retry-button" onClick={onRetry}>Retry</button>}</div>}

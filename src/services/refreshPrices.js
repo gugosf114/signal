@@ -33,7 +33,7 @@ function headlinePrice(priceLines) {
 async function withHistory(patch, pin) {
   if (!patch || !pin) return patch;
   const history = await fetchPriceHistory(pin).catch(() => null);
-  return history ? { ...patch, history } : patch;
+  return { ...patch, history: history || null };
 }
 
 export async function refreshPrices(cardName, game, pin = null) {
@@ -63,15 +63,17 @@ export function pricePatchFromTcgplayer(data) {
     price_url: data.url || '',
     tcgplayer_product_id: data.productId || null,
     price_checked_at: new Date().toISOString(),
+    price_refresh_status: 'checked',
   };
 }
 
 export function pricePatchFromCardData(data) {
   if (!data) return null;
-  const checked = new Date().toISOString();
+  const checked = data.priceCheckedAt || null;
+  const status = data.priceFromSavedCard ? 'saved' : 'checked';
   const record = data.card ? { card: data.card, tcgplayer_product_id: data.card.tcgplayerProductId } : {};
   if (data.priceScope === 'exact-print price unavailable') {
-    return { ...record, en_price: '', price_source: '', price_url: '', price_checked_at: checked };
+    return { ...record, en_price: '', price_source: '', price_url: '', price_checked_at: checked, price_refresh_status: status };
   }
   const en = headlinePrice(data.priceLines);
   return en ? {
@@ -79,6 +81,6 @@ export function pricePatchFromCardData(data) {
     en_price: en,
     price_source: data.priceSource || '',
     price_url: data.priceUrl || data.tcgplayerUrl || data.scryfallUri || '',
-    price_checked_at: checked,
+    price_checked_at: checked, price_refresh_status: status,
   } : null;
 }

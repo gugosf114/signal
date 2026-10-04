@@ -1,3 +1,4 @@
+import { syncReport, researchTime, RESEARCH_TTL_MS } from './reportIntegrity.js';
 // Per-card scan-result cache. Clicking a card you've already scanned (this
 // session OR from a prior session, via localStorage) returns instantly
 // instead of burning another 60-90 seconds of Anthropic web_search budget.
@@ -11,7 +12,7 @@ import { isExactScanTarget } from './scanIdentity.js';
 
 // v3 also refuses reports made before Signal used the whole paid search result
 // page. Old thin reports must not hide the records the app already retrieved.
-const CACHE_KEY = 'signal_scan_cache_v6';
+const CACHE_KEY = 'signal_scan_cache_v7';
 // Two clocks, because the two halves of a scan go stale at very different rates.
 // Signals (creator buzz, scarcity, ban status, JP release timing) move over
 // weeks. Prices move daily. Holding both for 7 days served stale money numbers;
@@ -38,7 +39,7 @@ function cleanData(data) {
     cardName: data?.card_name,
     pin: data?.card || data?._pin || data?.printing || null,
   });
-  return withCardRecord(safe, data?.card || data?._pin || data?.printing || null);
+  return syncReport(withCardRecord(safe, data?.card || data?._pin || data?.printing || null));
 }
 
 function entryPin(entry) {
@@ -101,7 +102,7 @@ export function getCachedScan(name, game, pin) {
   const cache = loadCache();
   const entry = findEntry(cache, name, game, exactPin)?.entry;
   if (!entry || !entry.data) return null;
-  const age = Date.now() - (entry.ts || 0);
+  const age = Date.now() - (researchTime(entry.data) ?? 0);
   if (age < 0 || age > CACHE_TTL_MS) return null;
   return cleanData(entry.data);
 }
@@ -115,10 +116,10 @@ export function getCachedScanEntry(name, game, pin) {
   const cache = loadCache();
   const entry = findEntry(cache, name, game, exactPin)?.entry;
   if (!entry || !entry.data) return null;
-  const age = Date.now() - (entry.ts || 0);
+  const age = Date.now() - (researchTime(entry.data) ?? 0);
   if (age < 0 || age > CACHE_TTL_MS) return null;
   // priceTs tracks the last price top-up independently of the scan timestamp.
-  const priceAge = Date.now() - (entry.priceTs || entry.ts || 0);
+  const priceAge = Date.now() - (Date.parse(entry.data?.prices?.price_checked_at || '') || 0);
   return { data: cleanData(entry.data), pricesStale: priceAge > PRICE_TTL_MS };
 }
 
@@ -133,7 +134,7 @@ export function setCachedScan(name, game, data, pin) {
   const cache = loadCache();
   const now = Date.now();
   const cleaned = cleanData(withCardRecord(data, resultPin));
-  const entry = { ts: now, priceTs: now, data: cleaned };
+  const entry = { ts: researchTime(cleaned) ?? now, priceTs: Date.parse(cleaned.prices?.price_checked_at || '') || 0, data: cleaned };
   cache[cacheKey] = entry;
   saveCache(cache);
 }
@@ -153,7 +154,7 @@ export function refreshCachedPrices(name, game, prices, pin) {
     grading_roi: null,
     _relatedPriceDataStale: true,
   });
-  entry.priceTs = Date.now();
+  entry.priceTs = Date.parse(entry.data?.prices?.price_checked_at || '') || 0;
   if (k) cache[k] = entry;
   saveCache(cache);
 }

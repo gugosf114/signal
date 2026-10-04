@@ -9,25 +9,26 @@
 import { exactCreatorQuery, filterExactVideos, looseCreatorQuery } from './sourceRelevance.js';
 import { searchYouTube } from './youtubeSearch.js';
 
-export async function fetchCreators(cardName, game = null, pin = null) {
-  if (!pin) return null;
-  try {
-    const seen = new Set();
-    const videos = [];
-    const queries = [exactCreatorQuery(cardName, game, pin), looseCreatorQuery(cardName, game, pin)];
-    for (const q of queries) {
-      const found = await searchYouTube({ q, order: 'relevance', maxResults: 6 }).catch(() => []);
+export async function fetchCreators(cardName, game = null, pin = null, { signal, force = false } = {}) {
+  const videos = [], seen = new Set();
+  let succeeded = 0, failed = 0;
+  const checkedTimes = [];
+  if (!pin) return { videos, status: 'not_checked' };
+  const queries = [exactCreatorQuery(cardName, game, pin), looseCreatorQuery(cardName, game, pin)];
+  for (const q of queries) {
+    try {
+      const found = await searchYouTube({ q, order: 'relevance', maxResults: 6, force }, { signal });
+      succeeded++;
+      const checked = Date.parse(found.checkedAt || found[0]?.checkedAt || '');
+      if (Number.isFinite(checked)) checkedTimes.push(checked);
       for (const video of filterExactVideos(found, cardName, pin)) {
         if (seen.has(video.url)) continue;
-        seen.add(video.url);
-        videos.push(video);
+        seen.add(video.url); videos.push(video);
       }
-      if (videos.length) break;
-    }
-    return videos.length ? { videos } : null;
-  } catch {
-    return null;
+    } catch (error) { if (signal?.aborted) throw error; failed++; }
+    if (videos.length) break;
   }
+  return { videos, checkedAt: new Date(checkedTimes.length ? Math.min(...checkedTimes) : Date.now()).toISOString(), status: failed ? (succeeded ? 'partial' : 'unavailable') : videos.length ? 'ok' : 'empty' };
 }
 
 export function creatorsBlock(data) {

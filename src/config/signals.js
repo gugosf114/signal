@@ -5,7 +5,7 @@ export const SIGNAL_SECTIONS = [
   {
     id: 'japan',
     label: '⛩ Japan Market Intelligence',
-    subtitle: 'Leading indicators from the JP market',
+    subtitle: 'Japanese sources and release facts',
     signals: ['jp_hype', 'jp_release'],
   },
   {
@@ -17,7 +17,7 @@ export const SIGNAL_SECTIONS = [
   {
     id: 'structural',
     label: 'LONG-TERM SIGNALS',
-    subtitle: '3–12 months',
+    subtitle: 'Rules, printings and supply context',
     signals: ['competitive', 'scarcity'],
   },
 ];
@@ -26,12 +26,12 @@ export const SIGNAL_TYPES = {
   creator: {
     label: 'Creator Attention',
     color: '#B08060',
-    description: 'YouTube/TikTok videos mentioning this card in last 7 days',
+    description: 'Matching YouTube videos published in the last 7 days',
   },
   community: {
-    label: 'Community Volume',
+    label: 'Community Discussion',
     color: '#608870',
-    description: 'Reddit posts, TikTok mentions, X/Twitter activity',
+    description: 'Retrieved Reddit posts and web sources; a sample, not total mentions',
   },
   ip_momentum: {
     label: 'Franchise Buzz',
@@ -46,28 +46,28 @@ export const SIGNAL_TYPES = {
   competitive: {
     label: 'Competitive Demand',
     color: '#7080A0',
-    description: 'Tournament top 8 appearances, ban list status',
+    description: 'Retrieved tournament evidence and current play rules',
   },
   scarcity: {
     label: 'Print Scarcity',
     color: '#907888',
-    description: 'Print run size, PSA population, out of print status',
+    description: 'Retrieved supply evidence; catalogue entries are not print quantities',
   },
   jp_hype: {
     label: 'JP Community Buzz',
     color: '#B04848',
-    description: 'Japanese Twitter/X, YouTube, Mercari JP trending',
+    description: 'Matching Japanese YouTube and web sources; no measured market lead',
   },
   jp_release: {
     label: 'JP Release Timeline',
     color: '#A05050',
-    description: 'JP set released before EN, time advantage window',
+    description: 'Verified Japanese release, reservation and restock context',
   },
 };
 
 export const SIGNAL_KEYS = Object.freeze(Object.keys(SIGNAL_TYPES));
 export const SIGNAL_COUNT = SIGNAL_KEYS.length;
-export const SCORE_VERSION = 2;
+export const SCORE_VERSION = 3;
 
 // ─── Per-Game Weights ────────────────────────────────────────────────────────
 // Each game has different market dynamics that determine which signals matter most.
@@ -119,11 +119,12 @@ export const GAME_LABELS = {
 // kept out of "buy / sell / hold" territory so the score reads as a status
 // not a recommendation. Pairs with the "Not financial advice" footer.
 export function getScoreLabel(score) {
+  if (!Number.isFinite(score)) return { label: 'UNRATED', color: '#80786C', blurb: 'There is not enough assessed evidence for a score.' };
   const safe = Number.isFinite(Number(score)) ? Math.max(0, Math.min(100, Number(score))) : 50;
   if (safe >= 85) return { label: 'BLAZING', color: '#C44040', blurb: 'Broad, strong positive attention across the signals' };
   if (safe >= 70) return { label: 'SURGING', color: '#C44040', blurb: 'Clear positive attention across the evidence' };
   if (safe >= 56) return { label: 'HEATING', color: '#A09060', blurb: 'Attention leans positive' };
-  if (safe >= 45) return { label: 'STEADY',  color: '#608870', blurb: 'Attention is mixed or quiet' };
+  if (safe >= 45) return { label: 'NEUTRAL', color: '#608870', blurb: 'Assessed evidence is neutral or mixed' };
   if (safe >= 30) return { label: 'COOLING', color: '#807060', blurb: 'Attention leans negative' };
   return                   { label: 'FALLING', color: '#7A7368', blurb: 'Broad negative attention across the signals' };
 }
@@ -141,21 +142,17 @@ export function getScoreLabel(score) {
 // scalping. Its own summary read "strong bearish signals"; the price then fell.
 // The score could not tell excitement from a riot.
 //
-// A signal whose sources lean bearish now contributes less. Halved at fully
-// bearish rather than zeroed: the level still says real attention is being paid,
-// and attention on the way down is not worth nothing. Sources with no stated
-// implication, and signals with no surviving sources at all, are left at full
-// contribution — deliberately out of scope for this change so the before/after
-// comparison isolates direction alone.
-// −1 (every source bearish) … 0 (balanced / neutral / unsourced) … +1 (all bullish)
+// Neutral and unrated context dilute a directional claim. Only an assessed
+// source with a retrieved supporting excerpt can contribute up or down.
+// −1 = all down, 0 = neutral/mixed, +1 = all up.
 export function sourceDirection(sources) {
   const list = Array.isArray(sources) ? sources : [];
   let up = 0, down = 0;
   for (const s of list) {
-    if (s?.implication === 'up') up++;
-    else if (s?.implication === 'down') down++;
+    if (s?.directionAssessed === true && s?.implication === 'up') up++;
+    else if (s?.directionAssessed === true && s?.implication === 'down') down++;
   }
-  const counted = up + down;
+  const counted = list.length;
   return counted === 0 ? 0 : (up - down) / counted;
 }
 
@@ -179,7 +176,7 @@ export function directionMultiplier(sources) {
 // Signal levels are clamped because model output is untrusted input.
 export function calculateScoreDetails(signals, game) {
   const weights = WEIGHTS[game];
-  if (!weights) return { score: 0, coveragePct: 0, evidencePct: 0, signalCount: 0 };
+  if (!weights) return { score: null, assessedCount: 0, coveragePct: 0, evidencePct: 0, signalCount: 0 };
 
   const list = Array.isArray(signals) ? signals : [];
   const fullWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
@@ -187,13 +184,16 @@ export function calculateScoreDetails(signals, game) {
   let presentWeight = 0;
   let evidenceWeight = 0;
   let signalCount = 0;
+  let assessedCount = 0;
 
   for (const [key, weight] of Object.entries(weights)) {
     const signal = list.find(s => s?.key === key);
-    if (signal && typeof signal.level === 'number') {
+    if (signal && Number.isFinite(signal.level)) {
       signalCount += 1;
       presentWeight += weight;
-      const level = Math.max(0, Math.min(5, signal.level));
+      const assessed = signal.strengthAssessed === true && signal.sources?.some(source => source.directionAssessed === true);
+      if (assessed) assessedCount += 1;
+      const level = assessed ? Math.max(0, Math.min(5, signal.level)) : 0;
       const direction = sourceDirection(signal.sources);
       const contribution = 0.5 + 0.5 * (level / 5) * direction;
       weightedSum += contribution * weight;
@@ -203,9 +203,10 @@ export function calculateScoreDetails(signals, game) {
     }
   }
 
-  if (fullWeight === 0) return { score: 0, coveragePct: 0, evidencePct: 0, signalCount: 0 };
+  if (fullWeight === 0) return { score: null, assessedCount: 0, coveragePct: 0, evidencePct: 0, signalCount: 0 };
   return {
-    score: Math.max(0, Math.min(100, Math.round((weightedSum / fullWeight) * 100))),
+    score: assessedCount ? Math.max(0, Math.min(100, Math.round((weightedSum / fullWeight) * 100))) : null,
+    assessedCount,
     coveragePct: Math.round((presentWeight / fullWeight) * 100),
     evidencePct: Math.round((evidenceWeight / fullWeight) * 100),
     signalCount,

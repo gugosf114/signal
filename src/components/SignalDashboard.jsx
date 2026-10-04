@@ -1,3 +1,4 @@
+import { syncReport } from '../services/reportIntegrity';
 import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import SearchBar from './SearchBar';
 import QuickPicks from './QuickPicks';
@@ -197,12 +198,12 @@ export default function SignalDashboard() {
     if (myToken !== navTokenRef.current) return;
     setResult((prev) => {
       if (!prev) return prev;
-      const next = withCardRecord({
+      const next = syncReport(withCardRecord({
         ...prev,
         prices: { ...prev.prices, ...patch },
         grading_roi: null,
         _relatedPriceDataStale: true,
-      }, prev.card || pin);
+      }, prev.card || pin));
       saveCompletedScanSession({ name, game, pin: next.card || pin, result: next });
       return next;
     });
@@ -799,6 +800,8 @@ export default function SignalDashboard() {
                 sourcedSignalCount={evidenceStats?.sourcedSignalCount || 0}
                 uniqueSourceCount={evidenceStats?.uniqueSourceCount || 0}
                 onRetry={() => handleSearch(result.card_name, result.game, { force: true, pin: resultCardPin(result) })}
+                researchAt={result._researchAt || result._scannedAt}
+                researchChecks={result._researchChecks || []}
                 signals={result.signals || []}
                 enPrice={result.prices?.en_price}
                 prices={result.prices}
@@ -812,7 +815,7 @@ export default function SignalDashboard() {
 
 
           <ScrollReveal>
-            <EbayListings data={result.ebay_listings} cachedAt={result._scannedAt} stale={result._relatedPriceDataStale} />
+            <EbayListings data={result.ebay_listings} cachedAt={result._listingsCheckedAt || result._scannedAt} stale={result._relatedPriceDataStale} />
           </ScrollReveal>
 
           <ScrollReveal delay={70}>
@@ -828,6 +831,8 @@ export default function SignalDashboard() {
             <ScrollReveal key={section.id}>
               <SignalSection
                 section={section}
+                researchAt={result._researchAt || result._scannedAt}
+                researchChecks={result._researchChecks || []}
                 signals={result.signals || []}
                 baseDelay={sIdx * 3}
               />

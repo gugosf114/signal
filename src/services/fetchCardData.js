@@ -24,7 +24,7 @@ export async function fetchCardData(cardName, game, pin = null) {
     const exactPin = normalizeCardRecord(pin || {}, { name: cardName, game });
     if (!isExactScanTarget(game, exactPin)) return null;
     const exact = await fetchPinned(exactPin);
-    if (exact) return exact;
+    if (exact) return { ...exact, priceCheckedAt: exact.priceFromSavedCard ? exact.priceCheckedAt : new Date().toISOString() };
     // A chosen catalogue row is a hard identity boundary. Falling back to a
     // name search can join the pin's set/number to another printing's price,
     // rarity, and set total. A dead pin is therefore a miss, not permission
@@ -52,6 +52,8 @@ function cardDataFromPin(cardName, game, pin) {
     rarity: pin.rarity || null,
     form: pin.form || null,
     finish: pin.finish || null,
+    priceFromSavedCard: true,
+    priceCheckedAt: pin.priceCheckedAt || null,
     priceLines: hasPrice ? [`${pin.priceSource} exact-print market price: $${price.toFixed(2)}`] : null,
     priceScope: hasPrice ? `exact-print ${pin.priceSource} market price` : 'exact-print price unavailable',
     priceSource: hasPrice ? pin.priceSource : null,
@@ -146,11 +148,13 @@ async function fetchPinned(pin) {
 export function applyTrustedPinMarketPrice(cardData, pin) {
   const price = Number(pin?.price);
   const trusted = ['TCGplayer', 'Scryfall', 'YGOPRODeck'].includes(pin?.priceSource);
-  const exactFreshPrice = cardData?.priceScope === 'exact finish' && cardData?.priceLines?.length;
+  const exactFreshPrice = cardData?.priceLines?.some(line => /\$/.test(line));
   if (!cardData || !trusted || !Number.isFinite(price) || price <= 0 || exactFreshPrice) return cardData;
   const finish = pin?.finish ? ` ${pin.finish}` : '';
   return {
     ...cardData,
+    priceFromSavedCard: true,
+    priceCheckedAt: pin.priceCheckedAt || null,
     priceLines: [`${pin.priceSource} exact-print${finish} market price: $${price.toFixed(2)}`],
     priceScope: `exact-print ${pin.priceSource} market price`,
     priceSource: pin.priceSource,
@@ -408,7 +412,9 @@ export function applyTrustedMarketPrice(prices, cardData, currentPrice) {
   else clean.en_price = '';
   delete clean.trend_30d;
   clean.price_source = currentPrice !== null ? (cardData?.priceSource || '') : '';
-  clean.price_checked_at = new Date().toISOString();
+  clean.price_checked_at = cardData?.priceCheckedAt || null;
+  clean.price_refresh_status = cardData?.priceFromSavedCard ? 'saved' : 'checked';
+  clean.signal_vs_market = 'unknown';
   return clean;
 }
 

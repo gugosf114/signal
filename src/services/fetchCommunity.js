@@ -86,9 +86,9 @@ export async function fetchCommunity(cardName, game = null) {
     const gameTerm = { pokemon: 'Pokemon TCG', mtg: 'Magic card', yugioh: 'Yu-Gi-Oh card' }[game] || 'trading card';
     const q = encodeURIComponent(`"${cardName}" ${gameTerm}`);
     const posts = (await fetchJson(q).catch(() => null)) || (await fetchFeed(q).catch(() => null));
-    return posts?.length ? { posts } : null;
+    return { posts: posts || [], checkedAt: new Date().toISOString(), status: posts === null ? 'unavailable' : posts.length ? 'ok' : 'empty' };
   } catch {
-    return null;
+    return { posts: [], checkedAt: new Date().toISOString(), status: 'unavailable' };
   }
 }
 

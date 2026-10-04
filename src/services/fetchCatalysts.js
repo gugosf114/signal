@@ -16,7 +16,7 @@ async function scryfallCard(cardName) {
   );
   if (!res.ok) return null;
   const j = await res.json();
-  if (j.object === 'error') return null;
+  if (j.object === 'error' || ![j.name, ...String(j.name || '').split(' // ')].some(name => String(name || '').toLowerCase() === cardName.toLowerCase())) return null;
 
   const legal = j.legalities || {};
   const formats = Object.entries(legal)
@@ -30,6 +30,7 @@ async function scryfallCard(cardName) {
     .map(([f]) => f);
 
   return {
+    url: j.scryfall_uri,
     name: j.name,
     set: j.set_name,
     released: j.released_at,
@@ -74,6 +75,7 @@ async function ygoBanlist(cardName) {
   const card = j.data?.[0];
   if (!card) return null;
   return {
+    url: `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}&banlist_info=yes`,
     ban_tcg: card.banlist_info?.ban_tcg || 'Unlimited',
     ban_ocg: card.banlist_info?.ban_ocg || 'Unlimited',
     type: card.type,
@@ -91,7 +93,7 @@ async function pokemonCardPrintsTcgdex(cardName) {
   const rows = await res.json();
   const list = Array.isArray(rows) ? rows : [];
   const exact = list.filter((c) => String(c?.name || '').toLowerCase() === String(cardName).toLowerCase());
-  const cards = (exact.length ? exact : list).map((c) => ({
+  const cards = exact.map((c) => ({
     id: c.id,
     set: String(c.id || '').split('-')[0],
     series: null,
@@ -99,7 +101,7 @@ async function pokemonCardPrintsTcgdex(cardName) {
     rarity: null,
     number: c.localId,
   }));
-  return cards.length ? { total_prints: cards.length, prints: cards } : null;
+  return { url: `https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(cardName)}&pagination:page=1&pagination:itemsPerPage=50`, total_prints: cards.length, prints: cards };
 }
 
 async function pokemonCardPrints(cardName) {
@@ -117,7 +119,7 @@ async function pokemonCardPrints(cardName) {
     rarity: c.rarity,
     number: c.number,
   }));
-  return cards.length ? { total_prints: j.totalCount || cards.length, prints: cards } : null;
+  return { url: `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&select=id,name,set,rarity,number&pageSize=50`, total_prints: j.totalCount || cards.length, prints: cards };
 }
 
 async function pokemonUpcomingSets() {
@@ -141,7 +143,7 @@ async function pokemonUpcomingSets() {
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
-export async function fetchCatalysts(cardName, game) {
+async function fetchCatalystData(cardName, game) {
   const g = (game || '').toLowerCase();
   if (!g) return null; // game unknown — skip; game resolves from cardData before wiring in
 
@@ -174,12 +176,36 @@ export async function fetchCatalysts(cardName, game) {
   return null;
 }
 
+export async function fetchCatalysts(cardName, game, pin = null) {
+  const data = await fetchCatalystData(cardName, game);
+  const checkedAt = new Date().toISOString();
+  if (!data) return { status: 'unavailable', evidence: [], checkedAt };
+  const evidence = [];
+  const add = (url, area, title, summary, factScope = 'card') => {
+    if (url) evidence.push({ url, area, title, summary, factScope, type: 'other', checkedAt, date: checkedAt.slice(0, 10) });
+  };
+  if (data.card) {
+    const c = data.card;
+    add(c.url, 'competitive', `${cardName} — play rules`, `Legal: ${c.formats_legal.join(', ') || 'none listed'}. Banned: ${c.formats_banned.join(', ') || 'none listed'}. Restricted: ${c.formats_restricted.join(', ') || 'none listed'}. Play rules do not measure demand.`);
+    if (c.print_count != null) add(c.prints_search_uri + '&unique=prints', 'scarcity', `${cardName} — catalogue printings`, `${c.print_count} catalogue entries. This is not the number of copies printed.${c.reserved ? ' Scryfall marks this card as Reserved List.' : ''}`);
+  }
+  if (data.ban) add(data.ban.url, 'competitive', `${cardName} — play rules`, `TCG: ${data.ban.ban_tcg}. OCG: ${data.ban.ban_ocg}. Play rules do not measure demand.`);
+  if (data.prints) add(data.prints.url, 'scarcity', `${cardName} — catalogue printings`, `${data.prints.total_prints} catalogue entries found. This is not print quantity, supply or measured scarcity.`);
+  // Only a release for the selected expansion is card-relevant context.
+  const sets = [...(data.sets?.recent || []), ...(data.sets?.upcoming || []), ...(data.upcoming || [])];
+  const selected = sets.find(set => set.name?.toLowerCase() === pin?.setName?.toLowerCase());
+  if (selected) add(game === 'mtg' ? 'https://api.scryfall.com/sets' : 'https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate&pageSize=20', 'editorial', `${selected.name} — English release`, `English release date: ${selected.date}. This is not a Japanese release date.`, 'set');
+  const partial = game === 'mtg' ? !data.card || data.upcoming === null : game === 'pokemon' ? !data.prints || !data.sets : false;
+  return { ...data, evidence, checkedAt, status: partial ? 'partial' : 'ok' };
+}
+
 // ─── Prompt block ─────────────────────────────────────────────────────────────
 
 export function catalystBlock(data) {
-  if (!data) return null;
+  if (!data?.evidence?.length) return null;
   const lines = [
-    '=== CATALYST CONTEXT (pre-fetched — use for competitive/scarcity/jp_release; do NOT re-search these) ===',
+    ...(data.evidence || []).map(source => `SOURCE: ${source.title}. ${source.summary} ${source.url}`),
+    '=== CATALYST CONTEXT (pre-fetched — use the cited facts only; missing facts may be searched) ===',
   ];
 
   if (data.game === 'mtg' && data.card) {

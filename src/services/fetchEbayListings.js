@@ -1,3 +1,4 @@
+import { sourceMatchesExactPrinting } from './sourceRelevance.js';
 // ─── eBay live listings ───────────────────────────────────────────────────────
 // Direct, structured pull via the eBay Browse API (needs VITE_EBAY_CLIENT_ID +
 // VITE_EBAY_CLIENT_SECRET — free developer tier). Replaces the LLM "search eBay"
@@ -46,8 +47,9 @@ function remainingUntil(value) {
 
 export async function fetchEbayListings(cardName, game = null, pin = null) {
   try {
+    if (!import.meta.env?.VITE_EBAY_CLIENT_ID || !import.meta.env?.VITE_EBAY_CLIENT_SECRET) return { buy_it_now: [], auction: [], status: 'not_checked' };
     const token = await ebayToken();
-    if (!token) return null;
+    if (!token) return { buy_it_now: [], auction: [], status: 'unavailable' };
     const printing = [pin?.setName, pin?.number].filter(Boolean).join(' ');
     const q = encodeURIComponent(`${cardName} ${printing} ${game || ''} single card`.trim());
     const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${q}&limit=20`;
@@ -94,7 +96,7 @@ export async function fetchEbayListings(cardName, game = null, pin = null) {
       }
       if (buy_it_now.length >= 2 && auction.length >= 1) break;
     }
-    return buy_it_now.length || auction.length ? { buy_it_now, auction } : null;
+    return { buy_it_now: buy_it_now.filter(item => sourceMatchesExactPrinting(item, cardName, pin)), auction: auction.filter(item => sourceMatchesExactPrinting(item, cardName, pin)), status: buy_it_now.length || auction.length ? 'ok' : 'empty', checkedAt: new Date().toISOString() };
   } catch {
     return null;
   }

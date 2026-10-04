@@ -28,14 +28,14 @@ describe('price history', () => {
     assert.equal(pickHistorySku(RESULT, { ...umbreon, form: 'reverse' }).skuId, 3);
   });
 
-  test('a single-variant product is taken as is; several without a finish fall to the nearest price', () => {
+  test('history requires an explicit edition or finish and never picks by nearest price', () => {
     const single = [{ skuId: 9, variant: '1st Edition', condition: 'Near Mint', language: 'English', buckets: buckets([262.45, 262.45]) }];
-    assert.equal(pickHistorySku(single, { game: 'yugioh', price: 262.45 }).skuId, 9);
+    assert.equal(pickHistorySku(single, { game: 'yugioh', price: 262.45 }), null);
     const several = [
       { skuId: 5, variant: 'Normal', condition: 'Near Mint', language: 'English', buckets: buckets([3, 3]) },
       { skuId: 6, variant: 'Foil', condition: 'Near Mint', language: 'English', buckets: buckets([30, 30]) },
     ];
-    assert.equal(pickHistorySku(several, { game: 'mtg', price: 28 }).skuId, 6);
+    assert.equal(pickHistorySku(several, { game: 'mtg', price: 28 }), null);
     assert.equal(pickHistorySku(several, { game: 'mtg' }), null);
   });
 

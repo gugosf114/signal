@@ -15,7 +15,7 @@ import { pokemonMarketForm } from './pokemonVariants.js';
 import { verifyPokemonProduct } from './pokemonProduct.js';
 import { fillMtgPrice } from './mtgProduct.js';
 
-const CACHE_KEY = 'signal_price_history_v1';
+const CACHE_KEY = 'signal_price_history_v2';
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_CACHE = 120;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -47,40 +47,23 @@ function number(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function latestMarket(sku) {
-  const buckets = Array.isArray(sku?.buckets) ? sku.buckets : [];
-  for (const bucket of buckets) {
-    const market = number(bucket?.marketPrice);
-    if (market > 0) return market;
-  }
-  return null;
-}
-
-// Prefer the exact finish, English, Near Mint. When the finish has no SKU
-// (Yu-Gi-Oh has one printing per product) take the single variant offered;
-// when several variants remain, take the one priced nearest the card's own
-// current price rather than guessing.
+// History must identify English Near Mint and the selected finish/edition.
+// A similar price is never evidence of the same SKU.
 export function pickHistorySku(result, pin) {
-  const skus = (Array.isArray(result) ? result : []).filter((sku) => Array.isArray(sku?.buckets) && sku.buckets.length);
-  if (!skus.length) return null;
-  const english = skus.filter((sku) => !sku.language || /english/i.test(sku.language));
-  const pool = english.length ? english : skus;
-  const nearMint = pool.filter((sku) => /near mint/i.test(sku.condition || ''));
-  const conditioned = nearMint.length ? nearMint : pool;
+  const skus = (Array.isArray(result) ? result : []).filter(sku =>
+    Array.isArray(sku?.buckets) && sku.buckets.length
+    && /^english$/i.test(String(sku.language || '').trim())
+    && /^near mint$/i.test(String(sku.condition || '').trim()));
   const form = pin?.game === 'pokemon' ? pokemonMarketForm(pin) : pin?.form;
-  const wanted = (VARIANT_BY_FORM[pin?.game] || {})[form] || [];
-  const byVariant = wanted.length
-    ? conditioned.filter((sku) => wanted.some((name) => String(sku.variant || '').toLowerCase() === name.toLowerCase()))
-    : [];
-  if (byVariant.length) return byVariant[0];
-  if (pin?.game === 'mtg' && wanted.length) return null;
-  const variants = new Set(conditioned.map((sku) => String(sku.variant || '')));
-  if (variants.size === 1) return conditioned[0];
-  const price = number(pin?.price);
-  if (!(price > 0)) return null;
-  return conditioned
-    .map((sku) => ({ sku, gap: Math.abs((latestMarket(sku) || 0) - price) }))
-    .sort((a, b) => a.gap - b.gap)[0]?.sku || null;
+  let wanted = (VARIANT_BY_FORM[pin?.game] || {})[form] || [];
+  if (pin?.game === 'yugioh') {
+    const edition = String(pin.edition || '').toLowerCase();
+    wanted = edition === '1st edition' ? ['1st Edition']
+      : edition === 'unlimited' ? ['Unlimited'] : ['Normal'];
+  }
+  if (!wanted.length) return null;
+  const matches = skus.filter(sku => wanted.some(name => String(sku.variant || '').toLowerCase() === name.toLowerCase()));
+  return matches.length === 1 ? matches[0] : null;
 }
 
 // Buckets are three days apart on the quarter feed and the feed spans 87
@@ -95,6 +78,7 @@ function changeSince(points, days, now) {
     if (point === latest) break;
     const age = now - point.time;
     if (age < minAge) break;
+    if (age > days * 1.2 * DAY_MS) continue;
     if (!then || Math.abs(age - days * DAY_MS) < Math.abs((now - then.time) - days * DAY_MS)) then = point;
   }
   if (!then || !(then.market > 0)) return null;
@@ -110,15 +94,17 @@ export function shapeHistory(sku, { now = Date.now() } = {}) {
       market: number(bucket?.marketPrice),
       sold: Math.max(0, Math.floor(number(bucket?.quantitySold) || 0)),
     }))
-    .filter((point) => point.date && Number.isFinite(point.time) && point.market > 0)
+    .filter((point) => point.date && Number.isFinite(point.time) && point.market > 0 && point.time <= now)
     .sort((a, b) => a.time - b.time);
   if (!points.length) return null;
   const latest = points[points.length - 1];
+  if (now - latest.time > 7 * DAY_MS) return null;
   const recent = points.filter((point) => point.time >= now - 30 * DAY_MS);
   return {
     skuId: sku.skuId ?? null,
     variant: sku.variant || null,
     condition: sku.condition || null,
+    language: sku.language || null,
     latest: latest.market,
     latestDate: latest.date,
     change7: changeSince(points, 7, now),
@@ -145,7 +131,7 @@ export function historyBlock(history) {
 
 // Score direction against the real 30-day move. Replaces the model's guess.
 export function alignmentFromHistory(score, change30) {
-  if (!Number.isFinite(Number(score)) || change30 === null || change30 === undefined) return null;
+  if (!Number.isFinite(score) || !Number.isFinite(change30)) return null;
   const up = score >= 56;
   const down = score < 45;
   const rose = change30 >= 3;
@@ -199,14 +185,14 @@ export async function resolveProductId(pin, signal) {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-export async function fetchPriceHistory(pin, { signal, range = 'quarter', now = Date.now() } = {}) {
+export async function fetchPriceHistory(pin, { signal, range = 'quarter', now = Date.now(), force = false } = {}) {
   if (!pin?.game) return null;
   pin = await verifyPokemonProduct(pin, { signal });
   if (pin.game === 'mtg') pin = await fillMtgPrice(pin, { signal });
   const productId = await resolveProductId(pin, signal);
   if (!productId) return null;
   const key = `${productId}:${pin.form || ''}:${range}`;
-  const cached = readCache(key, now);
+  const cached = force ? null : readCache(key, now);
   if (cached) return { productId, ...cached };
   let payload;
   try {
