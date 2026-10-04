@@ -1,4 +1,4 @@
-import { stampYugiohProductImage } from './cardImageIdentity.js';
+import { stampYugiohProductImage, productArtVariant } from './cardImageIdentity.js';
 import { fetchWithTimeout } from './http.js';
 import { gateway } from './signalGateway.js';
 import { verifyPokemonProduct } from './pokemonProduct.js';
@@ -60,6 +60,7 @@ export function tcgplayerProductRow(item, base = null) {
     printingId: `tcgplayer:${productId}`,
     tcgplayerProductId: productId,
     tcgplayerProductName: name,
+    artVariant: productArtVariant(name),
     baseName: baseTcgplayerName(name),
     name,
     game: 'yugioh',

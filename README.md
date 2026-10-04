@@ -2442,3 +2442,31 @@ read-only attempt to inspect the background WebView did not return and was
 stopped; no live gesture or visual verification is claimed.
 The production web bundle was installed on the phone. No test suites or
 GitHub checks were run; the phone visual check remains next.
+
+## Session log — 2026-10-04 missing product photos regression
+
+George's 15:50 screenshot showed missing images across two browse rows.
+The previous matcher assumed name + set + number + rarity identifies one
+product. Real source data disproved that: standard and extended Ultra Rare
+art share those fields. YGOPRODeck also supplied a placeholder rarity, New,
+which was incorrectly displayed as a real version. The strict matcher then
+blanked the ambiguous and placeholder rows.
+
+Browse reconciliation now groups catalogue records by card/set/number, reads
+the actual product versions, and keeps each real product once. Rarity and
+artwork labels come from those records, including standard, extended and
+alternate art. New/unknown placeholders do not become physical versions.
+Single-card resolution prefers its known product ID, retains a previously
+verified image if a recheck fails, and never guesses between artwork variants.
+Artwork identity is preserved in normalized records, saved cards, printing
+labels and the viewer. Price sorting uses the resolved product prices.
+
+Seven focused regression cases passed, including the actual failure pattern:
+placeholder rows plus multiple products sharing a rarity, zero-price photos,
+identity invalidation, and preserving a verified image during failed recheck.
+A live replay of 21 catalogue rows from the screenshot's expansion resolved
+21 product versions without a missing image mapping. All 21 image URLs then
+returned valid JPEG data. Receipts are in tmp/signal-image-repair-proof.json
+outside the repo. No full test suite or GitHub workflow was run.
+The production build completed and the updated web bundle was installed
+on the phone. The in-app visual check remains with George.

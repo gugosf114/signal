@@ -933,9 +933,13 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
       );
       if (!data) return [];
       const cards = data.data || [];
-      return resolveYugiohProductImages(sortYugiohByPrice(cards, priceSort)
+      const versions = await resolveYugiohProductImages(sortYugiohByPrice(cards, priceSort)
         .flatMap((card) => ygoPrintingRows(card, set))
         .slice(0, PAGE));
+      if (priceSort) versions.sort((a, b) => priceSort === 'asc'
+        ? (a.price ?? Infinity) - (b.price ?? Infinity)
+        : (b.price ?? -Infinity) - (a.price ?? -Infinity));
+      return versions.slice(0, PAGE);
     }
   } catch (err) {
     throw err;

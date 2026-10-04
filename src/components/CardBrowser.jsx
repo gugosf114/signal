@@ -408,7 +408,7 @@ export default function CardBrowser({
                 }}>Image unavailable</div>
               )}
               <span className="cb-card-copy">
-                <strong className="cb-card-name">{card.name}</strong>
+                <strong className="cb-card-name">{card.baseName || card.name}</strong>
                 <span className="cb-card-version">{cardVersionLabel(card) || 'Version unspecified'}</span>
                 <span className="cb-card-number">{card.number || 'Number unavailable'}</span>
               </span>

@@ -63,6 +63,7 @@ export function printingLabel(printing) {
   if (setName && setName !== id) parts.push(setName);
   if (id) parts.push(id);
   if (rarity) parts.push(rarity);
+  if (printing.artVariant) parts.push(printing.artVariant);
   if (finish && !parts.some((part) => String(part).toLowerCase() === String(finish).toLowerCase())) parts.push(finish);
   return parts.length ? parts.join(' · ') : null;
 }
@@ -122,6 +123,7 @@ export function toPrinting(game, pin, cardData) {
     number: pin?.number || src.number || null,
     printedTotal: pin?.printedTotal || (mayEnrichPin ? src.printedTotal : null) || null,
     rarity: pin?.rarity || (mayEnrichPin ? src.rarity : null) || null,
+    artVariant: pin?.artVariant || (mayEnrichPin ? src.artVariant : null) || null,
     imageUrl: pin?.imageUrl || src.imageUrl || null,
     imageLarge: pin?.imageLarge || src.imageLarge || null,
     form: pin?.form || src.form || null,

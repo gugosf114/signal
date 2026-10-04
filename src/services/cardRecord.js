@@ -161,6 +161,8 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
     imageLarge: clean(first(current.imageLarge, prior.imageLarge, current.imageUrl, prior.imageUrl)) || null,
     imageSource: clean(first(current.imageSource, prior.imageSource)) || null,
     imageIdentity: clean(first(current.imageIdentity, prior.imageIdentity)) || null,
+    artVariant: clean(first(current.artVariant, prior.artVariant)) || null,
+    tcgplayerProductName: clean(first(current.tcgplayerProductName, prior.tcgplayerProductName)) || null,
     imageStatus: clean(first(current.imageStatus, prior.imageStatus)) || null,
     imageSharedFinishes: first(current.imageSharedFinishes, prior.imageSharedFinishes) === undefined
       ? null : cleanList(first(current.imageSharedFinishes, prior.imageSharedFinishes)),

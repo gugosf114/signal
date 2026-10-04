@@ -20,6 +20,18 @@ export function stampYugiohProductImage(card) {
   return { ...card, imageUrl: url, imageLarge: url, tcgplayerImageUrl: url, imageSource: 'tcgplayer', imageIdentity: yugiohImageIdentity(card), imageStatus: 'matched' };
 }
 export function cardVersionLabel(card) {
-  const labels = [card?.rarity, card?.finish || (card?.form === 'foil' ? 'Foil' : card?.form === 'etched' ? 'Etched foil' : null)].filter(Boolean);
+  const labels = [knownRarity(card?.rarity) ? card.rarity : null, card?.artVariant, card?.finish || (card?.form === 'foil' ? 'Foil' : card?.form === 'etched' ? 'Etched foil' : null)].filter(Boolean);
   return [...new Map(labels.map(label => [String(label).toLowerCase(), label])).values()].join(' · ');
+}
+
+export function knownRarity(value) {
+  return Boolean(value && !/^(?:new|unknown|n\/?a|none|tbd|not specified)$/i.test(String(value).trim()));
+}
+export function productArtVariant(name) {
+  const text = String(name || '');
+  if (/extended[ -]art/i.test(text)) return 'Extended art';
+  if (/(?:alternate|alternative)[ -]art/i.test(text)) return 'Alternate art';
+  if (/full[ -]art/i.test(text)) return 'Full art';
+  if (/borderless/i.test(text)) return 'Borderless';
+  return 'Standard art';
 }

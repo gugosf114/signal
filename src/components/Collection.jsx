@@ -122,7 +122,7 @@ export default function Collection({
       setCards(current => saveCollection(current.map(card => {
         const image = images.get(cardKey(card));
         return image ? { ...card, imageUrl: image.imageUrl, imageLarge: image.imageLarge, imageSource: image.imageSource,
-          imageIdentity: image.imageIdentity, imageStatus: image.imageStatus, imageSharedFinishes: image.imageSharedFinishes, pokemonImageShared: image.pokemonImageShared, tcgplayerProductId: image.tcgplayerProductId || card.tcgplayerProductId,
+          imageIdentity: image.imageIdentity, artVariant: image.artVariant, tcgplayerProductName: image.tcgplayerProductName, imageStatus: image.imageStatus, imageSharedFinishes: image.imageSharedFinishes, pokemonImageShared: image.pokemonImageShared, tcgplayerProductId: image.tcgplayerProductId || card.tcgplayerProductId,
           tcgplayerImageUrl: image.tcgplayerImageUrl, scanImagePath: null } : card;
       })));
     });

@@ -4599,3 +4599,5 @@
 .cl-hint { position: static; padding: 0; color: #ACA69C; font-size: 10px; }
 .cl-actions { position: static; padding: 0; gap: 8px; }
 .cl-actions:empty { display: none; }
+
+.cb-card-version { -webkit-line-clamp: 3; min-height: 42px; }
