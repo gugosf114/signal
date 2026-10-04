@@ -5,16 +5,16 @@ import { useWatchedCards } from './WatchedCards';
 import CardImage from './CardImage';
 import CardLightbox from './CardLightbox';
 import { printingIdentity, printingLabel } from '../services/printing';
-import PrintingIdentity from './PrintingIdentity';
+import PriceComparison from './PriceComparison';
+import { reportMarketPrice } from '../services/reportDisplay';
 import { normalizeCardRecord } from '../services/cardRecord';
 import { isExactScanTarget } from '../services/scanIdentity';
 
-export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, expectedSignalCount = 8, sourcedSignalCount = 0, uniqueSourceCount = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null }) {
-  const { label, color, blurb } = getScoreLabel(score);
+export default function OverallScore({ score, cardName, game, summary, truncated = false, signalCount = 0, expectedSignalCount = 8, sourcedSignalCount = 0, uniqueSourceCount = 0, onRetry, signals = [], enPrice, onCardImageLoaded, printing = null, pin = null, prices = null, onAdd = null }) {
+  const { label, blurb } = getScoreLabel(score);
   const gameMeta = GAME_LABELS[game];
   const glowColor = gameMeta?.color || '#C44040';
   const isMobile = useIsMobile();
-  const hideKanji = useIsMobile(768);
   const [percentileInfo, setPercentileInfo] = useState(null);
   const [cardImageUrl, setCardImageUrl] = useState(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -68,301 +68,48 @@ export default function OverallScore({ score, cardName, game, summary, truncated
     } catch {}
   }, [score, cardName, game, pin, truncated]);
 
-  return (
-    <>
-      <div className="fade-slide-up" style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : '260px 1fr',
-        gap: 0,
-        background: 'var(--signal-panel)',
-        borderRadius: 3,
-        marginBottom: 32,
-        overflow: 'hidden',
-        position: 'relative',
-        border: '1px solid #1A1D24',
-      }}>
-        {/* Card Art */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: isMobile ? '12px 8px' : '24px 12px 24px 20px',
-          background: 'var(--signal-tile)',
-          borderRight: isMobile ? 'none' : '1px solid #1A1D24',
-          borderBottom: isMobile ? '1px solid #1A1D24' : 'none',
-          height: isMobile ? 240 : 'auto',
-        }}>
-          <CardImage
-            cardName={cardName}
-            game={game}
-            pin={pin}
-            size={isMobile ? 200 : 320}
-            glowColor={glowColor}
-            onLoad={(url) => { setCardImageUrl(url); onCardImageLoaded?.(url); }}
-            onClick={() => setLightboxOpen(true)}
-          />
+  const hasAttention = Number.isFinite(score) && sourcedSignalCount > 0;
+  const finding = summary || (hasAttention ? blurb : '');
+  const marketPrice = reportMarketPrice(enPrice);
+  const priceText = marketPrice === null ? 'Unavailable' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(marketPrice);
+  const attentionLabel = hasAttention ? `${label.charAt(0)}${label.slice(1).toLowerCase()} attention` : 'Attention unavailable';
+  const printingDetails = printingLabel({ ...(exactCard || {}), setName: null });
+  return <>
+    <section className="report-summary" aria-label="Card report">
+      <div className="report-card-heading">
+        <div className="report-card-art">
+          <CardImage cardName={cardName} game={game} pin={pin} size={isMobile ? 180 : 250} glowColor={glowColor}
+            onLoad={(url) => { setCardImageUrl(url); onCardImageLoaded?.(url); }} onClick={() => setLightboxOpen(true)} />
         </div>
-
-        {/* Data Side */}
-        <div style={{
-          padding: isMobile ? '20px 20px' : '28px 32px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          gap: 12,
-        }}>
-          <div>
-            <h1 style={{
-              fontFamily: "'Instrument Serif', serif",
-              fontSize: isMobile ? 24 : 32,
-              fontWeight: 400,
-              fontStyle: 'italic',
-              color: '#E8E4DC',
-              lineHeight: 1.0,
-              marginBottom: 8,
-              letterSpacing: '-0.01em',
-              textWrap: 'balance',
-            }}>
-              {cardName}
-            </h1>
-            {/* Which printing this is. "Charizard" is hundreds of cards at
-                hundreds of prices; the name alone never said which one the
-                numbers below belong to. */}
-            {printingLabel(exactCard) && (
-              <PrintingIdentity printing={exactCard} />
-            )}
-            {!printingLabel(exactCard) && (
-              <div style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 10,
-                color: '#A09060',
-                marginBottom: 10,
-                letterSpacing: '0.03em',
-              }}>
-                PRINTING NOT PINNED · PRICE MAY VARY BY VERSION
-              </div>
-            )}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              {gameMeta && (
-                <span style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  fontFamily: "'Syne', sans-serif",
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: gameMeta.color,
-                  opacity: 0.7,
-                }}>
-                  {gameMeta.label}
-                </span>
-              )}
-              <span style={{ width: 3, height: 3, borderRadius: '50%', background: '#2A2D34', flexShrink: 0 }} />
-              <span style={{
-                fontSize: 12,
-                fontWeight: 700,
-                fontFamily: "'Syne', sans-serif",
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color,
-              }}>
-                {label}
-              </span>
-            </div>
+        <div className="report-card-identity">
+          {gameMeta && <span className="report-game">{gameMeta.label}</span>}
+          <h1>{cardName}</h1>
+          {exactCard?.setName && <span className="report-set-name">{exactCard.setName}</span>}
+          {printingDetails && <p className="report-printing">{printingDetails}</p>}
+          <div className="report-market price-cell--market">
+            <span>Market price</span>
+            <strong className={marketPrice === null ? 'report-price-unavailable' : ''}>{priceText}</strong>
           </div>
-
-          <div>
-            <div style={{
-              marginBottom: 5,
-              fontFamily: "'Syne', sans-serif",
-              fontSize: 9,
-              fontWeight: 700,
-              letterSpacing: '0.16em',
-              color: 'var(--signal-text-secondary)',
-            }}>
-              ATTENTION
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span className="score-animate" style={{
-                fontSize: 48,
-                fontWeight: 700,
-                fontFamily: "'JetBrains Mono', monospace",
-                color,
-                lineHeight: 1,
-                letterSpacing: '-0.04em',
-              }}>
-                {score}
-              </span>
-              <span style={{
-                fontSize: 15,
-                fontFamily: "'JetBrains Mono', monospace",
-                color: 'var(--signal-text-muted)',
-                fontWeight: 400,
-              }}>
-                /100
-              </span>
-              {/* Watch / unwatch button */}
-              <button
-                className={`score-watch-button${watched ? ' score-watch-button--on' : ''}`}
-                onClick={() => toggleWatch({ name: cardName, game, score, enPrice, pin })}
-                title={watched ? 'Unwatch this card' : 'Watch this card'}
-                aria-label={watched ? `Stop watching ${cardName}` : `Watch ${cardName}`}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: '2px 4px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  opacity: watched ? 1 : 0.35,
-                  transition: 'opacity 0.15s',
-                  marginLeft: 2,
-                }}
-                onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = watched ? '1' : '0.35'; }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24"
-                  fill={watched ? color : 'none'}
-                  stroke={color}
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Tier blurb — descriptive, not directive. Footer disclaimer still applies. */}
-            <div style={{
-              marginTop: 6,
-              fontSize: 14,
-              fontFamily: "'Instrument Serif', serif",
-              fontStyle: 'italic',
-              color: 'var(--signal-text-secondary)',
-              lineHeight: 1.4,
-            }}>
-              {blurb}
-            </div>
-
-            <div style={{
-              marginTop: 7,
-              fontSize: 10,
-              fontFamily: "'JetBrains Mono', monospace",
-              color: sourcedSignalCount < expectedSignalCount ? '#A09060' : 'var(--signal-text-secondary)',
-              letterSpacing: '0.04em',
-            }}>
-              {sourcedSignalCount}/{expectedSignalCount} AREAS SOURCED · {uniqueSourceCount} UNIQUE SOURCE{uniqueSourceCount === 1 ? '' : 'S'}
-            </div>
-
-            {/* A bare "62" is meaningless on its own — the comparison to the
-                user's own scan history is the line that actually lands. It used
-                to be 13px grey under a 64px number; the number has come down
-                and this has come up so the sentence reads first. */}
-            {percentileInfo && (
-              <div style={{
-                marginTop: 8,
-                display: 'inline-flex',
-                alignItems: 'baseline',
-                gap: 6,
-                flexWrap: 'wrap',
-              }}>
-                <span style={{
-                  fontSize: 20,
-                  fontFamily: "'Instrument Serif', serif",
-                  fontStyle: 'italic',
-                  color: '#E8E4DC',
-                  lineHeight: 1.2,
-                }}>
-                  Top {percentileInfo.topPct}%
-                </span>
-                <span style={{
-                  fontSize: 12,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  color: 'var(--signal-text-secondary)',
-                  letterSpacing: '0.04em',
-                }}>
-                  of your last {percentileInfo.total} scans
-                </span>
-              </div>
-            )}
-
-            {truncated && (
-              <div style={{
-                marginTop: 6,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                flexWrap: 'wrap',
-              }}>
-                <span style={{ fontSize: 14, fontFamily: "'JetBrains Mono', monospace", color: '#A09060', letterSpacing: '0.06em' }}>
-                  PARTIAL · {signalCount} of {expectedSignalCount} signals
-                </span>
-                {onRetry && (
-                  <button
-                    className="score-retry-button"
-                    onClick={(e) => { e.stopPropagation(); onRetry(); }}
-                    style={{
-                      background: 'none',
-                      border: '1px solid rgba(160, 144, 96, 0.35)',
-                      borderRadius: 2,
-                      padding: '1px 8px',
-                      color: '#A09060',
-                      fontSize: 13,
-                      fontFamily: "'JetBrains Mono', monospace",
-                      cursor: 'pointer',
-                      letterSpacing: '0.06em',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    Retry
-                  </button>
-                )}
-                <span style={{ fontSize: 14, fontFamily: "'JetBrains Mono', monospace", color: '#A09060', letterSpacing: '0.06em' }}>
-                  for full data
-                </span>
-              </div>
-            )}
-          </div>
-
-          {summary && (
-            <p style={{
-              fontSize: 15,
-              color: '#A8A498',
-              lineHeight: 1.65,
-              fontFamily: "'Syne', sans-serif",
-              fontWeight: 400,
-              maxWidth: 440,
-            }}>
-              {summary}
-            </p>
-          )}
         </div>
-
-        {!hideKanji && (
-          <span style={{
-            position: 'absolute',
-            right: 24,
-            bottom: 16,
-            fontSize: 72,
-            fontWeight: 900,
-            color: '#FFFFFF',
-            opacity: 0.015,
-            pointerEvents: 'none',
-            userSelect: 'none',
-            fontFamily: "'Noto Sans JP', sans-serif",
-            lineHeight: 1,
-          }}>株</span>
-        )}
       </div>
-
-      <CardLightbox
-        card={exactCard}
-        isOpen={lightboxOpen}
-        onClose={() => setLightboxOpen(false)}
-        imageUrl={cardImageUrl}
-        cardName={cardName}
-        cardMeta={[printingLabel(exactCard), enPrice || 'Exact price unavailable'].filter(Boolean).join(' · ')}
-      />
-    </>
-  );
+      <div className="report-finding">
+        <div className="report-finding-heading"><h2>{attentionLabel}</h2>{hasAttention && <span className="report-attention-score">{score}<small>/100</small></span>}</div>
+        {finding && <p>{finding}</p>}
+        <details className="report-evidence">
+          <summary>Sources</summary>
+          <p>{sourcedSignalCount} of {expectedSignalCount} areas have sources. {uniqueSourceCount} source{uniqueSourceCount === 1 ? '' : 's'} linked in the report.</p>
+          {hasAttention && percentileInfo && <p>Top {percentileInfo.topPct}% of your last {percentileInfo.total} scans by attention.</p>}
+        </details>
+        {truncated && <div className="report-partial"><span>Partial report · {signalCount} of {expectedSignalCount} areas</span>{onRetry && <button type="button" className="score-retry-button" onClick={onRetry}>Retry</button>}</div>}
+      </div>
+      <PriceComparison data={prices} />
+      <div className="report-primary-actions">
+        {onAdd && <button type="button" className="result-add-button" onClick={onAdd} aria-label={`Add ${cardName || 'card'} to collection`}><span aria-hidden="true">＋</span>Add to Collection</button>}
+        <button type="button" className={`report-watch score-watch-button${watched ? ' score-watch-button--on' : ''}`} onClick={() => toggleWatch({ name: cardName, game, score, enPrice, pin })} aria-pressed={watched} aria-label={watched ? `Stop watching ${cardName}` : `Watch ${cardName}`}>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill={watched ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" /></svg>{watched ? 'Watching' : 'Watch'}
+        </button>
+      </div>
+    </section>
+    <CardLightbox card={exactCard} isOpen={lightboxOpen} onClose={() => setLightboxOpen(false)} imageUrl={cardImageUrl} cardName={cardName} cardMeta={[printingLabel(exactCard), marketPrice === null ? null : priceText].filter(Boolean).join(' · ')} />
+  </>;
 }

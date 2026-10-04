@@ -107,7 +107,7 @@ test('three-page text hierarchy brightens useful copy without washing out decora
   assert.match(css, /\.col-card-meta\s*\{[^}]*color:\s*var\(--signal-text-muted\)/);
   assert.match(css, /\.dos-method p\s*\{[^}]*color:\s*var\(--signal-text-secondary\)/);
   assert.match(css, /\.dos-footnote\s*\{[^}]*color:\s*var\(--signal-text-muted\)/);
-  assert.match(scoreSource, /color:\s*'var\(--signal-text-secondary\)'/);
+  assert.match(css, /\.report-finding > p\s*\{[^}]*color:\s*#D0D8C6/);
   assert.match(signalCardSource, /dropped > 0 \? '#A09060' : 'var\(--signal-text-muted\)'/);
 
   const ambientGrid = css.match(/\.signal-ambient-grid\s*\{([^}]*)\}/)?.[1] || '';
@@ -202,7 +202,7 @@ test('micro-detail pass gives quiet controls a fitting response without changing
   assert.match(searchSource, /signal-photo-trigger/);
   assert.match(searchSource, /signal-main-input/);
   assert.match(scoreSource, /score-watch-button--on/);
-  assert.match(priceSource, /price-cell--market/);
+  assert.match(scoreSource, /price-cell--market/);
   assert.match(signalCardSource, /signal-card-chevron--open/);
   assert.match(signalCardSource, /signal-source-dot--on/);
   assert.match(signalNavSource, /signal-jump-button/);
@@ -270,7 +270,10 @@ test('all page sections reveal once on scroll without taking over child transfor
   assert.match(scrollRevealSource, /observer\.disconnect\(\)/);
   assert.match(scrollRevealSource, /rootMargin: '0px 0px 14% 0px'/);
   assert.match(scrollRevealSource, /scroll-reveal--\$\{visible \? 'visible' : 'pending'\}/);
-  assert.ok((dashboardSource.match(/<ScrollReveal/g) || []).length >= 7);
+  for (const component of ['OverallScore', 'EbayListings', 'GradingROI', 'SignalNav']) {
+    assert.match(dashboardSource, new RegExp(`<ScrollReveal[^>]*>\\s*<${component}`));
+  }
+  assert.match(scoreSource, /<PriceComparison data=\{prices\}/);
   assert.match(dashboardSource, /SIGNAL_SECTIONS\.map[\s\S]{0,100}<ScrollReveal key=\{section\.id\}/);
   assert.ok((collectionSource.match(/<ScrollReveal/g) || []).length >= 6);
   assert.ok((dossierSource.match(/<ScrollReveal/g) || []).length >= 4);

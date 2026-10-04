@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import SearchBar from './SearchBar';
 import QuickPicks from './QuickPicks';
 import RecentScans from './RecentScans';
-import PriceComparison from './PriceComparison';
+import ReportTools from './ReportTools';
 import EbayListings from './EbayListings';
 import GradingROI from './GradingROI';
 import OverallScore from './OverallScore';
@@ -481,19 +481,91 @@ export default function SignalDashboard() {
 
   const pagePanelClass = `page-swipe-panel${pageEntryDirection ? ` page-swipe-panel--${pageEntryDirection}` : ''}`;
 
+  const isReport = page === 'signal' && Boolean(result) && !loading;
+  const backFromReport = () => {
+                clearScanSession();
+                setResult(null);
+                setCardImageUrl(null);
+                setLastSearched(null);
+              };
+  const addReportCard = () => {
+                const pin = resultCardPin(result) || {};
+                setAddCard(normalizeCardRecord({
+                  ...pin,
+                  name: result.card_name,
+                  game: result.game,
+                  imageUrl: pin.imageUrl || cardImageUrl,
+                  imageLarge: pin.imageLarge || cardImageUrl,
+                  price: pin.price ?? firstDollar(result.prices?.en_price),
+                  priceSource: result.prices?.price_source || pin.priceSource,
+                  priceCheckedAt: result.prices?.price_checked_at || pin.priceCheckedAt,
+                }));
+              };
+  const saveReportPdf = async () => {
+                try {
+                  setPdfRendering(true);
+                  setPdfCardImageUrl(await imageUrlToDataUrl(cardImageUrl).catch(() => null));
+                  // One animation frame to mount PdfReport, then a short pause
+                  // so the off-screen card image + fonts settle before capture.
+                  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+                  await new Promise((r) => setTimeout(r, 900));
+                  const res = await exportReportToPdf({
+                    elementId: 'pdf-report-capture',
+                    filename: reportFilename(result.card_name),
+                  });
+                  if (res?.method === 'native') {
+                    flashSaveMsg(`Saved to Documents · ${res.filename}`);
+                  } else {
+                    flashSaveMsg(`Downloaded · ${res?.filename || 'report.pdf'}`);
+                  }
+                } catch (err) {
+                  // eslint-disable-next-line no-console
+                  console.error('[signal] PDF export failed', err);
+                  flashSaveMsg(`Save failed: ${err?.message?.slice(0, 60) || 'unknown error'}`);
+                } finally {
+                  setPdfRendering(false);
+                }
+              };
+  const shareReportPdf = async () => {
+                try {
+                  setPdfRendering(true);
+                  setPdfCardImageUrl(await imageUrlToDataUrl(cardImageUrl).catch(() => null));
+                  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                  await document.fonts?.ready;
+                  await shareReportAsPdf({
+                    elementId: 'pdf-report-capture',
+                    filename: reportFilename(result.card_name),
+                    title: `Signal: ${result.card_name || 'card'}`,
+                    text: `${result.card_name || 'Card'} · ${result.summary?.slice(0, 140) || ''}`,
+                  });
+                } catch (err) {
+                  // eslint-disable-next-line no-console
+                  console.error('[signal] share failed', err);
+                  flashSaveMsg(`Share failed: ${err?.message?.slice(0, 60) || 'unknown error'}`);
+                } finally {
+                  setPdfRendering(false);
+                }
+              };
+  const rescanReport = () => {
+                if (!result?.card_name) return;
+                const resultPin = resultCardPin(result);
+                clearCachedScan(result.card_name, result.game, resultPin);
+                handleSearch(result.card_name, result.game, { force: true, pin: resultPin });
+              };
+
   return (
-    <div className="signal-dashboard" style={{
+    <div className={`signal-dashboard${isReport ? ' signal-report-mode' : ''}`} style={{
       maxWidth: 800,
       margin: '0 auto',
       padding: isMobile ? '24px 16px calc(84px + env(safe-area-inset-bottom))' : '32px 24px calc(84px + env(safe-area-inset-bottom))',
       position: 'relative',
     }}>
-      <SignalAmbient active={!loading} page={page} />
+      {!isReport && <SignalAmbient active={!loading} page={page} />}
       {/* Header — wordmark inside a hairline red border. */}
       {/* Kanji slightly smaller than "Signal"; Signal in Syne, no italic. */}
       {/* Click anywhere on the wordmark to go home — aborts an in-flight scan
           if one is running, drops result/error state otherwise. */}
-      <div style={{ textAlign: 'center', marginBottom: 32, marginTop: isMobile ? 28 : 0 }}>
+      <div className="signal-brand" style={{ textAlign: 'center', marginBottom: 32, marginTop: isMobile ? 28 : 0 }}>
         <div
           className="signal-logo-frame"
           role="button"
@@ -538,7 +610,7 @@ export default function SignalDashboard() {
             WebkitTextFillColor: 'transparent',
           }}>Signal</span>
         </div>
-        <div style={{
+        <div className="signal-brand-tagline" style={{
           fontSize: 13,
           color: '#92897C',
           fontFamily: "'Instrument Serif', serif",
@@ -708,255 +780,13 @@ export default function SignalDashboard() {
         <>
           {/* Result-page actions: back to dashboard + save as PDF.
               Save PDF captures the #signal-report-capture wrapper below. */}
-          <div ref={resultTopRef} className="result-actions" style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-            <button
-              className="result-action-button result-action-button--back"
-              onClick={() => {
-                clearScanSession();
-                setResult(null);
-                setCardImageUrl(null);
-                setLastSearched(null);
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '4px 10px 4px 6px',
-                background: 'transparent',
-                border: '1px solid #1A1D24',
-                borderRadius: 4,
-                color: '#A8A498',
-                fontSize: 11,
-                fontFamily: "'Syne', sans-serif",
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#C44040';
-                e.currentTarget.style.color = '#C8C4BC';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#1A1D24';
-                e.currentTarget.style.color = '#A8A498';
-              }}
-              aria-label="Back to dashboard"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12" />
-                <polyline points="12 19 5 12 12 5" />
-              </svg>
-              Back
-            </button>
-
-            <button
-              onClick={() => {
-                const pin = resultCardPin(result) || {};
-                setAddCard(normalizeCardRecord({
-                  ...pin,
-                  name: result.card_name,
-                  game: result.game,
-                  imageUrl: pin.imageUrl || cardImageUrl,
-                  imageLarge: pin.imageLarge || cardImageUrl,
-                  price: pin.price ?? firstDollar(result.prices?.en_price),
-                  priceSource: result.prices?.price_source || pin.priceSource,
-                  priceCheckedAt: result.prices?.price_checked_at || pin.priceCheckedAt,
-                }));
-              }}
-              className="result-add-button"
-              aria-label={`Add ${result.card_name || 'card'} to collection`}
-            >
-              <span aria-hidden>＋</span>
-              Add to collection
-            </button>
-
-            <button
-              className="result-action-button result-action-button--save"
-              onClick={async () => {
-                try {
-                  setPdfRendering(true);
-                  setPdfCardImageUrl(await imageUrlToDataUrl(cardImageUrl).catch(() => null));
-                  // One animation frame to mount PdfReport, then a short pause
-                  // so the off-screen card image + fonts settle before capture.
-                  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-                  await new Promise((r) => setTimeout(r, 900));
-                  const res = await exportReportToPdf({
-                    elementId: 'pdf-report-capture',
-                    filename: reportFilename(result.card_name),
-                  });
-                  if (res?.method === 'native') {
-                    flashSaveMsg(`Saved to Documents · ${res.filename}`);
-                  } else {
-                    flashSaveMsg(`Downloaded · ${res?.filename || 'report.pdf'}`);
-                  }
-                } catch (err) {
-                  // eslint-disable-next-line no-console
-                  console.error('[signal] PDF export failed', err);
-                  flashSaveMsg(`Save failed: ${err?.message?.slice(0, 60) || 'unknown error'}`);
-                } finally {
-                  setPdfRendering(false);
-                }
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '4px 10px 4px 6px',
-                background: 'transparent',
-                border: '1px solid #1A1D24',
-                borderRadius: 4,
-                color: '#A8A498',
-                fontSize: 11,
-                fontFamily: "'Syne', sans-serif",
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#A09060';
-                e.currentTarget.style.color = '#C8C4BC';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#1A1D24';
-                e.currentTarget.style.color = '#A8A498';
-              }}
-              aria-label="Download report as PDF"
-              disabled={pdfRendering}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              Save PDF
-            </button>
-
-            {/* Share — opens system share sheet (email, Messages, etc.) with the
-                generated PDF as an attachment. Falls back to download. */}
-            <button
-              className="result-action-button result-action-button--share"
-              onClick={async () => {
-                try {
-                  setPdfRendering(true);
-                  setPdfCardImageUrl(await imageUrlToDataUrl(cardImageUrl).catch(() => null));
-                  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                  await document.fonts?.ready;
-                  await shareReportAsPdf({
-                    elementId: 'pdf-report-capture',
-                    filename: reportFilename(result.card_name),
-                    title: `Signal: ${result.card_name || 'card'}`,
-                    text: `${result.card_name || 'Card'} · ${result.summary?.slice(0, 140) || ''}`,
-                  });
-                } catch (err) {
-                  // eslint-disable-next-line no-console
-                  console.error('[signal] share failed', err);
-                  flashSaveMsg(`Share failed: ${err?.message?.slice(0, 60) || 'unknown error'}`);
-                } finally {
-                  setPdfRendering(false);
-                }
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '4px 10px 4px 6px',
-                background: 'transparent',
-                border: '1px solid #1A1D24',
-                borderRadius: 4,
-                color: '#A8A498',
-                fontSize: 11,
-                fontFamily: "'Syne', sans-serif",
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#A09060';
-                e.currentTarget.style.color = '#C8C4BC';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#1A1D24';
-                e.currentTarget.style.color = '#A8A498';
-              }}
-              aria-label="Share / email report"
-              disabled={pdfRendering}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="18" cy="5" r="3" />
-                <circle cx="6" cy="12" r="3" />
-                <circle cx="18" cy="19" r="3" />
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-              </svg>
-              Share
-            </button>
-
-            {/* Re-scan — bypasses the local cache and burns a fresh Anthropic
-                run when the cached data is stale. */}
-            <button
-              className="result-action-button result-action-button--rescan"
-              onClick={() => {
-                if (!result?.card_name) return;
-                const resultPin = resultCardPin(result);
-                clearCachedScan(result.card_name, result.game, resultPin);
-                handleSearch(result.card_name, result.game, { force: true, pin: resultPin });
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '4px 10px 4px 6px',
-                background: 'transparent',
-                border: '1px solid #1A1D24',
-                borderRadius: 4,
-                color: '#A8A498',
-                fontSize: 11,
-                fontFamily: "'Syne', sans-serif",
-                fontWeight: 600,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#C44040';
-                e.currentTarget.style.color = '#C8C4BC';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#1A1D24';
-                e.currentTarget.style.color = '#A8A498';
-              }}
-              aria-label="Re-scan with fresh data"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="23 4 23 10 17 10" />
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-              </svg>
-              Re-scan
-            </button>
+          <div ref={resultTopRef} className="result-actions report-toolbar">
+            <button type="button" className="report-back" onClick={backFromReport} aria-label="Back to dashboard"><span aria-hidden="true">←</span> Back</button>
+            <ReportTools onSave={saveReportPdf} onShare={shareReportPdf} onRescan={rescanReport} busy={pdfRendering} />
           </div>
 
           <div id="signal-report-capture">
 
-          {/* The real move first: market price, 30-day, 90-day. The attention
-              score follows it, because measured against price history the
-              score lags the move rather than leading it. */}
-          <ScrollReveal>
-            <PriceComparison
-              data={{
-                ...result.prices,
-                signal_vs_market: result.prices?.signal_vs_market,
-              }}
-            />
-          </ScrollReveal>
-
-          {score !== null && (
             <ScrollReveal delay={70}>
               <OverallScore
                 score={score}
@@ -971,12 +801,14 @@ export default function SignalDashboard() {
                 onRetry={() => handleSearch(result.card_name, result.game, { force: true, pin: resultCardPin(result) })}
                 signals={result.signals || []}
                 enPrice={result.prices?.en_price}
+                prices={result.prices}
+                onAdd={addReportCard}
                 onCardImageLoaded={setCardImageUrl}
                 printing={result.printing}
                 pin={resultCardPin(result)}
               />
             </ScrollReveal>
-          )}
+
 
 
           <ScrollReveal>
@@ -1002,18 +834,7 @@ export default function SignalDashboard() {
             </ScrollReveal>
           ))}
 
-          <ScrollReveal style={{
-            marginTop: 40,
-            paddingTop: 16,
-            borderTop: '1px solid #14161A',
-            fontSize: 10,
-            color: 'var(--signal-text-muted)',
-            textAlign: 'center',
-            fontFamily: "'JetBrains Mono', monospace",
-            letterSpacing: '0.06em',
-          }}>
-            Signal data is for informational purposes only. Not financial advice.
-          </ScrollReveal>
+
           </div>{/* /#signal-report-capture */}
         </>
       )}

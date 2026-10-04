@@ -4490,3 +4490,73 @@
 .bottom-dock-menu > button:active { background: #33372D; }
 @keyframes dockAppear { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
 @media (prefers-reduced-motion: reduce) { .bottom-dock, .bottom-dock-menu { animation: none; } .bottom-dock-item { transition: none; } }
+
+/* Report mode: card identity first, quiet branding and one reading typeface. */
+.signal-report-mode { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; --signal-panel: #171A18; --signal-tile: #202420; --signal-text-secondary: #C0C6BC; --signal-text-muted: #A5AEA1; }
+.signal-report-mode .signal-brand { display: flex; align-items: center; margin: 0 0 16px !important; text-align: left !important; }
+.signal-report-mode .signal-brand-tagline { display: none; }
+.signal-report-mode .signal-logo-frame { min-height: 44px; gap: 7px !important; padding: 0 !important; margin: 0 !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; animation: none !important; }
+.signal-report-mode .signal-logo-frame::before, .signal-report-mode .signal-logo-frame::after { display: none; }
+.signal-report-mode .signal-logo-frame > span { background: none !important; -webkit-text-fill-color: currentColor !important; font-family: inherit !important; font-size: 20px !important; letter-spacing: -.02em !important; }
+.signal-report-mode .pt-strip { margin-bottom: 18px; gap: 7px; }
+.signal-report-mode .pt-tab { min-height: 44px; font-size: 12px; padding: 8px 10px; font-family: inherit; letter-spacing: .02em; text-transform: none; border-color: #656E5A55; border-radius: 7px; }
+.signal-report-mode #signal-report-capture { font-family: inherit; }
+.signal-report-mode #signal-report-capture :is(h1,h2,h3,p,span,div,button,a,summary) { font-family: inherit !important; font-style: normal !important; letter-spacing: normal !important; }
+.report-toolbar { position: relative; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; font-family: inherit; scroll-margin-top: 12px; }
+.report-back, .report-tools-trigger { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 42px; padding: 8px 10px; border: 0; border-radius: 7px; background: transparent; color: #D5DBCE; font: 500 13px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; cursor: pointer; }
+.report-back > span { font-size: 20px; }
+.report-tools { position: relative; }
+.report-tools-trigger svg { fill: currentColor; }
+.report-tools-trigger[aria-expanded=true] { background: #252C23; }
+.report-tools-menu { position: absolute; right: 0; top: calc(100% + 5px); min-width: 184px; padding: 6px; border: 1px solid #68715F70; border-radius: 10px; background: #20261E; box-shadow: 0 10px 32px #0007; }
+.report-tools-menu button { display: block; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 6px; background: transparent; color: #EEEFE6; font: 500 14px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; text-align: left; cursor: pointer; }
+.report-tools-menu button:hover, .report-tools-menu button:focus { background: #343D2D; }
+.report-toolbar button:focus-visible, .report-summary button:focus-visible, .report-evidence summary:focus-visible { outline: 2px solid #CFCAAD; outline-offset: 3px; }
+.report-summary { overflow: hidden; margin-bottom: 24px; border: 1px solid #606A553F; border-radius: 14px; background: #161C17; color: #F0F1E8; }
+.report-card-heading { display: grid; grid-template-columns: minmax(0, 190px) minmax(0, 1fr); gap: 24px; align-items: start; padding: 22px; }
+.report-card-art { min-width: 0; }
+.report-card-art > * { width: 100% !important; height: auto !important; aspect-ratio: .716; }
+.report-card-art img { width: 100% !important; height: auto !important; border-radius: 7px !important; }
+.report-card-art .card-image-reveal > div:first-child { display: none; }
+.report-card-art .card-shine { display: none; }
+.report-card-art .card-image-reveal { opacity: 1; }
+.report-card-art .card-image-reveal, .report-card-art img { animation: none !important; transition: none !important; transform: none !important; }
+.report-card-identity { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.report-game { color: #B7C1AF; font-size: 12px; font-weight: 550; }
+.report-card-identity h1 { margin: 0; font-size: clamp(21px, 5.5vw, 30px); font-weight: 650; line-height: 1.15; overflow-wrap: anywhere; }
+.report-set-name { margin-top: 2px; color: #DEE3D6; font-size: 13px; line-height: 1.4; }
+.report-printing { margin: 0; color: #AAB7A1; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.report-market { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.report-market > span { color: #BAC3B0; font-size: 12px; line-height: 1.4; }
+.report-market > strong { color: #F2F2E7; font-size: clamp(24px, 6vw, 32px); font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.report-market > .report-price-unavailable { color: #C2C9B7; font-size: 17px; font-weight: 500; }
+.report-finding { margin: 0 22px; padding: 18px 0; border-top: 1px solid #5B695040; }
+.report-finding-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.report-finding h2 { margin: 0; color: #E4DABD; font-size: 18px; font-weight: 600; line-height: 1.3; }
+.report-attention-score { white-space: nowrap; color: #DCE4D1; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.report-attention-score small { margin-left: 3px; color: #9DAE92; font-size: 12px; font-weight: 400; }
+.report-finding > p { margin: 12px 0 0; color: #D0D8C6; font-size: 14px; line-height: 1.65; }
+.report-evidence { margin-top: 14px; color: #ABBAA0; font-size: 12px; line-height: 1.5; }
+.report-evidence summary { width: fit-content; padding: 5px 0; cursor: pointer; }
+.report-evidence p { margin: 6px 0 0; }
+.report-partial { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; color: #D8C89E; font-size: 12px; }
+.report-partial button { min-height: 36px; padding: 6px 12px; border: 1px solid #9E916958; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
+.report-primary-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 0 22px 22px; }
+.report-primary-actions .result-add-button { justify-content: center; min-width: 0; min-height: 46px; padding: 10px 12px; border: 1px solid #D5C6A5; border-radius: 8px; background: #DED2B5; color: #192017; font-size: 13px; line-height: 1.4; font-weight: 650; letter-spacing: normal; text-transform: none; }
+.report-watch { display: inline-flex; justify-content: center; align-items: center; gap: 7px; min-height: 46px; padding: 10px 12px; border: 1px solid #626F535C; border-radius: 8px; background: transparent; color: #C6D2B8; font-size: 12px; cursor: pointer; }
+.report-watch[aria-pressed=true] { color: #E2D0A0; border-color: #9E8E655C; }
+.report-price-history { margin: 0 22px 18px; padding-top: 14px; border-top: 1px solid #5B695040; }
+.report-price-moves { display: flex; gap: 24px; flex-wrap: wrap; }
+.report-price-move { display: flex; align-items: baseline; gap: 8px; }
+.report-price-move > span { font-size: 12px; color: #AEBAA3; }
+.report-price-move > strong { font-size: 15px; font-variant-numeric: tabular-nums; color: #DEE4D5; }
+.report-price-move .report-price-up { color: #B4C7A5; }
+.report-price-move .report-price-down { color: #D9AAA0; }
+.report-price-history .price-sparkline { height: 28px !important; margin-top: 12px !important; }
+@media (max-width: 600px) {
+  .report-card-heading { grid-template-columns: minmax(0, .42fr) minmax(0, .58fr); gap: 16px; padding: 16px; }
+  .report-finding { margin: 0 16px; padding: 16px 0; }
+  .report-primary-actions { gap: 8px; padding: 0 16px 16px; }
+  .report-primary-actions .result-add-button, .report-watch { padding: 9px; }
+  .report-price-history { margin-left: 16px; margin-right: 16px; }
+}

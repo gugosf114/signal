@@ -2226,3 +2226,31 @@ moving the fixture layout. It passed page/binder/scroll memory, all scan
 routes, keyboard/dialog hiding, Escape/focus, 320/390/800px fit and bottom
 content clearance. Screenshot inspected; production build passed. Installed
 phone files match the local build by SHA-256. No GitHub checks started.
+
+## Session log — 2026-10-04 card-first Signal report
+
+Rebuilt the report header around card art, name, exact printing, market price,
+and the attention finding. Add to Collection is the main action; Watch stays
+beside it. PDF, Share and Re-scan moved into a keyboard-accessible Tools menu.
+Back stays above the report. The five existing action-handler bodies are
+unchanged, including PDF export and sharing. The report uses a compact brand
+header, quieter colors, one reading typeface, and no ambient glow or card-art
+reveal motion. Fixed the reveal wrapper's default opacity when disabling its
+animation so the picture remains visible. Removed the old small-print footer.
+
+Price history now shows only periods with actual numeric values; zero remains
+a valid move. Missing price/history leaves no empty columns. Removed the
+standalone alignment confirmation that could display a saved model "agree"
+label without market history. With no sourced areas, the attention headline
+says unavailable instead of presenting the neutral default as a finding.
+Source counts and the user's score-history comparison remain under Sources.
+
+Proof: 72 focused display, history, scan-session, collection and layout tests
+pass. Controlled copies of the screenshot's missing-data state and a priced
+state were rendered at 320/390/800px. Checked image visibility, heading size,
+no overflow, Tools/Escape, Add, Watch, enlarged image and Back. Numeric history
+including zero renders; missing history/alignment does not. All five original
+action handlers were compared byte-for-byte after moving them; PDF/share were
+not sent during this layout check. Screenshots inspected. Production build
+passed and contains no review fixtures. Installed phone files match every
+build file by SHA-256. No GitHub checks were started.
