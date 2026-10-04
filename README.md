@@ -2149,3 +2149,15 @@ The screenshot was inspected. All 60 focused collection, currency and layout
 checks pass, including the updated assertion for the quantity badge. The
 production build passed. Installed phone files match every local build file
 by SHA-256. No GitHub checks were started.
+
+## Session log — 2026-10-04 remove Collection summary notes
+
+Removed the ECB reference line and the summary's priced-count, price-date,
+refresh, stale-price and wear text at George's request. The footer now contains
+only the currency values. Removed the unused UI state and date formatter.
+The price-refresh and currency-conversion behavior remains in place.
+
+Proof: production build passed. The rendered summary has none of the removed
+text at 320/390/800px; all currency values and three working card links remain.
+The empty collection also has no notes. Installed phone files match the build
+by SHA-256. Font, color and effects changes await George's scope choice.

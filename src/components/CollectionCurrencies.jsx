@@ -11,12 +11,6 @@ function money(value, currency) {
   return `${symbols[currency]}${new Intl.NumberFormat('en-US', options).format(value)}`;
 }
 
-function rateDate(value) {
-  const date = new Date(`${value || ''}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).toUpperCase();
-}
-
 export default function CollectionCurrencies({ usdTotal, hasKnownValue, partial }) {
   const [rateInfo, setRateInfo] = useState(() => readCachedUsdRates());
 
@@ -41,9 +35,7 @@ export default function CollectionCurrencies({ usdTotal, hasKnownValue, partial 
           <span className="col-currency-code">{code}</span>
         </div>
       ))}
-      <small className="col-currency-source">
-        {rateInfo ? `ECB ${rateInfo.stale ? 'LAST RATE' : 'REFERENCE'} · ${rateDate(rateInfo.date)}` : 'LIVE RATE UNAVAILABLE'}
-      </small>
+
     </div>
   );
 }

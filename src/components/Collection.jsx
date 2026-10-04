@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  loadCollection, saveCollection, importCollection, removeAll, updateCollectionCard, collectionPriceStatus,
+  loadCollection, saveCollection, importCollection, removeAll, updateCollectionCard,
   countCards, collectionValueSummary, cardKey,
   collectionFormLabel, formatCollectionMoney, marketPriceFor,
   topPricedCollectionCards,
@@ -70,7 +70,6 @@ export default function Collection({
   const [cards, setCards] = useState(() => loadCollection());
   const [status, setStatus] = useState(null);
   const [viewing, setViewing] = useState(null);
-  const [refreshingPrices, setRefreshingPrices] = useState(0);
   const [binder, setBinder] = useState('all');
   const [sort, setSort] = useState('newest');
   const importRef = useRef(null);
@@ -149,13 +148,11 @@ export default function Collection({
     }).slice(0, 12);
     if (!stale.length) return undefined;
     for (const [key] of stale) priceRefreshAttempted.current.add(key);
-    setRefreshingPrices((count) => count + stale.length);
     Promise.all(stale.map(async ([key, card]) => [
       key,
       await refreshPrices(card.name, card.game, card).catch(() => null),
     ])).then((updates) => {
       if (!mountedRef.current) return;
-      setRefreshingPrices((count) => Math.max(0, count - stale.length));
       const byKey = new Map(updates.filter(([, patch]) => patch));
       if (!byKey.size) return;
       setCards((current) => saveCollection(current.map((card) => {
@@ -212,9 +209,7 @@ export default function Collection({
   const activeBinder = BINDERS.find((item) => item.id === binder) || BINDERS[0];
   const total = countCards(visibleCards);
   const market = collectionValueSummary(visibleCards);
-  const priceStatus = collectionPriceStatus(visibleCards);
   const viewedCard = viewing ? cards.find((card) => cardKey(card) === cardKey(viewing)) || viewing : null;
-  const checkedDate = (value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   const topPricedCards = useMemo(() => topPricedCollectionCards(visibleCards, 3), [visibleCards]);
   const marketDisplay = market.pricedQty > 0
     ? `${formatCollectionMoney(market.total)}${market.unpricedQty > 0 ? '+' : ''}`
@@ -308,15 +303,7 @@ export default function Collection({
         </div>}
         <div className="col-summary-footer">
           <CollectionCurrencies usdTotal={market.total} hasKnownValue={market.pricedQty > 0 || market.unpricedQty === 0} partial={market.unpricedQty > 0} />
-          <div className="col-price-coverage" role="status">
-            <span>{market.pricedQty} of {total} priced</span>
-            {market.unpricedQty > 0 && <span>{market.unpricedQty} missing prices</span>}
-            {priceStatus.oldestCheckedAt && <span>Prices checked {checkedDate(priceStatus.oldestCheckedAt)}{checkedDate(priceStatus.oldestCheckedAt) !== checkedDate(priceStatus.newestCheckedAt) ? ` – ${checkedDate(priceStatus.newestCheckedAt)}` : ''}</span>}
-            {refreshingPrices > 0 && <span>Updating…</span>}
-            {priceStatus.staleQty > 0 && <span>{priceStatus.staleQty} need a fresh check</span>}
-            {priceStatus.undatedQty > 0 && <span>{priceStatus.undatedQty} have no price date</span>}
-            <small>These prices do not adjust for wear.</small>
-          </div>
+
         </div>
       </ScrollReveal>
 
