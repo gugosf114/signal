@@ -2287,3 +2287,9 @@ source-layout assertions; those were updated but not rerun. Further checks
 and a fresh post-repair Japanese report were stopped at his request. The final
 web build completed and the gateway deployment returned ACTIVE. The phone's
 web bundle was updated. No GitHub checks were started.
+
+## Session log — 2026-10-04 missing areas inside Sources
+
+Moved Areas without sources into the main Sources panel, directly below its
+counts. It has its own collapsed disclosure. Removed the separate list at
+the bottom of the report. Built and updated the phone; no test runs requested.

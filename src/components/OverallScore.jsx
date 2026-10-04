@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getScoreLabel, GAME_LABELS, SCORE_VERSION } from '../config/signals';
+import { getScoreLabel, GAME_LABELS, SCORE_VERSION, SIGNAL_TYPES } from '../config/signals';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { useWatchedCards } from './WatchedCards';
 import CardImage from './CardImage';
@@ -98,6 +98,14 @@ export default function OverallScore({ score, cardName, game, summary, truncated
         <details className="report-evidence">
           <summary>Sources</summary>
           <p>{sourcedSignalCount} of {expectedSignalCount} areas have sources. {uniqueSourceCount} source{uniqueSourceCount === 1 ? '' : 's'} linked in the report.</p>
+          {signals.some((signal) => !signal.sources?.length) && (
+            <details className="report-empty-areas">
+              <summary>Areas without sources</summary>
+              <ul>{signals.filter((signal) => !signal.sources?.length).map((signal) => (
+                <li key={signal.key}>{SIGNAL_TYPES[signal.key]?.label || signal.key}</li>
+              ))}</ul>
+            </details>
+          )}
           {hasAttention && percentileInfo && <p>Top {percentileInfo.topPct}% of your last {percentileInfo.total} scans by attention.</p>}
         </details>
         {truncated && <div className="report-partial"><span>Partial report · {signalCount} of {expectedSignalCount} areas</span>{onRetry && <button type="button" className="score-retry-button" onClick={onRetry}>Retry</button>}</div>}
