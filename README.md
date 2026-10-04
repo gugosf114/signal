@@ -2293,3 +2293,22 @@ web bundle was updated. No GitHub checks were started.
 Moved Areas without sources into the main Sources panel, directly below its
 counts. It has its own collapsed disclosure. Removed the separate list at
 the bottom of the report. Built and updated the phone; no test runs requested.
+
+## Session log — 2026-10-04 match sources to each research area
+
+The saved Meowth search had retrieved Japanese expansion lottery/restock
+articles. The shared citation filter rejected them because they lacked the
+exact card name/number. Source locking and unused-result recovery now share
+an area-aware subject rule: expansion news supports release/supply and set
+coverage, while franchise news can match the character or game. Japanese
+reservation, lottery, restock and arrival terms route to release news.
+Exact-card creator matching and market price fetching remain strict.
+
+Broader context carries app-owned evidenceScope and stays neutral rather than
+inflating the card score. Japanese searches no longer require a card number
+for all research areas; counterpart identities still require source proof.
+Shared and local research cache versions advance for fresh scans. Regression
+cases cover the actual missing Japanese articles, wrong expansions, franchise
+matching and expansion-only videos. The production build completed and the
+phone web bundle was updated. Tests and GitHub checks were not run, per
+George's instruction.

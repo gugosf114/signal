@@ -234,3 +234,43 @@ describe('locked evidence records', () => {
     assert.equal(report.signals.every((signal) => signal.level === 0), true);
   });
 });
+
+// Regression: Japanese set news was retrieved but rejected for lacking Meowth's number.
+describe('area-aware research subjects', () => {
+  const context = { cardName: 'Meowth', pin: { game: 'pokemon', name: 'Meowth', setName: '30th Celebration', number: '144', printedTotal: '128', japaneseIdentity: { aliases: ['ニャース'] } } };
+  const source = { type: 'editorial', source: 'Inside Games', title: 'ゲオで『ポケカ』30周年記念拡張パック「30th CELEBRATION」が抽選販売中！', url: 'https://www.inside-games.jp/article/2026/09/28/188420.html' };
+  const report = (key, sources = []) => ({ signals: [{ key, level: 4, sources }] });
+  test('moves a real set lottery article into Japanese release news neutrally', () => {
+    const parsed = { signals: [{ key: 'jp_hype', level: 4, sources: [{ url: source.url, implication: 'up' }] }, { key: 'jp_release', level: 0, sources: [] }] };
+    const result = lockSourcesToEvidence(parsed, new Map([[source.url, source]]), context);
+    assert.equal(result.signals[0].sources.length, 0);
+    assert.equal(result.signals[1].sources[0].evidenceScope, 'set');
+    assert.equal(result.signals[1].sources[0].implication, 'neutral');
+    assert.equal(result.signals[1].level, 0);
+  });
+  test('recovers omitted restock news using the same subject rule', () => {
+    const restock = { ...source, title: '【ポケカ】30th CELEBRATIONの再販はいつ？再販入荷情報まとめ' };
+    const result = fillEvidenceGaps(report('jp_release'), new Map([[restock.url, restock]]), context);
+    assert.equal(result.signals[0].sources[0].evidenceScope, 'set');
+    assert.equal(result.signals[0].level, 0);
+  });
+  test('rejects release news for another set even when it names Meowth', () => {
+    const other = { ...source, title: 'ニャース 新弾「別のセット」発売日' };
+    const registry = new Map([[other.url, other]]);
+    const result = lockSourcesToEvidence(report('jp_release', [{ url: other.url }]), registry, context);
+    fillEvidenceGaps(result, registry, context);
+    assert.equal(result.signals[0].sources.length, 0);
+  });
+  test('accepts franchise news for the right game without a printing number', () => {
+    const news = { ...source, title: 'Pokémon anniversary movie announced', url: 'https://example.com/news/movie' };
+    const result = fillEvidenceGaps(report('ip_momentum'), new Map([[news.url, news]]), context);
+    assert.equal(result.signals[0].sources[0].evidenceScope, 'franchise');
+    const other = { ...context, pin: { ...context.pin, game: 'mtg' } };
+    assert.equal(fillEvidenceGaps(report('ip_momentum'), new Map([[news.url, news]]), other).signals[0].sources.length, 0);
+  });
+  test('does not treat an expansion-only Japanese video as exact-card attention', () => {
+    const video = { ...source, type: 'youtube', title: '30th CELEBRATION 開封動画', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' };
+    const result = fillEvidenceGaps(report('jp_hype'), new Map([[video.url, video]]), context);
+    assert.equal(result.signals[0].sources.length, 0);
+  });
+});

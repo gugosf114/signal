@@ -1,4 +1,4 @@
-import { normalizedEvidenceText, isJapaneseSource, matchesJapanesePrinting } from './japaneseEvidence.js';
+import { normalizedEvidenceText, isJapaneseSource, matchesJapanesePrinting, nameInText } from './japaneseEvidence.js';
 // ─── Citation verification ───────────────────────────────────────────────────
 // The load-bearing honesty layer. A source may appear only when its URL joins
 // to the complete record returned by web search or by an app-owned API call.
@@ -216,17 +216,39 @@ function evidenceDetail(sources) {
 
 function searchable(value) { return normalizedEvidenceText(value); }
 
-function evidenceMatchesCard(evidence, cardName, pin) {
-  if (isJapaneseSource(evidence) && !evidence?.area) return matchesJapanesePrinting(evidence, cardName, pin);
-  if (evidence?.area) return true; // app pre-fetchers already queried and checked this card
-  const haystack = searchable([evidence?.title, evidence?.summary, evidence?.url].filter(Boolean).join(' '));
-  const names = [cardName, pin?.name]
-    .filter(Boolean)
-    .flatMap((name) => String(name).split('//'))
-    .map((name) => searchable(name))
-    .filter((name) => name.length >= 3);
-  if (!names.length) return true;
-  return names.some((name) => haystack.includes(name));
+// Match the subject appropriate to the area, not the same printing everywhere.
+// Scope comes from retrieved text and app identity, never model-written fields.
+function evidenceScope(evidence, cardName, pin) {
+  const area = classifyEvidenceArea(evidence);
+  if (!area) return null;
+  if (evidence?.area) return 'card'; // app-owned, already matched prefetch
+  const text = [evidence?.title, evidence?.summary, evidence?.url].filter(Boolean).join(' ');
+  const names = [cardName, pin?.name, ...(pin?.japaneseIdentity?.aliases || [])]
+    .filter(Boolean).flatMap(name => String(name).split('//'));
+  const cardMatches = names.some(name => nameInText(text, name));
+  if (area === 'creator' || area === 'jp_hype') {
+    return (isJapaneseSource(evidence) ? matchesJapanesePrinting(evidence, cardName, pin) : cardMatches) ? 'card' : null;
+  }
+  if (cardMatches && !['jp_release', 'scarcity'].includes(area)) return 'card';
+  const sets = [pin?.setName, ...(pin?.japaneseIdentity?.setNames || [])].filter(Boolean);
+  const haystack = searchable(text);
+  const setMatches = sets.some(name => {
+    const needle = searchable(name);
+    if (needle.length < 3) return false;
+    // Latin set names often touch Japanese particles with no space.
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:$|[^a-z0-9])`, 'u').test(haystack);
+  });
+  if (setMatches && ['jp_release', 'scarcity', 'editorial', 'community', 'ip_momentum'].includes(area)) return 'set';
+  if (area === 'ip_momentum') {
+    const franchises = {
+      pokemon: ['Pokémon', 'Pokemon', 'ポケモン', 'ポケットモンスター', 'ポケカ'],
+      yugioh: ['Yu-Gi-Oh', '遊戯王'],
+      mtg: ['Magic the Gathering', 'マジック ザ ギャザリング'],
+    };
+    if ((franchises[pin?.game] || []).some(name => nameInText(text, name))) return 'franchise';
+  }
+  return null;
 }
 
 function isMarketplaceEvidence(evidence) {
@@ -244,10 +266,11 @@ export function classifyEvidenceArea(evidence) {
   if (!evidence || isMarketplaceEvidence(evidence)) return null;
   const rawText = `${evidence.title || ''} ${evidence.summary || ''}`;
   const text = searchable(`${rawText} ${evidence.url || ''}`);
-  const japaneseText = /[\u3040-\u30ff\u3400-\u9fff]/.test(rawText);
   if (evidence.type === 'youtube') return isJapaneseSource(evidence) ? 'jp_hype' : 'creator';
   if (evidence.type === 'reddit' || evidence.type === 'twitter') return 'community';
-  if (isJapaneseSource(evidence) && /発売|発売日|収録|再録|新弾|リリース/.test(rawText)) return 'jp_release';
+  if (isJapaneseSource(evidence) && /発売|収録|再録|新弾|リリース|再販|再入荷|入荷|抽選|予約/.test(rawText)) return 'jp_release';
+  if (isJapaneseSource(evidence) && /アニメ|映画|周年|フランチャイズ/.test(rawText)) return 'ip_momentum';
+  if (isJapaneseSource(evidence) && /生産終了|絶版|印刷数|供給不足/.test(rawText)) return 'scarcity';
   if (isJapaneseSource(evidence)) return 'jp_hype';
   if (evidence.type === 'tournament') return 'competitive';
   if (evidence.type === 'population_report'
@@ -286,13 +309,14 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
       const evidence = evidenceForUrl(registry, proposed?.url);
       const key = evidence && normalizeUrl(evidence.url);
       const area = classifyEvidenceArea(evidence);
+      const scope = evidenceScope(evidence, cardName, pin);
       const reason = !evidence ? 'not_retrieved' : !key ? 'invalid_url'
-        : !evidenceMatchesCard(evidence, cardName, pin) ? 'card_mismatch' : !area ? 'not_signal_evidence'
+        : !scope ? 'card_mismatch' : !area ? 'not_signal_evidence'
           : area !== signal.key ? 'wrong_area' : usedAcrossReport.has(key) ? 'already_used' : null;
       if (reason) {
         const audit = { signal: signal.key, url: proposed?.url || null, reason, evidenceArea: area || null, title: evidence?.title || null };
         sourceAudit.push(audit);
-        if (reason === 'wrong_area') reassigned.push({ evidence, area, audit });
+        if (reason === 'wrong_area') reassigned.push({ evidence, area, scope, audit });
         dropped += 1;
         continue;
       }
@@ -302,25 +326,26 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
       const { area: _area, ...visibleEvidence } = evidence;
       sources.push({
         ...visibleEvidence,
-        implication: IMPLICATIONS.has(proposed.implication) ? proposed.implication : 'neutral',
+        evidenceScope: scope,
+        implication: scope === 'card' && IMPLICATIONS.has(proposed.implication) ? proposed.implication : 'neutral',
       });
     }
     totalDropped += dropped;
     return {
       ...signal,
-      level: sources.length ? signal.level : 0,
+      level: sources.some(source => source.implication !== 'neutral') ? signal.level : 0,
       detail: evidenceDetail(sources),
       sources,
       dropped,
     };
   });
 
-  for (const { evidence, area, audit } of reassigned) {
+  for (const { evidence, area, scope, audit } of reassigned) {
     const target = parsed.signals.find(signal => signal.key === area);
     if (!target || usedAcrossReport.has(evidence.url)) { audit.action = 'already_used_or_no_area'; continue; }
     const { area: _area, ...trusted } = evidence;
     if (!target.sources.length) target.level = 0;
-    target.sources.push({ ...trusted, implication: 'neutral' });
+    target.sources.push({ ...trusted, evidenceScope: scope, implication: 'neutral' });
     target.detail = evidenceDetail(target.sources);
     usedAcrossReport.add(evidence.url);
     audit.action = 'reassigned';
@@ -350,7 +375,7 @@ export function fillEvidenceGaps(parsed, registry, { cardName = '', pin = null }
     Array.isArray(signal.sources) ? signal.sources.map((source) => normalizeUrl(source?.url)).filter(Boolean) : []
   )));
   const candidates = [...registry.values()]
-    .filter((evidence) => evidenceMatchesCard(evidence, cardName, pin))
+    .filter((evidence) => evidenceScope(evidence, cardName, pin))
     .sort((a, b) => Number(Boolean(b.area)) - Number(Boolean(a.area)));
 
   for (const evidence of candidates) {
@@ -364,7 +389,7 @@ export function fillEvidenceGaps(parsed, registry, { cardName = '', pin = null }
       ...parsed.signals[index],
       level: 0,
       detail: evidenceDetail([visibleEvidence]),
-      sources: [{ ...visibleEvidence, implication: 'neutral' }],
+      sources: [{ ...visibleEvidence, evidenceScope: evidenceScope(evidence, cardName, pin), implication: 'neutral' }],
     };
     used.add(url);
   }
@@ -402,7 +427,7 @@ export function buildVerifiedSummary({ cardName = '', prices = {}, signals = [] 
   if (stats.sourcedSignalCount) {
     parts.push(`${stats.sourcedSignalCount} of ${stats.expectedSignalCount} research areas ${stats.sourcedSignalCount === 1 ? 'has' : 'have'} verified evidence from ${stats.uniqueSourceCount} unique source${stats.uniqueSourceCount === 1 ? '' : 's'}.`);
   } else {
-    parts.push('No verified research evidence was found for this exact printing.');
+    parts.push('No verified research evidence was found for this card or its context.');
   }
   return parts.join(' ');
 }

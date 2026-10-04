@@ -9,7 +9,7 @@ export function isJapaneseSource(source) {
   return /[\u3040-\u30ff]/u.test([source?.title, source?.description, source?.summary].filter(Boolean).join(' '));
 }
 function escaped(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-function nameInText(text, name) {
+export function nameInText(text, name) {
   const haystack = normalizedEvidenceText(text), needle = normalizedEvidenceText(name);
   if (!needle) return false;
   if (!/[\u3040-\u30ff\u3400-\u9fff]/u.test(needle)) return ` ${haystack} `.includes(` ${needle} `);

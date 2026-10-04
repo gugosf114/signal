@@ -132,7 +132,7 @@ describe('scanCache printing keys', () => {
 
   test('finds an old broad-key report by its returned exact printing', () => {
     const now = Date.now();
-    store.signal_scan_cache_v4 = JSON.stringify({
+    store.signal_scan_cache_v5 = JSON.stringify({
       'pokemon::rayquaza ex': {
         ts: now,
         priceTs: now,

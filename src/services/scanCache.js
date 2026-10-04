@@ -11,7 +11,7 @@ import { isExactScanTarget } from './scanIdentity.js';
 
 // v3 also refuses reports made before Signal used the whole paid search result
 // page. Old thin reports must not hide the records the app already retrieved.
-const CACHE_KEY = 'signal_scan_cache_v4';
+const CACHE_KEY = 'signal_scan_cache_v5';
 // Two clocks, because the two halves of a scan go stale at very different rates.
 // Signals (creator buzz, scarcity, ban status, JP release timing) move over
 // weeks. Prices move daily. Holding both for 7 days served stale money numbers;
