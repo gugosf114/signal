@@ -2526,3 +2526,9 @@ tiles keep a quieter border. The existing aria-selected state drives both
 the style and marker for All cards, Pokémon, Yu-Gi-Oh! and MTG. Production
 build completed; no test suite was run for this display-only change.
 The new web bundle was installed on the phone.
+
+## Session log — 2026-10-04 collection highlight refinement
+
+Removed the corner checkmark and its reserved title space at George's
+request. The gold fill and dark text remain the selected-state cues.
+Production build completed and the phone bundle was updated.
