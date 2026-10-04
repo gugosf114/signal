@@ -2470,3 +2470,13 @@ returned valid JPEG data. Receipts are in tmp/signal-image-repair-proof.json
 outside the repo. No full test suite or GitHub workflow was run.
 The production build completed and the updated web bundle was installed
 on the phone. The in-app visual check remains with George.
+
+## Session log — 2026-10-04 browse tile prices
+
+Browse Cards had price-sort controls but omitted prices from its tiles.
+Every game now shows the existing card price directly below its name, using
+the same price field as the browse results. Missing prices read Price
+unavailable. Rarity, artwork and card number remain below the price.
+Accessible card labels include the price. No new data request or test suite
+was added for this display change.
+Production build completed and the phone web bundle was updated.

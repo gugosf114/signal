@@ -15,7 +15,7 @@ import {
 import CardLightbox from './CardLightbox';
 import ScrollReveal from './ScrollReveal';
 import { printingLabel } from '../services/printing';
-import { cardPriceLabel } from '../services/cardRecord';
+import { cardPriceLabel, cardPriceNumber } from '../services/cardRecord';
 
 const GAME_BRAND = { pokemon: 'pokemon', mtg: 'mtg', yugioh: 'yugioh' };
 
@@ -356,7 +356,7 @@ export default function CardBrowser({
               className="cb-card"
               onClick={() => setViewing(card)}
               title={[card.name, card.setName, card.number, cardVersionLabel(card)].filter(Boolean).join(' · ')}
-              aria-label={[card.name, card.number, cardVersionLabel(card)].filter(Boolean).join(' · ')}
+              aria-label={[card.name, card.number, cardVersionLabel(card), cardPriceLabel(card)].filter(Boolean).join(' · ')}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -409,6 +409,9 @@ export default function CardBrowser({
               )}
               <span className="cb-card-copy">
                 <strong className="cb-card-name">{card.baseName || card.name}</strong>
+                <span className={`cb-card-price${cardPriceNumber(card.price ?? card.marketPrice) === null ? ' cb-card-price--missing' : ''}`} title="Market price in USD">
+                  {cardPriceNumber(card.price ?? card.marketPrice) === null ? 'Price unavailable' : cardPriceLabel(card)}
+                </span>
                 <span className="cb-card-version">{cardVersionLabel(card) || 'Version unspecified'}</span>
                 <span className="cb-card-number">{card.number || 'Number unavailable'}</span>
               </span>

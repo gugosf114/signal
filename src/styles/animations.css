@@ -4601,3 +4601,6 @@
 .cl-actions:empty { display: none; }
 
 .cb-card-version { -webkit-line-clamp: 3; min-height: 42px; }
+
+.cb-card-price { display: block; min-height: 20px; color: #F0EBE0; font: 600 14px/20px 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+.cb-card-price--missing { color: #ADA89F; font: 500 10px/20px 'Syne', sans-serif; }
