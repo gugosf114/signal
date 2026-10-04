@@ -2087,3 +2087,34 @@ Yu-Gi-Oh rarity prices stay visible, selection updates the total, a selected
 Magic foil is passed to Collection, retry and image enlargement still work,
 and the layout fits 320px and 390px screens. The installed phone web bundle
 matches all local build files by SHA-256. No GitHub checks were started.
+
+## Session log — 2026-10-03 Collection card management and value clarity
+
+Implemented the approved Collection changes 2, 3, and 4. Card faces now show
+clear catalogue art, readable full names and printed numbers, finish badges,
+quantity, unit price, and the total for multiple copies. Tapping any part of a
+card opens a management sheet with the picture, exact version, per-copy and
+holding estimates, price-check date, and edits for quantity, condition, and
+paid cost. Change finish loads verified variants of the same printed card
+from the live catalogues with their prices and product pictures. Enlarging
+the picture, opening the exact card's Signal, and confirmed removal remain.
+
+Edits preserve added dates and unknown purchase costs. When an edit joins an
+existing condition/finish holding, quantities and known paid costs merge;
+the migration rule that takes the larger quantity is not used for this edit.
+Invalid quantities, unrelated printings, over-cap merges, and storage errors
+are reported. A finish with no price never inherits the old finish price.
+
+The collection total is labeled Market estimate. It shows priced/missing
+copies, stale quotes, price-date coverage, and active refresh status. Both
+the total and card details explain that prices do not adjust for wear.
+
+Proof: 62 focused local tests pass, including edit persistence, merge math,
+finish product identity, missing prices, unknown costs, and storage failures.
+The rendered app was tested with a separate saved collection copy: quantity,
+condition and paid edits survived reload; image enlargement and removal
+confirmation worked; the sheet fit 320/390/800px widths. A live Badgermole Cub
+catalogue lookup supplied both finishes and the foil selection saved with its
+matching price. Before/after screenshots were inspected. Production build
+passed and every installed phone bundle file matches by SHA-256. No GitHub
+checks were started. The existing page order is unchanged.

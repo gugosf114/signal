@@ -20,7 +20,7 @@ const {
   countCards, collectionValue, collectionValueSummary, cardKey, marketPriceFor,
   formatCollectionMoney, collectionFormLabel, collectionFormOptions, collectionView,
   topPricedCollectionCards,
-  applyCollectionPricePatch, collectionPriceNeedsRefresh,
+  applyCollectionPricePatch, collectionPriceNeedsRefresh, updateCollectionCard, collectionPriceStatus,
 } = await import('./collection.js');
 const { CARD_PRICE_LOOKUP_VERSION } = await import('./cardRecord.js');
 
@@ -383,5 +383,91 @@ describe('collection', () => {
     assert.deepEqual(collectionView(mixed, 'all', 'price_high').map((card) => card.name), ['Priced high', 'Priced low', 'Unpriced']);
     assert.deepEqual(collectionView(mixed, 'all', 'price_low').map((card) => card.name), ['Priced low', 'Priced high', 'Unpriced']);
     assert.equal(mixed[0].name, 'Priced high', 'the saved list was not mutated');
+  });
+});
+
+
+describe('editing saved copies', () => {
+  beforeEach(() => { store = {}; });
+  const base = { id: 'edit-card', game: 'mtg', name: 'Test Card', setName: 'Test Set', number: '17', form: 'normal', price: 2,
+    marketPrices: { normal: 2, foil: 8 }, availableFinishes: ['normal', 'foil'], tcgplayerProductId: 100,
+    tcgplayerProductIds: { normal: 100, foil: 200 }, priceCheckedAt: '2026-10-03T12:00:00Z', priceLookupVersion: CARD_PRICE_LOOKUP_VERSION };
+
+  test('quantity edits retain the known cost only for the original copies', () => {
+    addToCollection(base, { quantity: 2, paidPerCard: 3 });
+    const original = loadCollection()[0];
+    const [edited] = updateCollectionCard(original, { quantity: 4, condition: 'lightly_played' });
+    assert.equal(edited.qty, 4); assert.equal(edited.paidKnownQty, 2); assert.equal(edited.paidPerCard, 3);
+    assert.equal(edited.condition, 'lightly_played'); assert.equal(edited.addedAt, original.addedAt);
+    assert.equal(edited.marketPrice, 2);
+    assert.deepEqual(loadCollection(), [edited]);
+  });
+
+  test('moving into an existing condition combines copies and weighted paid amounts', () => {
+    addToCollection(base, { quantity: 2, paidPerCard: 3, condition: 'near_mint' });
+    addToCollection(base, { quantity: 1, paidPerCard: 6, condition: 'lightly_played' });
+    const original = loadCollection().find(card => card.condition === 'near_mint');
+    const [merged] = updateCollectionCard(original, { quantity: 2, condition: 'lightly_played' });
+    assert.equal(loadCollection().length, 1); assert.equal(merged.qty, 3);
+    assert.equal(merged.paidKnownQty, 3); assert.equal(merged.paidPerCard, 4);
+  });
+
+  test('changing finish moves the holding and updates price and product identity', () => {
+    addToCollection(base, { quantity: 2, paidPerCard: 3 });
+    const original = loadCollection()[0];
+    const [edited] = updateCollectionCard(original, {}, { ...original, form: 'foil', price: 8, marketPrice: 8 });
+    assert.equal(edited.form, 'foil'); assert.equal(edited.tcgplayerProductId, 200); assert.equal(edited.marketPrice, 8);
+    assert.equal(edited.qty, 2); assert.equal(countCards(loadCollection()), 2);
+    assert.notEqual(cardKey(edited), cardKey(original));
+  });
+
+  test('an unpriced new finish never inherits the old finish price', () => {
+    addToCollection(base);
+    const original = loadCollection()[0];
+    const [edited] = updateCollectionCard(original, {}, { ...original, form: 'foil', price: null, marketPrice: null, marketPrices: { normal: 2, foil: null } });
+    assert.equal(edited.marketPrice, null);
+    assert.equal(collectionValueSummary([edited]).unpricedQty, 1);
+  });
+
+  test('explicit paid edits cover the entered quantity and blank clears cost', () => {
+    addToCollection(base, { quantity: 2, paidPerCard: 3 });
+    let [edited] = updateCollectionCard(loadCollection()[0], { quantity: 3, paidPerCard: 4.5 });
+    assert.equal(edited.paidKnownQty, 3); assert.equal(edited.paidPerCard, 4.5);
+    [edited] = updateCollectionCard(edited, { paidPerCard: '' });
+    assert.equal(edited.paidPerCard, null); assert.equal(edited.paidKnownQty, 0);
+  });
+
+  test('invalid edits and unrelated printings preserve storage', () => {
+    addToCollection(base); const original = loadCollection()[0]; const before = JSON.stringify(loadCollection());
+    assert.throws(() => updateCollectionCard(original, { quantity: 0 }), /Quantity/);
+    assert.throws(() => updateCollectionCard(original, { quantity: 1.5 }), /Quantity/);
+    assert.throws(() => updateCollectionCard(original, { paidPerCard: -1 }), /paid amount/);
+    assert.throws(() => updateCollectionCard(original, {}, { ...original, number: '18' }), /exact card/);
+    assert.equal(JSON.stringify(loadCollection()), before);
+  });
+
+  test('a storage failure is reported to the editor', () => {
+    addToCollection(base); const original = loadCollection()[0]; const setItem = localStorage.setItem;
+    localStorage.setItem = () => { throw new Error('Storage full'); };
+    try {
+      assert.throws(() => updateCollectionCard(original, { quantity: 2 }), /Storage full/);
+      assert.throws(() => removeAll(original), /Storage full/);
+    }
+    finally { localStorage.setItem = setItem; }
+    assert.equal(loadCollection()[0].qty, 1);
+  });
+
+  test('price status counts copies, stale quotes, missing prices, and absent dates separately', () => {
+    const now = Date.parse('2026-10-03T18:00:00Z');
+    const status = collectionPriceStatus([
+      { ...base, qty: 2, marketPrice: 2 },
+      { ...base, qty: 3, marketPrice: 2, priceCheckedAt: '2026-10-01T12:00:00Z' },
+      { ...base, qty: 1, marketPrice: 2, priceCheckedAt: null },
+      { ...base, qty: 4, marketPrice: null },
+    ], now);
+    assert.equal(status.pricedQty, 6); assert.equal(status.unpricedQty, 4);
+    assert.equal(status.staleQty, 4); assert.equal(status.undatedQty, 1);
+    assert.equal(status.oldestCheckedAt, '2026-10-01T12:00:00Z');
+    assert.equal(status.newestCheckedAt, '2026-10-03T12:00:00Z');
   });
 });

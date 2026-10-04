@@ -330,7 +330,65 @@ export function addOne(card, at = null) {
 
 export function removeAll(card) {
   const key = cardKey(card);
-  return saveCollection(loadCollection().filter((item) => cardKey(item) !== key));
+  const next = loadCollection().filter((item) => cardKey(item) !== key);
+  localStorage.setItem(KEY, JSON.stringify(next));
+  return next;
+}
+
+export function updateCollectionCard(original, details = {}, replacement = null) {
+  const list = loadCollection();
+  const index = list.findIndex((card) => cardKey(card) === cardKey(original));
+  if (index < 0) throw new Error('This card is no longer in your collection.');
+  const current = list[index];
+  const qty = Number(details.quantity ?? current.qty);
+  if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) throw new Error('Quantity must be a whole number from 1 to 999.');
+  if (details.condition != null && !CONDITIONS.has(details.condition)) throw new Error('Choose a card condition.');
+  const paidEdited = Object.hasOwn(details, 'paidPerCard');
+  const paid = paidEdited ? cleanMoney(details.paidPerCard) : current.paidPerCard;
+  if (paidEdited && details.paidPerCard !== '' && details.paidPerCard != null && paid === null) throw new Error('Enter a paid amount of zero or more.');
+  if (replacement) {
+    const sameNumber = (value) => String(value || '').split('/')[0].replace(/^0+(?=\d)/, '').toUpperCase();
+    if (!isExactScanTarget(replacement.game, replacement) || replacement.game !== current.game
+      || sameNumber(replacement.number) !== sameNumber(current.number)
+      || (current.game !== 'yugioh' && (replacement.printingId || replacement.id) !== (current.printingId || current.id))) {
+      throw new Error('Choose a finish of this exact card.');
+    }
+  }
+  const next = normalizeEntry({
+    ...current,
+    ...(replacement || {}),
+    ...(replacement ? { price: replacement.price, marketPrice: replacement.price, marketPrices: replacement.marketPrices || null } : {}),
+    qty,
+    condition: details.condition ?? current.condition,
+    paidPerCard: paid,
+    paidKnownQty: paid === null ? 0 : paidEdited ? qty : Math.min(qty, current.paidKnownQty || 0),
+    addedAt: current.addedAt,
+  });
+  const remaining = list.filter((_, i) => i !== index);
+  const duplicate = remaining.find((card) => cardKey(card) === cardKey(next));
+  if (duplicate && duplicate.qty + qty > MAX_QTY) throw new Error('Combining these copies would exceed 999.');
+  if (duplicate && Date.parse(duplicate.addedAt) < Date.parse(next.addedAt)) next.addedAt = duplicate.addedAt;
+  const result = duplicate ? mergeEntry(remaining, next) : list.map((card, i) => i === index ? next : card);
+  const clean = collapseIdentityAliases(result);
+  // An explicit edit must report a failed write instead of showing a false save.
+  localStorage.setItem(KEY, JSON.stringify(clean));
+  return clean;
+}
+
+export function collectionPriceStatus(list, now = Date.now()) {
+  return (Array.isArray(list) ? list : []).reduce((result, card) => {
+    const qty = cleanQty(card.qty);
+    if (cleanMoney(card.marketPrice) === null) { result.unpricedQty += qty; return result; }
+    result.pricedQty += qty;
+    const checked = Date.parse(card.priceCheckedAt || '');
+    if (!Number.isFinite(checked) || checked > now) result.undatedQty += qty;
+    else {
+      if (!result.oldestCheckedAt || checked < Date.parse(result.oldestCheckedAt)) result.oldestCheckedAt = card.priceCheckedAt;
+      if (!result.newestCheckedAt || checked > Date.parse(result.newestCheckedAt)) result.newestCheckedAt = card.priceCheckedAt;
+    }
+    if (collectionPriceNeedsRefresh(card, now)) result.staleQty += qty;
+    return result;
+  }, { pricedQty: 0, unpricedQty: 0, staleQty: 0, undatedQty: 0, oldestCheckedAt: null, newestCheckedAt: null });
 }
 
 export function countCards(list) {

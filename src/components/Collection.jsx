@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  loadCollection, saveCollection, importCollection, addOne, removeOne, removeAll,
+  loadCollection, saveCollection, importCollection, removeAll, updateCollectionCard, collectionPriceStatus,
   countCards, collectionValueSummary, cardKey,
   collectionFormLabel, formatCollectionMoney, marketPriceFor,
   topPricedCollectionCards,
@@ -17,13 +17,14 @@ import {
   tcgplayerProductImageUrl,
 } from '../services/fetchTcgplayerPrice';
 import { fetchCardImage } from '../services/fetchCardImage';
-import CardLightbox from './CardLightbox';
-import CardShine from './CardShine';
+import CollectionCardDetails from './CollectionCardDetails';
+import { resolvePrintingOptions } from '../services/fetchExpansions';
+import { resolveCardProductImage } from '../services/mtgCardImage';
 import CardBrowser from './CardBrowser';
 import SearchBar from './SearchBar';
 import CollectionCurrencies from './CollectionCurrencies';
 import ScrollReveal from './ScrollReveal';
-import { printingIdentity, printingLabel, printingNumber } from '../services/printing';
+import { printingIdentity, printingNumber } from '../services/printing';
 import { normalizeCardRecord, stampCardPrice } from '../services/cardRecord';
 import { isExactScanTarget } from '../services/scanIdentity';
 import { refreshPrices } from '../services/refreshPrices';
@@ -31,14 +32,6 @@ import pokeBallMark from '../assets/binders/poke-ball.svg';
 import yugiohTcgLogo from '../assets/binders/yugioh-tcg-logo.png';
 import magicLogo from '../assets/binders/magic-logo.png';
 import gollumRing from '../assets/binders/gollum-ring.png';
-
-const CONDITION_LABEL = {
-  near_mint: 'Near mint',
-  lightly_played: 'Lightly played',
-  moderately_played: 'Moderately played',
-  heavily_played: 'Heavily played',
-  damaged: 'Damaged',
-};
 
 const BINDERS = [
   { id: 'all', label: 'All cards' },
@@ -68,12 +61,6 @@ const SORTS = [
   { id: 'price_low', label: 'Price low → high' },
 ];
 
-function addedLabel(value) {
-  const date = new Date(value || '');
-  if (Number.isNaN(date.getTime())) return 'Unknown date';
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
 export default function Collection({
   onLookup,
   onAddCard,
@@ -83,6 +70,7 @@ export default function Collection({
   const [cards, setCards] = useState(() => loadCollection());
   const [status, setStatus] = useState(null);
   const [viewing, setViewing] = useState(null);
+  const [refreshingPrices, setRefreshingPrices] = useState(0);
   const [binder, setBinder] = useState('all');
   const [sort, setSort] = useState('newest');
   const importRef = useRef(null);
@@ -161,11 +149,13 @@ export default function Collection({
     }).slice(0, 12);
     if (!stale.length) return undefined;
     for (const [key] of stale) priceRefreshAttempted.current.add(key);
+    setRefreshingPrices((count) => count + stale.length);
     Promise.all(stale.map(async ([key, card]) => [
       key,
       await refreshPrices(card.name, card.game, card).catch(() => null),
     ])).then((updates) => {
       if (!mountedRef.current) return;
+      setRefreshingPrices((count) => Math.max(0, count - stale.length));
       const byKey = new Map(updates.filter(([, patch]) => patch));
       if (!byKey.size) return;
       setCards((current) => saveCollection(current.map((card) => {
@@ -222,17 +212,25 @@ export default function Collection({
   const activeBinder = BINDERS.find((item) => item.id === binder) || BINDERS[0];
   const total = countCards(visibleCards);
   const market = collectionValueSummary(visibleCards);
+  const priceStatus = collectionPriceStatus(visibleCards);
+  const viewedCard = viewing ? cards.find((card) => cardKey(card) === cardKey(viewing)) || viewing : null;
+  const checkedDate = (value) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   const topPricedCards = useMemo(() => topPricedCollectionCards(visibleCards, 3), [visibleCards]);
   const marketDisplay = market.pricedQty > 0
     ? `${formatCollectionMoney(market.total)}${market.unpricedQty > 0 ? '+' : ''}`
     : (market.unpricedQty > 0 ? '—' : '$0.00');
-  const holdingMeta = (card) => {
-    const details = [];
-    if (card.game === 'yugioh' && card.rarity) details.push(card.rarity);
-    details.push(CONDITION_LABEL[card.condition] || 'Near mint');
-    const formLabel = collectionFormLabel(card.game, card.form, card);
-    if (formLabel) details.push(formLabel);
-    return details.join(' · ');
+  const loadFinishes = async (card) => {
+    const options = await resolvePrintingOptions({
+      name: card.name, game: card.game, set: card.setId || card.setName,
+      number: card.number, passcode: card.game === 'yugioh' ? card.id : null,
+    });
+    const number = (value) => String(value || '').split('/')[0].replace(/^0+(?=\d)/, '').toUpperCase();
+    const exact = options.filter((option) => isExactScanTarget(option.game, option)
+      && option.game === card.game && number(option.number) === number(card.number)
+      && (card.game === 'yugioh' || (option.printingId || option.id) === (card.printingId || card.id)));
+    return Promise.all(exact.map(async (option) => resolveCardProductImage(
+      await addTcgplayerPrice(option, undefined, { requireProductId: option.game === 'yugioh' }),
+    )));
   };
 
   return (
@@ -311,16 +309,21 @@ export default function Collection({
           )}
         </div>
         <div className="col-summary-market">
-          <span className="col-summary-label">{activeBinder.label} · market total</span>
+          <span className="col-summary-label">{activeBinder.label} · market estimate</span>
           <strong className="col-summary-market-value">{marketDisplay}</strong>
           <CollectionCurrencies
             usdTotal={market.total}
             hasKnownValue={market.pricedQty > 0 || market.unpricedQty === 0}
             partial={market.unpricedQty > 0}
           />
-          {market.unpricedQty > 0 && (
-            <small className="col-summary-note">{market.unpricedQty} unpriced</small>
-          )}
+          <div className="col-price-coverage" role="status">
+            <span>{market.pricedQty} of {total} cards priced{market.unpricedQty ? ` · ${market.unpricedQty} missing prices` : ''}</span>
+            {refreshingPrices > 0 && <span>Updating prices…</span>}
+            {priceStatus.staleQty > 0 && <span>{priceStatus.staleQty} need a fresh price check</span>}
+            {priceStatus.oldestCheckedAt && <span>Prices checked {checkedDate(priceStatus.oldestCheckedAt)}{checkedDate(priceStatus.oldestCheckedAt) !== checkedDate(priceStatus.newestCheckedAt) ? ` – ${checkedDate(priceStatus.newestCheckedAt)}` : ''}</span>}
+            {priceStatus.undatedQty > 0 && <span>{priceStatus.undatedQty} have no price date</span>}
+            <small>These prices do not adjust for wear.</small>
+          </div>
         </div>
       </ScrollReveal>
 
@@ -357,44 +360,26 @@ export default function Collection({
         </ScrollReveal>
       ) : (
         <ScrollReveal className="col-grid">
-          {visibleCards.map((card) => (
-            <div className="col-cell" key={cardKey(card)}>
-              <button
-                type="button"
-                className="col-card card-shine-surface"
-                onClick={() => setViewing(card)}
-                title={[card.name, printingNumber(card), card.setName].filter(Boolean).join(' · ')}
-                aria-label={['View ' + card.name, printingNumber(card)].filter(Boolean).join(' · ')}
-              >
-                {card.imageUrl || card.imageLarge ? (
-                  <><img src={card.imageUrl || card.imageLarge} alt={card.name} loading="lazy" /><CardShine card={card} /></>
-                ) : <span className="col-noart">{card.name}</span>}
+          {visibleCards.map((card) => {
+            const finish = collectionFormLabel(card.game, card.form, card) || card.rarity;
+            return <div className="col-cell" key={cardKey(card)}>
+              <button type="button" className="col-card-face" onClick={() => setViewing(card)} aria-label={['Manage ' + card.name, printingNumber(card), finish].filter(Boolean).join(' · ')}>
+                <span className="col-card">
+                  {card.imageUrl || card.imageLarge
+                    ? <img src={card.imageUrl || card.imageLarge} alt={card.name} loading="lazy" />
+                    : <span className="col-noart">{card.name}</span>}
+                  <span className="col-copy-badge">×{card.qty}</span>
+                </span>
+                <span className="col-face-copy">
+                  <strong className="col-face-name">{card.name}</strong>
+                  <span className="col-face-number">{printingNumber(card) || card.setName}</span>
+                  {finish && <span className="col-finish-badge">{finish}</span>}
+                  <span className="col-face-price">{card.marketPrice == null ? 'Price unavailable' : <>{formatCollectionMoney(card.marketPrice)} <small>each</small></>}</span>
+                  {card.qty > 1 && card.marketPrice != null && <span className="col-face-total">{formatCollectionMoney(card.marketPrice * card.qty)} for {card.qty} copies</span>}
+                </span>
               </button>
-              <div className="col-count-control" role="group" aria-label={`Quantity for ${card.name}`}>
-                <button
-                  type="button"
-                  aria-label={`Remove one ${card.name}`}
-                  onClick={() => setCards(removeOne(card))}
-                >−</button>
-                <span key={card.qty} className="col-qty-value" aria-live="polite">{card.qty}</span>
-                <button
-                  type="button"
-                  aria-label={`Add one ${card.name}`}
-                  onClick={() => setCards(addOne(card))}
-                >+</button>
-              </div>
-              <div className="col-name">
-                {card.name}
-                {printingNumber(card) && <span className="col-number">· {printingNumber(card)}</span>}
-              </div>
-              <div className="col-card-meta">
-                <strong>{formatCollectionMoney(card.marketPrice)}</strong>
-                <span>{holdingMeta(card)}</span>
-                {card.paidPerCard != null && <span>Paid {formatCollectionMoney(card.paidPerCard)}</span>}
-                <span>Added {addedLabel(card.addedAt)}</span>
-              </div>
-            </div>
-          ))}
+            </div>;
+          })}
         </ScrollReveal>
       )}
 
@@ -409,31 +394,27 @@ export default function Collection({
         }}
       />
 
-      <CardLightbox
-        isOpen={!!viewing}
+      {viewedCard && <CollectionCardDetails
+        key={cardKey(viewedCard)}
+        card={viewedCard}
         onClose={() => setViewing(null)}
-        imageUrl={viewing?.imageLarge || viewing?.imageUrl}
-        cardName={viewing?.name}
-        card={viewing}
-        cardMeta={viewing ? [
-          printingLabel(viewing),
-          `${formatCollectionMoney(viewing.marketPrice)} each`,
-          `${viewing.qty} cop${viewing.qty === 1 ? 'y' : 'ies'}`,
-          holdingMeta(viewing),
-          `Added ${addedLabel(viewing.addedAt)}`,
-        ].filter(Boolean).join('  ·  ') : null}
-        scanLabel="Open Signal"
-        onScan={viewing && onLookup && isExactScanTarget(viewing.game, viewing) ? () => {
-          const card = viewing;
+        onSave={(details, replacement) => {
+          const next = updateCollectionCard(viewedCard, details, replacement);
+          setCards(next);
+          setViewing(null);
+          flash('ok', 'Card changes saved.');
+        }}
+        onLoadFinishes={loadFinishes}
+        onLookup={onLookup && isExactScanTarget(viewedCard.game, viewedCard) ? (card) => {
           setViewing(null);
           onLookup(card.name, card.game, { pin: card });
         } : null}
-        onRemove={viewing ? () => {
-          const card = viewing;
+        onRemove={() => {
+          setCards(removeAll(viewedCard));
           setViewing(null);
-          setCards(removeAll(card));
-        } : null}
-      />
+          flash('ok', 'Card removed from Collection.');
+        }}
+      />}
     </div>
   );
 }
