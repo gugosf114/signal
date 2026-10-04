@@ -2390,3 +2390,36 @@ panel is bounded to that space, and the form has an explicit flex scroll area.
 The header remains outside the scrolling form. Focus restoration no longer
 moves the collection page. Production build completed and the phone bundle
 was installed. Test runs and device gestures remain deferred as requested.
+
+## Session log — 2026-10-04 shared card-version images
+
+Browse Cards showed three Yu-Gi-Oh! rarity rows with one YGOPRODeck image.
+The general fault was using card-name artwork for physical versions and
+requiring a market price before looking up a product photo. Added a shared
+Yu-Gi-Oh! product-image resolver keyed by name, expansion, number and rarity.
+It uses the existing TCGplayer search route and works without a price.
+Ambiguous/missing matches remain image-unavailable rather than borrowing
+another rarity's picture. No card names or product IDs are hardcoded.
+
+Set browse, passcode results, name-search fallback, scan choices, full reports,
+and saved-card refresh now use the shared path. Exact product rows stamp
+an image identity; the canonical card record preserves it and invalidates
+it when version identity changes. The image cache advances, and CardImage
+now responds to rarity changes. Browser photo enrichment uses the existing
+finish-aware product resolver for Pokémon and Magic too. Saved collections
+upgrade their catalogue photos where an exact product photo is available.
+
+Browse tiles keep separate versions and show rarity/finish plus printed
+number under a two-line card name. Existing detailed views and scanner
+choices retain their version labels. An open collection editor keeps its
+identity while its image is enriched. Failed image lookups are bounded and
+do not prevent later saved cards from being processed.
+
+Read-only catalogue inspection found three distinct product records for the
+screenshot's card. Their actual product photos were retrieved and inspected;
+they show the corresponding Ultra Rare, Starlight Rare and Secret Rare
+versions. Added generalized regression definitions for exact matching,
+no-price images, ambiguous matches, distinct rarities and invalidation when
+rarity changes. Test runs and phone interaction checks remain deferred.
+The final production build completed and its web bundle was installed on
+the phone. No test suites or GitHub checks were run.

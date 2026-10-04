@@ -356,13 +356,11 @@ function shapeYGO(card, pin = null) {
     .map((value) => String(value).trim().toUpperCase());
   const wantedName = String(pin?.setName || '').trim().toLowerCase();
   const wantedRarity = String(pin?.rarity || '').trim().toLowerCase();
-  const chosen = pin
-    ? prints.find((entry) => wantedCodes.includes(String(entry.set_code || '').trim().toUpperCase())
-        && wantedRarity && String(entry.set_rarity || '').trim().toLowerCase() === wantedRarity)
-      || prints.find((entry) => wantedCodes.includes(String(entry.set_code || '').trim().toUpperCase()))
-      || prints.find((entry) => wantedName && String(entry.set_name || '').trim().toLowerCase() === wantedName)
-      || null
-    : (prints[0] || null);
+  const matching = prints.filter(entry =>
+    (!wantedCodes.length || wantedCodes.includes(String(entry.set_code || '').trim().toUpperCase()))
+    && (!wantedName || String(entry.set_name || '').trim().toLowerCase() === wantedName)
+    && (!wantedRarity || String(entry.set_rarity || '').trim().toLowerCase() === wantedRarity));
+  const chosen = pin ? (matching.length === 1 ? matching[0] : null) : (prints[0] || null);
 
   if (pin && !chosen) return null;
 
@@ -402,7 +400,7 @@ function shapeYGO(card, pin = null) {
       : (exactPrintingRequested ? 'exact-print price unavailable' : 'card-level across all printings'),
     priceSource: hasExactSetPrice ? 'YGOPRODeck' : null,
     recentSets: recentSets.length ? recentSets : null,
-    imageUrl: card.card_images?.[0]?.image_url,
+    imageUrl: pin?.imageLarge || pin?.imageUrl || null,
   };
 }
 

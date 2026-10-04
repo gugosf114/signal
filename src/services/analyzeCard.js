@@ -1,3 +1,4 @@
+import { resolveCardProductImage } from './mtgCardImage.js';
 import { checkRow, webChecks, syncReport } from './reportIntegrity.js';
 // ─── Card Analysis Service ───────────────────────────────────────────────────
 // Calls Claude with web_search tool to gather real-time signal data
@@ -140,6 +141,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   if (!isExactScanTarget(game, pin)) {
     throw new Error('Choose one exact printing from the card list before running Full Signal.');
   }
+  pin = await resolveCardProductImage(pin, { signal: opts.signal });
   const cacheKey = sharedCacheKey(cardName, game, pin);
 
   // Pre-fetch structured data in PARALLEL — direct APIs instead of slow, sequential

@@ -1,3 +1,4 @@
+import { verifiedYugiohImage } from '../services/cardImageIdentity';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   loadCollection, saveCollection, importCollection, removeAll, updateCollectionCard,
@@ -91,50 +92,41 @@ export default function Collection({
     };
   }, [reload]);
 
+  const imageAttempts = useRef(new Set());
   useEffect(() => {
-    const unresolved = cards.filter((card) => (
-      (!card.imageUrl && !card.imageLarge)
-      || (card.game === 'yugioh' && !['tcgplayer', 'exact-catalogue'].includes(card.imageSource))
-    )).slice(0, 12);
+    const unresolved = cards.filter(card => (
+      card.game === 'yugioh' ? !verifiedYugiohImage(card) : (!card.imageUrl && !card.imageLarge || card.imageSource !== 'tcgplayer' && Boolean(card.tcgplayerProductId))
+    ) && !imageAttempts.current.has(cardKey(card))).slice(0, 12);
     if (!unresolved.length) return undefined;
     let cancelled = false;
-    Promise.all(unresolved.map(async (card) => {
-      let productId = null;
-      let imageUrl = null;
-      let imageSource = null;
+    let finished = false;
+    const pending = unresolved.map(card => { imageAttempts.current.add(cardKey(card)); return card; });
+    Promise.all(pending.map(async card => {
       if (card.game === 'yugioh') {
-        const exactProduct = await fetchTcgplayerPrice(card).catch(() => null);
-        productId = exactProduct?.productId || null;
-        imageUrl = tcgplayerProductImageUrl(productId);
-        if (imageUrl) imageSource = 'tcgplayer';
+        const resolved = await resolveCardProductImage(card).catch(() => null);
+        return [cardKey(card), resolved && verifiedYugiohImage(resolved) ? resolved : null];
       }
-      if (!imageUrl) {
-        imageUrl = await fetchCardImage(card.name, card.game, {
-          ...card,
-          scanImagePath: null,
-          preferExactOwnerArt: card.game === 'yugioh',
-        }).catch(() => null);
-        if (imageUrl) imageSource = 'exact-catalogue';
-      }
-      return [cardKey(card), imageUrl ? { imageUrl, imageSource, productId } : null];
-    })).then((resolved) => {
+      const resolved = await resolveCardProductImage(card).catch(() => card);
+      if (resolved?.imageSource === 'tcgplayer') return [cardKey(card), resolved];
+      const imageUrl = await fetchCardImage(card.name, card.game, card).catch(() => null);
+      return [cardKey(card), imageUrl ? { ...card, imageUrl, imageLarge: imageUrl, imageSource: 'exact-catalogue' } : null];
+    })).then(resolved => {
+      finished = true;
       if (cancelled) return;
-      const images = new Map(resolved.filter(([, value]) => value));
-      if (!images.size) return;
-      setCards((current) => saveCollection(current.map((card) => {
+      const images = new Map(resolved.filter(([, card]) => card));
+      if (!images.size) { setCards(current => [...current]); return; }
+      setViewing(current => {
+        const image = current && images.get(cardKey(current));
+        return image ? { ...current, ...image, _detailKey: current._detailKey || cardKey(current) } : current;
+      });
+      setCards(current => saveCollection(current.map(card => {
         const image = images.get(cardKey(card));
-        return image ? {
-          ...card,
-          imageUrl: image.imageUrl,
-          imageLarge: image.imageUrl,
-          imageSource: image.imageSource,
-          scanImagePath: null,
-          tcgplayerProductId: image.productId || card.tcgplayerProductId || null,
-          tcgplayerImageUrl: image.imageSource === 'tcgplayer' ? image.imageUrl : null,
-        } : card;
+        return image ? { ...card, imageUrl: image.imageUrl, imageLarge: image.imageLarge, imageSource: image.imageSource,
+          imageIdentity: image.imageIdentity, imageStatus: image.imageStatus, imageSharedFinishes: image.imageSharedFinishes, pokemonImageShared: image.pokemonImageShared, tcgplayerProductId: image.tcgplayerProductId || card.tcgplayerProductId,
+          tcgplayerImageUrl: image.tcgplayerImageUrl, scanImagePath: null } : card;
       })));
     });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; if (!finished) for (const card of pending) imageAttempts.current.delete(cardKey(card)); };
   }, [cards]);
 
   useEffect(() => {
@@ -379,7 +371,7 @@ export default function Collection({
       />
 
       {viewedCard && <CollectionCardDetails
-        key={cardKey(viewedCard)}
+        key={viewing._detailKey || cardKey(viewing)}
         card={viewedCard}
         onClose={() => setViewing(null)}
         onSave={(details, replacement) => {

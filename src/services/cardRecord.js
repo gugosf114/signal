@@ -1,3 +1,4 @@
+import { verifiedYugiohImage } from './cardImageIdentity.js';
 // One exact card shape for every door and every screen.
 // Catalogue rows, scans, saved cards, cache hits, and reports all become this
 // record before they can start a full Signal or be saved.
@@ -129,7 +130,7 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
     ? rawPriceLookupVersion
     : null;
 
-  return {
+  const record = {
     recordVersion: CARD_RECORD_VERSION,
     name,
     oracleName: clean(first(current.oracleName, prior.oracleName)) || null,
@@ -159,6 +160,8 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
     imageUrl: clean(first(current.imageUrl, prior.imageUrl)) || null,
     imageLarge: clean(first(current.imageLarge, prior.imageLarge, current.imageUrl, prior.imageUrl)) || null,
     imageSource: clean(first(current.imageSource, prior.imageSource)) || null,
+    imageIdentity: clean(first(current.imageIdentity, prior.imageIdentity)) || null,
+    imageStatus: clean(first(current.imageStatus, prior.imageStatus)) || null,
     imageSharedFinishes: first(current.imageSharedFinishes, prior.imageSharedFinishes) === undefined
       ? null : cleanList(first(current.imageSharedFinishes, prior.imageSharedFinishes)),
     scanImagePath: clean(first(current.scanImagePath, prior.scanImagePath)) || null,
@@ -176,6 +179,12 @@ export function normalizeCardRecord(input = {}, fallback = {}) {
     releaseDate: clean(first(current.releaseDate, prior.releaseDate)) || null,
     pinned: explicitlyBroad ? false : Boolean(printingId),
   };
+  if (game === 'yugioh' && !verifiedYugiohImage(record)) {
+    record.imageUrl = null; record.imageLarge = null; record.tcgplayerImageUrl = null;
+    record.imageSource = null; record.imageIdentity = null;
+    record.imageStatus = record.imageStatus === 'unavailable' ? 'unavailable' : 'unresolved';
+  }
+  return record;
 }
 
 export function cardRecordFromResult(result, fallback = null) {

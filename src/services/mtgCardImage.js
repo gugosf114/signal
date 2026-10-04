@@ -1,3 +1,4 @@
+import { resolveYugiohProductImage } from './yugiohProduct.js';
 import { tcgplayerProductImageUrl } from './fetchTcgplayerPrice.js';
 import { verifyPokemonProduct, pokemonCatalogPhoto } from './pokemonProduct.js';
 
@@ -26,6 +27,7 @@ function browserImageExists(url) {
 // Pokémon product IDs are verified against the physical version first.
 // Magic retains its Scryfall printing/finish mapping.
 export async function resolveMtgCardImage(card, { signal, checkImage = browserImageExists, verifyProduct = verifyPokemonProduct } = {}) {
+  if (card?.game === 'yugioh') return resolveYugiohProductImage(card, { signal });
   if (!card || !['mtg', 'pokemon'].includes(card.game)) return card;
   if (card.game === 'pokemon' && !card.pokemonVariantsResolved) return card;
   if (card.game === 'pokemon') {
@@ -64,3 +66,18 @@ export async function resolveMtgCardImage(card, { signal, checkImage = browserIm
 
 // Both games use IDs provided by their catalog, never a name-only image match.
 export const resolveCardProductImage = resolveMtgCardImage;
+
+export async function resolveCardProductImages(cards, options = {}) {
+  const rows = [...cards];
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(4, rows.length) }, async () => {
+    while (next < rows.length) {
+      const index = next++;
+      rows[index] = await resolveCardProductImage(rows[index], options).catch(error => {
+        if (options.signal?.aborted) throw error;
+        return rows[index];
+      });
+    }
+  }));
+  return rows;
+}

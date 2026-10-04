@@ -1,3 +1,4 @@
+import { resolveYugiohProductImage } from './yugiohProduct.js';
 // ─── Card Image Fetcher ──────────────────────────────────────────────────────
 // Uses free TCG APIs to fetch card artwork. No API keys required.
 //
@@ -39,7 +40,7 @@ import { toTcgdexId } from './pokemonIds.js';
 // cached at all. The key was bumped so poisoned v1 entries are simply dropped.
 // v5 drops the generic Yu-Gi-Oh artwork that the short-lived Collection
 // catalogue fallback could cache for an exact alternate-art printing.
-const IMG_CACHE_KEY = 'signal_card_image_cache_v5';
+const IMG_CACHE_KEY = 'signal_card_image_cache_v6';
 const IMG_TTL_MS = 7 * 24 * 60 * 60 * 1000;   // found an image
 const NEG_TTL_MS = 60 * 60 * 1000;            // genuinely no image for this card
 const IMG_MAX_ENTRIES = 300;
@@ -185,25 +186,11 @@ async function fetchMTGImage(name, pin = null) {
 }
 
 async function fetchYuGiOhImage(name, pin = null) {
-  const setCode = pin?.number || pin?.setId || null;
-  const catalogue = await fetchYuGiOhCatalogueImage(name, pin);
-  if (setCode) {
-    try {
-      const official = await getOfficialYugiohArt({ cardName: name, setCode, rarity: pin?.rarity || '' });
-      const art = officialArtNumber(official?.imageUrl);
-      if (art > 1) {
-        // TCGplayer's exact product image is clean and tied to this set/rarity.
-        // Without it, show no image rather than the owner's photo, Konami's
-        // SAMPLE image, or the wrong original artwork.
-        return pin?.tcgplayerImageUrl || (pin?.imageSource === 'tcgplayer' ? catalogue : null);
-      }
-      if (!art && pin?.preferExactOwnerArt) return null;
-    } catch (error) {
-      console.warn(`[fetchCardImage] official Yu-Gi-Oh art failed for "${name}"/${setCode}:`, error?.message || error);
-      if (pin?.preferExactOwnerArt) return null;
-    }
+  if (pin?.number || pin?.setId || pin?.rarity) {
+    const exact = await resolveYugiohProductImage({ ...pin, name: pin.name || name, game: 'yugioh' });
+    return exact?.imageLarge || null;
   }
-  return catalogue;
+  return fetchYuGiOhCatalogueImage(name, pin);
 }
 
 export function officialArtNumber(imageUrl) {

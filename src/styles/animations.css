@@ -4566,3 +4566,9 @@
 .report-empty-areas ul { margin: 8px 0 0; padding-left: 18px; }
 
 .report-evidence .report-empty-areas { margin: 10px 0 0; padding: 0; border: 0; border-radius: 0; color: inherit; font-size: inherit; }
+
+/* Keep rarity and finish visible wherever a catalogue has sibling versions. */
+.cb-card-copy { display: flex; flex-direction: column; width: 100%; min-width: 0; box-sizing: border-box; padding: 7px 2px 4px; gap: 4px; }
+.cb-card-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; height: 30px; color: #DDD8CE; font: 500 11px/15px 'Syne', sans-serif; }
+.cb-card-version { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; min-height: 28px; color: #C5D0BF; font: 600 11px/14px 'Syne', sans-serif; }
+.cb-card-number { color: #ADA89F; font: 10px/14px 'JetBrains Mono', monospace; overflow-wrap: anywhere; }

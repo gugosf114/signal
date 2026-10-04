@@ -1,3 +1,5 @@
+import { resolveCardProductImages } from '../services/mtgCardImage';
+import { cardVersionLabel } from '../services/cardImageIdentity';
 import React, { useState, useEffect } from 'react';
 import { GAME_LABELS } from '../config/signals';
 import { BrandIcon } from '../config/brandIcons';
@@ -98,8 +100,15 @@ export default function CardBrowser({
         : fetchLatestCardsForGame(activeGame, priceSort);
     fetcher.then((results) => {
       if (cancelled) return;
-      setCards(normalizeCardBrowserResults(results, activeGame));
+      const rows = normalizeCardBrowserResults(results, activeGame);
+      setCards(rows);
       setBrowsing(false);
+      resolveCardProductImages(rows).then(enriched => {
+        if (cancelled) return;
+        const updated = normalizeCardBrowserResults(enriched, activeGame);
+        setCards(updated);
+        setViewing(current => current ? updated.find(row => cardBrowserRowKey(row) === cardBrowserRowKey(current)) || current : current);
+      }).catch(() => {});
     }).catch(() => {
       if (cancelled) return;
       // The catalogue APIs — pokemontcg.io especially — fail intermittently.
@@ -346,7 +355,8 @@ export default function CardBrowser({
               key={cardBrowserRowKey(card)}
               className="cb-card"
               onClick={() => setViewing(card)}
-              title={`${card.name}${card.setName ? ' · ' + card.setName : ''}`}
+              title={[card.name, card.setName, card.number, cardVersionLabel(card)].filter(Boolean).join(' · ')}
+              aria-label={[card.name, card.number, cardVersionLabel(card)].filter(Boolean).join(' · ')}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -373,6 +383,7 @@ export default function CardBrowser({
                   src={card.imageUrl}
                   alt={card.name}
                   loading="lazy"
+                  onError={() => setCards(current => current.map(row => cardBrowserRowKey(row) === cardBrowserRowKey(card) ? { ...row, imageUrl: null, imageLarge: null } : row))}
                   style={{
                     width: '100%',
                     aspectRatio: '0.716',
@@ -391,25 +402,16 @@ export default function CardBrowser({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 18,
-                  color: '#1A1D24',
+                  fontSize: 11,
+                  color: 'var(--signal-text-secondary)',
                   fontFamily: "'JetBrains Mono'",
-                }}>?</div>
+                }}>Image unavailable</div>
               )}
-              <div style={{
-                padding: '4px 2px 2px',
-                fontSize: 9,
-                color: 'var(--signal-text-secondary)',
-                fontFamily: "'Syne', sans-serif",
-                fontWeight: 500,
-                lineHeight: 1.3,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                maxWidth: '100%',
-              }}>
-                {card.name}
-              </div>
+              <span className="cb-card-copy">
+                <strong className="cb-card-name">{card.name}</strong>
+                <span className="cb-card-version">{cardVersionLabel(card) || 'Version unspecified'}</span>
+                <span className="cb-card-number">{card.number || 'Number unavailable'}</span>
+              </span>
             </button>
           ))}
         </div>

@@ -1,3 +1,4 @@
+import { stampYugiohProductImage } from './cardImageIdentity.js';
 import { fetchWithTimeout } from './http.js';
 import { gateway } from './signalGateway.js';
 import { verifyPokemonProduct } from './pokemonProduct.js';
@@ -54,7 +55,7 @@ export function tcgplayerProductRow(item, base = null) {
   const name = clean(item?.productName);
   if (!name) return null;
   const imageUrl = tcgplayerProductImageUrl(productId);
-  return {
+  return stampYugiohProductImage({
     id: base?.id || null,
     printingId: `tcgplayer:${productId}`,
     tcgplayerProductId: productId,
@@ -75,7 +76,7 @@ export function tcgplayerProductRow(item, base = null) {
     imageUrl,
     imageLarge: imageUrl,
     releaseDate: item?.releaseDate || item?.customAttributes?.releaseDate || null,
-  };
+  });
 }
 
 export async function searchTcgplayerProducts(query, { setName = '', signal } = {}) {

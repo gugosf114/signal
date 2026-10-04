@@ -79,6 +79,7 @@ export function collectionFormOptions(game, card = null) {
 
 export function collectionFormLabel(game, form, card = null) {
   const key = String(game || '').toLowerCase();
+  if (key === 'yugioh') return card?.rarity || '';
   if (key === 'mtg') return mtgFinishLabel(card, cleanFormForGame(key, form));
   if (key === 'pokemon') return pokemonFinishLabel(card, cleanFormForGame(key, form));
   return FORM_LABELS[key]?.[cleanFormForGame(key, form)] || '';

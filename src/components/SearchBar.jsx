@@ -84,7 +84,7 @@ function QuickPriceResult({ card, onAdd, onDone }) {
 
 async function withResolvedCardImage(pin, fallbackCard = null) {
   if (!pin) return pin;
-  if (['mtg', 'pokemon'].includes(pin.game)) return resolveCardProductImage(pin);
+  if (['mtg', 'pokemon', 'yugioh'].includes(pin.game)) return resolveCardProductImage(pin);
   const name = pin.name || fallbackCard?.name;
   const game = pin.game || fallbackCard?.game || null;
   const tcgplayerImage = pin.tcgplayerImageUrl || null;

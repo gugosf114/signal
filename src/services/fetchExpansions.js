@@ -1,3 +1,4 @@
+import { resolveYugiohProductImages } from './yugiohProduct.js';
 // Latest 6 expansions per game, pulled from each game's catalog API.
 // Cached for 7 days in localStorage — set lists change rarely.
 //
@@ -251,8 +252,9 @@ export function ygoPrintingRows(card, wantedSet = null) {
     priceScope: Number.isFinite(exactPrice) && exactPrice > 0
       ? 'set-code printing'
       : (exactPrinting ? 'exact-print price unavailable' : 'card-level across all printings'),
-    imageUrl: card?.card_images?.[0]?.image_url_small || null,
-    imageLarge: card?.card_images?.[0]?.image_url || card?.card_images?.[0]?.image_url_small || null,
+    imageUrl: null,
+    imageLarge: null,
+    imageStatus: 'unresolved',
     };
   });
 }
@@ -263,7 +265,7 @@ export async function fetchYgoPrintingsByPasscode(passcode) {
     `https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${encodeURIComponent(String(passcode).trim())}`
   ).catch(() => null);
   const card = data?.data?.[0];
-  return card ? ygoPrintingRows(card) : [];
+  return card ? resolveYugiohProductImages(ygoPrintingRows(card)) : [];
 }
 
 function variantIdentity(row) {
@@ -931,9 +933,9 @@ export async function fetchCardsBySet(game, set, priceSort = null) {
       );
       if (!data) return [];
       const cards = data.data || [];
-      return sortYugiohByPrice(cards, priceSort)
+      return resolveYugiohProductImages(sortYugiohByPrice(cards, priceSort)
         .flatMap((card) => ygoPrintingRows(card, set))
-        .slice(0, PAGE);
+        .slice(0, PAGE));
     }
   } catch (err) {
     throw err;
@@ -1035,7 +1037,7 @@ export async function searchCardsByName(game, query, priceSort = null) {
     const ordered = priceSort
       ? sortYugiohByPrice(cards, priceSort)
       : [...cards].sort((a, b) => rank(a) - rank(b));
-    return keepNumber(ordered.flatMap((card) => ygoPrintingRows(card))).slice(0, PAGE);
+    return resolveYugiohProductImages(keepNumber(ordered.flatMap((card) => ygoPrintingRows(card))).slice(0, PAGE));
   }
 
   return [];
