@@ -56,6 +56,7 @@ const CATALOGUE_RULES = new Map([
   ['api.scryfall.com', /^\/(?:cards|sets)(?:\/.*)?$/],
   ['db.ygoprodeck.com', /^\/api\/v7\/(?:cardinfo|cardsets|cardsetsinfo)\.php$/],
   // TCGplayer's per-product price history, read by its own article widgets.
+  ['mp-search-api.tcgplayer.com', /^\/v2\/product\/\d+\/details$/],
   ['infinite-api.tcgplayer.com', /^\/price\/history\/\d+(?:\/detailed)?$/],
 ]);
 
@@ -176,6 +177,8 @@ async function tcgplayerSearch(body, fetcher = fetch) {
   const products = (payload?.results?.[0]?.results || []).slice(0, 50).map((item) => ({
     productId: finite(item?.productId),
     productName: safeText(item?.productName, 220),
+    productLineName: safeText(item?.productLineName || productLine, 40),
+    sealed: Boolean(item?.sealed),
     setName: safeText(item?.setName, 180),
     number: safeText(item?.customAttributes?.number, 80),
     rarityName: safeText(item?.rarityName || item?.customAttributes?.rarityDbName, 100),

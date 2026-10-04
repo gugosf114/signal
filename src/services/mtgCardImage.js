@@ -1,6 +1,6 @@
 import { resolveYugiohProductImage } from './yugiohProduct.js';
 import { tcgplayerProductImageUrl } from './fetchTcgplayerPrice.js';
-import { verifyPokemonProduct, pokemonCatalogPhoto } from './pokemonProduct.js';
+import { verifyPokemonProduct, pokemonCatalogPhoto, resolvePokemonBrowseVariants } from './pokemonProduct.js';
 
 const checks = new Map();
 function browserImageExists(url) {
@@ -73,11 +73,15 @@ export async function resolveCardProductImages(cards, options = {}) {
   await Promise.all(Array.from({ length: Math.min(4, rows.length) }, async () => {
     while (next < rows.length) {
       const index = next++;
-      rows[index] = await resolveCardProductImage(rows[index], options).catch(error => {
+      const row = rows[index];
+      const task = row?.game === 'pokemon'
+        ? resolvePokemonBrowseVariants(row, options).then(variants => Promise.all(variants.map(variant => resolveCardProductImage(variant, options))))
+        : resolveCardProductImage(row, options);
+      rows[index] = await task.catch(error => {
         if (options.signal?.aborted) throw error;
         return rows[index];
       });
     }
   }));
-  return rows;
+  return rows.flat();
 }

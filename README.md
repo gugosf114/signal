@@ -2480,3 +2480,39 @@ unavailable. Rarity, artwork and card number remain below the price.
 Accessible card labels include the price. No new data request or test suite
 was added for this display change.
 Production build completed and the phone web bundle was updated.
+
+## Session log — 2026-10-04 Pokémon browse price loading
+
+The latest TCGdex Pokémon expansion supplied generated Normal variants with
+no pricing or marketplace IDs. Product verification stopped when those IDs
+were absent, so the browser could not reach prices that TCGplayer actually
+held. Added bounded marketplace discovery with name, set and printed-number
+validation followed by full product/finish validation. Generated placeholders
+are replaced by source-proven English finishes; confirmed user-selected
+finishes are never silently exchanged. Normal/Reverse products use their
+separate English Near Mint SKU history when a finish price is missing, never
+a combined headline price. Existing valid older catalogue prices are kept.
+
+The browser expands discovered finishes, re-sorts by the resolved prices,
+updates an open viewer when its single placeholder finish is resolved, and
+shows Loading price while enrichment runs. Legacy records can reload missing
+variant context. TCGplayer set prefixes are learned from retrieved records
+for subsequent scoped searches. Server search records now preserve game
+metadata and the catalogue allow-list supports exact product-details URLs.
+
+Validation: the current 21-card Pokémon browse batch went from zero priced
+rows to 21 matched, priced rows. Meowth 144/128 resolved to product 714358,
+Holo, $9.806 at lookup time. Common Exeggcute and Ultra Ball also resolved to
+their actual Holo products and prices. Fifteen focused old/new Pokémon tests
+passed, protecting stamps, special patterns, finish prices, wrong-set/number
+rejection, discovery without IDs and the product-details relay contract.
+
+A browser-access hypothesis was corrected: the Android shell already has
+CapacitorHttp enabled and uses native requests. A forced relay-only live probe
+failed because TCGplayer rejected the cloud-server origin; this is not proof
+of phone failure. Direct native-equivalent source calls succeeded. The relay
+is optional fallback, not the confirmed fix for this incident. The gateway
+deployment returned ACTIVE at 2026-10-04T23:27:23.807125258Z. No full suite or
+GitHub workflow was run.
+The final production build completed and its web bundle was installed on
+the phone. The in-app visual check remains with George.

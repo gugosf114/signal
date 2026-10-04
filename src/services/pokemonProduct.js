@@ -3,7 +3,7 @@ import { fetchCatalogueJSON } from './signalGateway.js';
 import { sameCollectorNumber, scannedSetMatches } from './printedIdentity.js';
 import { selectedPokemonVariant } from './pokemonVariants.js';
 import { toTcgdexId } from './pokemonIds.js';
-import { fetchTcgplayerProduct as fetchPokemonProduct } from './tcgplayerProduct.js';
+import { fetchTcgplayerProduct as fetchPokemonProduct, searchTcgplayerCatalog, fetchTcgplayerSkuMarket } from './tcgplayerProduct.js';
 
 const TTL = 5 * 60 * 1000;
 const key = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -20,7 +20,7 @@ const binding = card => JSON.stringify([card.id || card.catalogId || card.printi
 
 // Match the physical version, not merely its catalog-provided product ID.
 // The qualifiers come from the same version key used by Collection identity.
-export function pokemonProductMatch(card, product) {
+export function pokemonProductMatch(card, product, { ignoreFinish = false } = {}) {
   if (key(product?.productLineName) !== 'pokemon' || product?.sealed === true) return null;
   const title = String(product.productName || '');
   const baseName = title.replace(/(?:\s*\([^)]*\))+\s*$/, '')
@@ -40,16 +40,17 @@ export function pokemonProductMatch(card, product) {
   qualifiers = qualifiers.replace(/exclusive|pattern|reverseholofoil|reverseholo|holofoil|holo|nonfoil|foil|1stedition|unlimited/g, '');
   if (qualifiers) return null; // An unaccounted stamp/treatment is a different version.
   const variants = [...new Set((product.skus || []).filter(sku => key(sku.language) === 'english').map(sku => key(sku.variant)))];
+  if (ignoreFinish) return { variants };
   const allowed = SKU_FORMS[card.form] || [];
   let finish = variants.find(variant => allowed.includes(variant));
   // A dedicated Master Ball/Cosmos product can sell a reverse holo in its
   // sole Holofoil bucket. Its named treatment was verified above.
   if (!finish && traits.length && variants.length === 1 && variants[0] === 'holofoil' && card.form === 'reverse') finish = variants[0];
-  return finish ? { priceKey: PRICE_KEYS[finish], shared: variants.length > 1 } : null;
+  return finish ? { priceKey: PRICE_KEYS[finish], variant: finish, shared: variants.length > 1 } : null;
 }
 
 async function restoreContext(card, signal) {
-  if (Array.isArray(card.pokemonProductCandidates)) return card;
+  if (Array.isArray(card.pokemonProductCandidates) && typeof card.pokemonVariantGenerated === 'boolean') return card;
   const id = toTcgdexId(card.catalogId || card.id || card.printingId);
   if (!id) return card;
   const url = `https://api.tcgdex.net/v2/en/cards/${encodeURIComponent(id)}`;
@@ -74,18 +75,66 @@ function catalogPhoto(card) {
   };
 }
 
-export async function verifyPokemonProduct(input, { signal, refresh = false, getProduct = fetchPokemonProduct } = {}) {
+const FORM_LABELS = { normal: 'Normal', holo: 'Holo', reverse: 'Reverse holo', first_edition_normal: '1st Edition Normal', first_edition_holo: '1st Edition Holo', unlimited_normal: 'Unlimited Normal', unlimited_holo: 'Unlimited Holo' };
+function productForms(product) {
+  const variants = new Set((product.skus || []).filter(sku => key(sku.language) === 'english').map(sku => key(sku.variant)));
+  return Object.entries(SKU_FORMS).filter(([, names]) => names.some(name => variants.has(name))).map(([form]) => form);
+}
+function withConfirmedForm(card, form) {
+  return { ...card, form, finish: FORM_LABELS[form], pokemonVariantLabel: FORM_LABELS[form], pokemonVariantGenerated: false,
+    availableFinishes: [form], price: form === card.form ? card.price : null, pokemonPriceKey: form === card.form ? card.pokemonPriceKey : null };
+}
+export async function discoverPokemonProducts(card, { signal, getProduct = fetchPokemonProduct, searchProducts = searchTcgplayerCatalog } = {}) {
+  const number = card.printedTotal ? `${card.number}/${card.printedTotal}` : card.number;
+  let found = await searchProducts(`${card.name} ${number || ''}`.trim(), { game: 'pokemon', setName: card.setName || '', signal });
+  if (!(found || []).some(product => pokemonProductMatch(card, product, { ignoreFinish: true }))) {
+    found = await searchProducts(card.name, { game: 'pokemon', setName: card.setName || '', signal });
+  }
+  const ids = [...new Set((found || []).filter(product => pokemonProductMatch(card, product, { ignoreFinish: true }))
+    .map(product => idNumber(product.productId)).filter(Boolean))];
+  return (await Promise.all(ids.map(id => getProduct(id, signal)))).filter(product => product
+    && ids.includes(idNumber(product.productId)) && pokemonProductMatch(card, product, { ignoreFinish: true }));
+}
+export async function resolvePokemonBrowseVariants(input, options = {}) {
+  if (input?.game !== 'pokemon') return [input];
+  if (!input.pokemonVariantsResolved) {
+    if (positive(input.price)) return [input];
+    input = { ...input, pokemonVariantsResolved: true, pokemonVariantGenerated: !(input.availableFinishes || []).length,
+      pokemonVariantKey: null, pokemonProductCandidates: input.tcgplayerProductId ? [input.tcgplayerProductId] : [] };
+  }
+  if (!input.pokemonVariantGenerated) return [await verifyPokemonProduct(input, options)];
+  const details = await discoverPokemonProducts(input, options);
+  if (!details.length) return [input];
+  const rows = [];
+  for (const product of details) {
+    for (const form of productForms(product)) {
+      const card = { ...withConfirmedForm(input, form), tcgplayerProductId: product.productId,
+        pokemonCatalogProductId: product.productId, pokemonProductCandidates: [product.productId] };
+      rows.push(await verifyPokemonProduct(card, { ...options, getProduct: async id => details.find(row => row.productId === id) || null, searchProducts: async () => [] }));
+    }
+  }
+  return rows.length ? rows : [input];
+}
+
+export async function verifyPokemonProduct(input, { signal, refresh = false, getProduct = fetchPokemonProduct, searchProducts = searchTcgplayerCatalog, getSkuMarket = fetchTcgplayerSkuMarket } = {}) {
   if (input?.game !== 'pokemon' || !input.pokemonVariantsResolved) return input;
   if (signal?.aborted) throw signal.reason || new DOMException('Cancelled', 'AbortError');
   const age = Date.now() - new Date(input.pokemonProductCheckedAt || '').getTime();
   if (!refresh && input.pokemonVerifiedProductId && input.pokemonVerifiedProductId === input.tcgplayerProductId
     && input.pokemonProductBinding === binding(input) && age >= 0 && age < TTL) return input;
-  const card = await restoreContext(input, signal);
+  let card = await restoreContext(input, signal);
   const candidates = [...new Set([card.tcgplayerProductId, card.pokemonCatalogProductId, ...(card.pokemonProductCandidates || [])].map(idNumber).filter(Boolean))];
-  const details = card.tcgplayerProductId || card.pokemonCatalogProductId ? await Promise.all(candidates.map(async id => {
+  let details = await Promise.all(candidates.map(async id => {
     const product = await getProduct(id, signal);
     return idNumber(product?.productId) === id ? product : null;
-  })) : [];
+  }));
+  if (!details.some(product => product && pokemonProductMatch(card, product, { ignoreFinish: true }))) {
+    details = await discoverPokemonProducts(card, { signal, getProduct, searchProducts });
+  }
+  if (card.pokemonVariantGenerated && details.length === 1) {
+    const forms = productForms(details[0]);
+    if (forms.length === 1) card = withConfirmedForm(card, forms[0]);
+  }
   if (signal?.aborted) throw signal.reason || new DOMException('Cancelled', 'AbortError');
   const matches = details.filter(Boolean).map(product => ({ product, match: pokemonProductMatch(card, product) })).filter(row => row.match);
   const checked = new Date().toISOString();
@@ -97,9 +146,13 @@ export async function verifyPokemonProduct(input, { signal, refresh = false, get
   const { product, match } = matches[0];
   const id = idNumber(product.productId);
   // Never substitute a product's combined headline price for Normal/Reverse.
-  const price = match.shared
+  let price = match.shared
     ? (id === card.tcgplayerProductId && card.pokemonPriceKey === match.priceKey ? positive(card.price) : null)
     : positive(product.marketPrice);
+  if (price === null) {
+    const exact = await getSkuMarket(id, match.variant, { signal }).catch(() => null);
+    price = positive(exact?.price);
+  }
   const image = `https://product-images.tcgplayer.com/${id}.jpg`;
   const denominator = String(product.customAttributes?.number || product.number || '').split('/')[1]?.trim();
   const printedTotal = denominator && /^[A-Z]*\d+$/i.test(denominator) ? denominator.toUpperCase() : card.printedTotal;

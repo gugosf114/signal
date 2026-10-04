@@ -72,6 +72,7 @@ export function pokemonVariantRows(card, base = {}) {
     const id = linkedId || productId(chosen?.[1]?.productId);
     rows.push({ ...base, form, finish: label,
       pokemonVariantsResolved: true,
+      pokemonVariantGenerated: variant.variantId === 'generated',
       pokemonVariantId: variant.variantId && variant.variantId !== 'generated' ? String(variant.variantId) : null,
       pokemonVariantKey: key,
       pokemonVariantLabel: label,
@@ -116,6 +117,7 @@ export function pokemonVariantFields(current = {}, fallback = {}) {
   const source = current.pokemonVariantsResolved ? current : fallback.pokemonVariantsResolved ? fallback : current;
   return {
     pokemonVariantsResolved: Boolean(source.pokemonVariantsResolved),
+    pokemonVariantGenerated: source.pokemonVariantGenerated == null ? null : Boolean(source.pokemonVariantGenerated),
     pokemonVariantId: source.pokemonVariantId || null,
     pokemonVariantKey: source.pokemonVariantKey || null,
     pokemonVariantLabel: source.pokemonVariantLabel || null,

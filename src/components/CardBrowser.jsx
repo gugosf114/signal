@@ -37,6 +37,7 @@ export default function CardBrowser({
   const [priceSort, setPriceSort] = useState(null); // null | 'asc' | 'desc'
   const [cards, setCards] = useState([]);
   const [browsing, setBrowsing] = useState(false);
+  const [enriching, setEnriching] = useState(false);
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [failed, setFailed] = useState(false);
@@ -91,6 +92,7 @@ export default function CardBrowser({
   useEffect(() => {
     let cancelled = false;
     setBrowsing(true);
+    setEnriching(false);
     setFailed(false);
     const searching = debounced.length >= 2;
     const fetcher = searching
@@ -102,13 +104,27 @@ export default function CardBrowser({
       if (cancelled) return;
       const rows = normalizeCardBrowserResults(results, activeGame);
       setCards(rows);
+      setEnriching(rows.some(card => cardPriceNumber(card.price) === null));
       setBrowsing(false);
       resolveCardProductImages(rows).then(enriched => {
         if (cancelled) return;
         const updated = normalizeCardBrowserResults(enriched, activeGame);
+        if (priceSort) updated.sort((a, b) => {
+          const left = cardPriceNumber(a.price), right = cardPriceNumber(b.price);
+          if (left === null) return right === null ? 0 : 1;
+          if (right === null) return -1;
+          return priceSort === 'asc' ? left - right : right - left;
+        });
         setCards(updated);
-        setViewing(current => current ? updated.find(row => cardBrowserRowKey(row) === cardBrowserRowKey(current)) || current : current);
-      }).catch(() => {});
+        setEnriching(false);
+        setViewing(current => {
+          if (!current) return current;
+          const same = updated.find(row => cardBrowserRowKey(row) === cardBrowserRowKey(current));
+          if (same) return same;
+          const physical = updated.filter(row => row.game === current.game && row.id === current.id && row.number === current.number);
+          return current.pokemonVariantGenerated && physical.length === 1 ? physical[0] : current;
+        });
+      }).catch(() => { if (!cancelled) setEnriching(false); });
     }).catch(() => {
       if (cancelled) return;
       // The catalogue APIs — pokemontcg.io especially — fail intermittently.
@@ -410,7 +426,7 @@ export default function CardBrowser({
               <span className="cb-card-copy">
                 <strong className="cb-card-name">{card.baseName || card.name}</strong>
                 <span className={`cb-card-price${cardPriceNumber(card.price ?? card.marketPrice) === null ? ' cb-card-price--missing' : ''}`} title="Market price in USD">
-                  {cardPriceNumber(card.price ?? card.marketPrice) === null ? 'Price unavailable' : cardPriceLabel(card)}
+                  {cardPriceNumber(card.price ?? card.marketPrice) === null ? (enriching ? 'Loading price…' : 'Price unavailable') : cardPriceLabel(card)}
                 </span>
                 <span className="cb-card-version">{cardVersionLabel(card) || 'Version unspecified'}</span>
                 <span className="cb-card-number">{card.number || 'Number unavailable'}</span>
