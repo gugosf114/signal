@@ -2516,3 +2516,13 @@ deployment returned ACTIVE at 2026-10-04T23:27:23.807125258Z. No full suite or
 GitHub workflow was run.
 The final production build completed and its web bundle was installed on
 the phone. The in-app visual check remains with George.
+
+## Session log — 2026-10-04 clear collection selection
+
+The four collection tiles had almost identical borders and backgrounds, so
+the selected binder was hard to identify. The selected tile now has a solid
+light-gold fill, dark title/count text, and a persistent checkmark. Unselected
+tiles keep a quieter border. The existing aria-selected state drives both
+the style and marker for All cards, Pokémon, Yu-Gi-Oh! and MTG. Production
+build completed; no test suite was run for this display-only change.
+The new web bundle was installed on the phone.

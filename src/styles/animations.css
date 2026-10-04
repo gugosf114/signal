@@ -4604,3 +4604,29 @@
 
 .cb-card-price { display: block; min-height: 20px; color: #F0EBE0; font: 600 14px/20px 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
 .cb-card-price--missing { color: #ADA89F; font: 500 10px/20px 'Syne', sans-serif; }
+
+/* A persistent selected tile, distinct from hover and press feedback. */
+.col-binder:not(.col-binder--on) { border-color: #585B60; }
+.col-binder.col-binder--on {
+  border-color: #F2E4BD;
+  background: #D9CCAB;
+  box-shadow: inset 0 0 0 1px #F2E4BD;
+}
+.col-binder.col-binder--on::before { opacity: 0; }
+.col-binder.col-binder--on strong { max-width: calc(100% - 24px); color: #171B15; }
+.col-binder.col-binder--on > span:not(.col-binder-art) { color: #343A2E; }
+.col-binder.col-binder--on .col-binder-art { opacity: .86; }
+.col-binder.col-binder--on > .col-binder-selected {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #22291F;
+  color: #F5EDD8;
+  box-shadow: 0 0 0 2px #D9CCAB;
+}
