@@ -3654,6 +3654,7 @@
 .col-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  align-items: start;
   gap: 14px 10px;
 }
 .col-cell { position: relative; }
@@ -4370,7 +4371,7 @@
 .live-batch-choice:focus-visible { outline: 2px solid #F5F1E8; outline-offset: 2px; }
 
 /* Collection cards: exact identity stays beside the picture and price. */
-.col-card-face { width: 100%; height: 100%; min-width: 0; padding: 0; overflow: hidden; border: 1px solid #35373D; border-radius: 10px; background: #14161A; color: #F0ECE4; text-align: left; cursor: pointer; }
+.col-card-face { display: flex; flex-direction: column; align-items: stretch; width: 100%; min-width: 0; padding: 0; overflow: hidden; border: 1px solid #35373D; border-radius: 10px; background: #14161A; color: #F0ECE4; text-align: left; cursor: pointer; }
 .col-card-face .col-card { border-radius: 9px 9px 0 0; transform: none; box-shadow: none; }
 .col-card-face:focus-visible { outline: 2px solid #B4D6BE; outline-offset: 3px; }
 .col-copy-badge { position: absolute; right: 7px; bottom: 7px; min-width: 30px; padding: 5px 7px; border: 1px solid #888; border-radius: 6px; background: #101216E8; color: #FFF; font: 700 12px 'JetBrains Mono', monospace; }

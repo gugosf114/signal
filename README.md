@@ -2118,3 +2118,18 @@ catalogue lookup supplied both finishes and the foil selection saved with its
 matching price. Before/after screenshots were inspected. Production build
 passed and every installed phone bundle file matches by SHA-256. No GitHub
 checks were started. The existing page order is unchanged.
+
+## Session log — 2026-10-04 remove stretched card-tile gaps
+
+The Collection card buttons used height:100% in equal-height grid rows.
+The browser centered the shorter button contents, leaving empty bands above
+the pictures and below the prices. Long names in neighboring cards exposed it.
+Card tiles now size to their own contents and use an explicit vertical flex
+layout; grid items align at the top.
+
+Proof: reproduced with the Yu-Gi-Oh binder sorted by price. Before the fix,
+shorter contents had up to 20px of empty space on each end. After the fix,
+all tested tiles at 320/390/800px have only their 1px border above the art and
+below the content. The matching screenshot was inspected and the production
+build passed. All installed phone build files match by SHA-256. GitHub checks
+were not started.
