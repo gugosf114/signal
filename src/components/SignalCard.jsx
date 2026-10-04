@@ -165,7 +165,6 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
   const sources = Array.isArray(signal.sources) ? signal.sources : [];
   // Model-selected URLs that could not be joined to a locked retrieval record.
   // Source title, publisher, date, and summary never come from the model.
-  const dropped = typeof signal.dropped === 'number' ? signal.dropped : 0;
   const ytSources = sources.filter(s => extractYouTubeId(s.url));
   const otherSources = sources.filter(s => !extractYouTubeId(s.url));
 
@@ -414,37 +413,7 @@ export default function SignalCard({ signal, animDelay = 0, isJapan = false }) {
                 </div>
               )}
 
-              {/* Two very different kinds of empty. "Nothing was found" is a
-                  market fact; "we caught fabricated citations and binned them"
-                  is the filter earning its keep. Never render them the same. */}
-              {sources.length === 0 && (
-                <div style={{
-                  marginTop: 8,
-                  paddingTop: 10,
-                  borderTop: '1px solid rgba(26, 29, 36, 0.4)',
-                  fontSize: 13,
-                  color: dropped > 0 ? '#A09060' : 'var(--signal-text-muted)',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  letterSpacing: '0.06em',
-                }}>
-                  {dropped > 0
-                    ? `// ${dropped} model source${dropped === 1 ? '' : 's'} rejected — absent from retrieved evidence`
-                    : '// no verified evidence for this area'}
-                </div>
-              )}
 
-              {/* Some survived, some didn't — still worth saying so. */}
-              {sources.length > 0 && dropped > 0 && (
-                <div style={{
-                  marginTop: 10,
-                  fontSize: 12,
-                  color: '#A09060',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  letterSpacing: '0.06em',
-                }}>
-                  // {dropped} more rejected — absent from retrieved evidence
-                </div>
-              )}
             </div>
           )}
         </div>

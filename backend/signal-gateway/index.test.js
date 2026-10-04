@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const {
   hash, finite, validateModelBody, validateIdentifyBody,
   geminiIdentifyRequest, shapeGeminiIdentifyResponse, reportDisposition,
-  officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch, tcgplayerSearch,
+  officialJapaneseIdentity, officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch, tcgplayerSearch,
   requireAppToken, validateYoutubeBody, youtubeCacheKey, shapeYoutubeItems,
   DAILY_GLOBAL_MODEL_CALLS, DAILY_GLOBAL_YOUTUBE_CALLS, GEMINI_CARD_MODEL,
 } = require('./index');
@@ -101,6 +101,7 @@ test('only Signal models and bounded requests pass', () => {
     messages: [{ role: 'user', content: 'test' }],
   };
   assert.doesNotThrow(() => validateModelBody(body));
+
   assert.throws(() => validateModelBody({ ...body, model: 'claude-opus-4-8' }), /not allowed/);
   assert.throws(() => validateModelBody({ ...body, max_tokens: 6001 }), /not allowed/);
 });
@@ -140,7 +141,7 @@ test('Gemini response becomes the same small shape as the existing scanner', () 
   assert.deepEqual(result.usage, { input_tokens: 2200, output_tokens: 75 });
 });
 
-test('analysis permits one direct search and rejects hidden code filtering', () => {
+test('analysis permits two direct searches and rejects hidden code filtering', () => {
   const body = {
     model: 'claude-haiku-4-5',
     max_tokens: 6000,
@@ -153,9 +154,10 @@ test('analysis permits one direct search and rejects hidden code filtering', () 
     }],
   };
   assert.doesNotThrow(() => validateModelBody(body));
+  assert.doesNotThrow(() => validateModelBody({ ...body, tools: [{ ...body.tools[0], max_uses: 2 }] }));
   assert.throws(() => validateModelBody({
     ...body,
-    tools: [{ ...body.tools[0], max_uses: 2 }],
+    tools: [{ ...body.tools[0], max_uses: 3 }],
   }), /not allowed/);
   assert.throws(() => validateModelBody({
     ...body,
@@ -201,4 +203,13 @@ test('video search accepts only Signal shapes and caches by the exact question',
 test('whole-service ceilings stay above one honest day and below a runaway bill', () => {
   assert.ok(DAILY_GLOBAL_MODEL_CALLS >= 300 && DAILY_GLOBAL_MODEL_CALLS <= 2000);
   assert.ok(DAILY_GLOBAL_YOUTUBE_CALLS < 100);
+});
+
+
+test('Japanese card identity comes from the official detail title and printing rows', () => {
+  const value = officialJapaneseIdentity('<title>調和ノ天救竜 | カード詳細 | 遊戯王</title><div class="card_number"> BLZD-JP024 </div>');
+  assert.deepEqual(value, { name: '調和ノ天救竜', printingCodes: ['BLZD-JP024'] });
+  assert.equal(officialJapaneseIdentity('<title>アクセスできません</title>'), null);
+  assert.equal(catalogueTarget('https://api.tcgdex.net/v2/ja/cards/sv8a-217'), 'https://api.tcgdex.net/v2/ja/cards/sv8a-217');
+  assert.equal(catalogueTarget('https://pokeapi.co/api/v2/pokemon-species/meowth'), 'https://pokeapi.co/api/v2/pokemon-species/meowth');
 });

@@ -51,7 +51,8 @@ Rules:
 const googleAuth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
 const CATALOGUE_RULES = new Map([
   ['api.pokemontcg.io', /^\/v2\/(?:cards|sets)(?:\/[^/]+)?$/],
-  ['api.tcgdex.net', /^\/v2\/en\/(?:cards|sets)(?:\/[^/]+)?$/],
+  ['api.tcgdex.net', /^\/v2\/(?:en|ja)\/(?:cards|sets)(?:\/[^/]+)?$/],
+  ['pokeapi.co', /^\/api\/v2\/pokemon-species\/[a-z0-9-]+\/?$/],
   ['api.scryfall.com', /^\/(?:cards|sets)(?:\/.*)?$/],
   ['db.ygoprodeck.com', /^\/api\/v7\/(?:cardinfo|cardsets|cardsetsinfo)\.php$/],
   // TCGplayer's per-product price history, read by its own article widgets.
@@ -238,9 +239,36 @@ function officialSetImage(html, cardName, cid) {
 }
 
 async function fetchOfficialHtml(url) {
-  const response = await fetch(url, { headers: { 'user-agent': 'SignalTCG/1.0' } });
+  const response = await fetch(url, { headers: { 'user-agent': 'SignalTCG/1.0' }, signal: AbortSignal.timeout(10000) });
   if (!response.ok) throw new Error(`Official Yu-Gi-Oh database returned ${response.status}.`);
   return response.text();
+}
+
+function officialJapaneseIdentity(html) {
+  const title = decodeHtml(String(html).match(/<title>([\s\S]*?)<\/title>/i)?.[1] || '');
+  if (!title.includes('カード詳細')) return null;
+  const name = title.split('|')[0].trim();
+  const codes = [...String(html).matchAll(/class="card_number"[^>]*>\s*([^<]+)/g)].map(match => match[1].trim()).filter(code => /^[A-Z0-9]+-JP[A-Z0-9]+$/.test(code));
+  return name ? { name, printingCodes: [...new Set(codes)] } : null;
+}
+
+async function japaneseIdentity(body) {
+  const id = String(body.cardId || '');
+  if (!/^\d{1,8}$/.test(id)) throw Object.assign(new Error('A card passcode is required.'), { status: 400 });
+  const ref = db.collection('signal_japanese_identity_v1').doc(id);
+  const saved = (await ref.get()).data();
+  if (saved?.identity && timestampMillis(saved.expiresAt) > Date.now()) return saved.identity;
+  const dataUrl = `https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${id}&misc=yes`;
+  const response = await fetch(dataUrl, { signal: AbortSignal.timeout(10000) });
+  const card = (await response.json())?.data?.find(card => String(card.id) === id);
+  const info = card?.misc_info?.[0];
+  if (!Number.isInteger(info?.konami_id)) throw new Error('Japanese card reference unavailable.');
+  const url = `https://www.db.yugioh-card.com/yugiohdb/card_search.action?ope=2&cid=${info.konami_id}&request_locale=ja`;
+  const identity = officialJapaneseIdentity(await fetchOfficialHtml(url));
+  if (!identity) throw new Error('Japanese card name unavailable.');
+  Object.assign(identity, { url, dataUrl, ocgDate: info.ocg_date || null, tcgDate: info.tcg_date || null });
+  await ref.set({ identity, expiresAt: Timestamp.fromMillis(Date.now() + 7 * 86400000) });
+  return identity;
 }
 
 async function yugiohArt(body) {
@@ -291,7 +319,7 @@ function validateYoutubeBody(body) {
 }
 
 function youtubeCacheKey(params) {
-  return hash(['yt', params.q.toLowerCase(), params.regionCode, params.relevanceLanguage, params.order, params.maxResults].join('::'));
+  return hash(['yt-ja-v2', params.q.toLowerCase(), params.regionCode, params.relevanceLanguage, params.order, params.maxResults].join('::'));
 }
 
 function shapeYoutubeItems(items) {
@@ -301,6 +329,7 @@ function shapeYoutubeItems(items) {
     description: safeText(item?.snippet?.description, 500),
     channel: safeText(item?.snippet?.channelTitle, 120),
     publishedAt: safeText(item?.snippet?.publishedAt, 40),
+    ...((item?.snippet?.defaultAudioLanguage || item?.snippet?.defaultLanguage) ? { language: safeText(item.snippet.defaultAudioLanguage || item.snippet.defaultLanguage, 20) } : {}),
   })).filter((item) => item.videoId);
 }
 
@@ -323,6 +352,14 @@ async function youtubeSearch(req, body, fetcher = fetch) {
     throw Object.assign(new Error(payload?.error?.message || `Video search failed (${response.status}).`), { status: 502 });
   }
   const items = shapeYoutubeItems(payload?.items);
+  if (params.relevanceLanguage === 'ja' && items.length) {
+    try {
+      const details = new URLSearchParams({ part: 'snippet', id: items.map(item => item.videoId).join(','), key: apiKey });
+      const response = await fetcher(`https://www.googleapis.com/youtube/v3/videos?${details}`, { signal: AbortSignal.timeout(8000) });
+      const data = await response.json();
+      for (const item of items) { const video = data.items?.find(video => video.id === item.videoId); item.language = video?.snippet?.defaultAudioLanguage || video?.snippet?.defaultLanguage || item.language; }
+    } catch {}
+  }
   await ref.set({
     items,
     createdAt: FieldValue.serverTimestamp(),
@@ -338,10 +375,10 @@ function validateModelBody(body) {
   if (!Number.isFinite(max) || max < 1 || max > 6000) throw new Error('Token limit is not allowed.');
   if (!Array.isArray(body.messages) || body.messages.length !== 1) throw new Error('Message shape is not allowed.');
   const tools = Array.isArray(body.tools) ? body.tools : [];
-  if ((tools.length && body.model !== 'claude-haiku-4-5') || tools.some((tool) => (
+  if (tools.length > 1 || (tools.length && body.model !== 'claude-haiku-4-5') || tools.some((tool) => (
     tool?.type !== 'web_search_20260209'
     || tool?.name !== 'web_search'
-    || Number(tool?.max_uses || 0) !== 1
+    || ![1, 2].includes(Number(tool?.max_uses || 0))
     || !Array.isArray(tool?.allowed_callers)
     || tool.allowed_callers.length !== 1
     || tool.allowed_callers[0] !== 'direct'
@@ -593,6 +630,7 @@ async function handler(req, res) {
     if (body.action === 'health') return res.json({ ok: true, service: 'signal-gateway-v1' });
     if (body.action === 'catalogueFetch') return res.json(await catalogueFetch(body));
     if (body.action === 'tcgplayerSearch') return res.json(await tcgplayerSearch(body));
+    if (body.action === 'japaneseIdentity') { requireAppToken(body); return res.json(await japaneseIdentity(body)); }
     if (body.action === 'yugiohArt') return res.json(await yugiohArt(body));
     if (body.action === 'youtubeSearch') {
       requireAppToken(body);
@@ -625,7 +663,7 @@ functions.http('signalGateway', handler);
 module.exports = {
   handler, hash, finite, validateModelBody, validateIdentifyBody,
   geminiIdentifyRequest, shapeGeminiIdentifyResponse, reportDisposition,
-  officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch, tcgplayerSearch,
+  officialJapaneseIdentity, officialCardCid, officialSetPid, officialSetImage, catalogueTarget, catalogueFetch, tcgplayerSearch,
   requireAppToken, validateYoutubeBody, youtubeCacheKey, shapeYoutubeItems,
   DAILY_GLOBAL_MODEL_CALLS, DAILY_GLOBAL_YOUTUBE_CALLS, GEMINI_CARD_MODEL,
 };

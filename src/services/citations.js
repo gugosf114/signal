@@ -1,3 +1,4 @@
+import { normalizedEvidenceText, isJapaneseSource, matchesJapanesePrinting } from './japaneseEvidence.js';
 // ─── Citation verification ───────────────────────────────────────────────────
 // The load-bearing honesty layer. A source may appear only when its URL joins
 // to the complete record returned by web search or by an app-owned API call.
@@ -81,6 +82,7 @@ function canonicalEvidence(input, defaults = {}) {
     reach: defaults.reach || 'unknown',
     audience: cleanText(defaults.audience, 100) || null,
     area: EVIDENCE_AREAS.has(defaults.area) ? defaults.area : null,
+    ...(defaults.language ? { language: defaults.language } : {}),
   };
 }
 
@@ -158,8 +160,9 @@ export function collectPrefetchEvidence({ cardData, community, creators, ebay, j
     putEvidence(registry, video, { type: 'youtube', source: video.channel || 'YouTube', area: 'creator' });
   }
   for (const video of jp?.jpVideos || []) {
-    putEvidence(registry, video, { type: 'youtube', source: video.channel || 'YouTube', area: 'jp_hype' });
+    if (isJapaneseSource(video)) putEvidence(registry, video, { type: 'youtube', source: video.channel || 'YouTube', area: 'jp_hype', language: 'ja' });
   }
+  for (const source of jp?.identity?.releaseEvidence || []) putEvidence(registry, source, { ...source, type: 'other', area: 'jp_release' });
   for (const listing of ebay?.buy_it_now || []) {
     putEvidence(registry, listing, { type: 'marketplace_en', source: 'eBay' });
   }
@@ -211,17 +214,10 @@ function evidenceDetail(sources) {
   return `Verified source: ${first.title}`;
 }
 
-function searchable(value) {
-  return String(value || '')
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+function searchable(value) { return normalizedEvidenceText(value); }
 
 function evidenceMatchesCard(evidence, cardName, pin) {
+  if (isJapaneseSource(evidence) && !evidence?.area) return matchesJapanesePrinting(evidence, cardName, pin);
   if (evidence?.area) return true; // app pre-fetchers already queried and checked this card
   const haystack = searchable([evidence?.title, evidence?.summary, evidence?.url].filter(Boolean).join(' '));
   const names = [cardName, pin?.name]
@@ -238,19 +234,21 @@ function isMarketplaceEvidence(evidence) {
   const host = hostKey(evidence?.url);
   const text = searchable(`${evidence?.title || ''} ${evidence?.url || ''}`);
   return ['ebay.com', 'tcgplayer.com'].includes(host)
-    || /\b(?:buy|sale|for sale|shop|store|singles)\b/.test(text);
+    || /\b(?:buy|sale|for sale|shop|store|singles)\b/.test(text)
+    || (/\/(?:cards?|pokemon\/card)\//i.test(evidence?.url || '') && /\bprices?\b/i.test(evidence?.title || ''));
 }
 
 export function classifyEvidenceArea(evidence) {
+  if (evidence?.area === 'jp_hype' && !isJapaneseSource(evidence)) return evidence.type === 'youtube' ? 'creator' : null;
   if (EVIDENCE_AREAS.has(evidence?.area)) return evidence.area;
   if (!evidence || isMarketplaceEvidence(evidence)) return null;
   const rawText = `${evidence.title || ''} ${evidence.summary || ''}`;
   const text = searchable(`${rawText} ${evidence.url || ''}`);
   const japaneseText = /[\u3040-\u30ff\u3400-\u9fff]/.test(rawText);
-  if (evidence.type === 'youtube') return japaneseText || /\b(?:japan|japanese|jp)\b/i.test(rawText)
-    ? 'jp_hype' : 'creator';
+  if (evidence.type === 'youtube') return isJapaneseSource(evidence) ? 'jp_hype' : 'creator';
   if (evidence.type === 'reddit' || evidence.type === 'twitter') return 'community';
-  if (japaneseText) return 'jp_hype';
+  if (isJapaneseSource(evidence) && /発売|発売日|収録|再録|新弾|リリース/.test(rawText)) return 'jp_release';
+  if (isJapaneseSource(evidence)) return 'jp_hype';
   if (evidence.type === 'tournament') return 'competitive';
   if (evidence.type === 'population_report'
     || /\b(?:population|pop report|print run|scarcity|supply|out of print|reprint)\b/.test(text)) return 'scarcity';
@@ -271,12 +269,14 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
     if (parsed) {
       parsed.signals = [];
       parsed._truncated = true;
-      parsed._evidenceVersion = 1;
+      parsed._evidenceVersion = 2;
     }
     return parsed;
   }
 
   let totalDropped = 0;
+  const sourceAudit = [];
+  const reassigned = [];
   const usedAcrossReport = new Set();
   parsed.signals = parsed.signals.map((signal) => {
     const seen = new Set();
@@ -286,7 +286,13 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
       const evidence = evidenceForUrl(registry, proposed?.url);
       const key = evidence && normalizeUrl(evidence.url);
       const area = classifyEvidenceArea(evidence);
-      if (!evidence || !key || area !== signal.key || usedAcrossReport.has(key) || !evidenceMatchesCard(evidence, cardName, pin)) {
+      const reason = !evidence ? 'not_retrieved' : !key ? 'invalid_url'
+        : !evidenceMatchesCard(evidence, cardName, pin) ? 'card_mismatch' : !area ? 'not_signal_evidence'
+          : area !== signal.key ? 'wrong_area' : usedAcrossReport.has(key) ? 'already_used' : null;
+      if (reason) {
+        const audit = { signal: signal.key, url: proposed?.url || null, reason, evidenceArea: area || null, title: evidence?.title || null };
+        sourceAudit.push(audit);
+        if (reason === 'wrong_area') reassigned.push({ evidence, area, audit });
         dropped += 1;
         continue;
       }
@@ -309,6 +315,17 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
     };
   });
 
+  for (const { evidence, area, audit } of reassigned) {
+    const target = parsed.signals.find(signal => signal.key === area);
+    if (!target || usedAcrossReport.has(evidence.url)) { audit.action = 'already_used_or_no_area'; continue; }
+    const { area: _area, ...trusted } = evidence;
+    if (!target.sources.length) target.level = 0;
+    target.sources.push({ ...trusted, implication: 'neutral' });
+    target.detail = evidenceDetail(target.sources);
+    usedAcrossReport.add(evidence.url);
+    audit.action = 'reassigned';
+  }
+
   // eBay rows are copied from the API response. The model never gets to alter
   // the title, price, seller, bid count, or URL of a real listing.
   parsed.ebay_listings = {
@@ -316,8 +333,9 @@ export function lockSourcesToEvidence(parsed, registry, { ebay, cardName = '', p
     auction: (ebay?.auction || []).slice(0, 1).map((item) => ({ ...item })),
   };
   parsed._droppedTotal = totalDropped;
+  parsed._sourceAudit = sourceAudit;
   parsed._droppedListings = 0;
-  parsed._evidenceVersion = 1;
+  parsed._evidenceVersion = 2;
   return parsed;
 }
 

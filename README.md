@@ -2254,3 +2254,36 @@ action handlers were compared byte-for-byte after moving them; PDF/share were
 not sent during this layout check. Screenshots inspected. Production build
 passed and contains no review fixtures. Installed phone files match every
 build file by SHA-256. No GitHub checks were started.
+
+## Session log — 2026-10-04 Japanese evidence repair
+
+A fresh Meowth 144/128 report reproduced the fault: an English-titled YouTube
+clip retrieved in both regions was relabeled jp_hype, then rejected from
+Creator Attention for being in the wrong area. Source diagnostics now retain
+the actual rejection reason and any reassignment. Valid retrieved links can
+move to the correct section without inventing a directional signal.
+
+Japanese lookup now uses source-backed Japanese names, preserves Japanese
+characters, and checks printing identifiers. JP region/language search hints
+alone cannot qualify an English clip as Japanese evidence. Japanese identity
+lookups use TCGdex/PokeAPI, Scryfall Japanese printings, and Konami's Japanese
+card page for Yu-Gi-Oh. Card-name-only mappings are distinguished from verified
+Japanese printing mappings. The gateway can retrieve Japanese catalog data
+and audio-language metadata, and supplies verified Yu-Gi-Oh Japanese names
+and OCG release dates. MTG now participates in Japanese prefetching too.
+
+George approved two bounded web searches per fresh Full Signal report: one
+English and one Japanese. The gateway accepts both legacy one-search calls
+and the new two-search calls. Existing per-install/global model and YouTube
+caps remain. Shared/local research cache versions advance so old mislabeled
+reports do not mask the repair. Saved active reports filter and relocate
+false-Japan clips. Empty research areas collapse into one list; internal
+rejection messages are removed from the report.
+
+The baseline trace and implementation work are under the local Japan audit
+folder. Before George's instruction to stop checks, the focused evidence run
+passed 52 tests and the gateway passed 16. A full suite exposed four old
+source-layout assertions; those were updated but not rerun. Further checks
+and a fresh post-repair Japanese report were stopped at his request. The final
+web build completed and the gateway deployment returned ACTIVE. The phone's
+web bundle was updated. No GitHub checks were started.

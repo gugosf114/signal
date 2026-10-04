@@ -22,6 +22,7 @@ export function shapeYouTubeItems(items) {
         title: snippet?.title || '',
         description: snippet?.description || '',
         channel: snippet?.channelTitle || snippet?.channel || '',
+        ...((snippet?.defaultAudioLanguage || snippet?.defaultLanguage || snippet?.language) ? { language: snippet.defaultAudioLanguage || snippet.defaultLanguage || snippet.language } : {}),
         date: (snippet?.publishedAt || snippet?.date || '').slice(0, 10) || null,
         url: `https://www.youtube.com/watch?v=${videoId}`,
       };

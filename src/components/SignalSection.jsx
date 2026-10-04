@@ -12,7 +12,7 @@ export default function SignalSection({ section, signals, baseDelay = 0 }) {
   const accentColor = SECTION_ACCENTS[section.id] || '#A8A498';
   const sectionSignals = section.signals
     .map((key) => signals.find((s) => s.key === key))
-    .filter(Boolean);
+    .filter((signal) => Array.isArray(signal?.sources) && signal.sources.length > 0);
 
   if (sectionSignals.length === 0) return null;
 

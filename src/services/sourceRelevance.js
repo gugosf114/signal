@@ -1,3 +1,4 @@
+import { normalizedEvidenceText, isJapaneseSource, matchesJapanesePrinting } from './japaneseEvidence.js';
 // Creator evidence must be about the physical printing in the report.
 // A real YouTube URL only proves that the video exists. It does not prove that
 // a Rayquaza video shows the same Rayquaza printing.
@@ -12,16 +13,7 @@
 // collector number or the premium rarity.
 
 function normalized(value) {
-  return String(value || '')
-    .replace(/&amp;/gi, '&')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&quot;/gi, '"')
-    .replace(/[δΔ]/g, ' delta ')
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
+  return normalizedEvidenceText(String(value || '').replace(/&amp;/gi, '&').replace(/&#39;|&apos;/gi, "'").replace(/&quot;/gi, '"').replace(/[δΔ]/g, ' delta '));
 }
 
 function includesPhrase(haystack, needle) {
@@ -128,6 +120,7 @@ function exactAnchors(pin) {
 }
 
 export function sourceMatchesExactPrinting(source, cardName, pin) {
+  if (isJapaneseSource(source)) return matchesJapanesePrinting(source, cardName, pin);
   const text = [source?.title, source?.description].filter(Boolean).join(' ');
   if (!text || !pin) return false;
   const haystack = ` ${normalized(text)} `;
@@ -210,18 +203,40 @@ export function enforceExactCreatorSources(analysis, {
   const creatorUrls = creatorVideos === null ? null : allowedUrlSet(creatorVideos);
   const jpUrls = jpVideos === null ? null : allowedUrlSet(jpVideos);
   let removed = 0;
-  const signals = analysis.signals.map((signal) => {
+  const sourceAudit = [...(analysis._sourceAudit || [])];
+  const inputSignals = analysis.signals.map(signal => ({ ...signal, sources: Array.isArray(signal.sources) ? [...signal.sources] : [] }));
+  // Repair already-saved reports whose JP region tag displaced an English clip.
+  if (Number(analysis._evidenceVersion) >= 1) {
+    const japan = inputSignals.find(signal => signal.key === 'jp_hype');
+    const creator = inputSignals.find(signal => signal.key === 'creator');
+    if (japan && creator) for (const source of japan.sources) {
+      if (source?.type !== 'youtube' || isJapaneseSource(source) || !sourceMatchesExactPrinting(source, cardName, pin)) continue;
+      const key = normalizedUrl(source.url);
+      const alreadyUsed = inputSignals.some(signal => signal.key !== 'jp_hype' && signal.sources.some(item => normalizedUrl(item.url) === key));
+      if (!alreadyUsed) {
+        if (!creator.sources.length) creator.level = 0;
+        creator.sources.push({ ...source, implication: 'neutral' });
+        creator.detail = creator.sources[0].summary || creator.sources[0].title;
+        sourceAudit.push({ signal: 'jp_hype', url: source.url, reason: 'japanese_language_unverified', action: 'reassigned', evidenceArea: 'creator' });
+      }
+    }
+  }
+  const signals = inputSignals.map((signal) => {
+
     if (!Array.isArray(signal?.sources)) return signal;
     const shouldCheck = signal.key === 'creator' || signal.key === 'jp_hype';
     if (!shouldCheck) return signal;
     const allow = signal.key === 'creator' ? creatorUrls : jpUrls;
     const kept = signal.sources.filter((source) => {
-      if (signal.key === 'jp_hype' && source?.type !== 'youtube') return true;
+      if (signal.key === 'jp_hype' && !isJapaneseSource(source)) { sourceAudit.push({ signal: signal.key, url: source?.url || null, reason: 'japanese_language_unverified', title: source?.title || null }); return false; }
+      if (signal.key === 'jp_hype' && source?.type !== 'youtube') return matchesJapanesePrinting(source, cardName, { ...pin, japaneseIdentity: pin.japaneseIdentity || analysis._japaneseIdentity });
       const url = normalizedUrl(source?.url);
       // A video the model found with its own search counts when its title
       // pins the printing, even if the pre-fetch did not return it.
-      return (allow !== null && Boolean(url && allow.has(url)))
-        || sourceMatchesExactPrinting(source, cardName, pin);
+      const accepted = (allow !== null && Boolean(url && allow.has(url)))
+        || sourceMatchesExactPrinting(source, cardName, { ...pin, japaneseIdentity: pin.japaneseIdentity || analysis._japaneseIdentity });
+      if (!accepted) sourceAudit.push({ signal: signal.key, url: source?.url || null, reason: 'creator_printing_mismatch', title: source?.title || null });
+      return accepted;
     });
     const dropped = signal.sources.length - kept.length;
     removed += dropped;
@@ -239,6 +254,6 @@ export function enforceExactCreatorSources(analysis, {
     return { ...signal, sources: kept, dropped: (signal.dropped || 0) + dropped };
   });
   return removed
-    ? { ...analysis, signals, _droppedTotal: (analysis._droppedTotal || 0) + removed }
-    : { ...analysis, signals };
+    ? { ...analysis, signals, _sourceAudit: sourceAudit, _droppedTotal: (analysis._droppedTotal || 0) + removed }
+    : { ...analysis, signals, _sourceAudit: sourceAudit };
 }

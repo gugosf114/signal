@@ -50,7 +50,7 @@ const ANALYSIS_MODEL = 'claude-haiku-4-5';
 // written before the creator, Japan, and Reddit lanes were repaired (2026-09-06)
 // froze a synthesis that never saw that evidence; a new key lets it refresh
 // once instead of serving the old answer for a week.
-export const PREFETCH_VERSION = 4;
+export const PREFETCH_VERSION = 5;
 
 function sharedCacheKey(cardName, game, pin) {
   const identity = printingIdentity(pin) || '';
@@ -129,6 +129,9 @@ GRADING ROI:
 }
 
 export async function analyzeCard(cardName, game = null, opts = {}) {
+  const traceEvidence = (stage, details) => {
+    try { opts.onEvidenceTrace?.({ stage, ...details }); } catch {}
+  };
   let pin = stampCardPrice(await verifyPokemonProduct(
     normalizeCardRecord(opts.pin || {}, { name: cardName, game }), { signal: opts.signal }));
   if (!isExactScanTarget(game, pin)) {
@@ -146,7 +149,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     fetchCommunity(cardName, game).catch(() => null),
     fetchCreators(cardName, game, pin).catch(() => null),
     fetchEbayListings(cardName, game, pin).catch(() => null),
-    game === 'mtg' ? Promise.resolve(null) : fetchJpSignal(cardName, pin).catch(() => null),
+    fetchJpSignal(cardName, pin, { signal: opts.signal }).catch(() => null),
     fetchCatalysts(cardName, game).catch(() => null),
     fetchPriceHistory(pin, { signal: opts.signal }).catch(() => null),
   ]);
@@ -181,13 +184,14 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
   // into a 147-second report.
   const resolvedGame = (game || cardData?.game || '').toLowerCase();
   // Keep the research shape fixed even when a pre-fetch happens to fail.
-  const searchTargets = selectSearchTargets(resolvedGame, { catalysts, community, creators });
+  const searchTargets = selectSearchTargets(resolvedGame, { catalysts, community, creators, cardName, pin, jp });
   const maxSearches = searchTargets.length;
 
   // Preserve the complete API-owned records behind every pre-fetched URL.
   // Search results are added after the model call. Together they become the
   // only source registry the finished report is allowed to use.
   const prefetchEvidence = collectPrefetchEvidence({ cardData, community, creators, ebay, jp });
+  traceEvidence('prefetch', { pin, cardData, creators, community, jp, catalysts, evidence: [...prefetchEvidence.values()] });
 
   const model = ANALYSIS_MODEL;
 
@@ -200,7 +204,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
         '</untrusted_market_data>',
         '',
         maxSearches
-          ? 'The blocks above are pre-fetched and REAL — use them directly, do NOT re-search them. Run exactly ONE direct web_search for the target below. Never repeat the query:'
+          ? 'The blocks above are pre-fetched and REAL — use them directly, do NOT re-search them. Run exactly TWO direct web_search calls, one for EACH target below. The second query must be Japanese. Never repeat the English query:'
           : 'The blocks above are pre-fetched and REAL. Score only what those blocks support. Missing evidence stays neutral; do NOT fill gaps from memory.',
         ...searchTargets.map((t, i) => `${i + 1}. ${t}`),
       ].join('\n')
@@ -248,6 +252,7 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
     extractSearchEvidence(result.content || []),
     prefetchEvidence,
   );
+  traceEvidence('retrieved', { evidence: [...evidenceRegistry.values()], response: result });
 
   // Web search responses have many content blocks: text, tool_use, tool_result
   // The structured JSON is typically in the LAST text block after all searches complete.
@@ -293,17 +298,20 @@ export async function analyzeCard(cardName, game = null, opts = {}) {
       });
       const evidenceContext = {
         cardName: cardData?.name || cardName,
-        pin: printingInfo || pin,
+        pin: { ...(printingInfo || pin), japaneseIdentity: jp?.identity || null },
       };
+      traceEvidence('proposed', { signals: normalized.signals });
       const locked = lockSourcesToEvidence(normalized, evidenceRegistry, { ebay, ...evidenceContext });
+      locked._japaneseIdentity = jp?.identity || null;
       const filled = fillEvidenceGaps(locked, evidenceRegistry, evidenceContext);
       const exactCreators = enforceExactCreatorSources(filled, {
         cardName: cardData?.name || cardName,
-        pin: printingInfo || pin,
+        pin: evidenceContext.pin,
         creatorVideos: creators?.videos || [],
         jpVideos: jp?.jpVideos || [],
       });
       const clean = applyTrustedPriceNarrative(exactCreators, cardData);
+      traceEvidence('filtered', { signals: clean.signals, rejections: clean._sourceAudit || [] });
       if (printingInfo) clean.printing = printingInfo;
       const currentPrice = firstMarketPrice(cardData?.priceLines);
       clean.prices = applyTrustedMarketPrice(clean.prices, cardData, currentPrice);

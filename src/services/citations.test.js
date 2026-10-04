@@ -106,7 +106,7 @@ describe('locked evidence records', () => {
       expectedSignalCount: 8,
       uniqueSourceCount: 1,
     });
-    assert.equal(locked._evidenceVersion, 1);
+    assert.equal(locked._evidenceVersion, 2);
   });
 
   test('an unknown URL is rejected and its model claim is erased', () => {
@@ -214,7 +214,7 @@ describe('locked evidence records', () => {
       ['Shedinja PSA population report', 'https://www.psacard.com/pop/tcg-cards/2025/shedinja/12345'],
       ['Shedinja anime character spotlight', 'https://example.net/shedinja-anime-spotlight'],
       ['Shedinja Japanese release date', 'https://example.jp/shedinja-japanese-release-date'],
-      ['ヌケニン (Shedinja) Mega Evolution デッキ', 'https://example.jp/shedinja-deck'],
+      ['ヌケニン (Shedinja) Mega Evolution 144/132 デッキ', 'https://example.jp/shedinja-deck'],
       ['Shedinja 144/132 for sale', 'https://www.ebay.com/itm/123'],
       ['Shedinja 144/132', 'https://www.tcgplayer.com/product/654483'],
     ].map(([title, url]) => ({ type: 'web_search_result', title, url }));

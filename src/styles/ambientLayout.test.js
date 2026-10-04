@@ -108,7 +108,7 @@ test('three-page text hierarchy brightens useful copy without washing out decora
   assert.match(css, /\.dos-method p\s*\{[^}]*color:\s*var\(--signal-text-secondary\)/);
   assert.match(css, /\.dos-footnote\s*\{[^}]*color:\s*var\(--signal-text-muted\)/);
   assert.match(css, /\.report-finding > p\s*\{[^}]*color:\s*#D0D8C6/);
-  assert.match(signalCardSource, /dropped > 0 \? '#A09060' : 'var\(--signal-text-muted\)'/);
+  assert.doesNotMatch(signalCardSource, /absent from retrieved evidence/);
 
   const ambientGrid = css.match(/\.signal-ambient-grid\s*\{([^}]*)\}/)?.[1] || '';
   const dossierWatermark = css.match(/\.dos-hero::after\s*\{([^}]*)\}/)?.[1] || '';

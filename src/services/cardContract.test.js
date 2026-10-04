@@ -50,14 +50,14 @@ describe('every card door uses one exact record', () => {
 
   test('detail screens show exact identity and market facts', () => {
     for (const name of ['browser', 'collection', 'add', 'latest', 'score']) {
-      assert.match(sources[name], /printingLabel|PrintingIdentity|recentPrintingLine/, `${name} must show the exact printing`);
+      assert.match(sources[name], /printingLabel|PrintingIdentity|recentPrintingLine|collectionCardNumber/, `${name} must show the exact printing`);
     }
     for (const name of ['search', 'scanner', 'browser', 'collection', 'add', 'latest', 'score', 'price', 'pdf']) {
       assert.match(sources[name], /price|Price|enPrice/, `${name} must carry or show exact price data`);
     }
     assert.match(sources.loading, /printingLabel\(pin\)/);
     assert.match(sources.loading, /CardSlate cardName=\{cardName\} game=\{game\} pin=\{pin\}/);
-    assert.match(sources.price, /price_source/);
+    assert.match(sources.score, /reportMarketPrice\(enPrice\)/);
     assert.match(sources.pdf, /Price Source/);
     for (const name of ['recent', 'watched', 'collection']) {
       assert.match(sources[name], /refreshPrices/, `${name} must refresh its exact saved price`);
@@ -69,8 +69,8 @@ describe('every card door uses one exact record', () => {
     assert.match(sources.browser, /onCardSelect\(c\.name, c\.game, \{ pin: c \}\)/);
 
     assert.match(sources.trending, /gridTemplateColumns: 'repeat\(2, minmax\(0, 1fr\)\)'/);
-    assert.match(sources.trending, /maxHeight: 108/);
-    assert.match(sources.trending, /minHeight: 32/);
+    assert.doesNotMatch(sources.trending, /maxHeight: 108/);
+    assert.match(sources.trending, /minHeight: 44/);
     assert.doesNotMatch(sources.trending, /printingLabel|cardPriceLabel/);
 
     assert.match(sources.recent, /gridTemplateColumns: '72px minmax\(0, 1\.25fr\) minmax\(0, 0\.75fr\)'/);
@@ -116,10 +116,10 @@ describe('every card door uses one exact record', () => {
     assert.match(sources.analysis, /buildVerifiedSummary/);
     assert.match(sources.evidence, /Model-written metadata and factual[\s\S]*prose are discarded/);
     assert.match(sources.evidence, /level: sources\.length \? signal\.level : 0/);
-    assert.match(sources.score, /AREAS SOURCED/);
-    assert.match(sources.score, /UNIQUE SOURCE/);
+    assert.match(sources.score, /sourcedSignalCount/);
+    assert.match(sources.score, /uniqueSourceCount/);
     assert.doesNotMatch(sources.score, /SIGNALS · .*VERIFIED SOURCES/);
-    assert.match(sources.cache, /signal_scan_cache_v3/);
+    assert.match(sources.cache, /signal_scan_cache_v4/);
     assert.match(sources.session, /signal_active_scan_v3/);
     assert.doesNotMatch(sources.validation, /source: text\(source\.source/);
     assert.doesNotMatch(sources.validation, /title: text\(source\.title/);

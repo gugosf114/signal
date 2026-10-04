@@ -1,3 +1,4 @@
+import { enforceExactCreatorSources } from './sourceRelevance.js';
 import { isExactScanTarget } from './scanIdentity.js';
 import { normalizeCardRecord, withCardRecord } from './cardRecord.js';
 
@@ -88,7 +89,7 @@ export function loadRecoverableScanSession(storage, now = Date.now()) {
     });
     const game = value.game || value.result?.game;
     if (age >= 0 && age <= COMPLETE_MAX_AGE_MS && isExactScanTarget(game, pin)) {
-      const result = withCardRecord(value.result, pin);
+      const result = withCardRecord(enforceExactCreatorSources(value.result, { cardName: value.name, pin }), pin);
       return writeSession({
         ...value,
         name: result?.card?.name || pin.name,

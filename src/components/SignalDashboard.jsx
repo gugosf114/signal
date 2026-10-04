@@ -21,6 +21,7 @@ import Dossier from './Dossier';
 import AddToCollectionDialog from './AddToCollectionDialog';
 import SignalAmbient from './SignalAmbient';
 import ScrollReveal from './ScrollReveal';
+import { SIGNAL_TYPES } from '../config/signals';
 import { SIGNAL_SECTIONS, calculateScoreDetails } from '../config/signals';
 import { analyzeCard } from '../services/analyzeCard';
 import { exportReportToPdf, shareReportAsPdf, imageUrlToDataUrl } from '../services/exportReport';
@@ -821,7 +822,7 @@ export default function SignalDashboard() {
 
           {/* Signal navigation — jump to any section */}
           <ScrollReveal>
-            <SignalNav signals={result.signals || []} />
+            <SignalNav signals={(result.signals || []).filter((signal) => signal.sources?.length)} />
           </ScrollReveal>
 
           {SIGNAL_SECTIONS.map((section, sIdx) => (
@@ -833,6 +834,15 @@ export default function SignalDashboard() {
               />
             </ScrollReveal>
           ))}
+          {(result.signals || []).some((signal) => !signal.sources?.length) && (
+            <details className="report-empty-areas">
+              <summary>Areas without sources</summary>
+              <ul>{(result.signals || []).filter((signal) => !signal.sources?.length).map((signal) => (
+                <li key={signal.key}>{SIGNAL_SECTIONS.flatMap(section => section.signals).includes(signal.key) ? SIGNAL_TYPES[signal.key]?.label || signal.key : signal.key}</li>
+              ))}</ul>
+            </details>
+          )}
+
 
 
           </div>{/* /#signal-report-capture */}
