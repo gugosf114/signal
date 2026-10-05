@@ -2614,3 +2614,12 @@ tile styling and actual ambient background. Visually inspected label fit,
 selection contrast and consistency. No test suite or GitHub workflow was
 run for this styling redo.
 Production build completed and the new web bundle was installed on the phone.
+
+## Session log — 2026-10-04 wordmark gradient on selected tabs
+
+Changed the selected top-tab fill to the exact Signal lettering gradient:
+180deg, #F5F1E8 at 0%, #D8D4CC at 60%, #B0ACA4 at 100%. The lettering and
+tabs now reference one CSS value. Matched the selected rim and keyboard
+focus colour to that palette. Tab dimensions, artwork and layout stay the
+same. Production build completed; no test suite was run for this colour edit.
+The new web bundle was installed on the phone.

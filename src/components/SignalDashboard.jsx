@@ -605,7 +605,7 @@ export default function SignalDashboard() {
             fontWeight: 700,
             lineHeight: 0.95,
             letterSpacing: '-0.02em',
-            background: 'linear-gradient(180deg, #F5F1E8 0%, #D8D4CC 60%, #B0ACA4 100%)',
+            background: 'var(--signal-wordmark-fill)',
             WebkitBackgroundClip: 'text',
             backgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
