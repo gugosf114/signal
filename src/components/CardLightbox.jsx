@@ -36,6 +36,7 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [loadedImage, setLoadedImage] = useState(null);
   const [failedImage, setFailedImage] = useState(null);
+  const [imageShape, setImageShape] = useState({ url: null, ratio: 0.716 });
 
   // Live gesture state. Refs, not state — these change on every pointermove and
   // must not queue a re-render each time.
@@ -228,6 +229,7 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
         <div
           className="cl-card card-shine-surface"
           style={{
+            '--card-ratio': imageShape.url === imageUrl ? imageShape.ratio : 0.716,
             transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(${scale})`,
             transition,
           }}
@@ -235,7 +237,11 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
           {imageUrl && failedImage !== imageUrl ? (
             <>
               <img src={imageUrl} alt={cardName || ''} className="cl-img" draggable={false}
-                onLoad={() => { setLoadedImage(imageUrl); setFailedImage(null); }}
+                onLoad={(event) => {
+                  const { naturalWidth, naturalHeight } = event.currentTarget;
+                  if (naturalWidth > 0 && naturalHeight > 0) setImageShape({ url: imageUrl, ratio: naturalWidth / naturalHeight });
+                  setLoadedImage(imageUrl); setFailedImage(null);
+                }}
                 onError={() => setFailedImage(imageUrl)} />
               {loadedImage !== imageUrl && <div className="cl-image-status" role="status">Loading image…</div>}
               <CardShine card={card} follow={moved} tilt={tilt} />

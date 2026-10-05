@@ -2532,3 +2532,16 @@ The new web bundle was installed on the phone.
 Removed the corner checkmark and its reserved title space at George's
 request. The gold fill and dark text remain the selected-state cues.
 Production build completed and the phone bundle was updated.
+
+## Session log — 2026-10-04 card viewer corner clipping
+
+The Salamence screenshot showed white JPEG corners and black space inside
+a taller rounded frame. The viewer previously fixed its height to the stage
+while limiting width, so object-fit placed the photo inside that larger box
+and the rounded mask did not reach the actual photo corners. The card frame
+now uses the loaded image's natural aspect ratio and fits both stage axes.
+A proportional rounded mask clips the photo itself while keeping the full
+card face. This applies to every CardLightbox caller and resizes with the
+viewport. Production build completed; no test suite was run for this visual
+layout change.
+The new web bundle was installed on the phone.
