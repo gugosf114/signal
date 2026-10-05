@@ -2623,3 +2623,9 @@ tabs now reference one CSS value. Matched the selected rim and keyboard
 focus colour to that palette. Tab dimensions, artwork and layout stay the
 same. Production build completed; no test suite was run for this colour edit.
 The new web bundle was installed on the phone.
+
+## Session log — 2026-10-04 matching collection selector gradient
+
+The selected collection tile, including All cards, now uses the same Signal
+wordmark gradient and light rim as the top navigation. Production build
+completed and the phone web bundle was updated.

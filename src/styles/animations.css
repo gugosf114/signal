@@ -4619,9 +4619,9 @@
 /* A persistent selected tile, distinct from hover and press feedback. */
 .col-binder:not(.col-binder--on) { border-color: #585B60; }
 .col-binder.col-binder--on {
-  border-color: #F2E4BD;
-  background: #D9CCAB;
-  box-shadow: inset 0 0 0 1px #F2E4BD;
+  border-color: #F5F1E8;
+  background: var(--signal-wordmark-fill);
+  box-shadow: inset 0 0 0 1px #F5F1E8;
 }
 .col-binder.col-binder--on::before { opacity: 0; }
 .col-binder.col-binder--on strong { color: #171B15; }
