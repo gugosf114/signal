@@ -2599,3 +2599,18 @@ Rendered the actual component and stylesheet at phone width and visually
 inspected all three selected states. Labels and illustrations fit the compact
 row. No test suite or GitHub workflow was run for this styling adjustment.
 Production build completed and the phone web bundle was updated.
+
+## Session log — 2026-10-04 navigation theme alignment
+
+Redid the compact top tabs against the existing collection tiles. Removed
+the raised bases, green surfaces and heavy shadows. The tabs now use the
+app's charcoal tile colour, the exact collection beige selected fill and
+light edge, and right-aligned illustrations beside left-aligned labels.
+The artwork's dark fill now follows the app's graphite palette. Kept the
+original compact dimensions and existing navigation behaviour.
+
+Rendered all three selections at phone width beside the existing collection
+tile styling and actual ambient background. Visually inspected label fit,
+selection contrast and consistency. No test suite or GitHub workflow was
+run for this styling redo.
+Production build completed and the new web bundle was installed on the phone.

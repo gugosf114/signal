@@ -4628,61 +4628,57 @@
 .col-binder.col-binder--on .col-binder-art { opacity: .86; }
 
 
-/* Compact illustrated tabs with a fine raised edge. */
+/* Page navigation follows the collection tiles' surface and selection. */
 .pt-strip, .signal-report-mode .pt-strip {
   width: min(100%, 430px);
   gap: 3px;
   margin: -18px auto 28px;
 }
 .pt-tab, .signal-report-mode .pt-tab {
-  --tab-base: #0B100C;
   min-height: 40px;
   box-sizing: border-box;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 4px 6px;
+  justify-content: flex-start;
+  padding: 7px 40px 7px 10px;
   overflow: hidden;
-  border: 1px solid #77746188;
-  border-top-color: #AFA48D66;
-  border-bottom-color: #10160F;
-  border-radius: 7px;
-  background: linear-gradient(180deg, #30352C, #1B211B);
-  color: #D6CDBB;
-  box-shadow: 0 3px 0 var(--tab-base), 0 5px 10px #0004, inset 0 1px 0 #F0DFB814;
-  font: 600 clamp(9px, 2.8vw, 11px)/1.2 'Syne', sans-serif;
-  letter-spacing: .01em;
+  border: 1px solid #585B60;
+  border-radius: 4px;
+  background: var(--signal-tile);
+  color: #D1CCC2;
+  box-shadow: none;
+  font: 600 clamp(9px, 2.7vw, 11px)/1.25 'Syne', sans-serif;
+  letter-spacing: .015em;
   text-transform: none;
-  transition: color .15s ease, border-color .15s ease, transform .12s ease, box-shadow .12s ease;
+  transition: color .15s ease, background-color .15s ease, border-color .15s ease;
 }
 .pt-artwork {
-  position: static;
-  width: 26px;
-  height: 28px;
-  flex: 0 0 26px;
-  opacity: .9;
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  opacity: .72;
   pointer-events: none;
 }
 .pt-label { position: relative; z-index: 1; white-space: nowrap; }
-.pt-tab:hover { color: #F0E5CD; border-color: #B4A37B; }
+.pt-tab:hover { color: #EEE9DF; border-color: #8C877B; }
 .pt-tab.pt-tab--on, .signal-report-mode .pt-tab.pt-tab--on {
-  --tab-base: #927B54;
-  color: #20261E;
-  border-color: #F0E2BD;
-  border-bottom-color: #B29A6E;
-  background: linear-gradient(180deg, #EEE2C2, #D9CCAB);
-  box-shadow: 0 3px 0 var(--tab-base), 0 5px 10px #0004, inset 0 1px 0 #FFF5DACC;
+  color: #171B15;
+  border-color: #F2E4BD;
+  background: #D9CCAB;
+  box-shadow: inset 0 0 0 1px #F2E4BD;
   animation: none;
 }
 .pt-tab--on .pt-artwork { opacity: 1; }
-.pt-tab:focus-visible { outline: 2px solid #F0DDA8; outline-offset: 4px; }
-.pt-tab:active, .pt-tab.pt-tab--on:active, .signal-report-mode .pt-tab:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 var(--tab-base), 0 2px 5px #0003, inset 0 1px 0 #FFFFFF18;
-}
+.pt-tab:focus-visible { outline: 2px solid #D9CCAB; outline-offset: 3px; }
+.pt-tab:active, .pt-tab.pt-tab--on:active, .signal-report-mode .pt-tab:active { transform: none; filter: none; }
+.pt-tab:not(.pt-tab--on):active { background: var(--signal-raised); box-shadow: none; }
 .signal-report-mode .pt-strip { margin-bottom: 18px; gap: 7px; }
 .signal-report-mode .pt-tab { min-height: 44px; }
-@media (max-width: 350px) { .pt-artwork { width: 23px; height: 26px; flex-basis: 23px; } }
+@media (max-width: 350px) {
+  .pt-tab, .signal-report-mode .pt-tab { padding-left: 8px; padding-right: 31px; }
+  .pt-artwork { right: 3px; width: 25px; height: 29px; }
+}
 @media (prefers-reduced-motion: reduce) { .pt-tab { transition: none; } }

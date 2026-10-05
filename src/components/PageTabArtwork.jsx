@@ -10,7 +10,7 @@ export default function PageTabArtwork({ kind }) {
         <stop stopColor="#F0DFAC" /><stop offset=".43" stopColor="#B89B61" /><stop offset="1" stopColor="#75603E" />
       </linearGradient>
       <linearGradient id={`${id}-ink`} x1="32" y1="12" x2="76" y2="60" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#3C4841" /><stop offset="1" stopColor="#151D1A" />
+        <stop stopColor="#45424A" /><stop offset="1" stopColor="#1C1B20" />
       </linearGradient>
       <linearGradient id={`${id}-paper`} x1="43" y1="9" x2="73" y2="58" gradientUnits="userSpaceOnUse">
         <stop stopColor="#F4EAD4" /><stop offset="1" stopColor="#C6B793" />
