@@ -1,4 +1,5 @@
 import React from 'react';
+import PageTabArtwork from './PageTabArtwork';
 
 // Three pages, one strip. Signal is the live analysis side, Collection is the
 // shelf, and Dossier explains the human-reviewed research service.
@@ -32,10 +33,11 @@ export default function PageTabs({ page, onChange, tabsRef }) {
           aria-controls={`panel-${t.key}`}
           aria-selected={page === t.key}
           tabIndex={page === t.key ? 0 : -1}
-          className={`pt-tab ${page === t.key ? 'pt-tab--on' : ''}`}
+          className={`pt-tab pt-tab--${t.key} ${page === t.key ? 'pt-tab--on' : ''}`}
           onClick={() => onChange(t.key)}
         >
-          {t.label}
+          <PageTabArtwork kind={t.key} />
+          <span className="pt-label">{t.label}</span>
         </button>
       ))}
     </div>

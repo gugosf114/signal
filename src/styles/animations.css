@@ -4627,3 +4627,52 @@
 .col-binder.col-binder--on > span:not(.col-binder-art) { color: #343A2E; }
 .col-binder.col-binder--on .col-binder-art { opacity: .86; }
 
+
+/* Illustrated page tabs: the same warm selection as the collection binders. */
+.pt-strip, .signal-report-mode .pt-strip {
+  width: min(100%, 540px);
+  gap: 8px;
+  margin: -10px auto 28px;
+}
+.pt-tab, .signal-report-mode .pt-tab {
+  min-height: 86px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 10px 12px;
+  overflow: hidden;
+  border: 1px solid #77746164;
+  border-radius: 11px;
+  background: linear-gradient(145deg, #282B25, #171C19);
+  color: #D6CDBB;
+  box-shadow: inset 0 1px 0 #F0DFB80A, 0 3px 10px #0002;
+  font: 600 clamp(10px, 3vw, 12px)/1.25 'Syne', sans-serif;
+  letter-spacing: .015em;
+  text-transform: none;
+  transition: background-color .16s ease, color .16s ease, border-color .16s ease, transform .12s ease;
+}
+.pt-artwork {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: calc(100% - 14px);
+  max-width: 84px;
+  height: 57px;
+  opacity: .88;
+  pointer-events: none;
+}
+.pt-label { position: relative; z-index: 1; white-space: nowrap; }
+.pt-tab:hover { color: #F0E5CD; border-color: #B4A37B; }
+.pt-tab.pt-tab--on, .signal-report-mode .pt-tab.pt-tab--on {
+  color: #20261E;
+  border-color: #F0E2BD;
+  background: linear-gradient(145deg, #E6DAB9, #D9CCAB);
+  box-shadow: inset 0 1px 0 #FFF4DEAA, 0 5px 16px #0003;
+  animation: none;
+}
+.pt-tab--on .pt-artwork { opacity: 1; }
+.pt-tab:focus-visible { outline: 2px solid #F0DDA8; outline-offset: 3px; }
+.pt-tab:active { transform: translateY(1px); }
+@media (prefers-reduced-motion: reduce) { .pt-tab { transition: none; } }

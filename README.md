@@ -2564,3 +2564,25 @@ Four focused padding tests passed. The detector also found the measured
 5/3/5/3 margins in the actual Claydol JPEG. Production build completed and
 the phone web bundle was updated. The native viewer appearance is not yet
 visually verified; George's phone check remains next.
+
+## Session log — 2026-10-04 illustrated top navigation
+
+Replaced the plain outlined Signal/Collection/Dossier tabs with compact
+illustrated navigation tiles. The active tile uses the same warm beige
+selection as All cards, dark type, a fine light edge and restrained depth.
+Inactive tiles use dark surfaces and quieter borders. Original SVG artwork
+represents a brass signal instrument, a fan of collectible cards, and a paper
+dossier. The graphics remain sharp at phone scale and need no image fetch.
+
+Labels use clear title case, with no checkmark or decorative status copy.
+Keyboard navigation, aria-selected, page handlers, landing page and the
+scroll-triggered bottom navigation are preserved. Selection bounce was
+removed; only a short press response remains.
+
+The actual PageTabs component and production stylesheet were rendered in
+headless Chromium at a 390px viewport with each of the three selections.
+The three states were visually inspected for readable labels, contrast and
+artwork fit. Preview files remain outside the repo under tmp/signal-nav-preview.
+No test suite or GitHub workflow was run for the design change.
+The production build completed and the new bundle was installed on the
+phone. The in-app visual check remains with George.
