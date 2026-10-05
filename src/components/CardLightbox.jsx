@@ -1,3 +1,4 @@
+import { measureCardImagePadding } from '../services/cardImagePadding';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import CardShine from './CardShine';
@@ -40,6 +41,8 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
 
   // Live gesture state. Refs, not state — these change on every pointermove and
   // must not queue a re-render each time.
+  const activeImage = useRef(null);
+  activeImage.current = isOpen ? imageUrl : null;
   const pointers = useRef(new Map());
   const dragStart = useRef(null);
   const pinchStart = useRef(null);
@@ -191,6 +194,12 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
     ? 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)'
     : 'transform 0.06s linear';
 
+  const padding = imageShape.url === imageUrl ? imageShape.padding : null;
+  const imageFit = padding ? { position: 'absolute', maxWidth: 'none',
+    width: `${100 / (1 - padding.left - padding.right)}%`,
+    height: `${100 / (1 - padding.top - padding.bottom)}%`,
+    left: `${-100 * padding.left / (1 - padding.left - padding.right)}%`,
+    top: `${-100 * padding.top / (1 - padding.top - padding.bottom)}%`, borderRadius: 0 } : undefined;
   const moved = Math.abs(tilt.x) > 1 || Math.abs(tilt.y) > 1 || Math.abs(scale - 1) > 0.02;
 
   return createPortal(
@@ -230,17 +239,22 @@ export default function CardLightbox({ isOpen, onClose, imageUrl, cardName, card
           className="cl-card card-shine-surface"
           style={{
             '--card-ratio': imageShape.url === imageUrl ? imageShape.ratio : 0.716,
+            ...(padding ? { borderRadius: padding.radius } : {}),
             transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(${scale})`,
             transition,
           }}
         >
           {imageUrl && failedImage !== imageUrl ? (
             <>
-              <img src={imageUrl} alt={cardName || ''} className="cl-img" draggable={false}
+              <img src={imageUrl} alt={cardName || ''} className="cl-img" draggable={false} style={imageFit}
                 onLoad={(event) => {
-                  const { naturalWidth, naturalHeight } = event.currentTarget;
+                  const image = event.currentTarget;
+                  const { naturalWidth, naturalHeight } = image;
                   if (naturalWidth > 0 && naturalHeight > 0) setImageShape({ url: imageUrl, ratio: naturalWidth / naturalHeight });
                   setLoadedImage(imageUrl); setFailedImage(null);
+                  measureCardImagePadding(image).then(measured => {
+                    if (measured && activeImage.current === imageUrl) setImageShape({ url: imageUrl, ratio: measured.ratio, padding: measured });
+                  });
                 }}
                 onError={() => setFailedImage(imageUrl)} />
               {loadedImage !== imageUrl && <div className="cl-image-status" role="status">Loading image…</div>}

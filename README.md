@@ -2545,3 +2545,22 @@ card face. This applies to every CardLightbox caller and resizes with the
 viewport. Production build completed; no test suite was run for this visual
 layout change.
 The new web bundle was installed on the phone.
+
+## Session log — 2026-10-04 measured source-image padding
+
+The next Claydol screenshot exposed a separate remaining cause: TCGplayer's
+source JPEG includes thin white padding outside the printed grey border.
+The earlier aspect-ratio repair did not remove this padding. Reading the
+original image measured five pixels left/top and three right/bottom.
+
+CardLightbox now measures thin, near-uniform white margins and adjusts only
+the displayed image bounds and corner mask. It keeps the original asset
+unchanged. Wide printed white borders, transparent edges and unmatched
+backgrounds are left intact. Measurements tolerate small JPEG noise, use
+several edge samples for each corner, and are cached per URL. Cross-origin
+images can be measured through the existing native HTTP image fetch.
+
+Four focused padding tests passed. The detector also found the measured
+5/3/5/3 margins in the actual Claydol JPEG. Production build completed and
+the phone web bundle was updated. The native viewer appearance is not yet
+visually verified; George's phone check remains next.
