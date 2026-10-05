@@ -2586,3 +2586,16 @@ artwork fit. Preview files remain outside the repo under tmp/signal-nav-preview.
 No test suite or GitHub workflow was run for the design change.
 The production build completed and the new bundle was installed on the
 phone. The in-app visual check remains with George.
+
+## Session log — 2026-10-04 compact raised navigation
+
+Restored the top tabs to their original footprint: 40px main-page height,
+430px maximum strip width and 3px gaps (the report view retains its previous
+44px height). The same custom artwork now sits beside each label. A fine
+top bevel, lower rim and short press-down response give the compact tabs
+a raised appearance while keeping the beige active state.
+
+Rendered the actual component and stylesheet at phone width and visually
+inspected all three selected states. Labels and illustrations fit the compact
+row. No test suite or GitHub workflow was run for this styling adjustment.
+Production build completed and the phone web bundle was updated.

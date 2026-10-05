@@ -4,7 +4,7 @@ import React, { useId } from 'react';
 export default function PageTabArtwork({ kind }) {
   const id = useId().replace(/:/g, '');
   const paint = name => `url(#${id}-${name})`;
-  return <svg className="pt-artwork" viewBox="0 0 100 68" fill="none" aria-hidden="true" focusable="false">
+  return <svg className="pt-artwork" viewBox="16 1 76 65" fill="none" aria-hidden="true" focusable="false">
     <defs>
       <linearGradient id={`${id}-metal`} x1="22" y1="4" x2="78" y2="64" gradientUnits="userSpaceOnUse">
         <stop stopColor="#F0DFAC" /><stop offset=".43" stopColor="#B89B61" /><stop offset="1" stopColor="#75603E" />
